@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
@@ -367,10 +368,60 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         <div class="files-section">
             <div class="files-header">
                 <h2>My Files</h2>
-            </div>
+            </div>`
+
+	// Generate file list HTML
+	if len(files) == 0 {
+		html += `
             <div class="empty-state">
                 No files uploaded yet. Start by uploading your first file!
-            </div>
+            </div>`
+	} else {
+		html += `
+            <ul class="file-list">`
+
+		for _, f := range files {
+			downloadURL := s.config.ServerURL + "/d/" + f.Id
+
+			// Format expiration info
+			expiryInfo := ""
+			if !f.UnlimitedTime && f.ExpireAt > 0 {
+				expiryTime := time.Unix(f.ExpireAt, 0)
+				expiryInfo = fmt.Sprintf(" • Expires: %s", expiryTime.Format("2006-01-02 15:04"))
+			}
+
+			downloadsInfo := ""
+			if f.UnlimitedDownloads {
+				downloadsInfo = fmt.Sprintf("%d downloads", f.DownloadCount)
+			} else {
+				totalDownloads := f.DownloadCount + f.DownloadsRemaining
+				downloadsInfo = fmt.Sprintf("%d/%d downloads", f.DownloadCount, totalDownloads)
+			}
+
+			authBadge := ""
+			if f.RequireAuth {
+				authBadge = ` <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px;">🔒 Auth Required</span>`
+			}
+
+			html += `
+                <li class="file-item">
+                    <div class="file-info">
+                        <h3>` + f.Name + authBadge + `</h3>
+                        <p>` + database.FormatFileSize(f.SizeBytes) + ` • ` + downloadsInfo + expiryInfo + `</p>
+                        <p style="font-size: 12px; color: #999; margin-top: 4px;">` + downloadURL + `</p>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-primary" onclick="copyToClipboard('` + downloadURL + `', this)">📋 Copy Link</button>
+                        <button class="btn btn-danger" onclick="deleteFile('` + f.Id + `', '` + f.Name + `')">🗑️ Delete</button>
+                    </div>
+                </li>`
+		}
+
+		html += `
+            </ul>`
+	}
+
+	html += `
         </div>
     </div>
 
