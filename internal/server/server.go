@@ -5,12 +5,10 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"path/filepath"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/config"
-	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
 

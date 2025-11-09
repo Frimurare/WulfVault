@@ -60,9 +60,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	quotaMB, _ := strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
-	userLevel, _ := strconv.Atoi(r.FormValue("user_level")
-
-)
+	userLevel, _ := strconv.Atoi(r.FormValue("user_level"))
 
 	// Validate
 	if name == "" || email == "" || password == "" {
@@ -234,7 +232,7 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 	s.config.ServerURL = r.FormValue("server_url")
 	s.config.Port = r.FormValue("port")
 	s.config.MaxUploadSizeMB = mustParseInt(r.FormValue("max_upload_mb"))
-	s.config.DefaultQuotaMB = mustParseInt(r.FormValue("default_quota_mb"))
+	s.config.DefaultQuotaMB = int64(mustParseInt(r.FormValue("default_quota_mb")))
 	s.config.SessionTimeoutHours = mustParseInt(r.FormValue("session_timeout_hours"))
 
 	// Save configuration

@@ -89,3 +89,10 @@ func (d *Database) Query(query string, args ...interface{}) (*sql.Rows, error) {
 func (d *Database) QueryRow(query string, args ...interface{}) *sql.Row {
 	return d.db.QueryRow(query, args...)
 }
+
+// UpdateConfiguration saves configuration (placeholder - config is saved to file)
+func (d *Database) UpdateConfiguration(cfg interface{}) error {
+	// Configuration is saved to config.json file, not database
+	// This is a placeholder method for compatibility
+	return nil
+}
