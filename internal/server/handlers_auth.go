@@ -1,0 +1,214 @@
+package server
+
+import (
+	"net/http"
+	"time"
+
+	"github.com/Frimurare/Sharecare/internal/auth"
+)
+
+// handleLogin handles user login
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		s.renderLoginPage(w, r, "")
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		s.renderLoginPage(w, r, "Invalid form data")
+		return
+	}
+
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	// Authenticate user
+	user, err := auth.AuthenticateUser(email, password)
+	if err != nil {
+		s.renderLoginPage(w, r, "Invalid credentials")
+		return
+	}
+
+	// Create session
+	sessionID, err := auth.CreateSession(user.Id)
+	if err != nil {
+		s.renderLoginPage(w, r, "Failed to create session")
+		return
+	}
+
+	// Set cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    sessionID,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	// Redirect
+	redirect := r.URL.Query().Get("redirect")
+	if redirect == "" {
+		if user.IsAdmin() {
+			redirect = "/admin"
+		} else {
+			redirect = "/dashboard"
+		}
+	}
+
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+// handleLogout handles user logout
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	// Get session cookie
+	cookie, err := r.Cookie("session")
+	if err == nil {
+		// Delete session from database
+		auth.DeleteSession(cookie.Value)
+	}
+
+	// Clear cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+// renderLoginPage renders the login page
+func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMsg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: ` + s.config.PrimaryColor + `;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="email"], input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: ` + s.config.PrimaryColor + `;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: ` + s.config.PrimaryColor + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>` + s.config.CompanyName + `</h1>
+            <p>Secure File Sharing</p>
+        </div>`
+
+	if errorMsg != "" {
+		html += `<div class="error">` + errorMsg + `</div>`
+	}
+
+	html += `
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="email">Email or Username</label>
+                <input type="text" id="email" name="email" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+        <div class="footer">
+            ` + s.config.FooterText + `
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}

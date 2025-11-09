@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
+	"github.com/Frimurare/Sharecare/internal/config"
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/Sharecare/internal/server"
 )
 
 const (
@@ -61,18 +63,30 @@ func main() {
 		}
 	}()
 
+	// Load or create configuration
+	cfg, err := config.LoadOrCreate(*dataDir)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Override config with command-line flags
+	cfg.Port = *port
+	cfg.ServerURL = *serverURL
+	cfg.UploadsDir = *uploadsDir
+
 	log.Printf("Server configuration:")
-	log.Printf("  - URL: %s", *serverURL)
-	log.Printf("  - Port: %s", *port)
+	log.Printf("  - URL: %s", cfg.ServerURL)
+	log.Printf("  - Port: %s", cfg.Port)
 	log.Printf("  - Data: %s", *dataDir)
-	log.Printf("  - Uploads: %s", *uploadsDir)
+	log.Printf("  - Uploads: %s", cfg.UploadsDir)
+	log.Printf("  - Company: %s", cfg.CompanyName)
 
-	// TODO: Start web server
-	log.Println("Web server not yet implemented - database and auth system ready!")
-	log.Println("Press Ctrl+C to exit")
+	// Create static directory
+	os.MkdirAll("web/static", 0755)
 
-	// Keep running
-	select {}
+	// Start web server
+	srv := server.New(cfg)
+	log.Fatal(srv.Start())
 }
 
 func needsSetup() bool {
