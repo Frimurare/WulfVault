@@ -820,7 +820,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                     <td>%s</td>
                     <td>%s</td>
                     <td>
-                        <button class="btn btn-primary" onclick="copyLink('%s')" title="Copy link">
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy link">
                             📋 Copy
                         </button>
                         <button class="btn btn-secondary" onclick="deleteFile('%s')" title="Delete file">
@@ -844,12 +844,40 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
     </div>
 
     <script>
-        function copyLink(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                alert('✓ Link copied to clipboard!\n\n' + url);
-            }).catch(() => {
-                prompt('Copy this link:', url);
-            });
+        // Copy to clipboard function
+        function copyToClipboard(url, button) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✓ Copied!';
+                    button.style.background = '#4caf50';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.background = '';
+                    }, 2000);
+                }).catch(() => {
+                    fallbackCopyToClipboard(url);
+                });
+            } else {
+                fallbackCopyToClipboard(url);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                alert('✓ Link copied to clipboard!');
+            } catch (err) {
+                prompt('Copy this link manually:', text);
+            }
+            document.body.removeChild(textArea);
         }
 
         async function deleteFile(fileId) {

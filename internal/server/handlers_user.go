@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
@@ -36,6 +38,75 @@ func (s *Server) handleUserFiles(w http.ResponseWriter, r *http.Request) {
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
 		"files": files,
 		"user":  user,
+	})
+}
+
+// handleFileEdit edits a file's settings
+func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r.Context())
+	if !ok {
+		s.sendError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		s.sendError(w, http.StatusBadRequest, "Invalid form data")
+		return
+	}
+
+	fileID := r.FormValue("file_id")
+	if fileID == "" {
+		s.sendError(w, http.StatusBadRequest, "Missing file_id")
+		return
+	}
+
+	expirationDays, _ := strconv.Atoi(r.FormValue("expiration_days"))
+	downloadsLimit, _ := strconv.Atoi(r.FormValue("downloads_limit"))
+
+	// Get file to verify ownership
+	fileInfo, err := database.DB.GetFileByID(fileID)
+	if err != nil {
+		s.sendError(w, http.StatusNotFound, "File not found")
+		return
+	}
+
+	// Check ownership (unless admin)
+	if fileInfo.UserId != user.Id && !user.IsAdmin() {
+		s.sendError(w, http.StatusForbidden, "Not authorized to edit this file")
+		return
+	}
+
+	// Update expiration
+	var newExpireAt int64
+	var newExpireAtString string
+	unlimitedTime := expirationDays == 0
+
+	if expirationDays > 0 {
+		expireTime := time.Now().Add(time.Duration(expirationDays) * 24 * time.Hour)
+		newExpireAt = expireTime.Unix()
+		newExpireAtString = expireTime.Format("2006-01-02 15:04")
+	}
+
+	unlimitedDownloads := downloadsLimit == 0
+	if downloadsLimit == 0 {
+		downloadsLimit = 999999
+	}
+
+	// Update in database
+	if err := database.DB.UpdateFileSettings(fileID, downloadsLimit, newExpireAt, newExpireAtString, unlimitedDownloads, unlimitedTime); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to update file: "+err.Error())
+		return
+	}
+
+	log.Printf("File settings updated: %s by user %d", fileInfo.Name, user.Id)
+
+	s.sendJSON(w, http.StatusOK, map[string]string{
+		"message": "File updated successfully",
 	})
 }
 
@@ -388,22 +459,76 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <h3>📄 %s %s</h3>
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
+                        <div style="margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 4px; font-family: monospace; font-size: 12px; word-break: break-all;">
+                            <strong>Download URL:</strong> <a href="%s" target="_blank" style="color: #1976d2;">%s</a>
+                        </div>
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-primary" onclick="copyLink('%s')" title="Copy download link">
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy download link">
                             📋 Copy Link
+                        </button>
+                        <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t)" title="Edit file settings">
+                            ✏️ Edit
                         </button>
                         <button class="btn btn-danger" onclick="deleteFile('%s')">
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, downloadURL, f.Id)
+                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, downloadURL, downloadURL, downloadURL, f.Id, f.Name, f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id)
 		}
 		html += `
             </ul>`
 	}
 
 	html += `
+        </div>
+    </div>
+
+    <!-- Edit File Modal -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
+            <h2 style="margin-bottom: 24px; color: #333;">Edit File Settings</h2>
+
+            <input type="hidden" id="editFileId">
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <p id="editFileName" style="color: #666; font-weight: 600;"></p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="editUnlimitedTime" onchange="toggleEditTimeLimit()">
+                    Never expire (keep forever)
+                </label>
+            </div>
+
+            <div id="editTimeLimitSection" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Days Until Expiration:</label>
+                <input type="number" id="editExpirationDays" value="7" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">Days from now until file expires</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="editUnlimitedDownloads" onchange="toggleEditDownloadLimit()">
+                    Unlimited downloads
+                </label>
+            </div>
+
+            <div id="editDownloadLimitSection" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Downloads Remaining:</label>
+                <input type="number" id="editDownloadsLimit" value="5" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="saveFileEdit()" style="flex: 1; padding: 14px; background: ` + s.config.PrimaryColor + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Save Changes
+                </button>
+                <button onclick="closeEditModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
         </div>
     </div>
 
@@ -556,12 +681,108 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             }
         }
 
-        function copyLink(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                alert('✓ Link copied to clipboard!\n\n' + url);
-            }).catch(() => {
-                prompt('Copy this link:', url);
-            });
+        // Copy to clipboard function
+        function copyToClipboard(url, button) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✓ Copied!';
+                    button.style.background = '#4caf50';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.background = '';
+                    }, 2000);
+                }).catch(() => {
+                    fallbackCopyToClipboard(url);
+                });
+            } else {
+                fallbackCopyToClipboard(url);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                alert('✓ Link copied to clipboard!');
+            } catch (err) {
+                prompt('Copy this link manually:', text);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Edit file modal functions
+        function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime) {
+            document.getElementById('editFileId').value = fileId;
+            document.getElementById('editFileName').textContent = fileName;
+
+            // Set unlimited checkboxes
+            document.getElementById('editUnlimitedDownloads').checked = unlimitedDownloads;
+            document.getElementById('editUnlimitedTime').checked = unlimitedTime;
+
+            // Set downloads
+            document.getElementById('editDownloadsLimit').value = downloadsRemaining;
+            document.getElementById('editDownloadLimitSection').style.display = unlimitedDownloads ? 'none' : 'block';
+
+            // Set expiration (calculate days from timestamp)
+            if (expireAt > 0 && !unlimitedTime) {
+                const now = Math.floor(Date.now() / 1000);
+                const daysRemaining = Math.max(0, Math.ceil((expireAt - now) / 86400));
+                document.getElementById('editExpirationDays').value = daysRemaining;
+            } else {
+                document.getElementById('editExpirationDays').value = 7;
+            }
+            document.getElementById('editTimeLimitSection').style.display = unlimitedTime ? 'none' : 'block';
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function toggleEditTimeLimit() {
+            const unlimited = document.getElementById('editUnlimitedTime').checked;
+            document.getElementById('editTimeLimitSection').style.display = unlimited ? 'none' : 'block';
+            if (unlimited) document.getElementById('editExpirationDays').value = '0';
+        }
+
+        function toggleEditDownloadLimit() {
+            const unlimited = document.getElementById('editUnlimitedDownloads').checked;
+            document.getElementById('editDownloadLimitSection').style.display = unlimited ? 'none' : 'block';
+            if (unlimited) document.getElementById('editDownloadsLimit').value = '0';
+        }
+
+        async function saveFileEdit() {
+            const fileId = document.getElementById('editFileId').value;
+            const expirationDays = document.getElementById('editExpirationDays').value;
+            const downloadsLimit = document.getElementById('editDownloadsLimit').value;
+
+            try {
+                const response = await fetch('/file/edit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `file_id=${fileId}&expiration_days=${expirationDays}&downloads_limit=${downloadsLimit}`
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✓ File settings updated!');
+                    closeEditModal();
+                    location.reload();
+                } else {
+                    alert('Update failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Update failed: ' + error.message);
+            }
         }
 
         async function deleteFile(fileId) {
