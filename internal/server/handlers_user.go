@@ -2,7 +2,13 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/Frimurare/Sharecare/internal/database"
+	"github.com/Frimurare/Sharecare/internal/models"
 )
 
 // handleUserDashboard renders the user dashboard
@@ -52,17 +58,72 @@ func (s *Server) handleFileDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Delete file from database and storage
-	_ = user
+	// Get file to verify ownership
+	fileInfo, err := database.DB.GetFileByID(fileID)
+	if err != nil {
+		s.sendError(w, http.StatusNotFound, "File not found")
+		return
+	}
+
+	// Check ownership (unless admin)
+	if fileInfo.UserId != user.Id && !user.IsAdmin() {
+		s.sendError(w, http.StatusForbidden, "Not authorized to delete this file")
+		return
+	}
+
+	// Delete file from disk
+	filePath := filepath.Join(s.config.UploadsDir, fileID)
+	if err := os.Remove(filePath); err != nil {
+		log.Printf("Warning: Could not delete file from disk: %v", err)
+	}
+
+	// Delete from database
+	if err := database.DB.DeleteFile(fileID); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to delete file")
+		return
+	}
+
+	// Recalculate user storage
+	newStorage, _ := database.DB.CalculateUserStorage(user.Id)
+	database.DB.UpdateUserStorage(user.Id, newStorage)
+
+	log.Printf("File deleted: %s by user %d", fileInfo.Name, user.Id)
 
 	s.sendJSON(w, http.StatusOK, map[string]string{
-		"message": "File deleted",
+		"message": "File deleted successfully",
 	})
 }
 
 // renderUserDashboard renders the user dashboard HTML
-func (s *Server) renderUserDashboard(w http.ResponseWriter, user interface{}) {
+func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	user := userModel.(*models.User)
+
+	// Get user's files
+	files, _ := database.DB.GetFilesByUser(user.Id)
+
+	// Calculate storage
+	storageUsed := user.StorageUsedMB
+	storageQuota := user.StorageQuotaMB
+	storagePercent := 0
+	if storageQuota > 0 {
+		storagePercent = int((storageUsed * 100) / storageQuota)
+	}
+
+	activeFileCount := 0
+	totalDownloads := 0
+	for _, f := range files {
+		// Count active files
+		if f.DownloadsRemaining > 0 || f.UnlimitedDownloads {
+			activeFileCount++
+		}
+		totalDownloads += f.DownloadCount
+	}
+
+	// Stats with real data
+	storageUsedGB := fmt.Sprintf("%.1f", float64(storageUsed)/1000)
+	storageQuotaGB := fmt.Sprintf("%.1f", float64(storageQuota)/1000)
 
 	html := `<!DOCTYPE html>
 <html lang="en">
@@ -254,19 +315,19 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, user interface{}) {
         <div class="stats">
             <div class="stat-card">
                 <h3>Storage Used</h3>
-                <div class="value">0 GB</div>
+                <div class="value">` + storageUsedGB + ` GB</div>
                 <div class="progress">
-                    <div class="progress-bar" style="width: 0%"></div>
+                    <div class="progress-bar" style="width: ` + fmt.Sprintf("%d", storagePercent) + `%"></div>
                 </div>
-                <p style="margin-top: 8px; color: #999; font-size: 14px;">0 GB of 5 GB</p>
+                <p style="margin-top: 8px; color: #999; font-size: 14px;">` + storageUsedGB + ` GB of ` + storageQuotaGB + ` GB</p>
             </div>
             <div class="stat-card">
                 <h3>Active Files</h3>
-                <div class="value">0</div>
+                <div class="value">` + fmt.Sprintf("%d", activeFileCount) + `</div>
             </div>
             <div class="stat-card">
                 <h3>Total Downloads</h3>
-                <div class="value">0</div>
+                <div class="value">` + fmt.Sprintf("%d", totalDownloads) + `</div>
             </div>
         </div>
 
