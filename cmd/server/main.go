@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
+	"github.com/Frimurare/Sharecare/internal/cleanup"
 	"github.com/Frimurare/Sharecare/internal/config"
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
@@ -62,6 +63,9 @@ func main() {
 			}
 		}
 	}()
+
+	// Start file expiration cleanup scheduler (runs every 6 hours)
+	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour)
 
 	// Load or create configuration
 	cfg, err := config.LoadOrCreate(*dataDir)
