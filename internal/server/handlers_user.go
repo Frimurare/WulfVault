@@ -30,8 +30,32 @@ func (s *Server) handleUserFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Get files from database
-	files := []map[string]interface{}{}
+	// Get files from database
+	dbFiles, err := database.DB.GetFilesByUser(user.Id)
+	if err != nil {
+		log.Printf("Error getting files for user %d: %v", user.Id, err)
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch files")
+		return
+	}
+
+	// Convert to response format
+	files := make([]map[string]interface{}, 0, len(dbFiles))
+	for _, f := range dbFiles {
+		downloadURL := s.config.ServerURL + "/d/" + f.Id
+
+		files = append(files, map[string]interface{}{
+			"id":              f.Id,
+			"name":            f.Name,
+			"size":            f.Size,
+			"size_formatted":  database.FormatFileSize(f.Size),
+			"download_url":    downloadURL,
+			"downloads":       f.DownloadCount,
+			"max_downloads":   f.MaxDownloads,
+			"expires_at":      f.ExpireAt,
+			"created_at":      f.CreatedAt,
+			"require_auth":    f.RequireAuthentication,
+		})
+	}
 
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
 		"files": files,
@@ -350,37 +374,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
     </div>
 
-    <script>
-        const uploadZone = document.getElementById('uploadZone');
-        const fileInput = document.getElementById('fileInput');
-
-        // Drag and drop handlers
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.classList.add('drag-over');
-        });
-
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('drag-over');
-        });
-
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.classList.remove('drag-over');
-            const files = e.dataTransfer.files;
-            handleFiles(files);
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        function handleFiles(files) {
-            console.log('Files to upload:', files);
-            // TODO: Implement file upload
-            alert('File upload will be implemented next!');
-        }
-    </script>
+    <script src="/static/js/dashboard.js"></script>
 </body>
 </html>`
 
