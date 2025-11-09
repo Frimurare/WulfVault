@@ -9,8 +9,6 @@ import (
 	"io"
 	"os"
 	"time"
-
-	"github.com/Frimurare/Sharecare/internal/models"
 )
 
 // FileInfo represents a file in the database

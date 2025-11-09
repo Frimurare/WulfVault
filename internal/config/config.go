@@ -10,14 +10,16 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	ServerURL       string `json:"serverUrl"`
-	Port            string `json:"port"`
-	DataDir         string `json:"dataDir"`
-	UploadsDir      string `json:"uploadsDir"`
-	MaxFileSizeMB   int    `json:"maxFileSizeMB"`
-	DefaultQuotaMB  int64  `json:"defaultQuotaMB"`
-	SaveIP          bool   `json:"saveIp"`
-	models.Branding `json:"branding"`
+	ServerURL            string `json:"serverUrl"`
+	Port                 string `json:"port"`
+	DataDir              string `json:"dataDir"`
+	UploadsDir           string `json:"uploadsDir"`
+	MaxFileSizeMB        int    `json:"maxFileSizeMB"`
+	MaxUploadSizeMB      int    `json:"maxUploadSizeMB"`
+	DefaultQuotaMB       int64  `json:"defaultQuotaMB"`
+	SessionTimeoutHours  int    `json:"sessionTimeoutHours"`
+	SaveIP               bool   `json:"saveIp"`
+	models.Branding      `json:"branding"`
 }
 
 var Current *Config
@@ -37,14 +39,16 @@ func LoadOrCreate(dataDir string) (*Config, error) {
 
 	// Create default config
 	cfg := &Config{
-		ServerURL:      "http://localhost:8080",
-		Port:           "8080",
-		DataDir:        dataDir,
-		UploadsDir:     "./uploads",
-		MaxFileSizeMB:  2000,
-		DefaultQuotaMB: 5000,
-		SaveIP:         false,
-		Branding:       models.DefaultBranding(),
+		ServerURL:           "http://localhost:8080",
+		Port:                "8080",
+		DataDir:             dataDir,
+		UploadsDir:          "./uploads",
+		MaxFileSizeMB:       2000,
+		MaxUploadSizeMB:     2000,
+		DefaultQuotaMB:      5000,
+		SessionTimeoutHours: 24,
+		SaveIP:              false,
+		Branding:            models.DefaultBranding(),
 	}
 
 	// Save config

@@ -138,8 +138,8 @@ func runSetup() error {
 	}
 
 	// Set default branding
-	branding := models.DefaultBranding()
 	// TODO: Save branding to configuration
+	// _ = models.DefaultBranding()
 
 	log.Println("✅ Setup complete!")
 	log.Printf("   Admin Email: %s", adminEmail)
