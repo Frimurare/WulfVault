@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/database"
@@ -176,6 +177,23 @@ func (s *Server) handleAdminUserDelete(w http.ResponseWriter, r *http.Request) {
 	s.sendJSON(w, http.StatusOK, map[string]string{"message": "User deleted"})
 }
 
+// handleAdminFiles lists all files in the system
+func (s *Server) handleAdminFiles(w http.ResponseWriter, r *http.Request) {
+	files, err := database.DB.GetAllFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch files")
+		return
+	}
+
+	// Calculate total storage
+	var totalStorage int64
+	for _, f := range files {
+		totalStorage += f.SizeBytes
+	}
+
+	s.renderAdminFiles(w, files, totalStorage)
+}
+
 // handleAdminBranding handles branding settings
 func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -343,6 +361,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         <nav>
             <a href="/admin">Dashboard</a>
             <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
             <a href="/admin/branding">Branding</a>
             <a href="/admin/settings">Settings</a>
             <a href="/logout">Logout</a>
@@ -375,6 +394,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         <div class="quick-actions">
             <a href="/admin/users/create" class="action-btn">➕ Create User</a>
             <a href="/admin/users" class="action-btn">👥 Manage Users</a>
+            <a href="/admin/files" class="action-btn">📁 View All Files</a>
             <a href="/admin/branding" class="action-btn">🎨 Customize Branding</a>
             <a href="/admin/settings" class="action-btn">⚙️ System Settings</a>
         </div>
@@ -473,6 +493,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
         <nav>
             <a href="/admin">Dashboard</a>
             <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
             <a href="/logout">Logout</a>
         </nav>
     </div>
@@ -613,6 +634,279 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
         <button type="submit">Save</button>
         <a href="/admin/users">Cancel</a>
     </form>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileInfo, totalStorage int64) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	totalStorageFormatted := database.FormatFileSize(totalStorage)
+	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Files - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
+        .header nav a {
+            margin-left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .stats-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .stat-item .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: ` + s.config.PrimaryColor + `;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+        }
+        th {
+            background: #f9f9f9;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+        tr:not(:last-child) td {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .badge-active { background: #e8f5e9; color: #2e7d32; }
+        .badge-expired { background: #ffebee; color: #c62828; }
+        .badge-auth { background: #e3f2fd; color: #1976d2; }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        .btn-primary { background: ` + s.config.PrimaryColor + `; color: white; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .btn:hover { opacity: 0.8; }
+        .file-name {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 20px;">All Files</h2>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <h3>Total Files</h3>
+                <div class="value">` + fmt.Sprintf("%d", len(files)) + `</div>
+            </div>
+            <div class="stat-item">
+                <h3>Total Storage</h3>
+                <div class="value">` + totalStorageGB + `</div>
+            </div>
+            <div class="stat-item">
+                <h3>Total Downloads</h3>
+                <div class="value">` + fmt.Sprintf("%d", calculateTotalDownloads(files)) + `</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>User</th>
+                    <th>Size</th>
+                    <th>Downloads</th>
+                    <th>Expiration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>`
+
+	if len(files) == 0 {
+		html += `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        No files in the system yet.
+                    </td>
+                </tr>`
+	}
+
+	for _, f := range files {
+		// Get user info
+		userName := "Unknown"
+		user, err := database.DB.GetUserByID(f.UserId)
+		if err == nil {
+			userName = user.Name
+		}
+
+		// Status
+		status := `<span class="badge badge-active">Active</span>`
+		if !f.UnlimitedDownloads && f.DownloadsRemaining <= 0 {
+			status = `<span class="badge badge-expired">Expired</span>`
+		} else if !f.UnlimitedTime && f.ExpireAt > 0 && f.ExpireAt < time.Now().Unix() {
+			status = `<span class="badge badge-expired">Expired</span>`
+		}
+
+		// Auth badge
+		authBadge := ""
+		if f.RequireAuth {
+			authBadge = ` <span class="badge badge-auth">🔒 Auth</span>`
+		}
+
+		// Expiration info
+		expiryInfo := "Never"
+		if !f.UnlimitedTime && f.ExpireAtString != "" {
+			expiryInfo = f.ExpireAtString
+		}
+		if !f.UnlimitedDownloads {
+			expiryInfo += fmt.Sprintf(" (%d left)", f.DownloadsRemaining)
+		}
+
+		downloadURL := s.config.ServerURL + "/d/" + f.Id
+
+		html += fmt.Sprintf(`
+                <tr>
+                    <td>
+                        <div class="file-name" title="%s">📄 %s%s</div>
+                    </td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%d</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="copyLink('%s')" title="Copy link">
+                            📋 Copy
+                        </button>
+                        <button class="btn btn-secondary" onclick="deleteFile('%s')" title="Delete file">
+                            🗑️ Delete
+                        </button>
+                    </td>
+                </tr>`,
+			f.Name, f.Name, authBadge,
+			userName,
+			f.Size,
+			f.DownloadCount,
+			expiryInfo,
+			status,
+			downloadURL,
+			f.Id)
+	}
+
+	html += `
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✓ Link copied to clipboard!\n\n' + url);
+            }).catch(() => {
+                prompt('Copy this link:', url);
+            });
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) return;
+
+            try {
+                const response = await fetch('/file/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'file_id=' + fileId
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Delete failed: ' + error.message);
+            }
+        }
+    </script>
 </body>
 </html>`
 
@@ -826,6 +1120,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 </html>`
 
 	w.Write([]byte(html))
+}
+
+func calculateTotalDownloads(files []*database.FileInfo) int {
+	total := 0
+	for _, f := range files {
+		total += f.DownloadCount
+	}
+	return total
 }
 
 func mustParseInt(s string) int {
