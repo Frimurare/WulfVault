@@ -190,8 +190,26 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement branding update
-	s.renderAdminBranding(w, "Branding updated (feature in progress)")
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		s.renderAdminBranding(w, "Failed to parse form")
+		return
+	}
+
+	// Update branding configuration
+	s.config.CompanyName = r.FormValue("company_name")
+	s.config.PrimaryColor = r.FormValue("primary_color")
+	s.config.SecondaryColor = r.FormValue("secondary_color")
+	s.config.FooterText = r.FormValue("footer_text")
+	s.config.WelcomeMessage = r.FormValue("welcome_message")
+
+	// Save configuration to database
+	if err := database.DB.UpdateConfiguration(s.config); err != nil {
+		s.renderAdminBranding(w, "Failed to save branding: "+err.Error())
+		return
+	}
+
+	s.renderAdminBranding(w, "✅ Branding updated successfully!")
 }
 
 // handleAdminSettings handles general settings
@@ -206,8 +224,26 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement settings update
-	s.renderAdminSettings(w, "Settings updated (feature in progress)")
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		s.renderAdminSettings(w, "Failed to parse form")
+		return
+	}
+
+	// Update system settings
+	s.config.ServerURL = r.FormValue("server_url")
+	s.config.Port = r.FormValue("port")
+	s.config.MaxUploadSizeMB = mustParseInt(r.FormValue("max_upload_mb"))
+	s.config.DefaultQuotaMB = mustParseInt(r.FormValue("default_quota_mb"))
+	s.config.SessionTimeoutHours = mustParseInt(r.FormValue("session_timeout_hours"))
+
+	// Save configuration
+	if err := database.DB.UpdateConfiguration(s.config); err != nil {
+		s.renderAdminSettings(w, "Failed to save settings: "+err.Error())
+		return
+	}
+
+	s.renderAdminSettings(w, "✅ Settings updated successfully!")
 }
 
 // Render functions
@@ -586,11 +622,212 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 }
 
 func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
-	w.Write([]byte("<h1>Branding Settings (Coming Soon)</h1><p>" + message + "</p><a href='/admin'>Back</a>"))
+	msgHTML := ""
+	if message != "" {
+		msgClass := "success"
+		if len(message) > 2 && message[:2] != "✅" {
+			msgClass = "error"
+		}
+		msgHTML = `<div class="message ` + msgClass + `">` + message + `</div>`
+	}
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branding Settings - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: ` + s.config.PrimaryColor + `; margin-bottom: 30px; }
+        .form-group { margin-bottom: 24px; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
+        input[type="text"], input[type="color"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        textarea { min-height: 100px; font-family: inherit; }
+        .color-input { display: flex; gap: 12px; align-items: center; }
+        .color-input input[type="color"] { width: 80px; height: 48px; padding: 4px; cursor: pointer; }
+        .color-input input[type="text"] { flex: 1; }
+        .button-group { display: flex; gap: 12px; margin-top: 32px; }
+        button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
+        button[type="submit"] { background: ` + s.config.PrimaryColor + `; color: white; }
+        button[type="submit"]:hover { opacity: 0.9; }
+        .btn-secondary { background: #e0e0e0; color: #333; text-decoration: none; display: inline-block; padding: 12px 24px; }
+        .btn-secondary:hover { background: #d0d0d0; }
+        .message { padding: 16px; border-radius: 6px; margin-bottom: 24px; }
+        .message.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .message.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .preview { margin-top: 12px; padding: 20px; border: 2px dashed #ddd; border-radius: 6px; text-align: center; }
+        .preview h3 { margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Branding Settings</h1>
+        ` + msgHTML + `
+        <form method="POST">
+            <div class="form-group">
+                <label for="company_name">Company Name</label>
+                <input type="text" id="company_name" name="company_name" value="` + s.config.CompanyName + `" required>
+                <small style="color: #666;">This appears in the header and page titles</small>
+            </div>
+
+            <div class="form-group">
+                <label for="primary_color">Primary Color</label>
+                <div class="color-input">
+                    <input type="color" id="primary_color_picker" value="` + s.config.PrimaryColor + `" onchange="document.getElementById('primary_color').value = this.value; updatePreview()">
+                    <input type="text" id="primary_color" name="primary_color" value="` + s.config.PrimaryColor + `" pattern="#[0-9A-Fa-f]{6}" required>
+                </div>
+                <small style="color: #666;">Main brand color for headers, buttons, and accents</small>
+            </div>
+
+            <div class="form-group">
+                <label for="secondary_color">Secondary Color</label>
+                <div class="color-input">
+                    <input type="color" id="secondary_color_picker" value="` + s.config.SecondaryColor + `" onchange="document.getElementById('secondary_color').value = this.value; updatePreview()">
+                    <input type="text" id="secondary_color" name="secondary_color" value="` + s.config.SecondaryColor + `" pattern="#[0-9A-Fa-f]{6}" required>
+                </div>
+                <small style="color: #666;">Secondary accent color</small>
+            </div>
+
+            <div class="form-group">
+                <label for="welcome_message">Welcome Message</label>
+                <textarea id="welcome_message" name="welcome_message" placeholder="Welcome to our secure file sharing platform">` + s.config.WelcomeMessage + `</textarea>
+                <small style="color: #666;">Shown on the login page</small>
+            </div>
+
+            <div class="form-group">
+                <label for="footer_text">Footer Text</label>
+                <input type="text" id="footer_text" name="footer_text" value="` + s.config.FooterText + `" placeholder="© 2025 Company Name. All rights reserved.">
+            </div>
+
+            <div class="form-group">
+                <label>Preview</label>
+                <div class="preview" id="preview">
+                    <h3 id="preview_name" style="color: ` + s.config.PrimaryColor + `">` + s.config.CompanyName + `</h3>
+                    <p>Sample text with branding colors</p>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit">💾 Save Branding</button>
+                <a href="/admin" class="btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function updatePreview() {
+            const name = document.getElementById('company_name').value;
+            const color = document.getElementById('primary_color').value;
+            document.getElementById('preview_name').textContent = name;
+            document.getElementById('preview_name').style.color = color;
+        }
+        document.getElementById('company_name').addEventListener('input', updatePreview);
+        document.getElementById('primary_color').addEventListener('input', function() {
+            document.getElementById('primary_color_picker').value = this.value;
+            updatePreview();
+        });
+    </script>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
-	w.Write([]byte("<h1>System Settings (Coming Soon)</h1><p>" + message + "</p><a href='/admin'>Back</a>"))
+	msgHTML := ""
+	if message != "" {
+		msgClass := "success"
+		if len(message) > 2 && message[:2] != "✅" {
+			msgClass = "error"
+		}
+		msgHTML = `<div class="message ` + msgClass + `">` + message + `</div>`
+	}
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: ` + s.config.PrimaryColor + `; margin-bottom: 30px; }
+        h2 { color: #333; font-size: 18px; margin-top: 32px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0; }
+        .form-group { margin-bottom: 24px; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
+        input[type="text"], input[type="number"], input[type="url"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        small { color: #666; font-size: 13px; }
+        .button-group { display: flex; gap: 12px; margin-top: 32px; }
+        button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
+        button[type="submit"] { background: ` + s.config.PrimaryColor + `; color: white; }
+        button[type="submit"]:hover { opacity: 0.9; }
+        .btn-secondary { background: #e0e0e0; color: #333; text-decoration: none; display: inline-block; padding: 12px 24px; }
+        .btn-secondary:hover { background: #d0d0d0; }
+        .message { padding: 16px; border-radius: 6px; margin-bottom: 24px; }
+        .message.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .message.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .input-group { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ System Settings</h1>
+        ` + msgHTML + `
+        <form method="POST">
+            <h2>Server Configuration</h2>
+
+            <div class="form-group">
+                <label for="server_url">Server URL</label>
+                <input type="url" id="server_url" name="server_url" value="` + s.config.ServerURL + `" required>
+                <small>Base URL for download links (e.g., https://share.example.com)</small>
+            </div>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="port">Port</label>
+                    <input type="text" id="port" name="port" value="` + s.config.Port + `" required>
+                    <small>Server listening port</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="max_upload_mb">Max Upload Size (MB)</label>
+                    <input type="number" id="max_upload_mb" name="max_upload_mb" value="` + fmt.Sprintf("%d", s.config.MaxUploadSizeMB) + `" min="1" max="10000" required>
+                    <small>Maximum file size per upload</small>
+                </div>
+            </div>
+
+            <h2>User Defaults</h2>
+
+            <div class="input-group">
+                <div class="form-group">
+                    <label for="default_quota_mb">Default User Quota (MB)</label>
+                    <input type="number" id="default_quota_mb" name="default_quota_mb" value="` + fmt.Sprintf("%d", s.config.DefaultQuotaMB) + `" min="100" max="100000" required>
+                    <small>Storage quota for new users</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="session_timeout_hours">Session Timeout (Hours)</label>
+                    <input type="number" id="session_timeout_hours" name="session_timeout_hours" value="` + fmt.Sprintf("%d", s.config.SessionTimeoutHours) + `" min="1" max="720" required>
+                    <small>Auto-logout after inactivity</small>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit">💾 Save Settings</button>
+                <a href="/admin" class="btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 func mustParseInt(s string) int {
