@@ -394,13 +394,11 @@ func createDownloadAccount(email, password string) (*models.DownloadAccount, err
 }
 
 func checkDownloadPassword(password, hash string) bool {
-	// Simple bcrypt check (reuse auth package would be better)
-	return password == hash // TODO: Use proper bcrypt
+	return auth.CheckPasswordHash(password, hash)
 }
 
 func hashPassword(password string) (string, error) {
-	// TODO: Use bcrypt from auth package
-	return password, nil // Temporary
+	return auth.HashPassword(password)
 }
 
 func getDownloaderInfo(account *models.DownloadAccount, ip string) string {
