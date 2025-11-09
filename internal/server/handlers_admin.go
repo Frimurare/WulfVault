@@ -643,7 +643,6 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileInfo, totalStorage int64) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	totalStorageFormatted := database.FormatFileSize(totalStorage)
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
