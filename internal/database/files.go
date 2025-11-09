@@ -143,6 +143,29 @@ func (d *Database) UpdateFileDownloadCount(fileId string) error {
 	return err
 }
 
+// UpdateFileSettings updates a file's expiration and download settings
+func (d *Database) UpdateFileSettings(fileId string, downloadsRemaining int, expireAt int64, expireAtString string, unlimitedDownloads, unlimitedTime bool) error {
+	unlimitedDownloadsInt := 0
+	if unlimitedDownloads {
+		unlimitedDownloadsInt = 1
+	}
+	unlimitedTimeInt := 0
+	if unlimitedTime {
+		unlimitedTimeInt = 1
+	}
+
+	_, err := d.db.Exec(`
+		UPDATE Files
+		SET DownloadsRemaining = ?,
+		    ExpireAt = ?,
+		    ExpireAtString = ?,
+		    UnlimitedDownloads = ?,
+		    UnlimitedTime = ?
+		WHERE Id = ?`,
+		downloadsRemaining, expireAt, expireAtString, unlimitedDownloadsInt, unlimitedTimeInt, fileId)
+	return err
+}
+
 // DeleteFile deletes a file from the database
 func (d *Database) DeleteFile(fileId string) error {
 	_, err := d.db.Exec("DELETE FROM Files WHERE Id = ?", fileId)
