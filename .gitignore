@@ -1,0 +1,39 @@
+# Binaries
+sharecare
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Data directories
+/data/
+/uploads/
+/gokapi-source/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+go.sum
+
+# Config
+config.json
+*.local.yaml
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/
+*.tmp
