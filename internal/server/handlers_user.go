@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
@@ -31,32 +30,8 @@ func (s *Server) handleUserFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get files from database
-	dbFiles, err := database.DB.GetFilesByUser(user.Id)
-	if err != nil {
-		log.Printf("Error getting files for user %d: %v", user.Id, err)
-		s.sendError(w, http.StatusInternalServerError, "Failed to fetch files")
-		return
-	}
-
-	// Convert to response format
-	files := make([]map[string]interface{}, 0, len(dbFiles))
-	for _, f := range dbFiles {
-		downloadURL := s.config.ServerURL + "/d/" + f.Id
-
-		files = append(files, map[string]interface{}{
-			"id":              f.Id,
-			"name":            f.Name,
-			"size":            f.Size,
-			"size_formatted":  database.FormatFileSize(f.SizeBytes),
-			"download_url":    downloadURL,
-			"downloads":       f.DownloadCount,
-			"max_downloads":   f.DownloadsRemaining,
-			"expires_at":      f.ExpireAt,
-			"created_at":      f.UploadDate,
-			"require_auth":    f.RequireAuth,
-		})
-	}
+	// TODO: Get files from database
+	files := []map[string]interface{}{}
 
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
 		"files": files,
@@ -370,7 +345,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 <h2>My Files</h2>
             </div>`
 
-	// Generate file list HTML
 	if len(files) == 0 {
 		html += `
             <div class="empty-state">
@@ -379,44 +353,52 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 	} else {
 		html += `
             <ul class="file-list">`
-
 		for _, f := range files {
 			downloadURL := s.config.ServerURL + "/d/" + f.Id
+			status := "Active"
+			statusColor := "#4caf50"
 
-			// Format expiration info
-			expiryInfo := ""
-			if !f.UnlimitedTime && f.ExpireAt > 0 {
-				expiryTime := time.Unix(f.ExpireAt, 0)
-				expiryInfo = fmt.Sprintf(" • Expires: %s", expiryTime.Format("2006-01-02 15:04"))
+			if !f.UnlimitedDownloads && f.DownloadsRemaining <= 0 {
+				status = "Expired (downloads)"
+				statusColor = "#f44336"
+			} else if !f.UnlimitedTime && f.ExpireAt > 0 && f.ExpireAt < time.Now().Unix() {
+				status = "Expired (time)"
+				statusColor = "#f44336"
 			}
 
-			downloadsInfo := ""
-			if f.UnlimitedDownloads {
-				downloadsInfo = fmt.Sprintf("%d downloads", f.DownloadCount)
+			expiryInfo := ""
+			if f.UnlimitedTime && f.UnlimitedDownloads {
+				expiryInfo = "Never expires"
+			} else if f.UnlimitedTime {
+				expiryInfo = fmt.Sprintf("%d downloads remaining", f.DownloadsRemaining)
+			} else if f.UnlimitedDownloads {
+				expiryInfo = fmt.Sprintf("Expires: %s", f.ExpireAtString)
 			} else {
-				totalDownloads := f.DownloadCount + f.DownloadsRemaining
-				downloadsInfo = fmt.Sprintf("%d/%d downloads", f.DownloadCount, totalDownloads)
+				expiryInfo = fmt.Sprintf("%d downloads left, expires %s", f.DownloadsRemaining, f.ExpireAtString)
 			}
 
 			authBadge := ""
 			if f.RequireAuth {
-				authBadge = ` <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px;">🔒 Auth Required</span>`
+				authBadge = `<span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔒 Auth Required</span>`
 			}
 
-			html += `
+			html += fmt.Sprintf(`
                 <li class="file-item">
                     <div class="file-info">
-                        <h3>` + f.Name + authBadge + `</h3>
-                        <p>` + database.FormatFileSize(f.SizeBytes) + ` • ` + downloadsInfo + expiryInfo + `</p>
-                        <p style="font-size: 12px; color: #999; margin-top: 4px;">` + downloadURL + `</p>
+                        <h3>📄 %s %s</h3>
+                        <p>%s • Downloaded %d times • %s</p>
+                        <p style="color: %s;">Status: %s</p>
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-primary" onclick="copyToClipboard('` + downloadURL + `', this)">📋 Copy Link</button>
-                        <button class="btn btn-danger" onclick="deleteFile('` + f.Id + `', '` + f.Name + `')">🗑️ Delete</button>
+                        <button class="btn btn-primary" onclick="copyLink('%s')" title="Copy download link">
+                            📋 Copy Link
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')">
+                            🗑️ Delete
+                        </button>
                     </div>
-                </li>`
+                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, downloadURL, f.Id)
 		}
-
 		html += `
             </ul>`
 	}
@@ -425,7 +407,192 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js"></script>
+    <!-- Upload Settings Modal -->
+    <div id="uploadModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
+            <h2 style="margin-bottom: 24px; color: #333;">Upload Settings</h2>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <p id="selectedFileName" style="color: #666;"></p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="requireAuth" style="margin-right: 8px;">
+                    Require authentication to download
+                </label>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="unlimitedTime" onchange="toggleTimeLimit()">
+                    Never expire (keep forever)
+                </label>
+            </div>
+
+            <div id="timeLimitSection" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Expiration Days:</label>
+                <input type="number" id="expirationDays" value="7" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">Set to 0 for no time limit</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="unlimitedDownloads" onchange="toggleDownloadLimit()">
+                    Unlimited downloads
+                </label>
+            </div>
+
+            <div id="downloadLimitSection" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Download Limit:</label>
+                <input type="number" id="downloadsLimit" value="5" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">Set to 0 for unlimited downloads</p>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="performUpload()" style="flex: 1; padding: 14px; background: ` + s.config.PrimaryColor + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Upload File
+                </button>
+                <button onclick="closeUploadModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+
+            <div id="uploadProgress" style="display: none; margin-top: 20px;">
+                <div style="background: #e0e0e0; border-radius: 4px; overflow: hidden; height: 8px;">
+                    <div id="progressBar" style="height: 100%; background: ` + s.config.PrimaryColor + `; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <p id="uploadStatus" style="text-align: center; margin-top: 8px; color: #666;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadModal = document.getElementById('uploadModal');
+        let selectedFile = null;
+
+        // Drag and drop handlers
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFile = files[0];
+            document.getElementById('selectedFileName').textContent = selectedFile.name + ' (' + formatFileSize(selectedFile.size) + ')';
+            uploadModal.style.display = 'flex';
+        }
+
+        function closeUploadModal() {
+            uploadModal.style.display = 'none';
+            selectedFile = null;
+            fileInput.value = '';
+        }
+
+        function toggleTimeLimit() {
+            const unlimited = document.getElementById('unlimitedTime').checked;
+            document.getElementById('timeLimitSection').style.display = unlimited ? 'none' : 'block';
+            if (unlimited) document.getElementById('expirationDays').value = '0';
+        }
+
+        function toggleDownloadLimit() {
+            const unlimited = document.getElementById('unlimitedDownloads').checked;
+            document.getElementById('downloadLimitSection').style.display = unlimited ? 'none' : 'block';
+            if (unlimited) document.getElementById('downloadsLimit').value = '0';
+        }
+
+        async function performUpload() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('expiration_days', document.getElementById('expirationDays').value);
+            formData.append('downloads_limit', document.getElementById('downloadsLimit').value);
+            formData.append('require_auth', document.getElementById('requireAuth').checked);
+
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('uploadStatus').textContent = 'Uploading...';
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('uploadStatus').textContent = 'Upload successful!';
+                    document.getElementById('progressBar').style.width = '100%';
+                    setTimeout(() => {
+                        closeUploadModal();
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('Upload failed: ' + (result.error || 'Unknown error'));
+                    document.getElementById('uploadProgress').style.display = 'none';
+                }
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+                document.getElementById('uploadProgress').style.display = 'none';
+            }
+        }
+
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✓ Link copied to clipboard!\n\n' + url);
+            }).catch(() => {
+                prompt('Copy this link:', url);
+            });
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('Are you sure you want to delete this file?')) return;
+
+            try {
+                const response = await fetch('/file/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'file_id=' + fileId
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Delete failed: ' + error.message);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
 </body>
 </html>`
 

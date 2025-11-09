@@ -5,7 +5,6 @@ go 1.23
 toolchain go1.24.10
 
 require (
-	github.com/forceu/gokapi v1.9.6
 	github.com/jinzhu/copier v0.4.0
 	golang.org/x/crypto v0.31.0
 	modernc.org/sqlite v1.34.2

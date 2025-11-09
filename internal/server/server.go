@@ -53,6 +53,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/users/create", s.requireAdmin(s.handleAdminUserCreate))
 	mux.HandleFunc("/admin/users/edit", s.requireAdmin(s.handleAdminUserEdit))
 	mux.HandleFunc("/admin/users/delete", s.requireAdmin(s.handleAdminUserDelete))
+	mux.HandleFunc("/admin/files", s.requireAdmin(s.handleAdminFiles))
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 
