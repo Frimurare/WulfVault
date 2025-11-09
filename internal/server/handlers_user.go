@@ -47,13 +47,13 @@ func (s *Server) handleUserFiles(w http.ResponseWriter, r *http.Request) {
 			"id":              f.Id,
 			"name":            f.Name,
 			"size":            f.Size,
-			"size_formatted":  database.FormatFileSize(f.Size),
+			"size_formatted":  database.FormatFileSize(f.SizeBytes),
 			"download_url":    downloadURL,
 			"downloads":       f.DownloadCount,
-			"max_downloads":   f.MaxDownloads,
+			"max_downloads":   f.DownloadsRemaining,
 			"expires_at":      f.ExpireAt,
-			"created_at":      f.CreatedAt,
-			"require_auth":    f.RequireAuthentication,
+			"created_at":      f.UploadDate,
+			"require_auth":    f.RequireAuth,
 		})
 	}
 

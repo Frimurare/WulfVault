@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
