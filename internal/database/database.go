@@ -89,6 +89,52 @@ func (d *Database) runMigrations() error {
 		log.Printf("Migration completed: DeletedAt and DeletedBy columns added")
 	}
 
+	// Migration 2: Add FilePasswordPlain to Files table
+	row = d.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('Files') WHERE name='FilePasswordPlain'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Adding FilePasswordPlain column to Files table")
+		if _, err := d.db.Exec("ALTER TABLE Files ADD COLUMN FilePasswordPlain TEXT"); err != nil {
+			log.Printf("Migration warning for FilePasswordPlain: %v", err)
+		}
+		log.Printf("Migration completed: FilePasswordPlain column added")
+	}
+
+	// Migration 3: Add Name to DownloadAccounts table
+	row = d.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('DownloadAccounts') WHERE name='Name'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Adding Name column to DownloadAccounts table")
+		if _, err := d.db.Exec("ALTER TABLE DownloadAccounts ADD COLUMN Name TEXT NOT NULL DEFAULT ''"); err != nil {
+			log.Printf("Migration warning for DownloadAccounts Name: %v", err)
+		}
+		log.Printf("Migration completed: Name column added to DownloadAccounts")
+	}
+
+	// Migration 4: Create FileRequests table
+	row = d.db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='FileRequests'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Creating FileRequests table")
+		if _, err := d.db.Exec(`
+			CREATE TABLE IF NOT EXISTS FileRequests (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				UserId INTEGER NOT NULL,
+				RequestToken TEXT NOT NULL UNIQUE,
+				Title TEXT NOT NULL,
+				Message TEXT,
+				CreatedAt INTEGER NOT NULL,
+				ExpiresAt INTEGER,
+				IsActive INTEGER DEFAULT 1,
+				MaxFileSize INTEGER DEFAULT 0,
+				AllowedFileTypes TEXT,
+				FOREIGN KEY (UserId) REFERENCES Users(Id)
+			)
+		`); err != nil {
+			log.Printf("Migration error for FileRequests table: %v", err)
+		}
+		d.db.Exec(`CREATE INDEX IF NOT EXISTS idx_filerequests_userid ON FileRequests(UserId)`)
+		d.db.Exec(`CREATE INDEX IF NOT EXISTS idx_filerequests_token ON FileRequests(RequestToken)`)
+		log.Printf("Migration completed: FileRequests table created")
+	}
+
 	return nil
 }
 

@@ -46,6 +46,9 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/d/", s.handleDownload)
 	mux.HandleFunc("/health", s.handleHealth)
 
+	// Public file request routes
+	mux.HandleFunc("/upload-request/", s.handleUploadRequest)
+
 	// User routes (require authentication)
 	mux.HandleFunc("/dashboard", s.requireAuth(s.handleUserDashboard))
 	mux.HandleFunc("/upload", s.requireAuth(s.handleUpload))
@@ -53,6 +56,9 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
 	mux.HandleFunc("/file/edit", s.requireAuth(s.handleFileEdit))
 	mux.HandleFunc("/file/downloads", s.requireAuth(s.handleFileDownloadHistory))
+	mux.HandleFunc("/file-request/create", s.requireAuth(s.handleFileRequestCreate))
+	mux.HandleFunc("/file-request/list", s.requireAuth(s.handleFileRequestList))
+	mux.HandleFunc("/file-request/delete", s.requireAuth(s.handleFileRequestDelete))
 
 	// Admin routes (require admin authentication)
 	mux.HandleFunc("/admin", s.requireAdmin(s.handleAdminDashboard))

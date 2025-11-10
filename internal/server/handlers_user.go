@@ -605,6 +605,19 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         </label>
                     </div>
 
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enablePassword" onchange="togglePasswordField()">
+                            🔐 Password protect this file
+                        </label>
+                        <div id="passwordFieldContainer" style="display: none; margin-top: 12px;">
+                            <input type="text" id="filePassword" name="file_password" placeholder="Enter password" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                            <p style="color: #666; font-size: 12px; margin-top: 4px;">
+                                Recipients will need this password to download the file
+                            </p>
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary btn-large" id="uploadButton" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                         <span style="font-size: 24px;">📤</span>
                         <span style="font-size: 18px; font-weight: 700;">Upload File</span>
@@ -663,12 +676,24 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 				authBadge = `<span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔒 Auth Required</span>`
 			}
 
+			passwordBadge := ""
+			if f.FilePasswordPlain != "" {
+				passwordBadge = `<span style="background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔐 Password Protected</span>`
+			}
+
+			passwordDisplay := ""
+			if f.FilePasswordPlain != "" {
+				passwordDisplay = fmt.Sprintf(`<p style="margin-top: 8px;"><strong>🔐 Password:</strong> <span id="password-%s" style="cursor: pointer; color: #9c27b0; text-decoration: underline;" onclick="togglePasswordVisibility('%s', '%s')">👁️ Show</span></p>`,
+					f.Id, f.Id, template.JSEscapeString(f.FilePasswordPlain))
+			}
+
 			html += fmt.Sprintf(`
                 <li class="file-item">
                     <div class="file-info">
-                        <h3>📄 %s %s</h3>
+                        <h3>📄 %s %s%s</h3>
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
+                        %s
                         <div class="link-display">
                             <h4>🌐 Splash Page (Recommended - Shows branding)</h4>
                             <div class="link-box">
@@ -693,7 +718,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, template.HTMLEscapeString(f.Name), authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status,
+                </li>`, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.HTMLEscapeString(f.Name), f.Id, template.HTMLEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.HTMLEscapeString(f.Name))
@@ -884,6 +909,32 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
         function closeDownloadHistoryModal() {
             document.getElementById('downloadHistoryModal').style.display = 'none';
+        }
+
+        function togglePasswordField() {
+            const checkbox = document.getElementById('enablePassword');
+            const container = document.getElementById('passwordFieldContainer');
+            const passwordInput = document.getElementById('filePassword');
+
+            if (checkbox.checked) {
+                container.style.display = 'block';
+                passwordInput.required = true;
+            } else {
+                container.style.display = 'none';
+                passwordInput.required = false;
+                passwordInput.value = '';
+            }
+        }
+
+        function togglePasswordVisibility(fileId, password) {
+            const element = document.getElementById('password-' + fileId);
+            if (element.textContent === '👁️ Show') {
+                element.textContent = password;
+                element.style.fontFamily = 'monospace';
+            } else {
+                element.textContent = '👁️ Show';
+                element.style.fontFamily = 'inherit';
+            }
         }
     </script>
 </body>

@@ -8,6 +8,7 @@ import (
 // DownloadAccount represents a temporary account created when someone downloads a file with authentication
 type DownloadAccount struct {
 	Id            int    `json:"id" redis:"id"`
+	Name          string `json:"name" redis:"Name"`
 	Email         string `json:"email" redis:"Email"`
 	Password      string `json:"-" redis:"Password"` // Hashed password
 	CreatedAt     int64  `json:"createdAt" redis:"CreatedAt"`

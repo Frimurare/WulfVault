@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS Files (
 	Size TEXT NOT NULL,
 	SHA1 TEXT NOT NULL,
 	PasswordHash TEXT,
+	FilePasswordPlain TEXT,
 	HotlinkId TEXT,
 	ContentType TEXT,
 	AwsBucket TEXT,
@@ -50,12 +51,28 @@ CREATE TABLE IF NOT EXISTS Files (
 -- Download Accounts table (for people downloading files with authentication)
 CREATE TABLE IF NOT EXISTS DownloadAccounts (
 	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	Name TEXT NOT NULL,
 	Email TEXT NOT NULL UNIQUE,
 	Password TEXT NOT NULL,
 	CreatedAt INTEGER NOT NULL,
 	LastUsed INTEGER DEFAULT 0,
 	DownloadCount INTEGER DEFAULT 0,
 	IsActive INTEGER DEFAULT 1
+);
+
+-- File Requests table (for requesting file uploads)
+CREATE TABLE IF NOT EXISTS FileRequests (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	UserId INTEGER NOT NULL,
+	RequestToken TEXT NOT NULL UNIQUE,
+	Title TEXT NOT NULL,
+	Message TEXT,
+	CreatedAt INTEGER NOT NULL,
+	ExpiresAt INTEGER,
+	IsActive INTEGER DEFAULT 1,
+	MaxFileSize INTEGER DEFAULT 0,
+	AllowedFileTypes TEXT,
+	FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
 -- Download Logs table (tracks all downloads)
@@ -106,4 +123,6 @@ CREATE INDEX IF NOT EXISTS idx_downloadlogs_accountid ON DownloadLogs(DownloadAc
 CREATE INDEX IF NOT EXISTS idx_downloadlogs_downloadedat ON DownloadLogs(DownloadedAt);
 CREATE INDEX IF NOT EXISTS idx_sessions_userid ON Sessions(UserId);
 CREATE INDEX IF NOT EXISTS idx_apikeys_userid ON ApiKeys(UserId);
+CREATE INDEX IF NOT EXISTS idx_filerequests_userid ON FileRequests(UserId);
+CREATE INDEX IF NOT EXISTS idx_filerequests_token ON FileRequests(RequestToken);
 `
