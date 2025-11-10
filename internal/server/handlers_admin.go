@@ -403,7 +403,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 
 	headerCSS := `
         .header {
-            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             padding: 20px 40px;
             display: flex;
@@ -487,7 +487,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             background: #f5f5f5;
         }
         .header {
-            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             padding: 20px 40px;
             display: flex;
@@ -552,7 +552,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         .stat-card .value {
             font-size: 36px;
             font-weight: 700;
-            color: ` + s.config.PrimaryColor + `;
+            color: ` + s.getPrimaryColor() + `;
         }
         .quick-actions {
             display: grid;
@@ -667,7 +667,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
         }
         .btn {
             padding: 10px 20px;
-            background: ` + s.config.PrimaryColor + `;
+            background: ` + s.getPrimaryColor() + `;
             color: white;
             text-decoration: none;
             border-radius: 6px;
@@ -702,7 +702,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
         .badge-user { background: #f3e5f5; color: #7b1fa2; }
         .action-links a {
             margin-right: 12px;
-            color: ` + s.config.PrimaryColor + `;
+            color: ` + s.getPrimaryColor() + `;
             text-decoration: none;
         }
     </style>
@@ -803,7 +803,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
         .container { max-width: 600px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         h2 { margin-bottom: 24px; color: #333; }
         input, select { width: 100%; padding: 8px; margin: 8px 0; }
-        button { padding: 10px 20px; background: ` + s.config.PrimaryColor + `; color: white; border: none; cursor: pointer; border-radius: 6px; }
+        button { padding: 10px 20px; background: ` + s.getPrimaryColor() + `; color: white; border: none; cursor: pointer; border-radius: 6px; }
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
@@ -963,7 +963,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         .stat-item .value {
             font-size: 28px;
             font-weight: 700;
-            color: ` + s.config.PrimaryColor + `;
+            color: ` + s.getPrimaryColor() + `;
         }
         table {
             width: 100%;
@@ -1009,7 +1009,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             display: inline-block;
             margin-right: 4px;
         }
-        .btn-primary { background: ` + s.config.PrimaryColor + `; color: white; }
+        .btn-primary { background: ` + s.getPrimaryColor() + `; color: white; }
         .btn-secondary { background: #e0e0e0; color: #333; }
         .btn:hover { opacity: 0.8; }
         .file-name {
@@ -1245,7 +1245,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
         }
         input:focus {
             outline: none;
-            border-color: ` + s.config.PrimaryColor + `;
+            border-color: ` + s.getPrimaryColor() + `;
         }
         .color-input {
             display: flex;
@@ -1260,7 +1260,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
         }
         .btn {
             padding: 12px 24px;
-            background: ` + s.config.PrimaryColor + `;
+            background: ` + s.getPrimaryColor() + `;
             color: white;
             border: none;
             border-radius: 6px;
@@ -1420,7 +1420,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
         }
         input:focus {
             outline: none;
-            border-color: ` + s.config.PrimaryColor + `;
+            border-color: ` + s.getPrimaryColor() + `;
         }
         .help-text {
             color: #666;
@@ -1438,7 +1438,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
             display: inline-block;
         }
         .btn-primary {
-            background: ` + s.config.PrimaryColor + `;
+            background: ` + s.getPrimaryColor() + `;
             color: white;
         }
         .btn-primary:hover {

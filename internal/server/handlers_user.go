@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"html"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -206,7 +206,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             background: #f5f5f5;
         }
         .header {
-            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             padding: 20px 40px;
             display: flex;
@@ -267,7 +267,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         .stat-card .value {
             font-size: 32px;
             font-weight: 700;
-            color: ` + s.config.PrimaryColor + `;
+            color: ` + s.getPrimaryColor() + `;
         }
         .stat-card .progress {
             margin-top: 12px;
@@ -278,7 +278,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
         .stat-card .progress-bar {
             height: 100%;
-            background: ` + s.config.PrimaryColor + `;
+            background: ` + s.getPrimaryColor() + `;
             transition: width 0.3s;
         }
         .upload-zone {
@@ -292,11 +292,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             margin-bottom: 40px;
         }
         .upload-zone:hover {
-            border-color: ` + s.config.PrimaryColor + `;
+            border-color: ` + s.getPrimaryColor() + `;
             background: #f9f9f9;
         }
         .upload-zone.drag-over {
-            border-color: ` + s.config.PrimaryColor + `;
+            border-color: ` + s.getPrimaryColor() + `;
             background: #f0f8ff;
         }
         .upload-zone svg {
@@ -364,7 +364,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             opacity: 0.8;
         }
         .btn-primary {
-            background: ` + s.config.PrimaryColor + `;
+            background: ` + s.getPrimaryColor() + `;
             color: white;
         }
         .btn-secondary {
@@ -421,7 +421,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
         .form-group input:focus {
             outline: none;
-            border-color: ` + s.config.PrimaryColor + `;
+            border-color: ` + s.getPrimaryColor() + `;
         }
         .btn-large {
             padding: 12px 32px;
@@ -595,8 +595,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 			splashURL := s.config.ServerURL + "/s/" + f.Id
 			directURL := s.config.ServerURL + "/d/" + f.Id
 			// Escape URLs for safe use in JavaScript
-			splashURLEscaped := html.EscapeString(splashURL)
-			directURLEscaped := html.EscapeString(directURL)
+			splashURLEscaped := template.HTMLEscapeString(splashURL)
+			directURLEscaped := template.HTMLEscapeString(directURL)
 			status := "Active"
 			statusColor := "#4caf50"
 
@@ -651,10 +651,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, html.EscapeString(f.Name), authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status,
+                </li>`, template.HTMLEscapeString(f.Name), authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
-				f.Id, html.EscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, html.EscapeString(f.Name))
+				f.Id, template.HTMLEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.HTMLEscapeString(f.Name))
 		}
 		html += `
             </ul>`
@@ -702,7 +702,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button onclick="saveFileEdit()" style="flex: 1; padding: 14px; background: ` + s.config.PrimaryColor + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                <button onclick="saveFileEdit()" style="flex: 1; padding: 14px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                     Save Changes
                 </button>
                 <button onclick="closeEditModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
@@ -756,7 +756,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button onclick="performUpload()" style="flex: 1; padding: 14px; background: ` + s.config.PrimaryColor + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                <button onclick="performUpload()" style="flex: 1; padding: 14px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                     Upload File
                 </button>
                 <button onclick="closeUploadModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
@@ -766,7 +766,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
             <div id="uploadProgress" style="display: none; margin-top: 20px;">
                 <div style="background: #e0e0e0; border-radius: 4px; overflow: hidden; height: 8px;">
-                    <div id="progressBar" style="height: 100%; background: ` + s.config.PrimaryColor + `; width: 0%; transition: width 0.3s;"></div>
+                    <div id="progressBar" style="height: 100%; background: ` + s.getPrimaryColor() + `; width: 0%; transition: width 0.3s;"></div>
                 </div>
                 <p id="uploadStatus" style="text-align: center; margin-top: 8px; color: #666;"></p>
             </div>
