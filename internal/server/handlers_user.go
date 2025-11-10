@@ -779,7 +779,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 </li>`, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
-				f.Id, template.HTMLEscapeString(f.Name), f.Id, template.HTMLEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.HTMLEscapeString(f.Name))
+				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.JSEscapeString(f.Name))
 		}
 		html += `
             </ul>`
@@ -1029,76 +1029,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             });
         }
 
-        function loadFileRequests() {
-            fetch('/file-request/list', {
-                credentials: 'same-origin'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('requestsList');
-                    if (!data.requests || data.requests.length === 0) {
-                        container.innerHTML = '<p style="color: #999; font-style: italic;">No upload requests yet</p>';
-                        return;
-                    }
-
-                    let html = '<div style="margin-top: 20px;">';
-                    data.requests.forEach(req => {
-                        const expired = req.is_expired ? ' (EXPIRED)' : '';
-                        const active = req.is_active ? '✅' : '❌';
-                        html += '<div style="border: 1px solid #e0e0e0; padding: 16px; margin-bottom: 12px; border-radius: 8px;">';
-                        html += '<h4 style="margin-bottom: 8px;">' + active + ' ' + escapeHtml(req.title) + expired + '</h4>';
-                        if (req.message) {
-                            html += '<p style="color: #666; font-size: 14px; margin-bottom: 8px;">' + escapeHtml(req.message) + '</p>';
-                        }
-                        html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
-                        html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
-                        html += '<button onclick="copyToClipboard(\\''+req.upload_url+'\\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
-                        html += '<button class="delete-request-btn" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
-                        html += '</div></div>';
-                    });
-                    html += '</div>';
-                    container.innerHTML = html;
-
-                    // Add event listeners for delete buttons
-                    document.querySelectorAll('.delete-request-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const id = this.getAttribute('data-request-id');
-                            const title = this.getAttribute('data-request-title');
-                            deleteFileRequest(parseInt(id), title);
-                        });
-                    });
-                });
-        }
-
-        function deleteFileRequest(id, title) {
-            if (!confirm('Delete request: ' + title + '?')) return;
-
-            const data = new FormData();
-            data.append('request_id', id);
-
-            fetch('/file-request/delete', {
-                method: 'POST',
-                body: data,
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    loadFileRequests();
-                } else {
-                    alert('Error: ' + (result.error || 'Unknown error'));
-                }
-            });
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Load file requests on page load
-        window.addEventListener('load', loadFileRequests);
+        // Note: loadFileRequests, deleteFileRequest, escapeHtml, and copyToClipboard
+        // are defined in dashboard.js and loaded automatically on page load
     </script>
 </body>
 </html>`

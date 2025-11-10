@@ -8,11 +8,39 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
+
+// getClientIP extracts the client IP address from the request
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header first (for proxies)
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		// X-Forwarded-For can contain multiple IPs, take the first one
+		ips := strings.Split(forwarded, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
+		}
+	}
+
+	// Check X-Real-IP header
+	realIP := r.Header.Get("X-Real-IP")
+	if realIP != "" {
+		return realIP
+	}
+
+	// Fall back to RemoteAddr
+	ip := r.RemoteAddr
+	// RemoteAddr includes port, strip it
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		ip = ip[:idx]
+	}
+	return ip
+}
 
 // handleFileRequestCreate creates a new file upload request
 func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +129,11 @@ func (s *Server) handleFileRequestList(w http.ResponseWriter, r *http.Request) {
 
 	var requestList []map[string]interface{}
 	for _, req := range requests {
+		// Skip used requests (single-use links that have been consumed)
+		if req.IsUsed() {
+			continue
+		}
+
 		requestList = append(requestList, map[string]interface{}{
 			"id":                 req.Id,
 			"title":              req.Title,
@@ -199,6 +232,13 @@ func (s *Server) handleUploadRequestPage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Check if already used
+	if fileRequest.IsUsed() {
+		clientIP := getClientIP(r)
+		s.renderUploadRequestUsed(w, fileRequest, clientIP)
+		return
+	}
+
 	// Check if expired or inactive
 	if !fileRequest.IsActive || fileRequest.IsExpired() {
 		s.renderUploadRequestExpired(w, fileRequest)
@@ -229,6 +269,13 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 	fileRequest, err := database.DB.GetFileRequestByToken(token)
 	if err != nil {
 		s.sendError(w, http.StatusNotFound, "File request not found")
+		return
+	}
+
+	// Check if already used
+	if fileRequest.IsUsed() {
+		clientIP := getClientIP(r)
+		s.sendError(w, http.StatusGone, fmt.Sprintf("This upload link has already been used from IP: %s", clientIP))
 		return
 	}
 
@@ -340,10 +387,16 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 		log.Printf("Warning: Could not update user storage: %v", err)
 	}
 
+	// Mark file request as used (single-use link)
+	clientIP := getClientIP(r)
+	if err := database.DB.MarkFileRequestAsUsed(fileRequest.Id, clientIP); err != nil {
+		log.Printf("Warning: Could not mark file request as used: %v", err)
+	}
+
 	shareLink := s.getPublicURL() + "/s/" + fileID
 
-	log.Printf("File uploaded via request %s: %s (%s) for user %d",
-		fileRequest.Title, header.Filename, database.FormatFileSize(fileSize), user.Id)
+	log.Printf("File uploaded via request %s: %s (%s) for user %d - link now consumed by IP %s",
+		fileRequest.Title, header.Filename, database.FormatFileSize(fileSize), user.Id, clientIP)
 
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
 		"success":   true,
@@ -693,6 +746,87 @@ func (s *Server) renderUploadRequestExpired(w http.ResponseWriter, fileRequest *
         <h2>Upload Link Expired</h2>
         <p>This upload link has expired and is no longer accepting files.</p>
         <p style="margin-top: 15px;">Please contact the person who sent you this link and ask them to create a new upload request.</p>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// renderUploadRequestUsed renders the page for already-used upload links
+func (s *Server) renderUploadRequestUsed(w http.ResponseWriter, fileRequest *models.FileRequest, clientIP string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Already Used - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .logo h1 {
+            color: ` + s.getPrimaryColor() + `;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .used-icon {
+            font-size: 80px;
+            margin: 20px 0;
+        }
+        h2 {
+            color: #ff9800;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+        .ip-info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>` + s.config.CompanyName + `</h1>
+        </div>
+        <div class="used-icon">🔒</div>
+        <h2>Upload Link Already Used</h2>
+        <p>This upload link has already been used and is no longer accepting files.</p>
+        <div class="ip-info">
+            This link was used from IP: ` + fileRequest.UsedByIP + `
+        </div>
+        <p style="margin-top: 15px;">Upload request links are single-use for security purposes. Please contact the person who sent you this link and ask them to create a new upload request.</p>
     </div>
 </body>
 </html>`

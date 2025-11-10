@@ -84,13 +84,25 @@ function showUploadOptions(file) {
 }
 
 // Handle checkbox toggles
-document.getElementById('unlimitedTime').addEventListener('change', function() {
-    document.getElementById('expireDate').disabled = this.checked;
-});
+const unlimitedTimeEl = document.getElementById('unlimitedTime');
+if (unlimitedTimeEl) {
+    unlimitedTimeEl.addEventListener('change', function() {
+        const expireDateEl = document.getElementById('expireDate');
+        if (expireDateEl) {
+            expireDateEl.disabled = this.checked;
+        }
+    });
+}
 
-document.getElementById('unlimitedDownloads').addEventListener('change', function() {
-    document.getElementById('downloadsLimit').disabled = this.checked;
-});
+const unlimitedDownloadsEl = document.getElementById('unlimitedDownloads');
+if (unlimitedDownloadsEl) {
+    unlimitedDownloadsEl.addEventListener('change', function() {
+        const downloadsLimitEl = document.getElementById('downloadsLimit');
+        if (downloadsLimitEl) {
+            downloadsLimitEl.disabled = this.checked;
+        }
+    });
+}
 
 // Form submit handler
 if (uploadForm) {
@@ -344,43 +356,9 @@ function showError(message) {
     setTimeout(() => toast.remove(), 4000);
 }
 
-// Edit modal functions (if needed)
-function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime) {
-    // TODO: Implement edit modal if needed
-    alert('Edit functionality coming soon!');
-}
-
-// Password field toggle function
-function togglePasswordField() {
-    const checkbox = document.getElementById('enablePassword');
-    const container = document.getElementById('passwordFieldContainer');
-    const passwordInput = document.getElementById('filePassword');
-
-    if (checkbox && container && passwordInput) {
-        if (checkbox.checked) {
-            container.style.display = 'block';
-            passwordInput.required = true;
-        } else {
-            container.style.display = 'none';
-            passwordInput.required = false;
-            passwordInput.value = '';
-        }
-    }
-}
-
-// Toggle password visibility in file list
-function togglePasswordVisibility(fileId, password) {
-    const element = document.getElementById('password-' + fileId);
-    if (element) {
-        if (element.textContent === '👁️ Show') {
-            element.textContent = password;
-            element.style.fontFamily = 'monospace';
-        } else {
-            element.textContent = '👁️ Show';
-            element.style.fontFamily = 'inherit';
-        }
-    }
-}
+// Note: showEditModal, togglePasswordField, togglePasswordVisibility, and showDownloadHistory
+// are defined in the inline script in handlers_user.go and handlers_admin.go
+// Do not define them here to avoid conflicts
 
 // File Request functions
 function showCreateRequestModal() {

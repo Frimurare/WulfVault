@@ -45,12 +45,16 @@ func (d *Database) CreateFileRequest(req *models.FileRequest) error {
 func (d *Database) GetFileRequestByToken(token string) (*models.FileRequest, error) {
 	req := &models.FileRequest{}
 	var isActive int
+	var usedByIP sql.NullString
+	var usedAt sql.NullInt64
 
 	err := d.db.QueryRow(`
-		SELECT Id, UserId, RequestToken, Title, Message, CreatedAt, ExpiresAt, IsActive, MaxFileSize, AllowedFileTypes
+		SELECT Id, UserId, RequestToken, Title, Message, CreatedAt, ExpiresAt, IsActive, MaxFileSize, AllowedFileTypes,
+		       COALESCE(UsedByIP, '') as UsedByIP, COALESCE(UsedAt, 0) as UsedAt
 		FROM FileRequests WHERE RequestToken = ?`, token).Scan(
 		&req.Id, &req.UserId, &req.RequestToken, &req.Title, &req.Message,
 		&req.CreatedAt, &req.ExpiresAt, &isActive, &req.MaxFileSize, &req.AllowedFileTypes,
+		&usedByIP, &usedAt,
 	)
 
 	if err != nil {
@@ -61,13 +65,20 @@ func (d *Database) GetFileRequestByToken(token string) (*models.FileRequest, err
 	}
 
 	req.IsActive = isActive == 1
+	if usedByIP.Valid {
+		req.UsedByIP = usedByIP.String
+	}
+	if usedAt.Valid {
+		req.UsedAt = usedAt.Int64
+	}
 	return req, nil
 }
 
 // GetFileRequestsByUser retrieves all file requests for a user
 func (d *Database) GetFileRequestsByUser(userId int) ([]*models.FileRequest, error) {
 	rows, err := d.db.Query(`
-		SELECT Id, UserId, RequestToken, Title, Message, CreatedAt, ExpiresAt, IsActive, MaxFileSize, AllowedFileTypes
+		SELECT Id, UserId, RequestToken, Title, Message, CreatedAt, ExpiresAt, IsActive, MaxFileSize, AllowedFileTypes,
+		       COALESCE(UsedByIP, '') as UsedByIP, COALESCE(UsedAt, 0) as UsedAt
 		FROM FileRequests WHERE UserId = ? ORDER BY CreatedAt DESC`, userId)
 	if err != nil {
 		return nil, err
@@ -78,14 +89,23 @@ func (d *Database) GetFileRequestsByUser(userId int) ([]*models.FileRequest, err
 	for rows.Next() {
 		req := &models.FileRequest{}
 		var isActive int
+		var usedByIP sql.NullString
+		var usedAt sql.NullInt64
 
 		err := rows.Scan(&req.Id, &req.UserId, &req.RequestToken, &req.Title, &req.Message,
-			&req.CreatedAt, &req.ExpiresAt, &isActive, &req.MaxFileSize, &req.AllowedFileTypes)
+			&req.CreatedAt, &req.ExpiresAt, &isActive, &req.MaxFileSize, &req.AllowedFileTypes,
+			&usedByIP, &usedAt)
 		if err != nil {
 			return nil, err
 		}
 
 		req.IsActive = isActive == 1
+		if usedByIP.Valid {
+			req.UsedByIP = usedByIP.String
+		}
+		if usedAt.Valid {
+			req.UsedAt = usedAt.Int64
+		}
 		requests = append(requests, req)
 	}
 
@@ -136,6 +156,16 @@ func (d *Database) CleanupExpiredFileRequests() error {
 	}
 
 	return nil
+}
+
+// MarkFileRequestAsUsed marks a file request as used by storing the IP address and timestamp
+func (d *Database) MarkFileRequestAsUsed(requestId int, ipAddress string) error {
+	_, err := d.db.Exec(`
+		UPDATE FileRequests SET UsedByIP = ?, UsedAt = ?
+		WHERE Id = ?`,
+		ipAddress, time.Now().Unix(), requestId,
+	)
+	return err
 }
 
 func boolToInt(b bool) int {

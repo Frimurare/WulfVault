@@ -919,6 +919,19 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
         </select>
 
         <br><br>
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" name="is_active" value="1"` + func() string {
+		if isEdit && user.IsActive {
+			return " checked"
+		} else if !isEdit {
+			return " checked"
+		}
+		return ""
+	}() + ` style="width: auto; margin-right: 8px;">
+            <span>Active (user can log in)</span>
+        </label>
+
+        <br><br>
         <button type="submit">Save</button>
         <a href="/admin/users">Cancel</a>
     </form>

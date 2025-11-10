@@ -16,6 +16,8 @@ type FileRequest struct {
 	IsActive         bool   `json:"isActive"`
 	MaxFileSize      int64  `json:"maxFileSize"`      // in MB
 	AllowedFileTypes string `json:"allowedFileTypes"` // comma-separated
+	UsedByIP         string `json:"usedByIP"`         // IP address that used this link
+	UsedAt           int64  `json:"usedAt"`           // Unix timestamp when link was used
 }
 
 // IsExpired checks if the request has expired
@@ -24,6 +26,11 @@ func (fr *FileRequest) IsExpired() bool {
 		return false // No expiration
 	}
 	return time.Now().Unix() > fr.ExpiresAt
+}
+
+// IsUsed checks if the upload link has been used
+func (fr *FileRequest) IsUsed() bool {
+	return fr.UsedAt > 0
 }
 
 // GetUploadURL returns the public upload URL for this request

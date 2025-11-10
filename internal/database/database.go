@@ -135,6 +135,24 @@ func (d *Database) runMigrations() error {
 		log.Printf("Migration completed: FileRequests table created")
 	}
 
+	// Migration 5: Add UsedByIP and UsedAt columns to FileRequests for single-use tracking
+	row = d.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('FileRequests') WHERE name='UsedByIP'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Adding UsedByIP and UsedAt columns to FileRequests table")
+
+		// Add UsedByIP column
+		if _, err := d.db.Exec("ALTER TABLE FileRequests ADD COLUMN UsedByIP TEXT"); err != nil {
+			log.Printf("Migration warning for UsedByIP: %v", err)
+		}
+
+		// Add UsedAt column
+		if _, err := d.db.Exec("ALTER TABLE FileRequests ADD COLUMN UsedAt INTEGER DEFAULT 0"); err != nil {
+			log.Printf("Migration warning for UsedAt: %v", err)
+		}
+
+		log.Printf("Migration completed: UsedByIP and UsedAt columns added to FileRequests")
+	}
+
 	return nil
 }
 
