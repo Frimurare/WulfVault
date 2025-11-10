@@ -449,6 +449,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             <a href="/admin">Dashboard</a>
             <a href="/admin/users">Users</a>
             <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
             <a href="/admin/branding">Branding</a>
             <a href="/admin/settings">Settings</a>
             <a href="/logout">Logout</a>
@@ -586,6 +587,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <a href="/admin">Dashboard</a>
             <a href="/admin/users">Users</a>
             <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
             <a href="/admin/branding">Branding</a>
             <a href="/admin/settings">Settings</a>
             <a href="/logout">Logout</a>

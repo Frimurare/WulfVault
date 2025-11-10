@@ -646,6 +646,19 @@ manvarg-sharecare/
 
 ## 📋 CHANGELOG
 
+### Version 1.34 - Bug Fixes and Admin Interface Improvements (2025-11-10)
+**Bug Fixes:**
+- 🐛 Fixed copy buttons on file links not working due to missing HTML escaping
+- 🐛 Added HTML escaping for URLs and filenames in JavaScript onclick handlers
+- 🐛 Fixed Randomize Poem changing too frequently (nanoseconds → 5 second intervals)
+- ✨ Added missing Trash navigation link in admin interface
+
+**Technical Changes:**
+- Added `html` import to handlers_user.go for proper escaping
+- Changed `time.Now().UnixNano()` to `time.Now().Unix() / 5` in poems.go
+- Added Trash link to admin navigation menu in getAdminHeaderHTML()
+- Escape filenames and URLs using `html.EscapeString()` before passing to JavaScript
+
 ### Version 1.33 - Custom Branding Throughout System (2025-11-10)
 **Improvements:**
 - ✨ Added custom branding to user dashboard with gradient header and logo support
