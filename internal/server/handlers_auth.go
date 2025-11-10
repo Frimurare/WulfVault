@@ -100,7 +100,7 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -125,7 +125,7 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             margin-bottom: 10px;
         }
         .logo h1 {
-            color: ` + s.config.PrimaryColor + `;
+            color: ` + s.getPrimaryColor() + `;
             font-size: 28px;
             margin-bottom: 8px;
         }
@@ -152,12 +152,12 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
         }
         input:focus {
             outline: none;
-            border-color: ` + s.config.PrimaryColor + `;
+            border-color: ` + s.getPrimaryColor() + `;
         }
         .btn {
             width: 100%;
             padding: 14px;
-            background: ` + s.config.PrimaryColor + `;
+            background: ` + s.getPrimaryColor() + `;
             color: white;
             border: none;
             border-radius: 6px;
