@@ -12,7 +12,7 @@ We thank the Gokapi team for their excellent work on the original file sharing s
 
 ## Changes and Enhancements
 
-This fork (Prudencia Security File Sharing / Sharecare) includes the following major changes:
+This fork (Manvarg Sharecare) includes the following major changes:
 
 - Multi-user authentication with roles (Super Admin, Admin, Regular Users, Download Accounts)
 - Per-user storage quotas and management

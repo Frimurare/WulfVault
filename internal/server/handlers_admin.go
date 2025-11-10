@@ -65,9 +65,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	quotaMB, _ := strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
-	userLevel, _ := strconv.Atoi(r.FormValue("user_level")
-
-)
+	userLevel, _ := strconv.Atoi(r.FormValue("user_level"))
 
 	// Validate
 	if name == "" || email == "" || password == "" {
@@ -271,8 +269,30 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement settings update
-	s.renderAdminSettings(w, "Settings updated (feature in progress)")
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		s.renderAdminSettings(w, "Error: Invalid form data")
+		return
+	}
+
+	// Update settings in database
+	serverURL := r.FormValue("server_url")
+	if serverURL != "" {
+		database.DB.SetConfigValue("server_url", serverURL)
+		s.config.ServerURL = serverURL
+	}
+
+	maxFileSizeMB := r.FormValue("max_file_size_mb")
+	if maxFileSizeMB != "" {
+		database.DB.SetConfigValue("max_file_size_mb", maxFileSizeMB)
+	}
+
+	defaultQuotaMB := r.FormValue("default_quota_mb")
+	if defaultQuotaMB != "" {
+		database.DB.SetConfigValue("default_quota_mb", defaultQuotaMB)
+	}
+
+	s.renderAdminSettings(w, "Settings updated successfully!")
 }
 
 // handleAdminTrash lists all deleted files (trash)
@@ -722,7 +742,12 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
         <label>Email:</label>
         <input type="email" name="email" value="` + emailVal + `" required>
 
-        <label>Password` + func() string { if isEdit { return " (leave empty to keep current)" }; return "" }() + `:</label>
+        <label>Password` + func() string {
+		if isEdit {
+			return " (leave empty to keep current)"
+		}
+		return ""
+	}() + `:</label>
         <input type="password" name="password">
 
         <label>Storage Quota (MB):</label>
@@ -730,8 +755,18 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 
         <label>User Level:</label>
         <select name="user_level">
-            <option value="2"` + func() string { if userLevelVal == "2" { return " selected" }; return "" }() + `>Regular User</option>
-            <option value="1"` + func() string { if userLevelVal == "1" { return " selected" }; return "" }() + `>Admin</option>
+            <option value="2"` + func() string {
+		if userLevelVal == "2" {
+			return " selected"
+		}
+		return ""
+	}() + `>Regular User</option>
+            <option value="1"` + func() string {
+		if userLevelVal == "1" {
+			return " selected"
+		}
+		return ""
+	}() + `>Admin</option>
         </select>
 
         <br><br>
@@ -747,7 +782,6 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileInfo, totalStorage int64) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	totalStorageFormatted := database.FormatFileSize(totalStorage)
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
@@ -1226,7 +1260,183 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
 }
 
 func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
-	w.Write([]byte("<h1>System Settings (Coming Soon)</h1><p>" + message + "</p><a href='/admin'>Back</a>"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get current settings
+	serverURL, _ := database.DB.GetConfigValue("server_url")
+	if serverURL == "" {
+		serverURL = s.config.ServerURL
+	}
+	maxFileSizeMB, _ := database.DB.GetConfigValue("max_file_size_mb")
+	if maxFileSizeMB == "" {
+		maxFileSizeMB = "2000"
+	}
+	defaultQuotaMB, _ := database.DB.GetConfigValue("default_quota_mb")
+	if defaultQuotaMB == "" {
+		defaultQuotaMB = "5000"
+	}
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
+        .header nav a {
+            margin-left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input[type="text"], input[type="number"], input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: ` + s.config.PrimaryColor + `;
+        }
+        .help-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: ` + s.config.PrimaryColor + `;
+            color: white;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>System Settings</h2>`
+
+	if message != "" {
+		if message[:5] == "Error" {
+			html += `<div class="error">` + message + `</div>`
+		} else {
+			html += `<div class="success">` + message + `</div>`
+		}
+	}
+
+	html += `
+            <form method="POST" action="/admin/settings">
+                <div class="form-group">
+                    <label for="server_url">Server URL</label>
+                    <input type="url" id="server_url" name="server_url" value="` + serverURL + `" required>
+                    <p class="help-text">The public URL where this server is accessible (e.g., https://files.manvarg.se)</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="max_file_size_mb">Max File Size (MB)</label>
+                    <input type="number" id="max_file_size_mb" name="max_file_size_mb" value="` + maxFileSizeMB + `" min="1" required>
+                    <p class="help-text">Maximum file size users can upload</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="default_quota_mb">Default User Quota (MB)</label>
+                    <input type="number" id="default_quota_mb" name="default_quota_mb" value="` + defaultQuotaMB + `" min="100" required>
+                    <p class="help-text">Default storage quota for new users</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+                <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">Cancel</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileInfo) {
@@ -1354,7 +1564,6 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
                 </tr>`
 	}
 
-	now := time.Now().Unix()
 	for _, f := range files {
 		// Get user info
 		userName := "Unknown"

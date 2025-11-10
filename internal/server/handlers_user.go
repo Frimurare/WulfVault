@@ -2,10 +2,7 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -421,7 +418,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 		for _, f := range files {
 			// Use splashpage URL instead of direct download
 			splashURL := s.config.ServerURL + "/s/" + f.Id
-			downloadURL := s.config.ServerURL + "/d/" + f.Id
 			status := "Active"
 			statusColor := "#4caf50"
 

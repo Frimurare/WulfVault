@@ -1,4 +1,4 @@
-# Sharecare - Secure File Sharing System
+# Manvarg Sharecare - Secure File Sharing System
 
 A lightweight, self-hosted file sharing system with multi-user support, storage quotas, and detailed download tracking.
 
@@ -216,7 +216,7 @@ Contributions are welcome! Please read our contributing guidelines before submit
 
 ## Security
 
-Found a security vulnerability? Please email security@prudencia.se instead of creating a public issue.
+Found a security vulnerability? Please email ulf@manvarg.se instead of creating a public issue.
 
 ---
 

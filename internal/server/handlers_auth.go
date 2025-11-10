@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
+	"github.com/Frimurare/Sharecare/internal/database"
 )
 
 // handleLogin handles user login
