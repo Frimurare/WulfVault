@@ -2,9 +2,11 @@ package server
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -275,11 +277,44 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update settings in database
+	// Update settings in database and config
 	serverURL := r.FormValue("server_url")
 	if serverURL != "" {
+		// Strip port from URL if present (port is configured separately)
+		serverURL = stripPortFromURL(serverURL)
 		database.DB.SetConfigValue("server_url", serverURL)
 		s.config.ServerURL = serverURL
+	}
+
+	// Handle port change
+	port := r.FormValue("port")
+	if port != "" {
+		// Validate port number
+		portNum, err := strconv.Atoi(port)
+		if err != nil || portNum < 1 || portNum > 65535 {
+			s.renderAdminSettings(w, "Error: Invalid port number (must be 1-65535)")
+			return
+		}
+
+		// Warn if port < 1024 (requires root privileges)
+		if portNum < 1024 {
+			s.renderAdminSettings(w, "Warning: Ports below 1024 require root/administrator privileges. Change saved but may fail to bind.")
+			// Still allow the change but show warning
+		}
+
+		// Update config.json file
+		if err := s.updateConfigJSON("port", port); err != nil {
+			log.Printf("Error updating config.json: %v", err)
+			s.renderAdminSettings(w, "Error: Failed to save port to config file")
+			return
+		}
+
+		// Store in database for reference
+		database.DB.SetConfigValue("port", port)
+
+		// Show success with restart warning
+		s.renderAdminSettings(w, fmt.Sprintf("Port changed to %s. ⚠️ RESTART REQUIRED: Stop and start the server for changes to take effect.", port))
+		return
 	}
 
 	maxFileSizeMB := r.FormValue("max_file_size_mb")
@@ -1431,6 +1466,8 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 	if serverURL == "" {
 		serverURL = s.config.ServerURL
 	}
+	// Strip port from URL for display
+	serverURL = stripPortFromURL(serverURL)
 	maxFileSizeMB, _ := database.DB.GetConfigValue("max_file_size_mb")
 	if maxFileSizeMB == "" {
 		maxFileSizeMB = "2000"
@@ -1446,6 +1483,10 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 		} else {
 			trashRetentionDays = "5"
 		}
+	}
+	port, _ := database.DB.GetConfigValue("port")
+	if port == "" {
+		port = s.config.Port
 	}
 
 	html := `<!DOCTYPE html>
@@ -1557,7 +1598,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                 <div class="form-group">
                     <label for="server_url">Server URL</label>
                     <input type="url" id="server_url" name="server_url" value="` + serverURL + `" required>
-                    <p class="help-text">The public URL where this server is accessible (e.g., https://files.manvarg.se)</p>
+                    <p class="help-text">The public URL where this server is accessible (e.g., https://files.manvarg.se). Do not include the port - it's configured separately below.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="port">Server Port</label>
+                    <input type="number" id="port" name="port" value="` + port + `" min="1" max="65535" required>
+                    <p class="help-text">Port number for the server to listen on. Ports below 1024 require administrator privileges.</p>
+                    <p class="help-text" style="color: #ff6b00; font-weight: 600;">⚠️ Changes require server restart to take effect</p>
                 </div>
 
                 <div class="form-group">
@@ -1808,4 +1856,56 @@ func calculateTotalDownloads(files []*database.FileInfo) int {
 func mustParseInt(s string) int {
 	i, _ := strconv.Atoi(s)
 	return i
+}
+
+// stripPortFromURL removes the port from a URL if present
+func stripPortFromURL(urlStr string) string {
+	if urlStr == "" {
+		return urlStr
+	}
+
+	// Parse the URL
+	parsedURL, err := url.Parse(urlStr)
+	if err != nil {
+		// If parsing fails, return as-is
+		return urlStr
+	}
+
+	// Remove the port by setting Host to Hostname()
+	parsedURL.Host = parsedURL.Hostname()
+
+	return parsedURL.String()
+}
+
+// updateConfigJSON updates a single field in config.json
+func (s *Server) updateConfigJSON(key, value string) error {
+	configPath := filepath.Join(s.config.DataDir, "config.json")
+
+	// Read existing config
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	// Parse JSON
+	var config map[string]interface{}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	// Update field
+	config[key] = value
+
+	// Write back with pretty print
+	updatedData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(configPath, updatedData, 0644); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+
+	return nil
 }

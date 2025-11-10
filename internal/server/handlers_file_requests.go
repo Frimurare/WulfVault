@@ -40,22 +40,18 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 	message := r.FormValue("message")
 	maxFileSizeMB, _ := strconv.Atoi(r.FormValue("max_file_size_mb"))
 	allowedFileTypes := r.FormValue("allowed_file_types")
-	expiresInDays, _ := strconv.Atoi(r.FormValue("expires_in_days"))
+	// Note: expires_in_days is for uploaded files, not the request link itself
 
 	// Debug logging
-	log.Printf("File request params: title='%s', message='%s', days=%d, sizeMB=%d",
-		title, message, expiresInDays, maxFileSizeMB)
+	log.Printf("File request params: title='%s', message='%s', sizeMB=%d", title, message, maxFileSizeMB)
 
 	if title == "" {
 		s.sendError(w, http.StatusBadRequest, "Title is required")
 		return
 	}
 
-	// Calculate expiration
-	var expiresAt int64
-	if expiresInDays > 0 {
-		expiresAt = time.Now().Add(time.Duration(expiresInDays) * 24 * time.Hour).Unix()
-	}
+	// Upload request link ALWAYS expires after 24 hours
+	expiresAt := time.Now().Add(24 * time.Hour).Unix()
 
 	// Convert MB to bytes for storage
 	maxFileSize := int64(maxFileSizeMB) * 1024 * 1024
@@ -139,12 +135,18 @@ func (s *Server) handleFileRequestDelete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		s.sendError(w, http.StatusBadRequest, "Invalid form data")
-		return
+	// Parse multipart form (since FormData sends multipart)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		// Fallback to regular form parsing
+		if err := r.ParseForm(); err != nil {
+			s.sendError(w, http.StatusBadRequest, "Invalid form data")
+			return
+		}
 	}
 
 	requestId, _ := strconv.Atoi(r.FormValue("request_id"))
+	log.Printf("Delete request: request_id='%s', parsed=%d", r.FormValue("request_id"), requestId)
+
 	if requestId == 0 {
 		s.sendError(w, http.StatusBadRequest, "Invalid request ID")
 		return
@@ -688,8 +690,9 @@ func (s *Server) renderUploadRequestExpired(w http.ResponseWriter, fileRequest *
             <h1>` + s.config.CompanyName + `</h1>
         </div>
         <div class="expired-icon">⏰</div>
-        <h2>Upload Request No Longer Available</h2>
-        <p>This file upload request has expired or is no longer active.</p>
+        <h2>Upload Link Expired</h2>
+        <p>This upload link has expired and is no longer accepting files.</p>
+        <p style="margin-top: 15px;">Please contact the person who sent you this link and ask them to create a new upload request.</p>
     </div>
 </body>
 </html>`

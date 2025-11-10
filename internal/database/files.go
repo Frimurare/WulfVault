@@ -190,7 +190,14 @@ func (d *Database) DeleteFile(fileId string, userId int) error {
 
 // PermanentDeleteFile permanently deletes a file from the database
 func (d *Database) PermanentDeleteFile(fileId string) error {
-	_, err := d.db.Exec("DELETE FROM Files WHERE Id = ?", fileId)
+	// First delete associated download logs to avoid foreign key constraint violation
+	_, err := d.db.Exec("DELETE FROM DownloadLogs WHERE FileId = ?", fileId)
+	if err != nil {
+		return fmt.Errorf("failed to delete download logs: %w", err)
+	}
+
+	// Then delete the file itself
+	_, err = d.db.Exec("DELETE FROM Files WHERE Id = ?", fileId)
 	return err
 }
 

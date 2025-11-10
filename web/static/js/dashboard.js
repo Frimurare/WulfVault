@@ -389,9 +389,7 @@ function showCreateRequestModal() {
         modal.style.display = 'flex';
         // Reset form
         document.getElementById('fileRequestForm').reset();
-        document.getElementById('requestExpiryDays').value = 30;
         document.getElementById('requestMaxSize').value = 100;
-        document.getElementById('requestExpiryField').style.display = 'block';
     }
 }
 
@@ -402,29 +400,18 @@ function closeFileRequestModal() {
     }
 }
 
-function toggleRequestExpiry() {
-    const checkbox = document.getElementById('requestNeverExpire');
-    const expiryField = document.getElementById('requestExpiryField');
-    if (checkbox && expiryField) {
-        expiryField.style.display = checkbox.checked ? 'none' : 'block';
-    }
-}
-
 function submitFileRequest(event) {
     event.preventDefault();
 
     const title = document.getElementById('requestTitle').value;
     const message = document.getElementById('requestMessage').value;
-    const neverExpire = document.getElementById('requestNeverExpire').checked;
-    const days = neverExpire ? '0' : document.getElementById('requestExpiryDays').value;
     const maxSizeMB = document.getElementById('requestMaxSize').value;
 
-    console.log('Creating file request:', {title, message, days, maxSizeMB});
+    console.log('Creating file request:', {title, message, maxSizeMB});
 
     const data = new FormData();
     data.append('title', title);
     data.append('message', message);
-    data.append('expires_in_days', days);
     data.append('max_file_size_mb', maxSizeMB);
 
     fetch('/file-request/create', {
@@ -483,11 +470,20 @@ function loadFileRequests() {
                 html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
                 html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
                 html += '<button onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
-                html += '<button onclick="deleteFileRequest('+req.id+', \''+escapeHtml(req.title)+'\')" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
+                html += '<button class="delete-request-btn" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
                 html += '</div></div>';
             });
             html += '</div>';
             container.innerHTML = html;
+
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-request-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-request-id');
+                    const title = this.getAttribute('data-request-title');
+                    deleteFileRequest(parseInt(id), title);
+                });
+            });
         });
 }
 
