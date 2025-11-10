@@ -50,6 +50,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	requireAuth := r.FormValue("require_auth") == "true"
 	unlimitedTime := r.FormValue("unlimited_time") == "true"
 	unlimitedDownloads := r.FormValue("unlimited_downloads") == "true"
+	filePassword := r.FormValue("file_password")
 
 	// Check file size
 	fileSize := header.Size
@@ -125,6 +126,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		Name:               header.Filename,
 		Size:               database.FormatFileSize(fileSize),
 		SHA1:               sha1Hash,
+		FilePasswordPlain:  filePassword,
 		ContentType:        header.Header.Get("Content-Type"),
 		ExpireAtString:     expireAtString,
 		ExpireAt:           expireAt,
@@ -167,6 +169,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		"expire_at":       expireAtString,
 		"downloads_limit": downloadsLimit,
 		"require_auth":    requireAuth,
+		"has_password":    filePassword != "",
 	})
 }
 
@@ -232,6 +235,12 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if file password is required
+	if fileInfo.FilePasswordPlain != "" {
+		s.handlePasswordProtectedDownload(w, r, fileInfo)
+		return
+	}
+
 	// Check if authentication is required
 	if fileInfo.RequireAuth {
 		s.handleAuthenticatedDownload(w, r, fileInfo)
@@ -240,6 +249,65 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 
 	// Direct download (no auth required)
 	s.performDownload(w, r, fileInfo, nil)
+}
+
+// handlePasswordProtectedDownload handles downloads that require a password
+func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo) {
+	// Check if password has been verified (via session cookie)
+	cookie, err := r.Cookie("password_verified_" + fileInfo.Id)
+	if err == nil && cookie.Value == "true" {
+		// Password already verified, check if also requires auth
+		if fileInfo.RequireAuth {
+			s.handleAuthenticatedDownload(w, r, fileInfo)
+			return
+		}
+		// Just password, no auth required
+		s.performDownload(w, r, fileInfo, nil)
+		return
+	}
+
+	// Check if password provided via POST
+	if r.Method == http.MethodPost {
+		if err := r.ParseForm(); err != nil {
+			s.renderPasswordPromptPage(w, fileInfo, "Invalid form data")
+			return
+		}
+
+		providedPassword := r.FormValue("file_password")
+		if providedPassword == "" {
+			s.renderPasswordPromptPage(w, fileInfo, "Password required")
+			return
+		}
+
+		// Verify password
+		if providedPassword != fileInfo.FilePasswordPlain {
+			s.renderPasswordPromptPage(w, fileInfo, "Incorrect password")
+			return
+		}
+
+		// Password correct, set session cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "password_verified_" + fileInfo.Id,
+			Value:    "true",
+			Path:     "/d/" + fileInfo.Id,
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		// Check if also requires authentication
+		if fileInfo.RequireAuth {
+			s.handleAuthenticatedDownload(w, r, fileInfo)
+			return
+		}
+
+		// Just password, proceed with download
+		s.performDownload(w, r, fileInfo, nil)
+		return
+	}
+
+	// Show password prompt page
+	s.renderPasswordPromptPage(w, fileInfo, "")
 }
 
 // handleAuthenticatedDownload handles downloads that require authentication
@@ -273,6 +341,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	name := r.FormValue("name")
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
@@ -284,13 +353,17 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	// Check if account exists
 	account, err := database.DB.GetDownloadAccountByEmail(email)
 	if err != nil {
-		// Create new account
-		account, err = createDownloadAccount(email, password)
+		// Create new account - name is required for new accounts
+		if name == "" {
+			s.renderDownloadAuthPage(w, fileInfo, "Name is required for new accounts")
+			return
+		}
+		account, err = createDownloadAccount(name, email, password)
 		if err != nil {
 			s.renderDownloadAuthPage(w, fileInfo, "Failed to create account: "+err.Error())
 			return
 		}
-		log.Printf("Download account created: %s", email)
+		log.Printf("Download account created: %s (%s)", email, name)
 	} else {
 		// Verify password
 		if !checkDownloadPassword(password, account.Password) {
@@ -398,6 +471,8 @@ func (s *Server) handleAPIFiles(w http.ResponseWriter, r *http.Request) {
 			"require_auth":        f.RequireAuth,
 			"unlimited_downloads": f.UnlimitedDownloads,
 			"unlimited_time":      f.UnlimitedTime,
+			"has_password":        f.FilePasswordPlain != "",
+			"file_password":       f.FilePasswordPlain,
 		})
 	}
 
@@ -424,13 +499,14 @@ func generateFileID() (string, error) {
 
 // Helper functions
 
-func createDownloadAccount(email, password string) (*models.DownloadAccount, error) {
+func createDownloadAccount(name, email, password string) (*models.DownloadAccount, error) {
 	hashedPassword, err := hashPassword(password)
 	if err != nil {
 		return nil, err
 	}
 
 	account := &models.DownloadAccount{
+		Name:     name,
 		Email:    email,
 		Password: hashedPassword,
 		IsActive: true,
@@ -456,6 +532,180 @@ func getDownloaderInfo(account *models.DownloadAccount, ip string) string {
 		return account.Email
 	}
 	return "anonymous (" + ip + ")"
+}
+
+// renderPasswordPromptPage renders the password prompt page for password-protected files
+func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *database.FileInfo, errorMsg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Required - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .password-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo h1 {
+            color: ` + s.getPrimaryColor() + `;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .file-info {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .file-info h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+        .file-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        .password-section {
+            margin-bottom: 20px;
+        }
+        .password-section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: ` + s.getPrimaryColor() + `;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="password-container">
+        <div class="logo">
+            <h1>` + s.config.CompanyName + `</h1>
+        </div>
+
+        <div class="file-info">
+            <h2>🔒 ` + fileInfo.Name + `</h2>
+            <p><strong>Size:</strong> ` + fileInfo.Size + `</p>
+            <p><strong>Downloads:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
+
+	if !fileInfo.UnlimitedDownloads {
+		html += `<p><strong>Remaining:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>`
+	}
+
+	if fileInfo.ExpireAtString != "" {
+		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
+	}
+
+	html += `
+        </div>
+
+        <div class="info">
+            🔐 This file is password protected. Please enter the password to download.
+        </div>`
+
+	if errorMsg != "" {
+		html += `<div class="error">` + errorMsg + `</div>`
+	}
+
+	html += `
+        <div class="password-section">
+            <form method="POST">
+                <div class="form-group">
+                    <label for="file_password">Password</label>
+                    <input type="password" id="file_password" name="file_password" required autofocus>
+                </div>
+                <button type="submit" class="btn">
+                    <span style="font-size: 18px; margin-right: 8px;">🔓</span>
+                    <span style="font-size: 16px; font-weight: 700;">Unlock & Download</span>
+                </button>
+            </form>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+            ` + s.config.FooterText + `
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 // renderDownloadAuthPage renders the download authentication page
@@ -531,7 +781,7 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
             font-weight: 500;
             font-size: 14px;
         }
-        input[type="email"], input[type="password"] {
+        input[type="text"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -613,8 +863,15 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
             <h3>Create Account / Login</h3>
             <form method="POST">
                 <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required autofocus placeholder="Your name">
+                    <p style="font-size: 12px; color: #999; margin-top: 4px;">
+                        Required for new accounts only
+                    </p>
+                </div>
+                <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required autofocus>
+                    <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>

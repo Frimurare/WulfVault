@@ -20,9 +20,9 @@ func (d *Database) CreateDownloadAccount(account *models.DownloadAccount) error 
 	}
 
 	result, err := d.db.Exec(`
-		INSERT INTO DownloadAccounts (Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		account.Email, account.Password, account.CreatedAt, account.LastUsed, account.DownloadCount, isActive,
+		INSERT INTO DownloadAccounts (Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		account.Name, account.Email, account.Password, account.CreatedAt, account.LastUsed, account.DownloadCount, isActive,
 	)
 	if err != nil {
 		return err
@@ -42,9 +42,9 @@ func (d *Database) GetDownloadAccountByEmail(email string) (*models.DownloadAcco
 	var isActive int
 
 	err := d.db.QueryRow(`
-		SELECT Id, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
+		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
 		FROM DownloadAccounts WHERE Email = ?`, email).Scan(
-		&account.Id, &account.Email, &account.Password, &account.CreatedAt,
+		&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
 		&account.LastUsed, &account.DownloadCount, &isActive,
 	)
 
@@ -65,9 +65,9 @@ func (d *Database) GetDownloadAccountByID(id int) (*models.DownloadAccount, erro
 	var isActive int
 
 	err := d.db.QueryRow(`
-		SELECT Id, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
+		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
 		FROM DownloadAccounts WHERE Id = ?`, id).Scan(
-		&account.Id, &account.Email, &account.Password, &account.CreatedAt,
+		&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
 		&account.LastUsed, &account.DownloadCount, &isActive,
 	)
 
@@ -111,7 +111,7 @@ func (d *Database) UpdateDownloadAccountLastUsed(id int) error {
 // GetAllDownloadAccounts returns all download accounts
 func (d *Database) GetAllDownloadAccounts() ([]*models.DownloadAccount, error) {
 	rows, err := d.db.Query(`
-		SELECT Id, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
+		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
 		FROM DownloadAccounts ORDER BY LastUsed DESC`)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func (d *Database) GetAllDownloadAccounts() ([]*models.DownloadAccount, error) {
 		account := &models.DownloadAccount{}
 		var isActive int
 
-		err := rows.Scan(&account.Id, &account.Email, &account.Password, &account.CreatedAt,
+		err := rows.Scan(&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
 			&account.LastUsed, &account.DownloadCount, &isActive)
 		if err != nil {
 			return nil, err

@@ -18,6 +18,7 @@ type FileInfo struct {
 	Size               string
 	SHA1               string
 	PasswordHash       string
+	FilePasswordPlain  string
 	HotlinkId          string
 	ContentType        string
 	AwsBucket          string
@@ -53,12 +54,12 @@ func (d *Database) SaveFile(file *FileInfo) error {
 
 	_, err := d.db.Exec(`
 		INSERT INTO Files (
-			Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+			Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 			AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 			UploadDate, DownloadsRemaining, DownloadCount, UserId,
 			UnlimitedDownloads, UnlimitedTime, RequireAuth
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		file.Id, file.Name, file.Size, file.SHA1, file.PasswordHash, file.HotlinkId,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		file.Id, file.Name, file.Size, file.SHA1, file.PasswordHash, file.FilePasswordPlain, file.HotlinkId,
 		file.ContentType, file.AwsBucket, file.ExpireAtString, file.ExpireAt,
 		file.PendingDeletion, file.SizeBytes, file.UploadDate, file.DownloadsRemaining,
 		file.DownloadCount, file.UserId, unlimitedDownloads, unlimitedTime, requireAuth,
@@ -72,12 +73,12 @@ func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 	var unlimitedDownloads, unlimitedTime, requireAuth int
 
 	err := d.db.QueryRow(`
-		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files WHERE Id = ? AND DeletedAt = 0`, id).Scan(
-		&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash,
+		&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash, &file.FilePasswordPlain,
 		&file.HotlinkId, &file.ContentType, &file.AwsBucket, &file.ExpireAtString,
 		&file.ExpireAt, &file.PendingDeletion, &file.SizeBytes, &file.UploadDate,
 		&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
@@ -101,7 +102,7 @@ func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 // GetFilesByUser returns all non-deleted files for a user
 func (d *Database) GetFilesByUser(userId int) ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
-		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
@@ -117,7 +118,7 @@ func (d *Database) GetFilesByUser(userId int) ([]*FileInfo, error) {
 // GetAllFiles returns all non-deleted files
 func (d *Database) GetAllFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
-		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
@@ -182,7 +183,7 @@ func (d *Database) PermanentDeleteFile(fileId string) error {
 // GetDeletedFiles returns all files in trash (admin only)
 func (d *Database) GetDeletedFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
-		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
@@ -203,7 +204,7 @@ func (d *Database) GetOldDeletedFiles(retentionDays int) ([]*FileInfo, error) {
 	cutoffTime := time.Now().Add(-time.Duration(retentionDays) * 24 * time.Hour).Unix()
 
 	rows, err := d.db.Query(`
-		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
@@ -227,7 +228,7 @@ func (d *Database) GetExpiredFiles() ([]*FileInfo, error) {
 	now := time.Now().Unix()
 
 	rows, err := d.db.Query(`
-		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
@@ -322,7 +323,7 @@ func scanFiles(rows *sql.Rows) ([]*FileInfo, error) {
 		var unlimitedDownloads, unlimitedTime, requireAuth int
 
 		err := rows.Scan(
-			&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash,
+			&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash, &file.FilePasswordPlain,
 			&file.HotlinkId, &file.ContentType, &file.AwsBucket, &file.ExpireAtString,
 			&file.ExpireAt, &file.PendingDeletion, &file.SizeBytes, &file.UploadDate,
 			&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
