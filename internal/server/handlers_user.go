@@ -555,6 +555,16 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             </div>
         </div>
 
+        <!-- File Request Section -->
+        <div class="file-request-section" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px;">
+            <h2 style="margin-bottom: 16px; color: #333;">📥 Request Files from Others</h2>
+            <p style="color: #666; margin-bottom: 20px;">Create a link that allows others to upload files directly to you. Perfect for collecting files from clients or colleagues.</p>
+            <button onclick="showCreateRequestModal()" style="padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                ➕ Create Upload Request
+            </button>
+            <div id="requestsList" style="margin-top: 20px;"></div>
+        </div>
+
         <!-- Upload Form -->
         <div class="upload-section">
             <h2 style="margin-bottom: 20px; color: #333;">Upload File</h2>
@@ -944,6 +954,98 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 element.style.fontFamily = 'inherit';
             }
         }
+
+        // File Request functions
+        function showCreateRequestModal() {
+            const title = prompt('Enter request title (e.g., "Upload Documents"):');
+            if (!title) return;
+
+            const message = prompt('Optional message for uploader:') || '';
+            const days = prompt('Expires in how many days? (0 = never)', '30');
+            const maxSizeMB = prompt('Max file size in MB? (0 = no limit)', '100');
+
+            const data = new FormData();
+            data.append('title', title);
+            data.append('message', message);
+            data.append('expires_in_days', days);
+            data.append('max_file_size_mb', maxSizeMB);
+
+            fetch('/file-request/create', {
+                method: 'POST',
+                body: data
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Upload request created!\\n\\nShare this link:\\n' + result.upload_url);
+                    loadFileRequests();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error creating request: ' + error);
+            });
+        }
+
+        function loadFileRequests() {
+            fetch('/file-request/list')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('requestsList');
+                    if (!data.requests || data.requests.length === 0) {
+                        container.innerHTML = '<p style="color: #999; font-style: italic;">No upload requests yet</p>';
+                        return;
+                    }
+
+                    let html = '<div style="margin-top: 20px;">';
+                    data.requests.forEach(req => {
+                        const expired = req.is_expired ? ' (EXPIRED)' : '';
+                        const active = req.is_active ? '✅' : '❌';
+                        html += '<div style="border: 1px solid #e0e0e0; padding: 16px; margin-bottom: 12px; border-radius: 8px;">';
+                        html += '<h4 style="margin-bottom: 8px;">' + active + ' ' + escapeHtml(req.title) + expired + '</h4>';
+                        if (req.message) {
+                            html += '<p style="color: #666; font-size: 14px; margin-bottom: 8px;">' + escapeHtml(req.message) + '</p>';
+                        }
+                        html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
+                        html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
+                        html += '<button onclick="copyToClipboard(\\''+req.upload_url+'\\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
+                        html += '<button onclick="deleteFileRequest('+req.id+', \\''+escapeHtml(req.title)+'\\')" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
+                        html += '</div></div>';
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                });
+        }
+
+        function deleteFileRequest(id, title) {
+            if (!confirm('Delete request: ' + title + '?')) return;
+
+            const data = new FormData();
+            data.append('request_id', id);
+
+            fetch('/file-request/delete', {
+                method: 'POST',
+                body: data
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    loadFileRequests();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load file requests on page load
+        window.addEventListener('load', loadFileRequests);
     </script>
 </body>
 </html>`
