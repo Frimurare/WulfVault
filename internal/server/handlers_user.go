@@ -702,8 +702,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             <ul class="file-list">`
 		for _, f := range files {
 			// Both URL types
-			splashURL := s.config.ServerURL + "/s/" + f.Id
-			directURL := s.config.ServerURL + "/d/" + f.Id
+			splashURL := s.getPublicURL() + "/s/" + f.Id
+			directURL := s.getPublicURL() + "/d/" + f.Id
 			// Escape URLs for safe use in JavaScript
 			splashURLEscaped := template.HTMLEscapeString(splashURL)
 			directURLEscaped := template.HTMLEscapeString(directURL)

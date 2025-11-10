@@ -153,8 +153,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate share and download links
-	splashLink := s.config.ServerURL + "/s/" + fileID
-	downloadLink := s.config.ServerURL + "/d/" + fileID
+	splashLink := s.getPublicURL() + "/s/" + fileID
+	downloadLink := s.getPublicURL() + "/d/" + fileID
 
 	log.Printf("File uploaded: %s (%s) by user %d", header.Filename, database.FormatFileSize(fileSize), user.Id)
 
@@ -463,7 +463,7 @@ func (s *Server) handleAPIFiles(w http.ResponseWriter, r *http.Request) {
 			"name":                f.Name,
 			"size":                f.Size,
 			"size_bytes":          f.SizeBytes,
-			"download_url":        s.config.ServerURL + "/d/" + f.Id,
+			"download_url":        s.getPublicURL() + "/d/" + f.Id,
 			"upload_date":         f.UploadDate,
 			"expire_at":           f.ExpireAtString,
 			"downloads_remaining": f.DownloadsRemaining,
@@ -908,7 +908,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 	secondaryColor := s.getSecondaryColor()
 	logoData := brandingConfig["branding_logo"]
 
-	downloadURL := s.config.ServerURL + "/d/" + fileInfo.Id
+	downloadURL := s.getPublicURL() + "/d/" + fileInfo.Id
 
 	// Get poem of the day
 	poem := models.GetPoemOfTheDay()

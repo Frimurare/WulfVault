@@ -205,6 +205,35 @@ func (s *Server) getSecondaryColor() string {
 	return color
 }
 
+// getPublicURL returns the full server URL including port
+func (s *Server) getPublicURL() string {
+	serverURL := s.config.ServerURL
+	port := s.config.Port
+
+	// If port is standard (80 for http, 443 for https), don't add it
+	if port == "80" || port == "443" {
+		return serverURL
+	}
+
+	// Check if URL already has a port
+	if len(serverURL) > 0 && serverURL[len(serverURL)-1:] != "/" {
+		// Check if already has ":port" suffix
+		for i := len(serverURL) - 1; i >= 0; i-- {
+			if serverURL[i] == ':' {
+				// Already has port, return as is
+				return serverURL
+			}
+			if serverURL[i] == '/' {
+				// Found / before :, no port in URL
+				break
+			}
+		}
+	}
+
+	// Add port to URL
+	return serverURL + ":" + port
+}
+
 // handleHealth is a health check endpoint
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)

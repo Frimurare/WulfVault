@@ -1131,7 +1131,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 			expiryInfo += fmt.Sprintf(" (%d left)", f.DownloadsRemaining)
 		}
 
-		downloadURL := s.config.ServerURL + "/d/" + f.Id
+		downloadURL := s.getPublicURL() + "/d/" + f.Id
 
 		html += fmt.Sprintf(`
                 <tr>

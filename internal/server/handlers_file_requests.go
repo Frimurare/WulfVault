@@ -71,7 +71,7 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	uploadURL := fileRequest.GetUploadURL(s.config.ServerURL)
+	uploadURL := fileRequest.GetUploadURL(s.getPublicURL())
 
 	log.Printf("File request created: %s by user %d", title, user.Id)
 
@@ -106,7 +106,7 @@ func (s *Server) handleFileRequestList(w http.ResponseWriter, r *http.Request) {
 			"title":              req.Title,
 			"message":            req.Message,
 			"request_token":      req.RequestToken,
-			"upload_url":         req.GetUploadURL(s.config.ServerURL),
+			"upload_url":         req.GetUploadURL(s.getPublicURL()),
 			"created_at":         req.CreatedAt,
 			"expires_at":         req.ExpiresAt,
 			"is_active":          req.IsActive,
@@ -340,7 +340,7 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 		log.Printf("Warning: Could not update user storage: %v", err)
 	}
 
-	shareLink := s.config.ServerURL + "/s/" + fileID
+	shareLink := s.getPublicURL() + "/s/" + fileID
 
 	log.Printf("File uploaded via request %s: %s (%s) for user %d",
 		fileRequest.Title, header.Filename, database.FormatFileSize(fileSize), user.Id)
