@@ -25,7 +25,6 @@ Thumbs.db
 
 # Go
 vendor/
-go.sum
 
 # Config
 config.json

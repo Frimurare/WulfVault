@@ -1,127 +1,114 @@
-# Manvarg Sharecare - Secure File Sharing System
+# Sharecare - Secure File Sharing System
 
-A lightweight, self-hosted file sharing system with multi-user support, storage quotas, and detailed download tracking.
+**Open source alternative to costly web-based file transfer services**
+
+A lightweight, self-hosted file sharing platform with multi-user support, storage quotas, and complete download tracking. Perfect for sharing large files like exported video footage and sensitive documents with full accountability.
 
 **Based on [Gokapi](https://github.com/Forceu/Gokapi)** - See [NOTICE.md](NOTICE.md) for attribution.
 
-## Features
+---
 
-### Core Functionality
-- ✅ **Multi-user authentication** (Super Admin, Admin, Regular Users, Download Accounts)
-- ✅ **Per-user storage quotas** - Configurable storage limits per user with real-time usage tracking
-- ✅ **Isolated file storage** - Each user has their own file list with unique share links
-- ✅ **Two download modes:**
-  - Authenticated downloads (requires recipient account creation)
-  - Direct links (no authentication)
-- ✅ **Download tracking** - Know exactly who downloaded what and when with IP addresses
-- ✅ **Download history viewer** - See detailed download logs for each file with timestamps and IPs
-- ✅ **Expiring file shares** - Auto-delete after X downloads or Y days
-- ✅ **Copy-link buttons** for easy sharing
-- ✅ **Admin dashboard** with user management and system statistics
-- ✅ **User dashboard** with file management and storage usage
+## Why Sharecare?
+
+Many organizations need to share large files regularly but face challenges:
+- Commercial file transfer services charge high fees per user or transfer
+- Large video files (surveillance footage, recordings) exceed typical email limits
+- Need to know exactly who downloaded what and when for compliance
+- Want complete control over data security and retention
+
+Sharecare solves this by providing:
+- Self-hosted solution - your data stays on your infrastructure
+- No per-transfer costs or user limits
+- Complete download tracking with email addresses and timestamps
+- Customizable storage quotas per user
+- Support for files up to 5GB+ (configurable)
+
+---
+
+## Key Features
+
+### File Sharing
+- Drag-and-drop upload interface
+- Files up to 5GB+ (configurable, tested with large video files)
+- Two link types:
+  - **Authenticated downloads** - Recipient creates account (email + password)
+  - **Direct links** - No authentication required
+- Password protection for sensitive files
+- Expiring shares - auto-delete after X downloads or Y days
+- Upload requests - Allow others to upload files to you
+
+### User Management
+- **Admin users** - Full system access, manage users, view all files
+- **Regular users** - Upload and share files within their quota
+- **Download accounts** - Automatically created for authenticated downloads
+- Per-user storage quotas (configurable individually)
+- Active/inactive user status
+
+### Download Tracking & Accountability
+- Know exactly **who** downloaded files (email address for authenticated downloads)
+- See **when** files were downloaded (timestamps)
+- Track **from where** downloads originated (IP addresses)
+- Complete audit trail for compliance and evidence chains
+- Downloadable download history per file
+
+### Security & Privacy
+- bcrypt password hashing (cost factor 12)
+- Session management with automatic expiration (24 hours)
+- Secure random hash generation for download links
+- Optional password protection per file
+- IP address logging for audit trails
+- SameSite cookies for CSRF protection
 
 ### Customization
-- ✅ **Configurable branding** - Upload custom logo, set colors, company name
-- ✅ **Flexible configuration** - Adjust server URL, port, storage paths, quotas
-- ✅ **Multiple admins** - Support for multiple administrators
-- ✅ **Trash/Recycle Bin** - Configurable retention period (1-365 days, default 5 days)
-- ✅ **Automated cleanup** - Expired files automatically moved to trash, permanent deletion after retention period
+- Custom branding - Upload logo, set colors and company name
+- Configurable trash retention (1-365 days)
+- Automated cleanup of expired files
+- Flexible file size limits and storage quotas
 
-### Security
-- ✅ **Password hashing** with bcrypt (cost factor 12)
-- ✅ **Session management** with automatic expiration (24 hours)
-- ✅ **SameSite cookies** for CSRF mitigation
-- ✅ **Secure random hash generation** for file links (128-bit entropy)
-- ✅ **IP address logging** for all downloads (audit trail)
-
-## User Types & Permissions
-
-Sharecare supports three distinct user types:
-
-### 1. **Admin Users** (Administrators)
-- Full system access
-- Manage users (create, edit, delete, set quotas)
-- View all files in the system
-- View detailed download history for any file (who, when, IP address)
-- Access trash and restore deleted files
-- Configure branding and system settings (including trash retention)
-- View download logs and statistics
-- Login at: `/admin`
-
-### 2. **Regular Users** (File Uploaders)
-- Upload and share files within their storage quota
-- Create expiring file shares
-- Set download limits and authentication requirements
-- View their own files and download statistics
-- **View detailed download history** for their own files (who downloaded, when, IP address)
-- Delete files (moves to admin trash, configurable retention period)
-- **Cannot see other users' files or their download history**
-- Login at: `/login` or `/dashboard`
-
-### 3. **Download Accounts** (Recipients)
-- Created automatically when downloading authenticated files
-- Reusable across multiple file downloads
-- No upload permissions
-- No dashboard access
-- Email + password authentication
-- Tracked in download logs
-
-## Authenticated Download Flow
-
-When a user uploads a file with "Require recipient authentication" enabled:
-
-1. **File Upload**
-   - User uploads file and checks "🔒 Require recipient authentication"
-   - Generates unique download link (e.g., `https://your-domain.com/d/ABC123`)
-
-2. **Recipient Receives Link**
-   - Opens link in browser
-   - Presented with login/registration form
-
-3. **First-Time Download**
-   - Recipient enters email + password
-   - **Account created automatically** (Download Account type)
-   - Password is hashed with bcrypt
-   - Download begins immediately
-
-4. **Subsequent Downloads**
-   - If recipient receives another authenticated file
-   - Can use same email + password
-   - **No need to re-register**
-   - System recognizes existing Download Account
-
-5. **Download Tracking**
-   - Every download is logged with:
-     - Email address (if authenticated download)
-     - Timestamp
-     - IP address
-     - File name and size
-     - User agent
-   - **Viewable by file owner and admins via "📊 History" button**
-   - Shows table with date/time, downloader (email or "Anonymous"), and IP address
-   - Authenticated downloads marked with 🔒 badge
-
-### Benefits of Download Accounts
-
-- **Accountability**: Know exactly who downloaded what with email and IP address
-- **Audit Trail**: Perfect for compliance and evidence chains - all downloads logged with timestamps
-- **Reusability**: Recipients don't need to register multiple times
-- **Privacy**: Download accounts only see files explicitly shared with them
-- **Security**: Passwords are bcrypt hashed, sessions expire automatically after 24 hours
-- **IP Logging**: Every download tracked with source IP address for security and compliance
+---
 
 ## Quick Start
 
-### Docker (Recommended for Proxmox LXC)
+### First-Time Setup
+
+1. **Download and start Sharecare** (see installation methods below)
+
+2. **Initial admin credentials:**
+   - **Email:** `admin@sharecare.local`
+   - **Password:** `SharecareAdmin2024!`
+
+   **⚠️ IMPORTANT:** Change the admin password immediately after first login!
+
+3. **Login to admin panel:**
+   - Navigate to `http://your-server:8080/admin`
+   - Use the default credentials above
+   - Go to Settings and change your password
+
+4. **Configure your instance:**
+   - Set your server URL (Admin > Settings)
+   - Customize branding (Admin > Branding)
+   - Create regular users (Admin > Users)
+   - Set storage quotas per user
+
+5. **Start sharing files:**
+   - Users login at `http://your-server:8080`
+   - Drag and drop files to upload
+   - Copy share links and send to recipients
+
+---
+
+## Installation
+
+### Docker (Recommended)
 
 ```bash
 docker run -d \
+  --name sharecare \
   -p 8080:8080 \
   -v ./data:/data \
   -v ./uploads:/uploads \
   -e SERVER_URL=https://files.yourdomain.com \
-  -e ADMIN_EMAIL=admin@yourdomain.com \
-  sharecare/sharecare:latest
+  frimurare/sharecare:latest
 ```
 
 ### Docker Compose
@@ -130,7 +117,8 @@ docker run -d \
 version: '3.8'
 services:
   sharecare:
-    image: sharecare/sharecare:latest
+    image: frimurare/sharecare:latest
+    container_name: sharecare
     ports:
       - "8080:8080"
     volumes:
@@ -138,92 +126,19 @@ services:
       - ./uploads:/uploads
     environment:
       - SERVER_URL=https://files.yourdomain.com
-      - ADMIN_EMAIL=admin@yourdomain.com
-      - ADMIN_PASSWORD=changeme
       - MAX_FILE_SIZE_MB=5000
       - DEFAULT_QUOTA_MB=10000
     restart: unless-stopped
 ```
 
-### Manual Installation
+Save as `docker-compose.yml` and run:
+```bash
+docker-compose up -d
+```
 
-1. Download the binary for your platform:
-   ```bash
-   wget https://github.com/Frimurare/Sharecare/releases/latest/download/sharecare-linux-amd64
-   chmod +x sharecare-linux-amd64
-   ```
+### Build from Source
 
-2. Create a configuration file:
-   ```bash
-   ./sharecare-linux-amd64 --setup
-   ```
-
-3. Run the server:
-   ```bash
-   ./sharecare-linux-amd64 --config config.yaml
-   ```
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SERVER_URL` | Public URL of the server | `http://localhost:8080` |
-| `PORT` | Server port | `8080` |
-| `DATA_DIR` | Data directory for database and config | `./data` |
-| `UPLOADS_DIR` | Directory for uploaded files | `./uploads` |
-| `ADMIN_EMAIL` | Initial admin email | `admin@localhost` |
-| `ADMIN_PASSWORD` | Initial admin password | Random (printed on first run) |
-| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` |
-| `DEFAULT_QUOTA_MB` | Default storage quota per user | `5000` |
-
-### Admin Settings (Configurable in Web UI)
-
-- **Branding**: Company name, logo, primary/secondary colors
-- **File Expiration**: Default expiration policies
-- **Download Authentication**: Require auth by default or allow direct links
-- **Per-User Storage Quotas**: Set custom storage limits for each user individually
-- **Trash Retention**: Configure how many days deleted files remain in trash (1-365 days, default 5)
-- **Automatic Cleanup**: Expired files moved to trash, permanent deletion after retention period
-
-## Usage
-
-### For Admins
-
-1. **Login** at `https://your-domain.com/admin`
-2. **Create users** in the User Management section
-3. **Set custom storage quotas** for each user individually (e.g., 5GB for user A, 50GB for user B)
-4. **Configure branding** in Settings
-5. **View download history** for any file with IP addresses and timestamps
-6. **Monitor downloads** and storage usage in Dashboard
-7. **Manage trash** and restore accidentally deleted files
-
-### For Users
-
-1. **Login** at `https://your-domain.com`
-2. **Drag & drop** files to upload
-3. **Set expiration** (downloads and/or time)
-4. **Choose link type:**
-   - **Authenticated**: Recipient must create download account
-   - **Direct**: Anyone with link can download
-5. **Copy link** and share via email, Teams, etc.
-6. **Track downloads** - Click "📊 History" button to see:
-   - Who downloaded (email or Anonymous)
-   - When (date and time)
-   - From where (IP address)
-   - Authentication status (🔒 badge for authenticated downloads)
-
-### For Download Recipients (Authenticated Mode)
-
-1. **Click download link**
-2. **Create account** with email + password
-3. **Download file**
-4. Account can be reused for future downloads
-
-## Development
-
-### Building from Source
+**Prerequisites:** Go 1.21+
 
 ```bash
 # Clone repository
@@ -240,71 +155,227 @@ go build -o sharecare cmd/server/main.go
 ./sharecare
 ```
 
+**Default credentials on first run:**
+- Email: `admin@sharecare.local`
+- Password: `SharecareAdmin2024!`
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including Proxmox LXC, reverse proxy configuration, and SSL setup.
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SERVER_URL` | Public URL of the server | `http://localhost:8080` |
+| `PORT` | Server port | `8080` |
+| `DATA_DIR` | Data directory for database | `./data` |
+| `UPLOADS_DIR` | Directory for uploaded files | `./uploads` |
+| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` |
+| `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` |
+
+### Admin Settings (Web UI)
+
+After logging in as admin, configure:
+- **Branding** - Logo, colors, company name
+- **Storage Quotas** - Set custom limits per user
+- **Trash Retention** - How long deleted files are kept (default: 5 days)
+- **File Size Limits** - Maximum upload size
+
+---
+
+## Use Cases
+
+### Large Video File Sharing
+Organizations with surveillance systems or video production need to share large video exports:
+- Export video footage (often 1GB+ files)
+- Upload to Sharecare with expiration and authentication
+- Share link with investigators, management, or customers
+- Track exactly who downloaded the footage and when
+- Maintain complete audit trail for legal compliance
+
+### Secure Document Distribution
+Share sensitive documents with accountability:
+- Service agreements and contracts
+- System documentation and manuals
+- Evidence files requiring chain of custody
+- Financial reports with download tracking
+
+### Team File Collaboration
+Internal file sharing for distributed teams:
+- Large design files and CAD drawings
+- Project deliverables too large for email
+- Marketing materials and video content
+- Backup distribution to remote locations
+
+### Requesting Files from Others
+Create upload request links for:
+- Collecting files from customers or contractors
+- Receiving large files without email attachments
+- Temporary upload portals with size and time limits
+- Anonymous file submission with tracking
+
+---
+
+## User Workflows
+
+### Uploading and Sharing Files
+
+1. **Login** at `http://your-server/dashboard`
+2. **Drag and drop** file (or click to browse)
+3. **Set options:**
+   - Expiration: Downloads limit or time limit or both
+   - Authentication: Require recipient to create account (optional)
+   - Password: Protect file with password (optional)
+4. **Upload** and get shareable link
+5. **Share link** via email, chat, or other channels
+6. **Track downloads** - Click "History" button to see who downloaded
+
+### Receiving Authenticated Files
+
+1. **Click download link** received from sender
+2. **Create download account** with email and password (first time only)
+3. **Login** and download file
+4. **Reuse account** for future authenticated downloads
+
+### Admin User Management
+
+1. **Login** to admin panel at `http://your-server/admin`
+2. **Create users:**
+   - Set email, password, user level
+   - Assign storage quota (e.g., 5GB, 50GB, or custom)
+   - Set active/inactive status
+3. **Monitor usage** in dashboard
+4. **View all files** and download history across system
+5. **Manage trash** and restore accidentally deleted files
+
+---
+
+## API
+
+Sharecare provides a REST API for automation and integrations.
+
+**Basic endpoints:**
+- `/api/upload` - Upload files programmatically
+- `/api/files` - List user's files
+- `/api/download/:id` - Download file by ID
+
+**Authentication:** API requests require session cookies or token-based auth.
+
+See full API documentation in [API.md](docs/API.md) (coming soon).
+
+---
+
+## Security
+
+### Default Security Features
+
+- Passwords hashed with bcrypt (cost factor 12)
+- Secure random hash generation for download links (128-bit entropy)
+- Session tokens with automatic expiration (24 hours)
+- CSRF protection via SameSite cookies
+- Files stored outside web root with access control
+- IP address logging for all downloads
+- No directory listing or file enumeration
+
+### Recommended Production Setup
+
+1. **Change default admin password immediately**
+2. **Use HTTPS** - Deploy behind reverse proxy (nginx/Caddy) with SSL
+3. **Enable firewall** - Only expose ports 80/443
+4. **Regular backups** - Backup `./data` and `./uploads` directories
+5. **Monitor logs** - Watch for suspicious download patterns
+6. **Update regularly** - Keep Sharecare up to date
+7. **Strong passwords** - Enforce password policies for all users
+
+---
+
+## Troubleshooting
+
+### Can't login with default credentials
+
+Make sure you're using:
+- Email: `admin@sharecare.local`
+- Password: `SharecareAdmin2024!`
+
+If it still doesn't work, check the server logs for initialization errors.
+
+### Files not uploading
+
+- Check `MAX_FILE_SIZE_MB` environment variable
+- Verify user has available storage quota
+- Check disk space on server
+- Review browser console for JavaScript errors
+
+### Download links not working
+
+- Verify `SERVER_URL` is set correctly in environment
+- Check that files haven't expired
+- Ensure file wasn't deleted or moved to trash
+- Check server logs for errors
+
+### More help
+
+- Check [INSTALLATION.md](INSTALLATION.md) for detailed setup
+- Review logs: `docker-compose logs -f sharecare`
+- Open issue on GitHub: https://github.com/Frimurare/Sharecare/issues
+
+---
+
+## Development
+
 ### Running Tests
 
 ```bash
 go test ./...
 ```
 
-## Deployment on Proxmox LXC
+### Project Structure
 
-1. Create Ubuntu/Debian LXC container
-2. Install Docker:
-   ```bash
-   apt update && apt install -y docker.io docker-compose
-   ```
-3. Deploy using Docker Compose (see above)
-4. Configure reverse proxy (nginx/Caddy) for HTTPS
+```
+Sharecare/
+├── cmd/server/          # Main application entry point
+├── internal/
+│   ├── auth/           # Authentication and sessions
+│   ├── database/       # SQLite database operations
+│   ├── models/         # Data models
+│   └── server/         # HTTP handlers and routing
+├── web/
+│   ├── static/         # CSS, JavaScript, images
+│   └── templates/      # HTML templates
+├── INSTALLATION.md     # Detailed installation guide
+├── LICENSE            # AGPL-3.0 license
+└── README.md          # This file
+```
 
-## Use Cases
+### Contributing
 
-- **Video Surveillance**: Share exported video from Milestone XProtect or OpenEye with audit trail
-- **Evidence Chain**: Complete download tracking with IP addresses for legal compliance
-- **Document Sharing**: Share system manuals, reports with customers (each user has isolated file space)
-- **Large File Transfer**: Alternative to WeTransfer/Sprend with custom quotas per user
-- **Customer Service**: Branded file sharing for service agreements
-- **Multi-tenant file sharing**: Different storage quotas for different departments or customers
-
-## API
-
-REST API available for automation. See [API.md](docs/API.md) for details.
-
-Endpoints:
-- `/api/v1/upload` - Upload file
-- `/api/v1/files` - List files
-- `/api/v1/download/:id` - Download file
-- `/api/v1/users` - Manage users (admin only)
-
-## License
-
-This project is licensed under the **AGPL-3.0** license, same as Gokapi.
-
-See [LICENSE](LICENSE) for the full license text.
-
-## Attribution
-
-Based on **Gokapi** by Forceu - https://github.com/Forceu/Gokapi
-
-See [NOTICE.md](NOTICE.md) for full attribution.
-
-## Support
-
-- **Issues**: https://github.com/Frimurare/Sharecare/issues
-- **Documentation**: https://github.com/Frimurare/Sharecare/wiki
-
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
-
+Contributions welcome! Please:
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
+3. Make your changes with tests
 4. Submit a pull request
-
-## Security
-
-Found a security vulnerability? Please email ulf@manvarg.se instead of creating a public issue.
 
 ---
 
-**Made with ❤️ for surveillance system customers and privacy-conscious file sharing**
+## License
+
+This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
+
+Based on **Gokapi** by Forceu - https://github.com/Forceu/Gokapi
+
+See [NOTICE.md](NOTICE.md) for full attribution and license information.
+
+---
+
+## Support
+
+- **Issues:** https://github.com/Frimurare/Sharecare/issues
+- **Discussions:** https://github.com/Frimurare/Sharecare/discussions
+- **Documentation:** https://github.com/Frimurare/Sharecare/wiki
+
+---
+
+**Made for organizations that need secure, accountable file sharing for large files**
