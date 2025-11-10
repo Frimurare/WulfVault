@@ -31,6 +31,75 @@ A lightweight, self-hosted file sharing system with multi-user support, storage 
 - ✅ **Secure random hash generation** for file links
 - ✅ **Optional IP tracking** for downloads
 
+## User Types & Permissions
+
+Sharecare supports three distinct user types:
+
+### 1. **Admin Users** (Administrators)
+- Full system access
+- Manage users (create, edit, delete, set quotas)
+- View all files in the system
+- Access trash and restore deleted files
+- Configure branding and system settings
+- View download logs and statistics
+- Login at: `/admin`
+
+### 2. **Regular Users** (File Uploaders)
+- Upload and share files within their storage quota
+- Create expiring file shares
+- Set download limits and authentication requirements
+- View their own files and download statistics
+- Delete files (moves to admin trash for 5 days)
+- Login at: `/login` or `/dashboard`
+
+### 3. **Download Accounts** (Recipients)
+- Created automatically when downloading authenticated files
+- Reusable across multiple file downloads
+- No upload permissions
+- No dashboard access
+- Email + password authentication
+- Tracked in download logs
+
+## Authenticated Download Flow
+
+When a user uploads a file with "Require recipient authentication" enabled:
+
+1. **File Upload**
+   - User uploads file and checks "🔒 Require recipient authentication"
+   - Generates unique download link (e.g., `https://your-domain.com/d/ABC123`)
+
+2. **Recipient Receives Link**
+   - Opens link in browser
+   - Presented with login/registration form
+
+3. **First-Time Download**
+   - Recipient enters email + password
+   - **Account created automatically** (Download Account type)
+   - Password is hashed with bcrypt
+   - Download begins immediately
+
+4. **Subsequent Downloads**
+   - If recipient receives another authenticated file
+   - Can use same email + password
+   - **No need to re-register**
+   - System recognizes existing Download Account
+
+5. **Download Tracking**
+   - Every download is logged with:
+     - Email address
+     - Timestamp
+     - IP address (optional)
+     - File name and size
+   - Viewable by file owner and admins
+
+### Benefits of Download Accounts
+
+- **Accountability**: Know exactly who downloaded what
+- **Audit Trail**: Perfect for compliance and evidence chains
+- **Reusability**: Recipients don't need to register multiple times
+- **Privacy**: Download accounts only see files explicitly shared with them
+- **Security**: Passwords are hashed, sessions expire automatically
+
 ## Quick Start
 
 ### Docker (Recommended for Proxmox LXC)

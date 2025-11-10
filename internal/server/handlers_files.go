@@ -623,7 +623,10 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
                         New user? Your account will be created automatically
                     </p>
                 </div>
-                <button type="submit" class="btn">Download File</button>
+                <button type="submit" class="btn">
+                    <span style="font-size: 18px; margin-right: 8px;">🔓</span>
+                    <span style="font-size: 16px; font-weight: 700;">Login / Create Account & Download</span>
+                </button>
             </form>
         </div>
 
@@ -850,7 +853,10 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
             <div class="poem-author">— ` + poem.Author + `</div>
         </div>
 
-        <a href="` + downloadURL + `" class="download-btn">⬇️ Download File</a>
+        <a href="` + downloadURL + `" class="download-btn">
+            <span style="font-size: 24px; margin-right: 10px;">⬇️</span>
+            <span style="font-size: 20px; font-weight: 700;">Download File</span>
+        </a>
 
         <div class="footer">
             Powered by ` + companyName + `

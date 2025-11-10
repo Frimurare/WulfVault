@@ -566,8 +566,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         </label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-large" id="uploadButton">
-                        📤 Upload File
+                    <button type="submit" class="btn btn-primary btn-large" id="uploadButton" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <span style="font-size: 24px;">📤</span>
+                        <span style="font-size: 18px; font-weight: 700;">Upload File</span>
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="resetUploadForm()">
                         ✖️ Cancel
