@@ -1,8 +1,12 @@
 package server
 
 import (
+	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -61,7 +65,9 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	quotaMB, _ := strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
-	userLevel, _ := strconv.Atoi(r.FormValue("user_level"))
+	userLevel, _ := strconv.Atoi(r.FormValue("user_level")
+
+)
 
 	// Validate
 	if name == "" || email == "" || password == "" {
@@ -206,26 +212,51 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		s.renderAdminBranding(w, "Failed to parse form")
+	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10 MB max
+		s.renderAdminBranding(w, "Failed to parse form: "+err.Error())
 		return
 	}
 
-	// Update branding configuration
-	s.config.CompanyName = r.FormValue("company_name")
-	s.config.PrimaryColor = r.FormValue("primary_color")
-	s.config.SecondaryColor = r.FormValue("secondary_color")
-	s.config.FooterText = r.FormValue("footer_text")
-	s.config.WelcomeMessage = r.FormValue("welcome_message")
+	// Get form values
+	companyName := r.FormValue("company_name")
+	primaryColor := r.FormValue("primary_color")
+	secondaryColor := r.FormValue("secondary_color")
 
-	// Save configuration to database
-	if err := database.DB.UpdateConfiguration(s.config); err != nil {
-		s.renderAdminBranding(w, "Failed to save branding: "+err.Error())
-		return
+	// Handle logo upload
+	logoData := ""
+	file, _, err := r.FormFile("logo")
+	if err == nil {
+		defer file.Close()
+		// Read file data
+		buf := make([]byte, 10<<20) // 10MB max
+		n, err := file.Read(buf)
+		if err != nil && err.Error() != "EOF" {
+			s.renderAdminBranding(w, "Failed to read logo file: "+err.Error())
+			return
+		}
+		// Convert to base64 data URL
+		contentType := http.DetectContentType(buf[:n])
+		logoData = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(buf[:n])
 	}
 
-	s.renderAdminBranding(w, "✅ Branding updated successfully!")
+	// Save to database
+	if companyName != "" {
+		database.DB.SetConfigValue("branding_company_name", companyName)
+	}
+	if primaryColor != "" {
+		database.DB.SetConfigValue("branding_primary_color", primaryColor)
+	}
+	if secondaryColor != "" {
+		database.DB.SetConfigValue("branding_secondary_color", secondaryColor)
+	}
+	if logoData != "" {
+		database.DB.SetConfigValue("branding_logo", logoData)
+	}
+
+	// Reload config
+	s.loadBrandingConfig()
+
+	s.renderAdminBranding(w, "Branding settings updated successfully!")
 }
 
 // handleAdminSettings handles general settings
@@ -240,26 +271,99 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		s.renderAdminSettings(w, "Failed to parse form")
+	// TODO: Implement settings update
+	s.renderAdminSettings(w, "Settings updated (feature in progress)")
+}
+
+// handleAdminTrash lists all deleted files (trash)
+func (s *Server) handleAdminTrash(w http.ResponseWriter, r *http.Request) {
+	files, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch trash")
 		return
 	}
 
-	// Update system settings
-	s.config.ServerURL = r.FormValue("server_url")
-	s.config.Port = r.FormValue("port")
-	s.config.MaxUploadSizeMB = mustParseInt(r.FormValue("max_upload_mb"))
-	s.config.DefaultQuotaMB = int64(mustParseInt(r.FormValue("default_quota_mb")))
-	s.config.SessionTimeoutHours = mustParseInt(r.FormValue("session_timeout_hours"))
+	s.renderAdminTrash(w, files)
+}
 
-	// Save configuration
-	if err := database.DB.UpdateConfiguration(s.config); err != nil {
-		s.renderAdminSettings(w, "Failed to save settings: "+err.Error())
+// handleAdminPermanentDelete permanently deletes a file
+func (s *Server) handleAdminPermanentDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	s.renderAdminSettings(w, "✅ Settings updated successfully!")
+	fileID := r.FormValue("file_id")
+	if fileID == "" {
+		s.sendError(w, http.StatusBadRequest, "Missing file_id")
+		return
+	}
+
+	// Get file info before deletion
+	// We need to use a special query to get deleted files
+	rows, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch file info")
+		return
+	}
+
+	var fileInfo *database.FileInfo
+	for _, f := range rows {
+		if f.Id == fileID {
+			fileInfo = f
+			break
+		}
+	}
+
+	if fileInfo == nil {
+		s.sendError(w, http.StatusNotFound, "File not found in trash")
+		return
+	}
+
+	// Delete from disk
+	filePath := filepath.Join(s.config.UploadsDir, fileID)
+	if err := os.Remove(filePath); err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("Warning: Could not delete file from disk: %v", err)
+		}
+	}
+
+	// Permanently delete from database
+	if err := database.DB.PermanentDeleteFile(fileID); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to delete file")
+		return
+	}
+
+	log.Printf("File permanently deleted by admin: %s (ID: %s)", fileInfo.Name, fileID)
+
+	s.sendJSON(w, http.StatusOK, map[string]string{
+		"message": "File permanently deleted",
+	})
+}
+
+// handleAdminRestoreFile restores a file from trash
+func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	fileID := r.FormValue("file_id")
+	if fileID == "" {
+		s.sendError(w, http.StatusBadRequest, "Missing file_id")
+		return
+	}
+
+	if err := database.DB.RestoreFile(fileID); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to restore file")
+		return
+	}
+
+	log.Printf("File restored from trash by admin: %s", fileID)
+
+	s.sendJSON(w, http.StatusOK, map[string]string{
+		"message": "File restored successfully",
+	})
 }
 
 // Render functions
@@ -643,6 +747,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileInfo, totalStorage int64) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	totalStorageFormatted := database.FormatFileSize(totalStorage)
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
@@ -941,114 +1046,179 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 }
 
 func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
-	msgHTML := ""
-	if message != "" {
-		msgClass := "success"
-		if len(message) > 2 && message[:2] != "✅" {
-			msgClass = "error"
-		}
-		msgHTML = `<div class="message ` + msgClass + `">` + message + `</div>`
-	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get current branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
 
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Branding Settings - ` + s.config.CompanyName + `</title>
-    <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { color: ` + s.config.PrimaryColor + `; margin-bottom: 30px; }
-        .form-group { margin-bottom: 24px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
-        input[type="text"], input[type="color"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-        textarea { min-height: 100px; font-family: inherit; }
-        .color-input { display: flex; gap: 12px; align-items: center; }
-        .color-input input[type="color"] { width: 80px; height: 48px; padding: 4px; cursor: pointer; }
-        .color-input input[type="text"] { flex: 1; }
-        .button-group { display: flex; gap: 12px; margin-top: 32px; }
-        button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-        button[type="submit"] { background: ` + s.config.PrimaryColor + `; color: white; }
-        button[type="submit"]:hover { opacity: 0.9; }
-        .btn-secondary { background: #e0e0e0; color: #333; text-decoration: none; display: inline-block; padding: 12px 24px; }
-        .btn-secondary:hover { background: #d0d0d0; }
-        .message { padding: 16px; border-radius: 6px; margin-bottom: 24px; }
-        .message.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .message.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-        .preview { margin-top: 12px; padding: 20px; border: 2px dashed #ddd; border-radius: 6px; text-align: center; }
-        .preview h3 { margin: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
+        .header nav a {
+            margin-left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="text"], input[type="color"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        input:focus {
+            outline: none;
+            border-color: ` + s.config.PrimaryColor + `;
+        }
+        .color-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .color-input input[type="color"] {
+            width: 60px;
+            height: 40px;
+            padding: 2px;
+            cursor: pointer;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: ` + s.config.PrimaryColor + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .message {
+            background: #4caf50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .logo-preview {
+            margin-top: 10px;
+            max-width: 300px;
+        }
+        .logo-preview img {
+            max-width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎨 Branding Settings</h1>
-        ` + msgHTML + `
-        <form method="POST">
-            <div class="form-group">
-                <label for="company_name">Company Name</label>
-                <input type="text" id="company_name" name="company_name" value="` + s.config.CompanyName + `" required>
-                <small style="color: #666;">This appears in the header and page titles</small>
-            </div>
-
-            <div class="form-group">
-                <label for="primary_color">Primary Color</label>
-                <div class="color-input">
-                    <input type="color" id="primary_color_picker" value="` + s.config.PrimaryColor + `" onchange="document.getElementById('primary_color').value = this.value; updatePreview()">
-                    <input type="text" id="primary_color" name="primary_color" value="` + s.config.PrimaryColor + `" pattern="#[0-9A-Fa-f]{6}" required>
-                </div>
-                <small style="color: #666;">Main brand color for headers, buttons, and accents</small>
-            </div>
-
-            <div class="form-group">
-                <label for="secondary_color">Secondary Color</label>
-                <div class="color-input">
-                    <input type="color" id="secondary_color_picker" value="` + s.config.SecondaryColor + `" onchange="document.getElementById('secondary_color').value = this.value; updatePreview()">
-                    <input type="text" id="secondary_color" name="secondary_color" value="` + s.config.SecondaryColor + `" pattern="#[0-9A-Fa-f]{6}" required>
-                </div>
-                <small style="color: #666;">Secondary accent color</small>
-            </div>
-
-            <div class="form-group">
-                <label for="welcome_message">Welcome Message</label>
-                <textarea id="welcome_message" name="welcome_message" placeholder="Welcome to our secure file sharing platform">` + s.config.WelcomeMessage + `</textarea>
-                <small style="color: #666;">Shown on the login page</small>
-            </div>
-
-            <div class="form-group">
-                <label for="footer_text">Footer Text</label>
-                <input type="text" id="footer_text" name="footer_text" value="` + s.config.FooterText + `" placeholder="© 2025 Company Name. All rights reserved.">
-            </div>
-
-            <div class="form-group">
-                <label>Preview</label>
-                <div class="preview" id="preview">
-                    <h3 id="preview_name" style="color: ` + s.config.PrimaryColor + `">` + s.config.CompanyName + `</h3>
-                    <p>Sample text with branding colors</p>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button type="submit">💾 Save Branding</button>
-                <a href="/admin" class="btn-secondary">Cancel</a>
-            </div>
-        </form>
+    <div class="header">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/logout">Logout</a>
+        </nav>
     </div>
 
-    <script>
-        function updatePreview() {
-            const name = document.getElementById('company_name').value;
-            const color = document.getElementById('primary_color').value;
-            document.getElementById('preview_name').textContent = name;
-            document.getElementById('preview_name').style.color = color;
-        }
-        document.getElementById('company_name').addEventListener('input', updatePreview);
-        document.getElementById('primary_color').addEventListener('input', function() {
-            document.getElementById('primary_color_picker').value = this.value;
-            updatePreview();
-        });
-    </script>
+    <div class="container">
+        <h2>Branding Settings</h2>`
+
+	if message != "" {
+		html += `<div class="message">` + message + `</div>`
+	}
+
+	html += `
+        <div class="card">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="company_name" value="` + brandingConfig["branding_company_name"] + `" placeholder="Sharecare">
+                </div>
+
+                <div class="form-group">
+                    <label>Logo (PNG, JPG, SVG - Max 10MB)</label>
+                    <input type="file" name="logo" accept="image/*">
+                    `
+	if brandingConfig["branding_logo"] != "" {
+		html += `
+                    <div class="logo-preview">
+                        <p style="margin-top: 10px; color: #666; font-size: 14px;">Current Logo:</p>
+                        <img src="` + brandingConfig["branding_logo"] + `" alt="Current Logo">
+                    </div>`
+	}
+	html += `
+                </div>
+
+                <div class="form-group">
+                    <label>Primary Color</label>
+                    <div class="color-input">
+                        <input type="color" name="primary_color" value="` + brandingConfig["branding_primary_color"] + `">
+                        <input type="text" value="` + brandingConfig["branding_primary_color"] + `" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Secondary Color</label>
+                    <div class="color-input">
+                        <input type="color" name="secondary_color" value="` + brandingConfig["branding_secondary_color"] + `">
+                        <input type="text" value="` + brandingConfig["branding_secondary_color"] + `" readonly>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>`
 
@@ -1056,93 +1226,235 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
 }
 
 func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
-	msgHTML := ""
-	if message != "" {
-		msgClass := "success"
-		if len(message) > 2 && message[:2] != "✅" {
-			msgClass = "error"
-		}
-		msgHTML = `<div class="message ` + msgClass + `">` + message + `</div>`
-	}
+	w.Write([]byte("<h1>System Settings (Coming Soon)</h1><p>" + message + "</p><a href='/admin'>Back</a>"))
+}
+
+func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileInfo) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Settings - ` + s.config.CompanyName + `</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Trash - ` + s.config.CompanyName + `</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { color: ` + s.config.PrimaryColor + `; margin-bottom: 30px; }
-        h2 { color: #333; font-size: 18px; margin-top: 32px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0; }
-        .form-group { margin-bottom: 24px; }
-        label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
-        input[type="text"], input[type="number"], input[type="url"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-        small { color: #666; font-size: 13px; }
-        .button-group { display: flex; gap: 12px; margin-top: 32px; }
-        button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-        button[type="submit"] { background: ` + s.config.PrimaryColor + `; color: white; }
-        button[type="submit"]:hover { opacity: 0.9; }
-        .btn-secondary { background: #e0e0e0; color: #333; text-decoration: none; display: inline-block; padding: 12px 24px; }
-        .btn-secondary:hover { background: #d0d0d0; }
-        .message { padding: 16px; border-radius: 6px; margin-bottom: 24px; }
-        .message.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .message.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media (max-width: 600px) { .input-group { grid-template-columns: 1fr; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
+        .header nav a {
+            margin-left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+        }
+        th {
+            background: #f9f9f9;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+        tr:not(:last-child) td {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        .btn-restore { background: #4caf50; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .btn:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>⚙️ System Settings</h1>
-        ` + msgHTML + `
-        <form method="POST">
-            <h2>Server Configuration</h2>
-
-            <div class="form-group">
-                <label for="server_url">Server URL</label>
-                <input type="url" id="server_url" name="server_url" value="` + s.config.ServerURL + `" required>
-                <small>Base URL for download links (e.g., https://share.example.com)</small>
-            </div>
-
-            <div class="input-group">
-                <div class="form-group">
-                    <label for="port">Port</label>
-                    <input type="text" id="port" name="port" value="` + s.config.Port + `" required>
-                    <small>Server listening port</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="max_upload_mb">Max Upload Size (MB)</label>
-                    <input type="number" id="max_upload_mb" name="max_upload_mb" value="` + fmt.Sprintf("%d", s.config.MaxUploadSizeMB) + `" min="1" max="10000" required>
-                    <small>Maximum file size per upload</small>
-                </div>
-            </div>
-
-            <h2>User Defaults</h2>
-
-            <div class="input-group">
-                <div class="form-group">
-                    <label for="default_quota_mb">Default User Quota (MB)</label>
-                    <input type="number" id="default_quota_mb" name="default_quota_mb" value="` + fmt.Sprintf("%d", s.config.DefaultQuotaMB) + `" min="100" max="100000" required>
-                    <small>Storage quota for new users</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="session_timeout_hours">Session Timeout (Hours)</label>
-                    <input type="number" id="session_timeout_hours" name="session_timeout_hours" value="` + fmt.Sprintf("%d", s.config.SessionTimeoutHours) + `" min="1" max="720" required>
-                    <small>Auto-logout after inactivity</small>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button type="submit">💾 Save Settings</button>
-                <a href="/admin" class="btn-secondary">Cancel</a>
-            </div>
-        </form>
+    <div class="header">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/logout">Logout</a>
+        </nav>
     </div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 20px;">Trash (Deleted Files)</h2>
+
+        <div class="info-box">
+            ⚠️ Files in trash will be automatically deleted after 5 days. You can restore or permanently delete them here.
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Owner</th>
+                    <th>Size</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By</th>
+                    <th>Days Left</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>`
+
+	if len(files) == 0 {
+		html += `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        Trash is empty
+                    </td>
+                </tr>`
+	}
+
+	now := time.Now().Unix()
+	for _, f := range files {
+		// Get user info
+		userName := "Unknown"
+		user, err := database.DB.GetUserByID(f.UserId)
+		if err == nil {
+			userName = user.Name
+		}
+
+		// Get deleted by
+		deletedByName := "System"
+		if f.DeletedBy > 0 {
+			deletedBy, err := database.DB.GetUserByID(f.DeletedBy)
+			if err == nil {
+				deletedByName = deletedBy.Name
+			}
+		}
+
+		// Calculate days left
+		deletedAt := time.Unix(f.DeletedAt, 0)
+		deleteAfter := deletedAt.Add(5 * 24 * time.Hour)
+		daysLeft := int(time.Until(deleteAfter).Hours() / 24)
+		if daysLeft < 0 {
+			daysLeft = 0
+		}
+
+		html += fmt.Sprintf(`
+                <tr>
+                    <td>📄 %s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%d days</td>
+                    <td>
+                        <button class="btn btn-restore" onclick="restoreFile('%s')">
+                            ♻️ Restore
+                        </button>
+                        <button class="btn btn-delete" onclick="permanentDelete('%s')">
+                            🗑️ Delete Forever
+                        </button>
+                    </td>
+                </tr>`,
+			f.Name,
+			userName,
+			f.Size,
+			deletedAt.Format("2006-01-02 15:04"),
+			deletedByName,
+			daysLeft,
+			f.Id,
+			f.Id)
+	}
+
+	html += `
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function restoreFile(fileId) {
+            if (!confirm('Are you sure you want to restore this file?')) return;
+
+            try {
+                const response = await fetch('/admin/trash/restore', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'file_id=' + fileId
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Restore failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Restore failed: ' + error.message);
+            }
+        }
+
+        async function permanentDelete(fileId) {
+            if (!confirm('⚠️ WARNING: This will PERMANENTLY delete the file. This action cannot be undone. Are you sure?')) return;
+
+            try {
+                const response = await fetch('/admin/trash/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'file_id=' + fileId
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Delete failed: ' + error.message);
+            }
+        }
+    </script>
 </body>
 </html>`
 
