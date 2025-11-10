@@ -43,10 +43,12 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Get expiration settings
-	expirationDays, _ := strconv.Atoi(r.FormValue("expiration_days"))
+	// Get expiration settings from form
+	expireDate := r.FormValue("expire_date")
 	downloadsLimit, _ := strconv.Atoi(r.FormValue("downloads_limit"))
 	requireAuth := r.FormValue("require_auth") == "true"
+	unlimitedTime := r.FormValue("unlimited_time") == "true"
+	unlimitedDownloads := r.FormValue("unlimited_downloads") == "true"
 
 	// Check file size
 	fileSize := header.Size
@@ -88,20 +90,32 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		sha1Hash = ""
 	}
 
-	// Calculate expiration
+	// Calculate expiration from date
 	var expireAt int64
 	var expireAtString string
-	unlimitedTime := expirationDays == 0
 
-	if expirationDays > 0 {
-		expireTime := time.Now().Add(time.Duration(expirationDays) * 24 * time.Hour)
-		expireAt = expireTime.Unix()
-		expireAtString = expireTime.Format("2006-01-02 15:04")
+	if !unlimitedTime && expireDate != "" {
+		// Parse date from calendar (format: YYYY-MM-DD)
+		expireTime, err := time.Parse("2006-01-02", expireDate)
+		if err == nil {
+			// Set to end of day (23:59:59)
+			expireTime = expireTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+			expireAt = expireTime.Unix()
+			expireAtString = expireTime.Format("2006-01-02 15:04")
+		} else {
+			log.Printf("Warning: Could not parse expiration date '%s': %v", expireDate, err)
+			// Default to 7 days if parse fails
+			expireTime := time.Now().Add(7 * 24 * time.Hour)
+			expireAt = expireTime.Unix()
+			expireAtString = expireTime.Format("2006-01-02 15:04")
+		}
 	}
 
-	unlimitedDownloads := downloadsLimit == 0
-	if downloadsLimit == 0 {
+	// Handle downloads limit
+	if unlimitedDownloads {
 		downloadsLimit = 999999 // Set high value for unlimited
+	} else if downloadsLimit <= 0 {
+		downloadsLimit = 10 // Default to 10 if not specified
 	}
 
 	// Save file metadata to database
