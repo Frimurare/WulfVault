@@ -13,7 +13,8 @@ A lightweight, self-hosted file sharing system with multi-user support, storage 
 - ✅ **Two download modes:**
   - Authenticated downloads (requires recipient account creation)
   - Direct links (no authentication)
-- ✅ **Download tracking** - Know exactly who downloaded what and when
+- ✅ **Download tracking** - Know exactly who downloaded what and when with IP addresses
+- ✅ **Download history viewer** - See detailed download logs for each file with timestamps and IPs
 - ✅ **Expiring file shares** - Auto-delete after X downloads or Y days
 - ✅ **Copy-link buttons** for easy sharing
 - ✅ **Admin dashboard** with user management and system statistics
@@ -23,6 +24,8 @@ A lightweight, self-hosted file sharing system with multi-user support, storage 
 - ✅ **Configurable branding** - Upload custom logo, set colors, company name
 - ✅ **Flexible configuration** - Adjust server URL, port, storage paths, quotas
 - ✅ **Multiple admins** - Support for multiple administrators
+- ✅ **Trash/Recycle Bin** - Configurable retention period (1-365 days, default 5 days)
+- ✅ **Automated cleanup** - Expired files automatically moved to trash, permanent deletion after retention period
 
 ### Security
 - ✅ **Password hashing** with bcrypt
@@ -39,8 +42,9 @@ Sharecare supports three distinct user types:
 - Full system access
 - Manage users (create, edit, delete, set quotas)
 - View all files in the system
+- View detailed download history for any file (who, when, IP address)
 - Access trash and restore deleted files
-- Configure branding and system settings
+- Configure branding and system settings (including trash retention)
 - View download logs and statistics
 - Login at: `/admin`
 
@@ -49,7 +53,9 @@ Sharecare supports three distinct user types:
 - Create expiring file shares
 - Set download limits and authentication requirements
 - View their own files and download statistics
-- Delete files (moves to admin trash for 5 days)
+- **View detailed download history** for their own files (who downloaded, when, IP address)
+- Delete files (moves to admin trash, configurable retention period)
+- **Cannot see other users' files or their download history**
 - Login at: `/login` or `/dashboard`
 
 ### 3. **Download Accounts** (Recipients)
@@ -86,11 +92,14 @@ When a user uploads a file with "Require recipient authentication" enabled:
 
 5. **Download Tracking**
    - Every download is logged with:
-     - Email address
+     - Email address (if authenticated download)
      - Timestamp
-     - IP address (optional)
+     - IP address
      - File name and size
-   - Viewable by file owner and admins
+     - User agent
+   - **Viewable by file owner and admins via "📊 History" button**
+   - Shows table with date/time, downloader (email or "Anonymous"), and IP address
+   - Authenticated downloads marked with 🔒 badge
 
 ### Benefits of Download Accounts
 
@@ -174,7 +183,8 @@ services:
 - **File Expiration**: Default expiration policies
 - **Download Authentication**: Require auth by default or allow direct links
 - **Storage Quotas**: Set different quotas for different users
-- **IP Tracking**: Enable/disable IP address logging
+- **Trash Retention**: Configure how many days deleted files remain in trash (1-365 days, default 5)
+- **IP Tracking**: Enabled by default for all downloads (stored in download logs)
 
 ## Usage
 
@@ -195,7 +205,11 @@ services:
    - **Authenticated**: Recipient must create download account
    - **Direct**: Anyone with link can download
 5. **Copy link** and share via email, Teams, etc.
-6. **Track downloads** in your dashboard
+6. **Track downloads** - Click "📊 History" button to see:
+   - Who downloaded (email or Anonymous)
+   - When (date and time)
+   - From where (IP address)
+   - Authentication status (🔒 badge for authenticated downloads)
 
 ### For Download Recipients (Authenticated Mode)
 

@@ -1107,11 +1107,14 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                     <td>%s</td>
                     <td>%s</td>
                     <td>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history">
+                            📊
+                        </button>
                         <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy link">
-                            📋 Copy
+                            📋
                         </button>
                         <button class="btn btn-secondary" onclick="deleteFile('%s')" title="Delete file">
-                            🗑️ Delete
+                            🗑️
                         </button>
                     </td>
                 </tr>`,
@@ -1121,6 +1124,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 			f.DownloadCount,
 			expiryInfo,
 			status,
+			f.Id, f.Name,
 			downloadURL,
 			f.Id)
 	}
@@ -1187,7 +1191,77 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                 alert('Delete failed: ' + error.message);
             }
         }
+
+        function showDownloadHistory(fileId, fileName) {
+            document.getElementById('historyFileName').textContent = fileName;
+            document.getElementById('downloadHistoryModal').style.display = 'flex';
+            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">Loading...</p>';
+
+            fetch('/file/downloads?file_id=' + encodeURIComponent(fileId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.logs && data.logs.length > 0) {
+                        let html = '<table style="width: 100%; border-collapse: collapse;">';
+                        html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
+                        html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
+                        html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
+                        html += '<th style="padding: 12px; text-align: left;">IP Address</th>';
+                        html += '</tr></thead><tbody>';
+
+                        data.logs.forEach(log => {
+                            const date = new Date(log.downloadedAt * 1000);
+                            const dateStr = date.toLocaleString('sv-SE');
+                            const downloader = log.email || 'Anonymous';
+                            const ip = log.ipAddress || 'N/A';
+                            const authBadge = log.isAuthenticated ? ' <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🔒 Auth</span>' : '';
+
+                            html += '<tr style="border-bottom: 1px solid #eee;">';
+                            html += '<td style="padding: 12px;">' + dateStr + '</td>';
+                            html += '<td style="padding: 12px;">' + downloader + authBadge + '</td>';
+                            html += '<td style="padding: 12px; font-family: monospace; font-size: 12px;">' + ip + '</td>';
+                            html += '</tr>';
+                        });
+
+                        html += '</tbody></table>';
+                        html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
+                        document.getElementById('downloadHistoryContent').innerHTML = html;
+                    } else {
+                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">No downloads yet</p>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">Error loading download history</p>';
+                    console.error('Error:', error);
+                });
+        }
+
+        function closeDownloadHistoryModal() {
+            document.getElementById('downloadHistoryModal').style.display = 'none';
+        }
     </script>
+
+    <!-- Download History Modal -->
+    <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <h2 style="margin-bottom: 24px; color: #333;">📊 Download History</h2>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <p id="historyFileName" style="color: #666; font-weight: 600;"></p>
+            </div>
+
+            <div id="downloadHistoryContent" style="margin-top: 20px;">
+                <p style="text-align: center; color: #999;">Loading...</p>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="closeDownloadHistoryModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>`
 
