@@ -651,6 +651,9 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 
 	downloadURL := s.config.ServerURL + "/d/" + fileInfo.Id
 
+	// Get poem of the day
+	poem := models.GetPoemOfTheDay()
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -673,7 +676,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 50px;
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
             text-align: center;
         }
@@ -756,6 +759,36 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
             font-weight: 500;
             margin-top: 10px;
         }
+        .poem-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            border-left: 4px solid ` + primaryColor + `;
+        }
+        .poem-title {
+            color: ` + primaryColor + `;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .poem-text {
+            color: #2c3e50;
+            font-size: 16px;
+            line-height: 1.8;
+            font-style: italic;
+            white-space: pre-line;
+            margin-bottom: 12px;
+        }
+        .poem-author {
+            color: #7f8c8d;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: right;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -810,7 +843,13 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 		html += `<div class="badge">🔒 Authentication Required</div>`
 	}
 
+	// Add Poem of the Day section
 	html += `
+        <div class="poem-section">
+            <div class="poem-title">📖 While waiting, here is Poem of the Day</div>
+            <div class="poem-text">` + poem.Text + `</div>
+            <div class="poem-author">— ` + poem.Author + `</div>
+        </div>
 
         <a href="` + downloadURL + `" class="download-btn">⬇️ Download File</a>
 
