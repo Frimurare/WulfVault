@@ -495,6 +495,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             <a href="/admin/files">Files</a>
             <a href="/admin/trash">Trash</a>
             <a href="/admin/branding">Branding</a>
+            <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Settings</a>
             <a href="/logout">Logout</a>
         </nav>
