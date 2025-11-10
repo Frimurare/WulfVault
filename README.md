@@ -8,8 +8,8 @@ A lightweight, self-hosted file sharing system with multi-user support, storage 
 
 ### Core Functionality
 - ✅ **Multi-user authentication** (Super Admin, Admin, Regular Users, Download Accounts)
-- ✅ **Storage quotas** per user with usage tracking
-- ✅ **File deduplication** (identical files stored once)
+- ✅ **Per-user storage quotas** - Configurable storage limits per user with real-time usage tracking
+- ✅ **Isolated file storage** - Each user has their own file list with unique share links
 - ✅ **Two download modes:**
   - Authenticated downloads (requires recipient account creation)
   - Direct links (no authentication)
@@ -28,11 +28,11 @@ A lightweight, self-hosted file sharing system with multi-user support, storage 
 - ✅ **Automated cleanup** - Expired files automatically moved to trash, permanent deletion after retention period
 
 ### Security
-- ✅ **Password hashing** with bcrypt
-- ✅ **Session management** with automatic expiration
-- ✅ **CSRF protection**
-- ✅ **Secure random hash generation** for file links
-- ✅ **Optional IP tracking** for downloads
+- ✅ **Password hashing** with bcrypt (cost factor 12)
+- ✅ **Session management** with automatic expiration (24 hours)
+- ✅ **SameSite cookies** for CSRF mitigation
+- ✅ **Secure random hash generation** for file links (128-bit entropy)
+- ✅ **IP address logging** for all downloads (audit trail)
 
 ## User Types & Permissions
 
@@ -103,11 +103,12 @@ When a user uploads a file with "Require recipient authentication" enabled:
 
 ### Benefits of Download Accounts
 
-- **Accountability**: Know exactly who downloaded what
-- **Audit Trail**: Perfect for compliance and evidence chains
+- **Accountability**: Know exactly who downloaded what with email and IP address
+- **Audit Trail**: Perfect for compliance and evidence chains - all downloads logged with timestamps
 - **Reusability**: Recipients don't need to register multiple times
 - **Privacy**: Download accounts only see files explicitly shared with them
-- **Security**: Passwords are hashed, sessions expire automatically
+- **Security**: Passwords are bcrypt hashed, sessions expire automatically after 24 hours
+- **IP Logging**: Every download tracked with source IP address for security and compliance
 
 ## Quick Start
 
@@ -182,9 +183,9 @@ services:
 - **Branding**: Company name, logo, primary/secondary colors
 - **File Expiration**: Default expiration policies
 - **Download Authentication**: Require auth by default or allow direct links
-- **Storage Quotas**: Set different quotas for different users
+- **Per-User Storage Quotas**: Set custom storage limits for each user individually
 - **Trash Retention**: Configure how many days deleted files remain in trash (1-365 days, default 5)
-- **IP Tracking**: Enabled by default for all downloads (stored in download logs)
+- **Automatic Cleanup**: Expired files moved to trash, permanent deletion after retention period
 
 ## Usage
 
@@ -192,9 +193,11 @@ services:
 
 1. **Login** at `https://your-domain.com/admin`
 2. **Create users** in the User Management section
-3. **Set quotas** for each user
+3. **Set custom storage quotas** for each user individually (e.g., 5GB for user A, 50GB for user B)
 4. **Configure branding** in Settings
-5. **Monitor downloads** and storage usage in Dashboard
+5. **View download history** for any file with IP addresses and timestamps
+6. **Monitor downloads** and storage usage in Dashboard
+7. **Manage trash** and restore accidentally deleted files
 
 ### For Users
 
@@ -255,11 +258,12 @@ go test ./...
 
 ## Use Cases
 
-- **Video Surveillance**: Share exported video from Milestone XProtect or OpenEye
-- **Evidence Chain**: Trackable downloads for legal purposes
-- **Document Sharing**: Share system manuals, reports with customers
-- **Large File Transfer**: Alternative to WeTransfer/Sprend
+- **Video Surveillance**: Share exported video from Milestone XProtect or OpenEye with audit trail
+- **Evidence Chain**: Complete download tracking with IP addresses for legal compliance
+- **Document Sharing**: Share system manuals, reports with customers (each user has isolated file space)
+- **Large File Transfer**: Alternative to WeTransfer/Sprend with custom quotas per user
 - **Customer Service**: Branded file sharing for service agreements
+- **Multi-tenant file sharing**: Different storage quotas for different departments or customers
 
 ## API
 
