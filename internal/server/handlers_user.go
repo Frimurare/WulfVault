@@ -768,7 +768,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 const response = await fetch('/file/edit', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `file_id=${fileId}&expiration_days=${expirationDays}&downloads_limit=${downloadsLimit}`
+                    body: 'file_id=' + fileId + '&expiration_days=' + expirationDays + '&downloads_limit=' + downloadsLimit
                 });
 
                 const result = await response.json();
