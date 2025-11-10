@@ -27,9 +27,13 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		s.sendError(w, http.StatusBadRequest, "Invalid form data")
-		return
+	// Parse multipart form (since FormData sends multipart)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		// Fallback to regular form parsing
+		if err := r.ParseForm(); err != nil {
+			s.sendError(w, http.StatusBadRequest, "Invalid form data")
+			return
+		}
 	}
 
 	title := r.FormValue("title")
@@ -37,6 +41,10 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 	maxFileSizeMB, _ := strconv.Atoi(r.FormValue("max_file_size_mb"))
 	allowedFileTypes := r.FormValue("allowed_file_types")
 	expiresInDays, _ := strconv.Atoi(r.FormValue("expires_in_days"))
+
+	// Debug logging
+	log.Printf("File request params: title='%s', message='%s', days=%d, sizeMB=%d",
+		title, message, expiresInDays, maxFileSizeMB)
 
 	if title == "" {
 		s.sendError(w, http.StatusBadRequest, "Title is required")

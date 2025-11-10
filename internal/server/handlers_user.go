@@ -565,6 +565,51 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             <div id="requestsList" style="margin-top: 20px;"></div>
         </div>
 
+        <!-- File Request Modal -->
+        <div id="fileRequestModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                <h2 style="margin-bottom: 24px; color: #333;">Create Upload Request</h2>
+                <form id="fileRequestForm" onsubmit="submitFileRequest(event)">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Title *</label>
+                        <input type="text" id="requestTitle" required placeholder="e.g., Upload Documents" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Short description of what you're requesting</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Message (optional)</label>
+                        <textarea id="requestMessage" placeholder="Additional instructions for the uploader..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <input type="checkbox" id="requestNeverExpire" onchange="toggleRequestExpiry()">
+                            <span style="color: #333; font-weight: 600;">Never expire</span>
+                        </label>
+                        <div id="requestExpiryField">
+                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Expires in (days)</label>
+                            <input type="number" id="requestExpiryDays" min="1" max="365" value="30" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Max file size (MB)</label>
+                        <input type="number" id="requestMaxSize" min="1" max="5000" value="100" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Maximum size per file (0 = no limit)</p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" style="flex: 1; padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                            Create Request
+                        </button>
+                        <button type="button" onclick="closeFileRequestModal()" style="flex: 1; padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Upload Form -->
         <div class="upload-section">
             <h2 style="margin-bottom: 20px; color: #333;">Upload File</h2>
@@ -972,7 +1017,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
             fetch('/file-request/create', {
                 method: 'POST',
-                body: data
+                body: data,
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(result => {
@@ -989,7 +1035,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
 
         function loadFileRequests() {
-            fetch('/file-request/list')
+            fetch('/file-request/list', {
+                credentials: 'same-origin'
+            })
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('requestsList');
@@ -1026,7 +1074,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
             fetch('/file-request/delete', {
                 method: 'POST',
-                body: data
+                body: data,
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(result => {

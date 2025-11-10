@@ -52,6 +52,14 @@ func (d *Database) SaveFile(file *FileInfo) error {
 		requireAuth = 1
 	}
 
+	// Convert empty password to NULL for database storage
+	var filePassword interface{}
+	if file.FilePasswordPlain == "" {
+		filePassword = nil
+	} else {
+		filePassword = file.FilePasswordPlain
+	}
+
 	_, err := d.db.Exec(`
 		INSERT INTO Files (
 			Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
@@ -59,7 +67,7 @@ func (d *Database) SaveFile(file *FileInfo) error {
 			UploadDate, DownloadsRemaining, DownloadCount, UserId,
 			UnlimitedDownloads, UnlimitedTime, RequireAuth
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		file.Id, file.Name, file.Size, file.SHA1, file.PasswordHash, file.FilePasswordPlain, file.HotlinkId,
+		file.Id, file.Name, file.Size, file.SHA1, file.PasswordHash, filePassword, file.HotlinkId,
 		file.ContentType, file.AwsBucket, file.ExpireAtString, file.ExpireAt,
 		file.PendingDeletion, file.SizeBytes, file.UploadDate, file.DownloadsRemaining,
 		file.DownloadCount, file.UserId, unlimitedDownloads, unlimitedTime, requireAuth,

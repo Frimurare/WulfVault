@@ -108,6 +108,30 @@ if (uploadForm) {
         formData.set('unlimited_downloads', document.getElementById('unlimitedDownloads').checked ? 'true' : 'false');
         formData.set('require_auth', document.getElementById('requireAuth').checked ? 'true' : 'false');
 
+        // Handle password field - only include if checkbox is checked
+        const enablePasswordCheckbox = document.getElementById('enablePassword');
+        const filePasswordInput = document.getElementById('filePassword');
+        if (enablePasswordCheckbox && !enablePasswordCheckbox.checked) {
+            // Remove password from form if checkbox is not checked
+            formData.delete('file_password');
+            console.log('Password protection: DISABLED');
+        } else if (filePasswordInput && filePasswordInput.value) {
+            // Ensure password is included
+            formData.set('file_password', filePasswordInput.value);
+            console.log('Password protection: ENABLED, password:', filePasswordInput.value);
+        }
+
+        // Debug: Log all form data
+        console.log('=== UPLOAD FORM DATA ===');
+        for (let [key, value] of formData.entries()) {
+            if (key === 'file') {
+                console.log(key + ':', value.name, '(' + formatFileSize(value.size) + ')');
+            } else {
+                console.log(key + ':', value);
+            }
+        }
+        console.log('========================');
+
         // If unlimited time, remove expire_date
         if (document.getElementById('unlimitedTime').checked) {
             formData.delete('expire_date');
@@ -325,3 +349,176 @@ function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimited
     // TODO: Implement edit modal if needed
     alert('Edit functionality coming soon!');
 }
+
+// Password field toggle function
+function togglePasswordField() {
+    const checkbox = document.getElementById('enablePassword');
+    const container = document.getElementById('passwordFieldContainer');
+    const passwordInput = document.getElementById('filePassword');
+
+    if (checkbox && container && passwordInput) {
+        if (checkbox.checked) {
+            container.style.display = 'block';
+            passwordInput.required = true;
+        } else {
+            container.style.display = 'none';
+            passwordInput.required = false;
+            passwordInput.value = '';
+        }
+    }
+}
+
+// Toggle password visibility in file list
+function togglePasswordVisibility(fileId, password) {
+    const element = document.getElementById('password-' + fileId);
+    if (element) {
+        if (element.textContent === '👁️ Show') {
+            element.textContent = password;
+            element.style.fontFamily = 'monospace';
+        } else {
+            element.textContent = '👁️ Show';
+            element.style.fontFamily = 'inherit';
+        }
+    }
+}
+
+// File Request functions
+function showCreateRequestModal() {
+    const modal = document.getElementById('fileRequestModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Reset form
+        document.getElementById('fileRequestForm').reset();
+        document.getElementById('requestExpiryDays').value = 30;
+        document.getElementById('requestMaxSize').value = 100;
+        document.getElementById('requestExpiryField').style.display = 'block';
+    }
+}
+
+function closeFileRequestModal() {
+    const modal = document.getElementById('fileRequestModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function toggleRequestExpiry() {
+    const checkbox = document.getElementById('requestNeverExpire');
+    const expiryField = document.getElementById('requestExpiryField');
+    if (checkbox && expiryField) {
+        expiryField.style.display = checkbox.checked ? 'none' : 'block';
+    }
+}
+
+function submitFileRequest(event) {
+    event.preventDefault();
+
+    const title = document.getElementById('requestTitle').value;
+    const message = document.getElementById('requestMessage').value;
+    const neverExpire = document.getElementById('requestNeverExpire').checked;
+    const days = neverExpire ? '0' : document.getElementById('requestExpiryDays').value;
+    const maxSizeMB = document.getElementById('requestMaxSize').value;
+
+    console.log('Creating file request:', {title, message, days, maxSizeMB});
+
+    const data = new FormData();
+    data.append('title', title);
+    data.append('message', message);
+    data.append('expires_in_days', days);
+    data.append('max_file_size_mb', maxSizeMB);
+
+    fetch('/file-request/create', {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('File request result:', result);
+        if (result.success) {
+            closeFileRequestModal();
+            showSuccess('Upload request created! The link is shown below.');
+            loadFileRequests();
+        } else {
+            alert('Error: ' + (result.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error creating request:', error);
+        alert('Error creating request: ' + error);
+    });
+}
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('fileRequestModal');
+    if (event.target === modal) {
+        closeFileRequestModal();
+    }
+});
+
+function loadFileRequests() {
+    fetch('/file-request/list', {
+        credentials: 'same-origin'
+    })
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('requestsList');
+            if (!container) return;
+
+            if (!data.requests || data.requests.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-style: italic;">No upload requests yet</p>';
+                return;
+            }
+
+            let html = '<div style="margin-top: 20px;">';
+            data.requests.forEach(req => {
+                const expired = req.is_expired ? ' (EXPIRED)' : '';
+                const active = req.is_active ? '✅' : '❌';
+                html += '<div style="border: 1px solid #e0e0e0; padding: 16px; margin-bottom: 12px; border-radius: 8px;">';
+                html += '<h4 style="margin-bottom: 8px;">' + active + ' ' + escapeHtml(req.title) + expired + '</h4>';
+                if (req.message) {
+                    html += '<p style="color: #666; font-size: 14px; margin-bottom: 8px;">' + escapeHtml(req.message) + '</p>';
+                }
+                html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
+                html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
+                html += '<button onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
+                html += '<button onclick="deleteFileRequest('+req.id+', \''+escapeHtml(req.title)+'\')" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
+                html += '</div></div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        });
+}
+
+function deleteFileRequest(id, title) {
+    if (!confirm('Delete request: ' + title + '?')) return;
+
+    const data = new FormData();
+    data.append('request_id', id);
+
+    fetch('/file-request/delete', {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            loadFileRequests();
+        } else {
+            alert('Error: ' + (result.error || 'Unknown error'));
+        }
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Load file requests when page loads
+window.addEventListener('load', function() {
+    loadFileRequests();
+});
