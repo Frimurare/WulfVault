@@ -7,27 +7,27 @@ import (
 
 // DownloadAccount represents a temporary account created when someone downloads a file with authentication
 type DownloadAccount struct {
-	Id           int    `json:"id" redis:"id"`
-	Email        string `json:"email" redis:"Email"`
-	Password     string `json:"-" redis:"Password"` // Hashed password
-	CreatedAt    int64  `json:"createdAt" redis:"CreatedAt"`
-	LastUsed     int64  `json:"lastUsed" redis:"LastUsed"`
-	DownloadCount int   `json:"downloadCount" redis:"DownloadCount"`
-	IsActive     bool   `json:"isActive" redis:"IsActive"`
+	Id            int    `json:"id" redis:"id"`
+	Email         string `json:"email" redis:"Email"`
+	Password      string `json:"-" redis:"Password"` // Hashed password
+	CreatedAt     int64  `json:"createdAt" redis:"CreatedAt"`
+	LastUsed      int64  `json:"lastUsed" redis:"LastUsed"`
+	DownloadCount int    `json:"downloadCount" redis:"DownloadCount"`
+	IsActive      bool   `json:"isActive" redis:"IsActive"`
 }
 
 // DownloadLog tracks individual download events
 type DownloadLog struct {
 	Id                int    `json:"id"`
-	FileId            string `json:"fileId"`           // The file that was downloaded
+	FileId            string `json:"fileId"`            // The file that was downloaded
 	DownloadAccountId int    `json:"downloadAccountId"` // If authenticated download, the account ID
-	Email             string `json:"email"`            // Email of downloader (if authenticated)
-	IpAddress         string `json:"ipAddress"`        // Optional IP tracking
-	UserAgent         string `json:"userAgent"`        // Optional browser tracking
-	DownloadedAt      int64  `json:"downloadedAt"`     // Unix timestamp
-	FileSize          int64  `json:"fileSize"`         // Size in bytes
-	FileName          string `json:"fileName"`         // Name of file downloaded
-	IsAuthenticated   bool   `json:"isAuthenticated"`  // True if download required authentication
+	Email             string `json:"email"`             // Email of downloader (if authenticated)
+	IpAddress         string `json:"ipAddress"`         // Optional IP tracking
+	UserAgent         string `json:"userAgent"`         // Optional browser tracking
+	DownloadedAt      int64  `json:"downloadedAt"`      // Unix timestamp
+	FileSize          int64  `json:"fileSize"`          // Size in bytes
+	FileName          string `json:"fileName"`          // Name of file downloaded
+	IsAuthenticated   bool   `json:"isAuthenticated"`   // True if download required authentication
 }
 
 // GetReadableDate returns the date as YYYY-MM-DD HH:MM

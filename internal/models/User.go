@@ -10,18 +10,18 @@ type UserPermission uint16
 
 // User contains information about the Sharecare user
 type User struct {
-	Id              int            `json:"id" redis:"id"`
-	Name            string         `json:"name" redis:"Name"`
-	Email           string         `json:"email" redis:"Email"`
-	Permissions     UserPermission `json:"permissions" redis:"Permissions"`
-	UserLevel       UserRank       `json:"userLevel" redis:"UserLevel"`
-	LastOnline      int64          `json:"lastOnline" redis:"LastOnline"`
-	Password        string         `json:"-" redis:"Password"`
-	ResetPassword   bool           `json:"resetPassword" redis:"ResetPassword"`
-	StorageQuotaMB  int64          `json:"storageQuotaMB" redis:"StorageQuotaMB"`   // Storage quota in MB
-	StorageUsedMB   int64          `json:"storageUsedMB" redis:"StorageUsedMB"`     // Current storage used in MB
-	CreatedAt       int64          `json:"createdAt" redis:"CreatedAt"`             // Unix timestamp
-	IsActive        bool           `json:"isActive" redis:"IsActive"`               // Account active status
+	Id             int            `json:"id" redis:"id"`
+	Name           string         `json:"name" redis:"Name"`
+	Email          string         `json:"email" redis:"Email"`
+	Permissions    UserPermission `json:"permissions" redis:"Permissions"`
+	UserLevel      UserRank       `json:"userLevel" redis:"UserLevel"`
+	LastOnline     int64          `json:"lastOnline" redis:"LastOnline"`
+	Password       string         `json:"-" redis:"Password"`
+	ResetPassword  bool           `json:"resetPassword" redis:"ResetPassword"`
+	StorageQuotaMB int64          `json:"storageQuotaMB" redis:"StorageQuotaMB"` // Storage quota in MB
+	StorageUsedMB  int64          `json:"storageUsedMB" redis:"StorageUsedMB"`   // Current storage used in MB
+	CreatedAt      int64          `json:"createdAt" redis:"CreatedAt"`           // Unix timestamp
+	IsActive       bool           `json:"isActive" redis:"IsActive"`             // Account active status
 }
 
 // GetReadableDate returns the date as YYYY-MM-DD HH:MM
