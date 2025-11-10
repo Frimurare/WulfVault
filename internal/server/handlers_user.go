@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"strconv"
@@ -592,6 +593,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 			// Both URL types
 			splashURL := s.config.ServerURL + "/s/" + f.Id
 			directURL := s.config.ServerURL + "/d/" + f.Id
+			// Escape URLs for safe use in JavaScript
+			splashURLEscaped := html.EscapeString(splashURL)
+			directURLEscaped := html.EscapeString(directURL)
 			status := "Active"
 			statusColor := "#4caf50"
 
@@ -646,10 +650,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status,
-				splashURL, splashURL, splashURL,
-				directURL, directURL, directURL,
-				f.Id, f.Name, f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, f.Name)
+                </li>`, html.EscapeString(f.Name), authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status,
+				splashURL, splashURL, splashURLEscaped,
+				directURL, directURL, directURLEscaped,
+				f.Id, html.EscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, html.EscapeString(f.Name))
 		}
 		html += `
             </ul>`

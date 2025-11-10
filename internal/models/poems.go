@@ -797,13 +797,14 @@ Love and wisdom are the rule.`,
 
 // GetRandomPoem returns a random poem from the collection
 func GetRandomPoem() Poem {
-	rand.Seed(time.Now().UnixNano())
+	// Change poem every 5 seconds
+	rand.Seed(time.Now().Unix() / 5)
 	return AllPoems[rand.Intn(len(AllPoems))]
 }
 
 // GetPoemOfTheDay returns a consistent poem for the current day
 func GetPoemOfTheDay() Poem {
-	// Use current time as seed for random poem on each visit
-	rand.Seed(time.Now().UnixNano())
+	// Use current time as seed for random poem every 5 seconds
+	rand.Seed(time.Now().Unix() / 5)
 	return AllPoems[rand.Intn(len(AllPoems))]
 }
