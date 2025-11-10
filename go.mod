@@ -2,11 +2,11 @@ module github.com/Frimurare/Sharecare
 
 go 1.23
 
-toolchain go1.24.10
-
 require (
 	github.com/jinzhu/copier v0.4.0
+	github.com/sendinblue/APIv3-go-library/v2 v2.1.2
 	golang.org/x/crypto v0.31.0
+	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	modernc.org/sqlite v1.34.2
 )
 

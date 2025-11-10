@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/database"
+	"github.com/Frimurare/Sharecare/internal/email"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
 
@@ -392,6 +393,16 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 	if err := database.DB.MarkFileRequestAsUsed(fileRequest.Id, clientIP); err != nil {
 		log.Printf("Warning: Could not mark file request as used: %v", err)
 	}
+
+	// Send email notification to request owner
+	go func() {
+		err := email.SendFileUploadNotification(fileRequest, fileInfo, clientIP, s.getPublicURL(), user.Email)
+		if err != nil {
+			log.Printf("Failed to send upload notification email: %v", err)
+		} else {
+			log.Printf("Upload notification email sent to %s", user.Email)
+		}
+	}()
 
 	shareLink := s.getPublicURL() + "/s/" + fileID
 
