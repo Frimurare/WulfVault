@@ -52,6 +52,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
 	mux.HandleFunc("/file/edit", s.requireAuth(s.handleFileEdit))
+	mux.HandleFunc("/file/downloads", s.requireAuth(s.handleFileDownloadHistory))
 
 	// Admin routes (require admin authentication)
 	mux.HandleFunc("/admin", s.requireAdmin(s.handleAdminDashboard))
