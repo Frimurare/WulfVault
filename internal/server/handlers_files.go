@@ -647,8 +647,8 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 	// Get branding config
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 	companyName := brandingConfig["branding_company_name"]
-	primaryColor := brandingConfig["branding_primary_color"]
-	secondaryColor := brandingConfig["branding_secondary_color"]
+	primaryColor := s.getPrimaryColor()
+	secondaryColor := s.getSecondaryColor()
 	logoData := brandingConfig["branding_logo"]
 
 	downloadURL := s.config.ServerURL + "/d/" + fileInfo.Id
@@ -875,8 +875,8 @@ func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *databa
 	// Get branding config
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 	companyName := brandingConfig["branding_company_name"]
-	primaryColor := brandingConfig["branding_primary_color"]
-	secondaryColor := brandingConfig["branding_secondary_color"]
+	primaryColor := s.getPrimaryColor()
+	secondaryColor := s.getSecondaryColor()
 	logoData := brandingConfig["branding_logo"]
 
 	html := `<!DOCTYPE html>
