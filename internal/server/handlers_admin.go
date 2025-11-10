@@ -65,9 +65,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	quotaMB, _ := strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
-	userLevel, _ := strconv.Atoi(r.FormValue("user_level")
-
-)
+	userLevel, _ := strconv.Atoi(r.FormValue("user_level"))
 
 	// Validate
 	if name == "" || email == "" || password == "" {
@@ -747,7 +745,6 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileInfo, totalStorage int64) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	totalStorageFormatted := database.FormatFileSize(totalStorage)
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
@@ -1354,7 +1351,6 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
                 </tr>`
 	}
 
-	now := time.Now().Unix()
 	for _, f := range files {
 		// Get user info
 		userName := "Unknown"
