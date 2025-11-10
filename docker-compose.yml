@@ -15,8 +15,8 @@ services:
       - PORT=8080
       - DATA_DIR=/data
       - UPLOADS_DIR=/uploads
-      - ADMIN_EMAIL=admin@localhost
-      - ADMIN_PASSWORD=changeme123
+      - ADMIN_EMAIL=admin@sharecare.local
+      - ADMIN_PASSWORD=SharecareAdmin2024!
       - MAX_FILE_SIZE_MB=5000
       - DEFAULT_QUOTA_MB=10000
     restart: unless-stopped
