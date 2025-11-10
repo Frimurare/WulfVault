@@ -521,7 +521,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
 	html += `
         </div>
-        <nav>
+        <nav>`
+
+	// Add admin link if user is admin
+	if user.IsAdmin() {
+		html += `
+            <a href="/admin">Admin Panel</a>`
+	}
+
+	html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/logout">Logout</a>
         </nav>
