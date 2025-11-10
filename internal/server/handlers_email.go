@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -228,7 +229,7 @@ func (s *Server) handleSendSplashLink(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value("user").(*models.User)
 
 	// Hämta fil
-	fileInfo, err := database.DB.GetFile(req.FileId)
+	fileInfo, err := database.DB.GetFileByID(req.FileId)
 	if err != nil {
 		log.Printf("File not found: %s", req.FileId)
 		s.sendError(w, http.StatusNotFound, "File not found")
