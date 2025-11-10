@@ -175,17 +175,27 @@ func (s *Server) loadBrandingConfig() {
 
 // Helper functions for color fallbacks
 func (s *Server) getPrimaryColor() string {
-	if s.config.PrimaryColor != "" {
-		return s.config.PrimaryColor
+	color := s.config.PrimaryColor
+	// Reject empty, white, or near-white colors
+	if color == "" || color == "#ffffff" || color == "#fff" ||
+	   color == "#FFFFFF" || color == "#FFF" ||
+	   color == "white" || color == "White" || color == "WHITE" ||
+	   color == "#fefefe" || color == "#FEFEFE" {
+		return "#2563eb" // Default blue
 	}
-	return "#2563eb" // Default blue
+	return color
 }
 
 func (s *Server) getSecondaryColor() string {
-	if s.config.SecondaryColor != "" {
-		return s.config.SecondaryColor
+	color := s.config.SecondaryColor
+	// Reject empty, white, or near-white colors
+	if color == "" || color == "#ffffff" || color == "#fff" ||
+	   color == "#FFFFFF" || color == "#FFF" ||
+	   color == "white" || color == "White" || color == "WHITE" ||
+	   color == "#fefefe" || color == "#FEFEFE" {
+		return "#1e40af" // Default darker blue
 	}
-	return "#1e40af" // Default darker blue
+	return color
 }
 
 // handleHealth is a health check endpoint
