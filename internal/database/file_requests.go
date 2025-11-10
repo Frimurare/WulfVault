@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/models"
@@ -114,6 +115,27 @@ func generateRequestToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// CleanupExpiredFileRequests deletes file requests that have been expired for more than 10 days
+// This keeps the expired message visible for 10 days, then removes the request entirely
+func (d *Database) CleanupExpiredFileRequests() error {
+	// Delete requests that expired more than 10 days ago
+	// This means: CreatedAt + 24 hours (expiration) + 10 days < now
+	// Or: ExpiresAt + 10 days < now
+	cutoffTime := time.Now().Add(-10 * 24 * time.Hour).Unix()
+
+	result, err := d.db.Exec("DELETE FROM FileRequests WHERE ExpiresAt > 0 AND ExpiresAt < ?", cutoffTime)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected > 0 {
+		log.Printf("Cleaned up %d expired file requests", rowsAffected)
+	}
+
+	return nil
 }
 
 func boolToInt(b bool) int {

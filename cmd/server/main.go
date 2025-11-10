@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	Version = "2.0.0-beta.2"
+	Version = "2.0.0-beta.3"
 )
 
 var (
@@ -71,9 +71,20 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Override config with command-line flags
-	cfg.Port = *port
-	cfg.ServerURL = *serverURL
+	// Override config with command-line flags ONLY if they were explicitly set
+	// Check if port flag was explicitly provided (not just default value)
+	portFromEnv := getEnv("PORT", "")
+	if portFromEnv != "" || isFlagPassed("port") {
+		cfg.Port = *port
+	}
+
+	// Check if server URL was explicitly provided
+	serverURLFromEnv := getEnv("SERVER_URL", "")
+	if serverURLFromEnv != "" || isFlagPassed("url") {
+		cfg.ServerURL = *serverURL
+	}
+
+	// Always override uploads dir if provided
 	cfg.UploadsDir = *uploadsDir
 
 	// Load trash retention setting from database if available
@@ -88,6 +99,24 @@ func main() {
 
 	// Start file expiration cleanup scheduler (runs every 6 hours)
 	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)
+
+	// Cleanup expired file requests periodically (runs every 24 hours)
+	// File requests expire after 24 hours, then show "expired" message for 10 days, then are deleted
+	go func() {
+		// Run immediately on startup
+		if err := database.DB.CleanupExpiredFileRequests(); err != nil {
+			log.Printf("Error cleaning up expired file requests: %v", err)
+		}
+
+		// Then run every 24 hours
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := database.DB.CleanupExpiredFileRequests(); err != nil {
+				log.Printf("Error cleaning up expired file requests: %v", err)
+			}
+		}
+	}()
 
 	log.Printf("Server configuration:")
 	log.Printf("  - URL: %s", cfg.ServerURL)
@@ -172,4 +201,15 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// isFlagPassed checks if a command-line flag was explicitly set
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }

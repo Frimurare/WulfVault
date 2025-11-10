@@ -581,15 +581,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <textarea id="requestMessage" placeholder="Additional instructions for the uploader..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                            <input type="checkbox" id="requestNeverExpire" onchange="toggleRequestExpiry()">
-                            <span style="color: #333; font-weight: 600;">Never expire</span>
-                        </label>
-                        <div id="requestExpiryField">
-                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Expires in (days)</label>
-                            <input type="number" id="requestExpiryDays" min="1" max="365" value="30" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                        </div>
+                    <div style="margin-bottom: 20px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+                        <p style="color: #856404; font-size: 13px; margin: 0;">
+                            ⏰ <strong>Note:</strong> The upload link will automatically expire after 24 hours for security purposes.
+                        </p>
                     </div>
 
                     <div style="margin-bottom: 24px;">
@@ -1058,11 +1053,20 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
                         html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
                         html += '<button onclick="copyToClipboard(\\''+req.upload_url+'\\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
-                        html += '<button onclick="deleteFileRequest('+req.id+', \\''+escapeHtml(req.title)+'\\')" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
+                        html += '<button class="delete-request-btn" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
                         html += '</div></div>';
                     });
                     html += '</div>';
                     container.innerHTML = html;
+
+                    // Add event listeners for delete buttons
+                    document.querySelectorAll('.delete-request-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.getAttribute('data-request-id');
+                            const title = this.getAttribute('data-request-title');
+                            deleteFileRequest(parseInt(id), title);
+                        });
+                    });
                 });
         }
 
