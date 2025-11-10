@@ -135,7 +135,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Warning: Could not update user storage: %v", err)
 	}
 
-	// Generate download link
+	// Generate share and download links
+	splashLink := s.config.ServerURL + "/s/" + fileID
 	downloadLink := s.config.ServerURL + "/d/" + fileID
 
 	log.Printf("File uploaded: %s (%s) by user %d", header.Filename, database.FormatFileSize(fileSize), user.Id)
@@ -144,6 +145,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		"success":         true,
 		"file_id":         fileID,
 		"file_name":       header.Filename,
+		"share_url":       splashLink,
 		"download_url":    downloadLink,
 		"size":            fileSize,
 		"size_formatted":  database.FormatFileSize(fileSize),
@@ -151,6 +153,39 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		"downloads_limit": downloadsLimit,
 		"require_auth":    requireAuth,
 	})
+}
+
+// handleSplashPage shows the splash page with download button
+func (s *Server) handleSplashPage(w http.ResponseWriter, r *http.Request) {
+	// Extract file ID from URL (/s/ABC123)
+	fileID := r.URL.Path[len("/s/"):]
+
+	if fileID == "" {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	// Get file from database
+	fileInfo, err := database.DB.GetFileByID(fileID)
+	if err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if file has expired
+	if !fileInfo.UnlimitedTime && fileInfo.ExpireAt > 0 && time.Now().Unix() > fileInfo.ExpireAt {
+		s.renderSplashPageExpired(w, fileInfo)
+		return
+	}
+
+	// Check if download limit is reached
+	if !fileInfo.UnlimitedDownloads && fileInfo.DownloadsRemaining <= 0 {
+		s.renderSplashPageExpired(w, fileInfo)
+		return
+	}
+
+	// Render splash page
+	s.renderSplashPage(w, fileInfo)
 }
 
 // handleDownload handles file download
@@ -581,6 +616,290 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
 
         <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
             ` + s.config.FooterText + `
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// renderSplashPage renders the splash page with download button
+func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.FileInfo) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	companyName := brandingConfig["branding_company_name"]
+	primaryColor := brandingConfig["branding_primary_color"]
+	secondaryColor := brandingConfig["branding_secondary_color"]
+	logoData := brandingConfig["branding_logo"]
+
+	downloadURL := s.config.ServerURL + "/d/" + fileInfo.Id
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download File - ` + companyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, ` + primaryColor + ` 0%, ` + secondaryColor + ` 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .splash-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 30px;
+        }
+        .logo img {
+            max-width: 200px;
+            max-height: 80px;
+        }
+        .logo h1 {
+            color: ` + primaryColor + `;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .file-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .file-info {
+            margin-bottom: 30px;
+        }
+        .file-info h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        .file-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .detail-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .detail-item h3 {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .detail-item p {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .download-btn {
+            display: inline-block;
+            padding: 18px 40px;
+            background: ` + primaryColor + `;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + companyName + `">`
+	} else {
+		html += `<h1>` + companyName + `</h1>`
+	}
+
+	html += `
+        </div>
+
+        <div class="file-icon">📦</div>
+
+        <div class="file-info">
+            <h2>` + fileInfo.Name + `</h2>
+        </div>
+
+        <div class="file-details">
+            <div class="detail-item">
+                <h3>File Size</h3>
+                <p>` + fileInfo.Size + `</p>
+            </div>
+            <div class="detail-item">
+                <h3>Downloads</h3>
+                <p>` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>
+            </div>`
+
+	if !fileInfo.UnlimitedDownloads {
+		html += `
+            <div class="detail-item">
+                <h3>Remaining</h3>
+                <p>` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>
+            </div>`
+	}
+
+	if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
+		html += `
+            <div class="detail-item">
+                <h3>Expires</h3>
+                <p style="font-size: 14px;">` + fileInfo.ExpireAtString + `</p>
+            </div>`
+	}
+
+	html += `
+        </div>`
+
+	if fileInfo.RequireAuth {
+		html += `<div class="badge">🔒 Authentication Required</div>`
+	}
+
+	html += `
+
+        <a href="` + downloadURL + `" class="download-btn">⬇️ Download File</a>
+
+        <div class="footer">
+            Powered by ` + companyName + `
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// renderSplashPageExpired renders expired file splash page
+func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *database.FileInfo) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	companyName := brandingConfig["branding_company_name"]
+	primaryColor := brandingConfig["branding_primary_color"]
+	secondaryColor := brandingConfig["branding_secondary_color"]
+	logoData := brandingConfig["branding_logo"]
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Expired - ` + companyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, ` + primaryColor + ` 0%, ` + secondaryColor + ` 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .splash-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .logo {
+            margin-bottom: 30px;
+        }
+        .logo img {
+            max-width: 200px;
+            max-height: 80px;
+        }
+        .logo h1 {
+            color: ` + primaryColor + `;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .expired-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #f44336;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + companyName + `">`
+	} else {
+		html += `<h1>` + companyName + `</h1>`
+	}
+
+	html += `
+        </div>
+
+        <div class="expired-icon">⏰</div>
+
+        <h2>File No Longer Available</h2>
+        <p>This file has expired and is no longer available for download.</p>
+
+        <div class="footer">
+            Powered by ` + companyName + `
         </div>
     </div>
 </body>

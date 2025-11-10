@@ -142,14 +142,8 @@ func (s *Server) handleFileDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete file from disk
-	filePath := filepath.Join(s.config.UploadsDir, fileID)
-	if err := os.Remove(filePath); err != nil {
-		log.Printf("Warning: Could not delete file from disk: %v", err)
-	}
-
-	// Delete from database
-	if err := database.DB.DeleteFile(fileID); err != nil {
+	// Soft delete (move to trash)
+	if err := database.DB.DeleteFile(fileID, user.Id); err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to delete file")
 		return
 	}
@@ -425,6 +419,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 		html += `
             <ul class="file-list">`
 		for _, f := range files {
+			// Use splashpage URL instead of direct download
+			splashURL := s.config.ServerURL + "/s/" + f.Id
 			downloadURL := s.config.ServerURL + "/d/" + f.Id
 			status := "Active"
 			statusColor := "#4caf50"
@@ -460,11 +456,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
                         <div style="margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 4px; font-family: monospace; font-size: 12px; word-break: break-all;">
-                            <strong>Download URL:</strong> <a href="%s" target="_blank" style="color: #1976d2;">%s</a>
+                            <strong>Share URL:</strong> <a href="%s" target="_blank" style="color: #1976d2;">%s</a>
                         </div>
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy download link">
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy share link">
                             📋 Copy Link
                         </button>
                         <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t)" title="Edit file settings">
@@ -474,7 +470,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, downloadURL, downloadURL, downloadURL, f.Id, f.Name, f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id)
+                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, splashURL, splashURL, splashURL, f.Id, f.Name, f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id)
 		}
 		html += `
             </ul>`

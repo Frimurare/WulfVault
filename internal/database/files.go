@@ -34,6 +34,8 @@ type FileInfo struct {
 	UnlimitedDownloads bool
 	UnlimitedTime      bool
 	RequireAuth        bool
+	DeletedAt          int64
+	DeletedBy          int
 }
 
 // SaveFile saves file metadata to the database
@@ -66,7 +68,7 @@ func (d *Database) SaveFile(file *FileInfo) error {
 	return err
 }
 
-// GetFileByID retrieves a file by its ID
+// GetFileByID retrieves a file by its ID (only non-deleted files)
 func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 	file := &FileInfo{}
 	var unlimitedDownloads, unlimitedTime, requireAuth int
@@ -75,13 +77,13 @@ func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
-		       UnlimitedDownloads, UnlimitedTime, RequireAuth
-		FROM Files WHERE Id = ?`, id).Scan(
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files WHERE Id = ? AND DeletedAt = 0`, id).Scan(
 		&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash,
 		&file.HotlinkId, &file.ContentType, &file.AwsBucket, &file.ExpireAtString,
 		&file.ExpireAt, &file.PendingDeletion, &file.SizeBytes, &file.UploadDate,
 		&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
-		&unlimitedDownloads, &unlimitedTime, &requireAuth,
+		&unlimitedDownloads, &unlimitedTime, &requireAuth, &file.DeletedAt, &file.DeletedBy,
 	)
 
 	if err != nil {
@@ -98,14 +100,14 @@ func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 	return file, nil
 }
 
-// GetFilesByUser returns all files for a user
+// GetFilesByUser returns all non-deleted files for a user
 func (d *Database) GetFilesByUser(userId int) ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
-		       UnlimitedDownloads, UnlimitedTime, RequireAuth
-		FROM Files WHERE UserId = ? ORDER BY UploadDate DESC`, userId)
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files WHERE UserId = ? AND DeletedAt = 0 ORDER BY UploadDate DESC`, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -114,14 +116,14 @@ func (d *Database) GetFilesByUser(userId int) ([]*FileInfo, error) {
 	return scanFiles(rows)
 }
 
-// GetAllFiles returns all files
+// GetAllFiles returns all non-deleted files
 func (d *Database) GetAllFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
-		       UnlimitedDownloads, UnlimitedTime, RequireAuth
-		FROM Files ORDER BY UploadDate DESC`)
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files WHERE DeletedAt = 0 ORDER BY UploadDate DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -166,24 +168,27 @@ func (d *Database) UpdateFileSettings(fileId string, downloadsRemaining int, exp
 	return err
 }
 
-// DeleteFile deletes a file from the database
-func (d *Database) DeleteFile(fileId string) error {
+// DeleteFile soft-deletes a file (moves to trash for 5 days)
+func (d *Database) DeleteFile(fileId string, userId int) error {
+	now := time.Now().Unix()
+	_, err := d.db.Exec("UPDATE Files SET DeletedAt = ?, DeletedBy = ? WHERE Id = ?", now, userId, fileId)
+	return err
+}
+
+// PermanentDeleteFile permanently deletes a file from the database
+func (d *Database) PermanentDeleteFile(fileId string) error {
 	_, err := d.db.Exec("DELETE FROM Files WHERE Id = ?", fileId)
 	return err
 }
 
-// GetExpiredFiles returns files that should be deleted
-func (d *Database) GetExpiredFiles() ([]*FileInfo, error) {
-	now := time.Now().Unix()
-
+// GetDeletedFiles returns all files in trash (admin only)
+func (d *Database) GetDeletedFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
-		       UnlimitedDownloads, UnlimitedTime, RequireAuth
-		FROM Files
-		WHERE (ExpireAt > 0 AND ExpireAt < ? AND UnlimitedTime = 0)
-		   OR (DownloadsRemaining <= 0 AND UnlimitedDownloads = 0)`, now)
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files WHERE DeletedAt > 0 ORDER BY DeletedAt DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -192,12 +197,56 @@ func (d *Database) GetExpiredFiles() ([]*FileInfo, error) {
 	return scanFiles(rows)
 }
 
-// CalculateUserStorage calculates total storage used by a user
+// GetOldDeletedFiles returns files deleted more than 5 days ago for cleanup
+func (d *Database) GetOldDeletedFiles() ([]*FileInfo, error) {
+	fiveDaysAgo := time.Now().Add(-5 * 24 * time.Hour).Unix()
+
+	rows, err := d.db.Query(`
+		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files WHERE DeletedAt > 0 AND DeletedAt < ?`, fiveDaysAgo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanFiles(rows)
+}
+
+// RestoreFile restores a file from trash
+func (d *Database) RestoreFile(fileId string) error {
+	_, err := d.db.Exec("UPDATE Files SET DeletedAt = 0, DeletedBy = 0 WHERE Id = ?", fileId)
+	return err
+}
+
+// GetExpiredFiles returns non-deleted files that should be deleted
+func (d *Database) GetExpiredFiles() ([]*FileInfo, error) {
+	now := time.Now().Unix()
+
+	rows, err := d.db.Query(`
+		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
+		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files
+		WHERE DeletedAt = 0 AND ((ExpireAt > 0 AND ExpireAt < ? AND UnlimitedTime = 0)
+		   OR (DownloadsRemaining <= 0 AND UnlimitedDownloads = 0))`, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanFiles(rows)
+}
+
+// CalculateUserStorage calculates total storage used by a user (non-deleted files only)
 func (d *Database) CalculateUserStorage(userId int) (int64, error) {
 	var totalBytes sql.NullInt64
 
 	err := d.db.QueryRow(`
-		SELECT SUM(SizeBytes) FROM Files WHERE UserId = ?`, userId).Scan(&totalBytes)
+		SELECT SUM(SizeBytes) FROM Files WHERE UserId = ? AND DeletedAt = 0`, userId).Scan(&totalBytes)
 
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
@@ -211,21 +260,21 @@ func (d *Database) CalculateUserStorage(userId int) (int64, error) {
 	return totalBytes.Int64 / (1024 * 1024), nil
 }
 
-// GetTotalFiles returns the count of all files
+// GetTotalFiles returns the count of all non-deleted files
 func (d *Database) GetTotalFiles() (int, error) {
 	var count int
-	err := d.db.QueryRow("SELECT COUNT(*) FROM Files").Scan(&count)
+	err := d.db.QueryRow("SELECT COUNT(*) FROM Files WHERE DeletedAt = 0").Scan(&count)
 	return count, err
 }
 
-// GetActiveFiles returns count of non-expired files
+// GetActiveFiles returns count of non-expired, non-deleted files
 func (d *Database) GetActiveFiles() (int, error) {
 	now := time.Now().Unix()
 	var count int
 
 	err := d.db.QueryRow(`
 		SELECT COUNT(*) FROM Files
-		WHERE (ExpireAt = 0 OR ExpireAt > ? OR UnlimitedTime = 1)
+		WHERE DeletedAt = 0 AND (ExpireAt = 0 OR ExpireAt > ? OR UnlimitedTime = 1)
 		  AND (DownloadsRemaining > 0 OR UnlimitedDownloads = 1)`, now).Scan(&count)
 
 	return count, err
@@ -276,7 +325,7 @@ func scanFiles(rows *sql.Rows) ([]*FileInfo, error) {
 			&file.HotlinkId, &file.ContentType, &file.AwsBucket, &file.ExpireAtString,
 			&file.ExpireAt, &file.PendingDeletion, &file.SizeBytes, &file.UploadDate,
 			&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
-			&unlimitedDownloads, &unlimitedTime, &requireAuth,
+			&unlimitedDownloads, &unlimitedTime, &requireAuth, &file.DeletedAt, &file.DeletedBy,
 		)
 		if err != nil {
 			return nil, err
