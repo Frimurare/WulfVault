@@ -461,6 +461,10 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get branding config for logo
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
