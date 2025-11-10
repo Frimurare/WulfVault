@@ -735,7 +735,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 	}
 
 	html += `
-    <form method="POST" action="` + action + `">
+    <form method="POST" action="` + action + `" onsubmit="return validatePasswords()">
         <label>Name:</label>
         <input type="text" name="name" value="` + nameVal + `" required>
 
@@ -748,7 +748,27 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 		}
 		return ""
 	}() + `:</label>
-        <input type="password" name="password">
+        <div style="position: relative;">
+            <input type="password" id="password" name="password"` + func() string {
+		if !isEdit {
+			return " required"
+		}
+		return ""
+	}() + `>
+            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;">👁️</button>
+        </div>` + func() string {
+		if !isEdit {
+			return `
+
+        <label>Confirm Password:</label>
+        <div style="position: relative;">
+            <input type="password" id="password_confirm" required>
+            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;">👁️</button>
+        </div>
+        <div id="password-error" style="color: #c33; font-size: 14px; margin-top: 4px; display: none;">Passwords do not match</div>`
+		}
+		return ""
+	}() + `
 
         <label>Storage Quota (MB):</label>
         <input type="number" name="quota_mb" value="` + quotaVal + `" required>
@@ -773,6 +793,35 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
         <button type="submit">Save</button>
         <a href="/admin/users">Cancel</a>
     </form>
+
+    <script>
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field.type === 'password') {
+                field.type = 'text';
+            } else {
+                field.type = 'password';
+            }
+        }
+
+        function validatePasswords() {` + func() string {
+		if !isEdit {
+			return `
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('password_confirm').value;
+            const errorDiv = document.getElementById('password-error');
+
+            if (password !== passwordConfirm) {
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            errorDiv.style.display = 'none';`
+		}
+		return ""
+	}() + `
+            return true;
+        }
+    </script>
 </body>
 </html>`
 

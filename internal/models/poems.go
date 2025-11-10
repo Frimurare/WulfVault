@@ -803,9 +803,7 @@ func GetRandomPoem() Poem {
 
 // GetPoemOfTheDay returns a consistent poem for the current day
 func GetPoemOfTheDay() Poem {
-	// Use current date as seed for consistent daily poem
-	now := time.Now()
-	daysSinceEpoch := now.Unix() / 86400
-	rand.Seed(daysSinceEpoch)
+	// Use current time as seed for random poem on each visit
+	rand.Seed(time.Now().UnixNano())
 	return AllPoems[rand.Intn(len(AllPoems))]
 }
