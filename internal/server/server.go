@@ -178,7 +178,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "healthy",
-		"version": "1.3",
+		"version": "1.31",
 	})
 }
 
