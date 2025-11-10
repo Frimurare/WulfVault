@@ -362,6 +362,89 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         input[type="file"] {
             display: none;
         }
+        .upload-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+        .upload-options {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #e0e0e0;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: ` + s.config.PrimaryColor + `;
+        }
+        .btn-large {
+            padding: 12px 32px;
+            font-size: 16px;
+            margin-right: 12px;
+        }
+        .link-display {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f0f8ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+        }
+        .link-display h4 {
+            color: #333;
+            font-size: 13px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .link-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .link-box a {
+            flex: 1;
+            color: #1976d2;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .link-box button {
+            flex-shrink: 0;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -393,13 +476,72 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             </div>
         </div>
 
-        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            <h2>Drop files here or click to upload</h2>
-            <p>Maximum file size: 5 GB</p>
-            <input type="file" id="fileInput" multiple>
+        <!-- Upload Form -->
+        <div class="upload-section">
+            <h2 style="margin-bottom: 20px; color: #333;">Upload File</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h3>Drop files here or click to select</h3>
+                    <p>Maximum file size: 5 GB</p>
+                    <input type="file" id="fileInput" name="file">
+                </div>
+
+                <div class="upload-options" id="uploadOptions" style="display: none;">
+                    <h3 style="margin-bottom: 16px; color: #333;">Upload Settings</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expireDate">📅 Expiration Date</label>
+                            <input type="date" id="expireDate" name="expire_date">
+                            <label style="margin-top: 8px;">
+                                <input type="checkbox" id="unlimitedTime" name="unlimited_time"> Never expire (by time)
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="downloadsLimit">⬇️ Download Limit</label>
+                            <input type="number" id="downloadsLimit" name="downloads_limit" min="1" value="10">
+                            <label style="margin-top: 8px;">
+                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads"> Unlimited downloads
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🔗 Link Type</label>
+                        <div style="display: flex; gap: 16px; margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="radio" name="link_type" value="splash" checked>
+                                <span>Splash Page (recommended)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="radio" name="link_type" value="direct">
+                                <span>Direct Download</span>
+                            </label>
+                        </div>
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">
+                            Splash page shows branding and file info before download
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="requireAuth" name="require_auth">
+                            🔒 Require recipient authentication (email + password)
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large" id="uploadButton">
+                        📤 Upload File
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetUploadForm()">
+                        ✖️ Cancel
+                    </button>
+                </div>
+            </form>
         </div>
 
         <div class="files-section">
@@ -416,8 +558,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 		html += `
             <ul class="file-list">`
 		for _, f := range files {
-			// Use splashpage URL instead of direct download
+			// Both URL types
 			splashURL := s.config.ServerURL + "/s/" + f.Id
+			directURL := s.config.ServerURL + "/d/" + f.Id
 			status := "Active"
 			statusColor := "#4caf50"
 
@@ -451,22 +594,31 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <h3>📄 %s %s</h3>
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
-                        <div style="margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 4px; font-family: monospace; font-size: 12px; word-break: break-all;">
-                            <strong>Share URL:</strong> <a href="%s" target="_blank" style="color: #1976d2;">%s</a>
+                        <div class="link-display">
+                            <h4>🌐 Splash Page (Recommended - Shows branding)</h4>
+                            <div class="link-box">
+                                <a href="%s" target="_blank">%s</a>
+                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 Copy</button>
+                            </div>
+                            <h4>⬇️ Direct Download Link</h4>
+                            <div class="link-box">
+                                <a href="%s" target="_blank">%s</a>
+                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 Copy</button>
+                            </div>
                         </div>
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy share link">
-                            📋 Copy Link
-                        </button>
                         <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t)" title="Edit file settings">
                             ✏️ Edit
                         </button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')">
+                        <button class="btn btn-danger" onclick="deleteFile('%s', '%s')">
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, splashURL, splashURL, splashURL, f.Id, f.Name, f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id)
+                </li>`, f.Name, authBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status,
+				splashURL, splashURL, splashURL,
+				directURL, directURL, directURL,
+				f.Id, f.Name, f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, f.Name)
 		}
 		html += `
             </ul>`
@@ -760,7 +912,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 const response = await fetch('/file/edit', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `file_id=${fileId}&expiration_days=${expirationDays}&downloads_limit=${downloadsLimit}`
+                    body: 'file_id=' + fileId + '&expiration_days=' + expirationDays + '&downloads_limit=' + downloadsLimit
                 });
 
                 const result = await response.json();
