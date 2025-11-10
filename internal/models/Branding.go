@@ -18,11 +18,11 @@ type Branding struct {
 // DefaultBranding returns the default branding configuration
 func DefaultBranding() Branding {
 	return Branding{
-		CompanyName:    "Sharecare",
-		PrimaryColor:   "#0066CC",
-		SecondaryColor: "#333333",
-		FooterText:     "Secure File Sharing",
-		WelcomeMessage: "Welcome to Sharecare - Secure File Sharing",
+		CompanyName:    "Manvarg Sharecare",
+		PrimaryColor:   "#2563eb",
+		SecondaryColor: "#1e40af",
+		FooterText:     "Secure File Sharing • Contact: ulf@manvarg.se",
+		WelcomeMessage: "Welcome to Manvarg Sharecare - Secure File Sharing",
 	}
 }
 

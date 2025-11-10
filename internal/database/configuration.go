@@ -48,7 +48,7 @@ func (d *Database) GetBrandingConfig() (map[string]string, error) {
 		config["branding_logo"] = ""
 	}
 	if _, ok := config["branding_company_name"]; !ok {
-		config["branding_company_name"] = "Sharecare"
+		config["branding_company_name"] = "Manvarg Sharecare"
 	}
 	if _, ok := config["branding_primary_color"]; !ok {
 		config["branding_primary_color"] = "#2563eb"
