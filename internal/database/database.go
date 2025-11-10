@@ -59,6 +59,36 @@ func (d *Database) createTables() error {
 	if err != nil {
 		return fmt.Errorf("failed to execute schema: %w", err)
 	}
+
+	// Run migrations for existing databases
+	if err := d.runMigrations(); err != nil {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return nil
+}
+
+// runMigrations handles database schema migrations
+func (d *Database) runMigrations() error {
+	// Migration 1: Add DeletedAt and DeletedBy columns to Files table if they don't exist
+	var count int
+	row := d.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('Files') WHERE name='DeletedAt'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Adding DeletedAt and DeletedBy columns to Files table")
+
+		// Add DeletedAt column
+		if _, err := d.db.Exec("ALTER TABLE Files ADD COLUMN DeletedAt INTEGER DEFAULT 0"); err != nil {
+			log.Printf("Migration warning for DeletedAt (may be safe to ignore): %v", err)
+		}
+
+		// Add DeletedBy column
+		if _, err := d.db.Exec("ALTER TABLE Files ADD COLUMN DeletedBy INTEGER DEFAULT 0"); err != nil {
+			log.Printf("Migration warning for DeletedBy (may be safe to ignore): %v", err)
+		}
+
+		log.Printf("Migration completed: DeletedAt and DeletedBy columns added")
+	}
+
 	return nil
 }
 

@@ -1,26 +1,26 @@
-# Prudencia Security File Sharing System
+# Manvarg Sharecare File Sharing System
 ## Open Source Alternative to WeTransfer
 
 ---
 
 ## 🎯 PROJECT OVERVIEW
 
-Build a lightweight, self-hosted file sharing system branded as **Prudencia Security**. This is an open-source alternative to WeTransfer/Sprend, inspired by Gokapi but simpler and tailored for surveillance system customers.
+Build a lightweight, self-hosted file sharing system branded as **Manvarg Sharecare**. This is an open-source alternative to WeTransfer/Sprend, inspired by Gokapi but simpler and tailored for surveillance system customers.
 
-**Core Purpose**: Provide Prudencia Security customers (especially those with Milestone XProtect video surveillance systems) a branded file sharing service as part of their service agreements, since XProtect lacks built-in file sharing like OpenEye systems have.
+**Core Purpose**: Provide Manvarg customers (especially those with Milestone XProtect video surveillance systems) a branded file sharing service as part of their service agreements, since XProtect lacks built-in file sharing like OpenEye systems have.
 
 ---
 
 ## 🎨 BRANDING REQUIREMENTS
 
 ### Visual Identity
-- **Brand Name**: Prudencia Security
-- **Colors**: 
-  - Primary: Prudencia blue/security colors (to be extracted from logo)
+- **Brand Name**: Manvarg Sharecare
+- **Colors**:
+  - Primary: Manvarg blue/security colors (to be extracted from logo)
   - Secondary: Professional dark/light contrast
   - Accent: Trust-inspiring colors
 - **Logo Integration**:
-  - Prudencia Security logo must be prominent on all pages
+  - Manvarg logo must be prominent on all pages
   - Header/navigation bar
   - Login pages
   - Email templates
@@ -112,12 +112,12 @@ Build a lightweight, self-hosted file sharing system branded as **Prudencia Secu
 
 ### Email Integration
 - Send download link via email directly from system
-- Email template branded with Prudencia Security
+- Email template branded with Manvarg Sharecare
 - Include:
   - File name and size
   - Expiration info
   - Download instructions
-  - Prudencia Security branding/logo
+  - Manvarg branding/logo
 
 ---
 
@@ -245,25 +245,25 @@ For each file, show:
      -p 8080:8080 \
      -v ./data:/data \
      -v ./uploads:/uploads \
-     -e SERVER_URL=https://files.prudencia.se \
-     -e ADMIN_EMAIL=admin@prudencia.se \
-     prudencia/fileshare:latest
+     -e SERVER_URL=https://files.manvarg.se \
+     -e ADMIN_EMAIL=ulf@manvarg.se \
+     manvarg/sharecare:latest
    ```
 
 2. **Docker Compose** (Recommended)
    ```yaml
    version: '3.8'
    services:
-     prudencia-files:
-       image: prudencia/fileshare:latest
+     manvarg-sharecare:
+       image: manvarg/sharecare:latest
        ports:
          - "8080:8080"
        volumes:
          - ./data:/data
          - ./uploads:/uploads
        environment:
-         - SERVER_URL=https://files.prudencia.se
-         - ADMIN_EMAIL=admin@prudencia.se
+         - SERVER_URL=https://files.manvarg.se
+         - ADMIN_EMAIL=ulf@manvarg.se
    ```
 
 3. **Binary Installation** (Linux/Windows)
@@ -275,7 +275,7 @@ For each file, show:
 - Each installation is independent
 - Server URL must be configurable per instance
 - Allows deployment on:
-  - Prudencia's own servers (main service)
+  - Manvarg's own servers (main service)
   - Customer's XProtect servers (future option)
   - Customer's own infrastructure
 
@@ -297,7 +297,7 @@ For each file, show:
 - [ ] User dashboard (my files, usage)
 - [ ] Admin dashboard (all files, all users)
 - [ ] Storage quota per user
-- [ ] Prudencia Security branding throughout
+- [ ] Manvarg Sharecare branding throughout
 - [ ] Docker deployment
 - [ ] Basic documentation
 
@@ -328,7 +328,7 @@ For each file, show:
 ## 📋 USER WORKFLOWS
 
 ### Workflow 1: Upload and Share with Authentication
-1. User logs into Prudencia File Share
+1. User logs into Manvarg Sharecare
 2. Drags and drops video file from XProtect export
 3. Sets expiration: 5 downloads OR 14 days
 4. Chooses "Require download authentication"
@@ -369,7 +369,7 @@ For each file, show:
 ### Key Pages
 
 1. **Landing/Login Page**
-   - Prudencia Security logo prominent
+   - Manvarg logo prominent
    - Clean login form
    - Optional: Marketing copy about secure file sharing
 
@@ -386,14 +386,14 @@ For each file, show:
    - Storage overview
 
 4. **Download Page**
-   - Prudencia branding
+   - Manvarg branding
    - File info (name, size)
    - For authenticated: Login/create account form
    - Download button
    - Expiration notice
 
 5. **Email Template**
-   - Prudencia Security header
+   - Manvarg Sharecare header
    - Clear call-to-action
    - File details
    - Professional footer
@@ -489,7 +489,7 @@ For each file, show:
 1. **Download Authentication**: Recipients can create accounts to download
 2. **Download Tracking**: Know exactly who downloaded what and when
 3. **Multi-tenant Folders**: Different quotas for different customer tiers
-4. **Complete Branding**: Prudencia Security throughout
+4. **Complete Branding**: Manvarg Sharecare throughout
 5. **Simpler**: Focus on core file sharing, remove advanced features
 6. **Customer Focus**: Built specifically for surveillance system customers
 7. **Email Integration**: Built-in, not optional
@@ -500,17 +500,17 @@ For each file, show:
 ## 💼 BUSINESS CONTEXT
 
 ### Target Users
-- Prudencia Security customers with video surveillance service agreements
+- Manvarg customers with video surveillance service agreements
 - Primarily Milestone XProtect users (Windows-based)
 - May expand to OpenEye customers
-- Internal Prudencia staff
+- Internal Manvarg staff
 
 ### Use Cases
-1. **Video Export Sharing**: Export from XProtect, upload to Prudencia, share with authorities/management
+1. **Video Export Sharing**: Export from XProtect, upload to Manvarg Sharecare, share with authorities/management
 2. **Documentation Sharing**: Share system manuals, reports with customers
 3. **Evidence Chain**: Trackable video downloads for legal purposes
 4. **Customer Convenience**: No need for external services like WeTransfer
-5. **Brand Experience**: Reinforce Prudencia as full-service security provider
+5. **Brand Experience**: Reinforce Manvarg as full-service security provider
 
 ### Success Metrics
 - Number of active customer accounts
@@ -527,7 +527,7 @@ For each file, show:
 - All Phase 1 features
 - Docker deployment
 - Basic documentation
-- Prudencia.se deployment
+- Manvarg.se deployment
 
 ### Version 1.5 (6 months)
 - Phase 2 features
@@ -605,7 +605,7 @@ Alternative: **Python + Flask** if easier to maintain
 
 ### File Structure (Example for Go)
 ```
-prudencia-fileshare/
+manvarg-sharecare/
 ├── cmd/
 │   └── server/
 │       └── main.go
@@ -622,7 +622,7 @@ prudencia-fileshare/
 │   │   ├── css/
 │   │   ├── js/
 │   │   └── images/
-│   │       └── prudencia-logo.svg
+│   │       └── manvarg-logo.svg
 ├── config/
 │   └── config.example.yaml
 ├── docker/
@@ -646,9 +646,10 @@ prudencia-fileshare/
 
 ## 📞 SUPPORT & CONTACT
 
-**Project Maintainer**: Uffe @ Prudencia Security
-**Repository**: TBD (will be created on GitHub)
-**Documentation**: TBD (will be hosted at docs.prudencia.se or similar)
+**Project Maintainer**: Ulf Holmström @ Manvarg
+**Contact**: ulf@manvarg.se
+**Repository**: https://github.com/Frimurare/Sharecare
+**Documentation**: https://github.com/Frimurare/Sharecare/wiki
 
 ---
 
@@ -660,8 +661,8 @@ The project is considered "launch ready" when:
 - [ ] Users can upload files and create two types of links
 - [ ] Download authentication works (email + password)
 - [ ] Download tracking shows who downloaded what
-- [ ] Email sending works with Prudencia branding
-- [ ] Prudencia Security logo and colors throughout
+- [ ] Email sending works with Manvarg branding
+- [ ] Manvarg Sharecare logo and colors throughout
 - [ ] Expiration (downloads + time) works
 - [ ] User dashboard shows storage usage
 - [ ] Admin dashboard shows system overview
@@ -682,7 +683,7 @@ The project is considered "launch ready" when:
 - **Security First**: This handles potentially sensitive video evidence
 - **Test on Windows**: XProtect runs on Windows, test there
 - **Email Early**: Don't leave email integration for last
-- **Branding Everywhere**: Every page should scream "Prudencia Security"
+- **Branding Everywhere**: Every page should scream "Manvarg Sharecare"
 - **Think Multi-Instance**: Each deployment is independent
 - **Document as You Go**: Don't leave docs for the end
 
@@ -692,18 +693,18 @@ The project is considered "launch ready" when:
 
 ## 🎯 SUCCESS VISION
 
-Imagine a Prudencia Security customer who just exported a video from their XProtect system showing a break-in. They:
+Imagine a Manvarg customer who just exported a video from their XProtect system showing a break-in. They:
 
-1. Log into `files.prudencia.se` with their customer account
+1. Log into `files.manvarg.se` with their customer account
 2. Drag the 2GB video file into the browser
 3. Set it to expire after 5 downloads or 30 days
 4. Enter the police officer's email
 5. Click "Send"
-6. The officer receives a professional email with Prudencia branding
+6. The officer receives a professional email with Manvarg branding
 7. Opens the link, creates a download account (email + password)
 8. Downloads the video
 9. Customer sees: "Downloaded by officer.svensson@police.se on 2024-11-08"
-10. Customer feels confident using Prudencia's complete security solution
+10. Customer feels confident using Manvarg's complete security solution
 
 **That's the goal.**
 
