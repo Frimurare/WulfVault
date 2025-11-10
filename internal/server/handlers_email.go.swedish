@@ -185,7 +185,7 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 	err = provider.SendEmail(
 		user.Email,
 		"Sharecare Email Test",
-		"<h1>Test successful!</h1><p>Your email configuration is working correctly.</p>",
+		"<h1>✓ Test successful!</h1><p>Your email configuration is working correctly.</p>",
 		"Test successful! Your email configuration is working correctly.",
 	)
 
@@ -634,7 +634,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         </div>
 
         <div class="info-box">
-            <h3>Security Information</h3>
+            <h3>ℹ️ Security</h3>
             <ul>
                 <li>API keys and passwords are encrypted with AES-256-GCM before storage</li>
                 <li>Encrypted values are hidden in the interface after saving</li>
@@ -681,7 +681,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 });
 
                 if (response.ok) {
-                    showSuccess('Brevo settings saved successfully!');
+                    showSuccess('Brevo settings saved!');
                     document.getElementById('brevo-api-key').value = '';
                     document.getElementById('brevo-api-key').placeholder = '••••••••••••••••';
                     document.getElementById('test-brevo').disabled = false;
@@ -691,13 +691,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                     showError('Error: ' + error.error);
                 }
             } catch (err) {
-                if (err.name === 'TimeoutError') {
-                    showError('Request timed out. Please try again.');
-                } else if (err.name === 'AbortError') {
-                    showError('Request was aborted. Please try again.');
-                } else {
-                    showError('Error: ' + err.message);
-                }
+                showError('Error: ' + err.message);
             }
         });
 
@@ -731,7 +725,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 });
 
                 if (response.ok) {
-                    showSuccess('SMTP settings saved successfully!');
+                    showSuccess('SMTP settings saved!');
                     document.getElementById('smtp-password').value = '';
                     document.getElementById('smtp-password').placeholder = '••••••••••••••••';
                     document.getElementById('test-smtp').disabled = false;
@@ -741,13 +735,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                     showError('Error: ' + error.error);
                 }
             } catch (err) {
-                if (err.name === 'TimeoutError') {
-                    showError('Request timed out. Please try again.');
-                } else if (err.name === 'AbortError') {
-                    showError('Request was aborted. Please try again.');
-                } else {
-                    showError('Error: ' + err.message);
-                }
+                showError('Error: ' + err.message);
             }
         });
 
@@ -763,19 +751,13 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 });
 
                 if (response.ok) {
-                    showSuccess('Connection to Brevo successful! Test email sent.');
+                    showSuccess('✓ Connection to Brevo works! Test email sent.');
                 } else {
                     const error = await response.json();
-                    showError('Test failed: ' + error.error);
+                    showError('✗ Test failed: ' + error.error);
                 }
             } catch (err) {
-                if (err.name === 'TimeoutError') {
-                    showError('Test timed out. Please check your connection and try again.');
-                } else if (err.name === 'AbortError') {
-                    showError('Test was aborted. Please try again.');
-                } else {
-                    showError('Test failed: ' + err.message);
-                }
+                showError('✗ Test failed: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Test connection';
@@ -794,19 +776,13 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 });
 
                 if (response.ok) {
-                    showSuccess('Connection to SMTP server successful! Test email sent.');
+                    showSuccess('✓ Connection to SMTP server works! Test email sent.');
                 } else {
                     const error = await response.json();
-                    showError('Test failed: ' + error.error);
+                    showError('✗ Test failed: ' + error.error);
                 }
             } catch (err) {
-                if (err.name === 'TimeoutError') {
-                    showError('Test timed out. Please check your connection and try again.');
-                } else if (err.name === 'AbortError') {
-                    showError('Test was aborted. Please try again.');
-                } else {
-                    showError('Test failed: ' + err.message);
-                }
+                showError('✗ Test failed: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Test connection';
