@@ -118,6 +118,11 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             text-align: center;
             margin-bottom: 30px;
         }
+        .logo img {
+            max-width: 200px;
+            max-height: 80px;
+            margin-bottom: 10px;
+        }
         .logo h1 {
             color: ` + s.config.PrimaryColor + `;
             font-size: 28px;
@@ -182,8 +187,19 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
 </head>
 <body>
     <div class="login-container">
-        <div class="logo">
-            <h1>` + s.config.CompanyName + `</h1>
+        <div class="logo">`
+
+	// Get branding config for logo
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	if logoData, ok := brandingConfig["branding_logo"]; ok && logoData != "" {
+		html += `
+            <img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `
+            <h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
             <p>Secure File Sharing</p>
         </div>`
 

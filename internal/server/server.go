@@ -36,10 +36,14 @@ func (s *Server) Start() error {
 	// Setup routes
 	mux := http.NewServeMux()
 
+	// Load branding configuration
+	s.loadBrandingConfig()
+
 	// Public routes
 	mux.HandleFunc("/", s.handleHome)
 	mux.HandleFunc("/login", s.handleLogin)
 	mux.HandleFunc("/logout", s.handleLogout)
+	mux.HandleFunc("/s/", s.handleSplashPage)
 	mux.HandleFunc("/d/", s.handleDownload)
 	mux.HandleFunc("/health", s.handleHealth)
 
@@ -57,6 +61,9 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/users/edit", s.requireAdmin(s.handleAdminUserEdit))
 	mux.HandleFunc("/admin/users/delete", s.requireAdmin(s.handleAdminUserDelete))
 	mux.HandleFunc("/admin/files", s.requireAdmin(s.handleAdminFiles))
+	mux.HandleFunc("/admin/trash", s.requireAdmin(s.handleAdminTrash))
+	mux.HandleFunc("/admin/trash/restore", s.requireAdmin(s.handleAdminRestoreFile))
+	mux.HandleFunc("/admin/trash/delete", s.requireAdmin(s.handleAdminPermanentDelete))
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 
@@ -145,12 +152,34 @@ func (s *Server) getUserFromSession(r *http.Request) (*models.User, error) {
 	return user, nil
 }
 
+// loadBrandingConfig loads branding configuration from database
+func (s *Server) loadBrandingConfig() {
+	brandingConfig, err := database.DB.GetBrandingConfig()
+	if err != nil {
+		log.Printf("Warning: Failed to load branding config: %v", err)
+		return
+	}
+
+	// Update server config with branding
+	if companyName, ok := brandingConfig["branding_company_name"]; ok && companyName != "" {
+		s.config.CompanyName = companyName
+	}
+	if primaryColor, ok := brandingConfig["branding_primary_color"]; ok && primaryColor != "" {
+		s.config.PrimaryColor = primaryColor
+	}
+	if secondaryColor, ok := brandingConfig["branding_secondary_color"]; ok && secondaryColor != "" {
+		s.config.SecondaryColor = secondaryColor
+	}
+
+	log.Printf("Branding config loaded: %s", s.config.CompanyName)
+}
+
 // handleHealth is a health check endpoint
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "healthy",
-		"version": "0.1.0",
+		"version": "1.2",
 	})
 }
 

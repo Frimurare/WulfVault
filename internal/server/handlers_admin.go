@@ -1,8 +1,12 @@
 package server
 
 import (
+	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -208,8 +212,51 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement branding update
-	s.renderAdminBranding(w, "Branding updated (feature in progress)")
+	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10 MB max
+		s.renderAdminBranding(w, "Failed to parse form: "+err.Error())
+		return
+	}
+
+	// Get form values
+	companyName := r.FormValue("company_name")
+	primaryColor := r.FormValue("primary_color")
+	secondaryColor := r.FormValue("secondary_color")
+
+	// Handle logo upload
+	logoData := ""
+	file, _, err := r.FormFile("logo")
+	if err == nil {
+		defer file.Close()
+		// Read file data
+		buf := make([]byte, 10<<20) // 10MB max
+		n, err := file.Read(buf)
+		if err != nil && err.Error() != "EOF" {
+			s.renderAdminBranding(w, "Failed to read logo file: "+err.Error())
+			return
+		}
+		// Convert to base64 data URL
+		contentType := http.DetectContentType(buf[:n])
+		logoData = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(buf[:n])
+	}
+
+	// Save to database
+	if companyName != "" {
+		database.DB.SetConfigValue("branding_company_name", companyName)
+	}
+	if primaryColor != "" {
+		database.DB.SetConfigValue("branding_primary_color", primaryColor)
+	}
+	if secondaryColor != "" {
+		database.DB.SetConfigValue("branding_secondary_color", secondaryColor)
+	}
+	if logoData != "" {
+		database.DB.SetConfigValue("branding_logo", logoData)
+	}
+
+	// Reload config
+	s.loadBrandingConfig()
+
+	s.renderAdminBranding(w, "Branding settings updated successfully!")
 }
 
 // handleAdminSettings handles general settings
@@ -226,6 +273,97 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Implement settings update
 	s.renderAdminSettings(w, "Settings updated (feature in progress)")
+}
+
+// handleAdminTrash lists all deleted files (trash)
+func (s *Server) handleAdminTrash(w http.ResponseWriter, r *http.Request) {
+	files, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch trash")
+		return
+	}
+
+	s.renderAdminTrash(w, files)
+}
+
+// handleAdminPermanentDelete permanently deletes a file
+func (s *Server) handleAdminPermanentDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	fileID := r.FormValue("file_id")
+	if fileID == "" {
+		s.sendError(w, http.StatusBadRequest, "Missing file_id")
+		return
+	}
+
+	// Get file info before deletion
+	// We need to use a special query to get deleted files
+	rows, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch file info")
+		return
+	}
+
+	var fileInfo *database.FileInfo
+	for _, f := range rows {
+		if f.Id == fileID {
+			fileInfo = f
+			break
+		}
+	}
+
+	if fileInfo == nil {
+		s.sendError(w, http.StatusNotFound, "File not found in trash")
+		return
+	}
+
+	// Delete from disk
+	filePath := filepath.Join(s.config.UploadsDir, fileID)
+	if err := os.Remove(filePath); err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("Warning: Could not delete file from disk: %v", err)
+		}
+	}
+
+	// Permanently delete from database
+	if err := database.DB.PermanentDeleteFile(fileID); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to delete file")
+		return
+	}
+
+	log.Printf("File permanently deleted by admin: %s (ID: %s)", fileInfo.Name, fileID)
+
+	s.sendJSON(w, http.StatusOK, map[string]string{
+		"message": "File permanently deleted",
+	})
+}
+
+// handleAdminRestoreFile restores a file from trash
+func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	fileID := r.FormValue("file_id")
+	if fileID == "" {
+		s.sendError(w, http.StatusBadRequest, "Missing file_id")
+		return
+	}
+
+	if err := database.DB.RestoreFile(fileID); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to restore file")
+		return
+	}
+
+	log.Printf("File restored from trash by admin: %s", fileID)
+
+	s.sendJSON(w, http.StatusOK, map[string]string{
+		"message": "File restored successfully",
+	})
 }
 
 // Render functions
@@ -908,11 +1046,419 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 }
 
 func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
-	w.Write([]byte("<h1>Branding Settings (Coming Soon)</h1><p>" + message + "</p><a href='/admin'>Back</a>"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get current branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Branding Settings - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
+        .header nav a {
+            margin-left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="text"], input[type="color"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        input:focus {
+            outline: none;
+            border-color: ` + s.config.PrimaryColor + `;
+        }
+        .color-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .color-input input[type="color"] {
+            width: 60px;
+            height: 40px;
+            padding: 2px;
+            cursor: pointer;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: ` + s.config.PrimaryColor + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .message {
+            background: #4caf50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .logo-preview {
+            margin-top: 10px;
+            max-width: 300px;
+        }
+        .logo-preview img {
+            max-width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h2>Branding Settings</h2>`
+
+	if message != "" {
+		html += `<div class="message">` + message + `</div>`
+	}
+
+	html += `
+        <div class="card">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="company_name" value="` + brandingConfig["branding_company_name"] + `" placeholder="Sharecare">
+                </div>
+
+                <div class="form-group">
+                    <label>Logo (PNG, JPG, SVG - Max 10MB)</label>
+                    <input type="file" name="logo" accept="image/*">
+                    `
+	if brandingConfig["branding_logo"] != "" {
+		html += `
+                    <div class="logo-preview">
+                        <p style="margin-top: 10px; color: #666; font-size: 14px;">Current Logo:</p>
+                        <img src="` + brandingConfig["branding_logo"] + `" alt="Current Logo">
+                    </div>`
+	}
+	html += `
+                </div>
+
+                <div class="form-group">
+                    <label>Primary Color</label>
+                    <div class="color-input">
+                        <input type="color" name="primary_color" value="` + brandingConfig["branding_primary_color"] + `">
+                        <input type="text" value="` + brandingConfig["branding_primary_color"] + `" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Secondary Color</label>
+                    <div class="color-input">
+                        <input type="color" name="secondary_color" value="` + brandingConfig["branding_secondary_color"] + `">
+                        <input type="text" value="` + brandingConfig["branding_secondary_color"] + `" readonly>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 	w.Write([]byte("<h1>System Settings (Coming Soon)</h1><p>" + message + "</p><a href='/admin'>Back</a>"))
+}
+
+func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileInfo) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trash - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
+        .header nav a {
+            margin-left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+        }
+        th {
+            background: #f9f9f9;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+        tr:not(:last-child) td {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        .btn-restore { background: #4caf50; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .btn:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 20px;">Trash (Deleted Files)</h2>
+
+        <div class="info-box">
+            ⚠️ Files in trash will be automatically deleted after 5 days. You can restore or permanently delete them here.
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Owner</th>
+                    <th>Size</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By</th>
+                    <th>Days Left</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>`
+
+	if len(files) == 0 {
+		html += `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        Trash is empty
+                    </td>
+                </tr>`
+	}
+
+	now := time.Now().Unix()
+	for _, f := range files {
+		// Get user info
+		userName := "Unknown"
+		user, err := database.DB.GetUserByID(f.UserId)
+		if err == nil {
+			userName = user.Name
+		}
+
+		// Get deleted by
+		deletedByName := "System"
+		if f.DeletedBy > 0 {
+			deletedBy, err := database.DB.GetUserByID(f.DeletedBy)
+			if err == nil {
+				deletedByName = deletedBy.Name
+			}
+		}
+
+		// Calculate days left
+		deletedAt := time.Unix(f.DeletedAt, 0)
+		deleteAfter := deletedAt.Add(5 * 24 * time.Hour)
+		daysLeft := int(time.Until(deleteAfter).Hours() / 24)
+		if daysLeft < 0 {
+			daysLeft = 0
+		}
+
+		html += fmt.Sprintf(`
+                <tr>
+                    <td>📄 %s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%d days</td>
+                    <td>
+                        <button class="btn btn-restore" onclick="restoreFile('%s')">
+                            ♻️ Restore
+                        </button>
+                        <button class="btn btn-delete" onclick="permanentDelete('%s')">
+                            🗑️ Delete Forever
+                        </button>
+                    </td>
+                </tr>`,
+			f.Name,
+			userName,
+			f.Size,
+			deletedAt.Format("2006-01-02 15:04"),
+			deletedByName,
+			daysLeft,
+			f.Id,
+			f.Id)
+	}
+
+	html += `
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function restoreFile(fileId) {
+            if (!confirm('Are you sure you want to restore this file?')) return;
+
+            try {
+                const response = await fetch('/admin/trash/restore', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'file_id=' + fileId
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Restore failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Restore failed: ' + error.message);
+            }
+        }
+
+        async function permanentDelete(fileId) {
+            if (!confirm('⚠️ WARNING: This will PERMANENTLY delete the file. This action cannot be undone. Are you sure?')) return;
+
+            try {
+                const response = await fetch('/admin/trash/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'file_id=' + fileId
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Delete failed: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 func calculateTotalDownloads(files []*database.FileInfo) int {
