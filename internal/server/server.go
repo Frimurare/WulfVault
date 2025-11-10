@@ -173,12 +173,27 @@ func (s *Server) loadBrandingConfig() {
 	log.Printf("Branding config loaded: %s", s.config.CompanyName)
 }
 
+// Helper functions for color fallbacks
+func (s *Server) getPrimaryColor() string {
+	if s.config.PrimaryColor != "" {
+		return s.config.PrimaryColor
+	}
+	return "#2563eb" // Default blue
+}
+
+func (s *Server) getSecondaryColor() string {
+	if s.config.SecondaryColor != "" {
+		return s.config.SecondaryColor
+	}
+	return "#1e40af" // Default darker blue
+}
+
 // handleHealth is a health check endpoint
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "healthy",
-		"version": "1.34",
+		"version": "1.42",
 	})
 }
 
