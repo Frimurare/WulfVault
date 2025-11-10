@@ -802,9 +802,11 @@ func GetRandomPoem() Poem {
 	return AllPoems[rand.Intn(len(AllPoems))]
 }
 
-// GetPoemOfTheDay returns a consistent poem for the current day
+// GetPoemOfTheDay returns a poem that changes every 5 seconds
 func GetPoemOfTheDay() Poem {
-	// Use current time as seed for random poem every 5 seconds
-	rand.Seed(time.Now().Unix() / 5)
+	// Use 5-second intervals instead of nanoseconds for more stable poem display
+	// This gives users time to read the poem before it changes
+	fiveSecondInterval := time.Now().Unix() / 5
+	rand.Seed(fiveSecondInterval)
 	return AllPoems[rand.Intn(len(AllPoems))]
 }

@@ -208,19 +208,57 @@ function formatFileSize(bytes) {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// Copy to clipboard function
+// Copy to clipboard function with fallback for HTTP connections
 function copyToClipboard(text, button) {
-    navigator.clipboard.writeText(text).then(() => {
-        const originalText = button.textContent;
-        button.textContent = '✓ Copied!';
-        button.style.background = '#28a745';
-        setTimeout(() => {
-            button.textContent = originalText;
-            button.style.background = '';
-        }, 2000);
-    }).catch(err => {
+    // Try modern clipboard API first (requires HTTPS or localhost)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = button.textContent;
+            button.textContent = '✓ Copied!';
+            button.style.background = '#28a745';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 2000);
+        }).catch(() => {
+            // If clipboard API fails, use fallback
+            fallbackCopyToClipboard(text, button);
+        });
+    } else {
+        // Use fallback for older browsers or HTTP connections
+        fallbackCopyToClipboard(text, button);
+    }
+}
+
+// Fallback copy function using execCommand (works on HTTP)
+function fallbackCopyToClipboard(text, button) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            const originalText = button.textContent;
+            button.textContent = '✓ Copied!';
+            button.style.background = '#28a745';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 2000);
+        } else {
+            showError('Failed to copy link');
+        }
+    } catch (err) {
         showError('Failed to copy: ' + err);
-    });
+    }
+
+    document.body.removeChild(textArea);
 }
 
 // Delete file function

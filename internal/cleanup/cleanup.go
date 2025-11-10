@@ -42,9 +42,13 @@ func CleanupExpiredFiles(uploadsDir string) error {
 	return nil
 }
 
-// CleanupTrash permanently deletes files that have been in trash for 5+ days
-func CleanupTrash(uploadsDir string) error {
-	files, err := database.DB.GetOldDeletedFiles()
+// CleanupTrash permanently deletes files that have been in trash for retentionDays+ days
+func CleanupTrash(uploadsDir string, retentionDays int) error {
+	if retentionDays <= 0 {
+		retentionDays = 5 // default fallback
+	}
+
+	files, err := database.DB.GetOldDeletedFiles(retentionDays)
 	if err != nil {
 		return err
 	}
@@ -53,7 +57,7 @@ func CleanupTrash(uploadsDir string) error {
 		return nil
 	}
 
-	log.Printf("Permanently deleting %d files from trash...", len(files))
+	log.Printf("Permanently deleting %d files from trash (retention: %d days)...", len(files), retentionDays)
 
 	deleted := 0
 	for _, file := range files {
@@ -80,7 +84,11 @@ func CleanupTrash(uploadsDir string) error {
 }
 
 // StartCleanupScheduler starts a background cleanup scheduler
-func StartCleanupScheduler(uploadsDir string, interval time.Duration) {
+func StartCleanupScheduler(uploadsDir string, interval time.Duration, trashRetentionDays int) {
+	if trashRetentionDays <= 0 {
+		trashRetentionDays = 5 // default fallback
+	}
+
 	go func() {
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -89,7 +97,7 @@ func StartCleanupScheduler(uploadsDir string, interval time.Duration) {
 		if err := CleanupExpiredFiles(uploadsDir); err != nil {
 			log.Printf("Error during expired files cleanup: %v", err)
 		}
-		if err := CleanupTrash(uploadsDir); err != nil {
+		if err := CleanupTrash(uploadsDir, trashRetentionDays); err != nil {
 			log.Printf("Error during trash cleanup: %v", err)
 		}
 
@@ -98,11 +106,11 @@ func StartCleanupScheduler(uploadsDir string, interval time.Duration) {
 			if err := CleanupExpiredFiles(uploadsDir); err != nil {
 				log.Printf("Error during expired files cleanup: %v", err)
 			}
-			if err := CleanupTrash(uploadsDir); err != nil {
+			if err := CleanupTrash(uploadsDir, trashRetentionDays); err != nil {
 				log.Printf("Error during trash cleanup: %v", err)
 			}
 		}
 	}()
 
-	log.Printf("Cleanup scheduler started (interval: %v)", interval)
+	log.Printf("Cleanup scheduler started (interval: %v, trash retention: %d days)", interval, trashRetentionDays)
 }

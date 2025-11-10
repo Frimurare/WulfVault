@@ -195,16 +195,19 @@ func (d *Database) GetDeletedFiles() ([]*FileInfo, error) {
 	return scanFiles(rows)
 }
 
-// GetOldDeletedFiles returns files deleted more than 5 days ago for cleanup
-func (d *Database) GetOldDeletedFiles() ([]*FileInfo, error) {
-	fiveDaysAgo := time.Now().Add(-5 * 24 * time.Hour).Unix()
+// GetOldDeletedFiles returns files deleted more than retentionDays ago for cleanup
+func (d *Database) GetOldDeletedFiles(retentionDays int) ([]*FileInfo, error) {
+	if retentionDays <= 0 {
+		retentionDays = 5 // default fallback
+	}
+	cutoffTime := time.Now().Add(-time.Duration(retentionDays) * 24 * time.Hour).Unix()
 
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
 		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
-		FROM Files WHERE DeletedAt > 0 AND DeletedAt < ?`, fiveDaysAgo)
+		FROM Files WHERE DeletedAt > 0 AND DeletedAt < ?`, cutoffTime)
 	if err != nil {
 		return nil, err
 	}

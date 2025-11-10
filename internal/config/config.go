@@ -18,6 +18,7 @@ type Config struct {
 	MaxUploadSizeMB      int    `json:"maxUploadSizeMB"`
 	DefaultQuotaMB       int64  `json:"defaultQuotaMB"`
 	SessionTimeoutHours  int    `json:"sessionTimeoutHours"`
+	TrashRetentionDays   int    `json:"trashRetentionDays"`
 	SaveIP               bool   `json:"saveIp"`
 	models.Branding      `json:"branding"`
 }
@@ -47,6 +48,7 @@ func LoadOrCreate(dataDir string) (*Config, error) {
 		MaxUploadSizeMB:     2000,
 		DefaultQuotaMB:      5000,
 		SessionTimeoutHours: 24,
+		TrashRetentionDays:  5,
 		SaveIP:              false,
 		Branding:            models.DefaultBranding(),
 	}

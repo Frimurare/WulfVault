@@ -292,6 +292,14 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		database.DB.SetConfigValue("default_quota_mb", defaultQuotaMB)
 	}
 
+	trashRetentionDays := r.FormValue("trash_retention_days")
+	if trashRetentionDays != "" {
+		database.DB.SetConfigValue("trash_retention_days", trashRetentionDays)
+		if days, err := strconv.Atoi(trashRetentionDays); err == nil {
+			s.config.TrashRetentionDays = days
+		}
+	}
+
 	s.renderAdminSettings(w, "Settings updated successfully!")
 }
 
@@ -621,6 +629,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <a href="/admin/users/create" class="action-btn">➕ Create User</a>
             <a href="/admin/users" class="action-btn">👥 Manage Users</a>
             <a href="/admin/files" class="action-btn">📁 View All Files</a>
+            <a href="/admin/trash" class="action-btn">🗑️ View Trash</a>
             <a href="/admin/branding" class="action-btn">🎨 Customize Branding</a>
             <a href="/admin/settings" class="action-btn">⚙️ System Settings</a>
         </div>
@@ -1354,6 +1363,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 	if defaultQuotaMB == "" {
 		defaultQuotaMB = "5000"
 	}
+	trashRetentionDays, _ := database.DB.GetConfigValue("trash_retention_days")
+	if trashRetentionDays == "" {
+		if s.config.TrashRetentionDays > 0 {
+			trashRetentionDays = fmt.Sprintf("%d", s.config.TrashRetentionDays)
+		} else {
+			trashRetentionDays = "5"
+		}
+	}
 
 	html := `<!DOCTYPE html>
 <html lang="en">
@@ -1479,6 +1496,12 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                     <p class="help-text">Default storage quota for new users</p>
                 </div>
 
+                <div class="form-group">
+                    <label for="trash_retention_days">Trash Retention Period (Days)</label>
+                    <input type="number" id="trash_retention_days" name="trash_retention_days" value="` + trashRetentionDays + `" min="1" max="365" required>
+                    <p class="help-text">Number of days to keep deleted files in trash before permanent deletion</p>
+                </div>
+
                 <button type="submit" class="btn btn-primary">Save Settings</button>
                 <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">Cancel</a>
             </form>
@@ -1562,7 +1585,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
         <h2 style="margin-bottom: 20px;">Trash (Deleted Files)</h2>
 
         <div class="info-box">
-            ⚠️ Files in trash will be automatically deleted after 5 days. You can restore or permanently delete them here.
+            ⚠️ Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
         </div>
 
         <table>
@@ -1605,9 +1628,13 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 			}
 		}
 
-		// Calculate days left
+		// Calculate days left using configured retention period
 		deletedAt := time.Unix(f.DeletedAt, 0)
-		deleteAfter := deletedAt.Add(5 * 24 * time.Hour)
+		retentionDays := s.config.TrashRetentionDays
+		if retentionDays <= 0 {
+			retentionDays = 5 // fallback to 5 days if not configured
+		}
+		deleteAfter := deletedAt.Add(time.Duration(retentionDays) * 24 * time.Hour)
 		daysLeft := int(time.Until(deleteAfter).Hours() / 24)
 		if daysLeft < 0 {
 			daysLeft = 0

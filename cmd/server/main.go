@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
@@ -64,9 +65,6 @@ func main() {
 		}
 	}()
 
-	// Start file expiration cleanup scheduler (runs every 6 hours)
-	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour)
-
 	// Load or create configuration
 	cfg, err := config.LoadOrCreate(*dataDir)
 	if err != nil {
@@ -77,6 +75,19 @@ func main() {
 	cfg.Port = *port
 	cfg.ServerURL = *serverURL
 	cfg.UploadsDir = *uploadsDir
+
+	// Load trash retention setting from database if available
+	if trashRetentionStr, err := database.DB.GetConfigValue("trash_retention_days"); err == nil && trashRetentionStr != "" {
+		if days, parseErr := strconv.Atoi(trashRetentionStr); parseErr == nil && days > 0 {
+			cfg.TrashRetentionDays = days
+		}
+	}
+	if cfg.TrashRetentionDays <= 0 {
+		cfg.TrashRetentionDays = 5 // default fallback
+	}
+
+	// Start file expiration cleanup scheduler (runs every 6 hours)
+	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)
 
 	log.Printf("Server configuration:")
 	log.Printf("  - URL: %s", cfg.ServerURL)
