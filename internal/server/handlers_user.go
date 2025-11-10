@@ -163,6 +163,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
 	user := userModel.(*models.User)
 
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	// Get user's files
 	files, _ := database.DB.GetFilesByUser(user.Id)
 
@@ -201,25 +205,40 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             background: #f5f5f5;
         }
         .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
         .header h1 {
-            color: ` + s.config.PrimaryColor + `;
+            color: white;
             font-size: 24px;
+            font-weight: 600;
+        }
+        .header nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         .header nav a {
-            margin-left: 20px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
+            transition: color 0.3s;
         }
         .header nav a:hover {
-            color: ` + s.config.PrimaryColor + `;
+            color: white;
         }
         .container {
             max-width: 1200px;
@@ -450,7 +469,18 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 </head>
 <body>
     <div class="header">
-        <h1>` + s.config.CompanyName + `</h1>
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `
+            <img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `
+            <h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
+        </div>
         <nav>
             <a href="/dashboard">Dashboard</a>
             <a href="/logout">Logout</a>

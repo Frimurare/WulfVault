@@ -48,7 +48,16 @@ if (fileInput) {
 // Show upload options when file is selected
 function showUploadOptions(file) {
     const uploadZone = document.getElementById('uploadZone');
-    uploadZone.innerHTML = `
+
+    // Create visual feedback div (but keep the file input intact!)
+    const existingVisual = uploadZone.querySelector('.upload-visual');
+    if (existingVisual) {
+        existingVisual.remove();
+    }
+
+    const visualDiv = document.createElement('div');
+    visualDiv.className = 'upload-visual';
+    visualDiv.innerHTML = `
         <div style="text-align: center; padding: 20px;">
             <svg style="width: 48px; height: 48px; color: #4caf50; margin-bottom: 12px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -58,6 +67,18 @@ function showUploadOptions(file) {
             <p style="color: #999; font-size: 14px;">${formatFileSize(file.size)}</p>
         </div>
     `;
+
+    // Hide original content but keep it in DOM
+    const children = Array.from(uploadZone.children);
+    children.forEach(child => {
+        if (child.tagName !== 'INPUT') {
+            child.style.display = 'none';
+        }
+    });
+
+    // Add visual feedback at the beginning
+    uploadZone.insertBefore(visualDiv, uploadZone.firstChild);
+
     uploadZone.style.border = '3px solid #4caf50';
     uploadOptions.style.display = 'block';
 }
@@ -148,28 +169,34 @@ function resetUploadForm() {
     uploadOptions.style.display = 'none';
 
     const uploadZone = document.getElementById('uploadZone');
-    uploadZone.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-        <h3>Drop files here or click to select</h3>
-        <p>Maximum file size: 5 GB</p>
-        <input type="file" id="fileInput" name="file">
-    `;
-    uploadZone.style.border = '3px dashed #ddd';
 
-    // Re-attach file input listener
-    const newFileInput = document.getElementById('fileInput');
-    newFileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            showUploadOptions(e.target.files[0]);
-        }
+    // Remove visual feedback if it exists
+    const existingVisual = uploadZone.querySelector('.upload-visual');
+    if (existingVisual) {
+        existingVisual.remove();
+    }
+
+    // Show all original children again
+    const children = Array.from(uploadZone.children);
+    children.forEach(child => {
+        child.style.display = '';
     });
 
+    uploadZone.style.border = '3px dashed #ddd';
+
+    // Reset the file input value
+    const existingFileInput = document.getElementById('fileInput');
+    if (existingFileInput) {
+        existingFileInput.value = '';
+    }
+
     // Reset date to 7 days from now
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 7);
-    document.getElementById('expireDate').valueAsDate = defaultDate;
+    const expireDateInput = document.getElementById('expireDate');
+    if (expireDateInput) {
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 7);
+        expireDateInput.valueAsDate = defaultDate;
+    }
 }
 
 // Format file size

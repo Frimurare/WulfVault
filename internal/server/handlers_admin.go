@@ -388,6 +388,76 @@ func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) 
 
 // Render functions
 
+// getAdminHeaderHTML returns branded header HTML for admin pages
+func (s *Server) getAdminHeaderHTML(pageTitle string) string {
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
+	headerCSS := `
+        .header {
+            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .header nav a:hover {
+            color: white;
+        }`
+
+	headerHTML := `
+    <div class="header">
+        <div class="logo">`
+
+	if logoData != "" {
+		headerHTML += `
+            <img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		headerHTML += `
+            <h1>` + s.config.CompanyName + ` - Admin</h1>`
+	}
+
+	headerHTML += `
+        </div>
+        <nav>
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/files">Files</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>`
+
+	return `<style>` + headerCSS + `</style>` + headerHTML
+}
+
 func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -404,25 +474,40 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             background: #f5f5f5;
         }
         .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, ` + s.config.PrimaryColor + ` 0%, ` + s.config.SecondaryColor + ` 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
         .header h1 {
-            color: ` + s.config.PrimaryColor + `;
+            color: white;
             font-size: 24px;
+            font-weight: 600;
+        }
+        .header nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         .header nav a {
-            margin-left: 20px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
+            transition: color 0.3s;
         }
         .header nav a:hover {
-            color: ` + s.config.PrimaryColor + `;
+            color: white;
         }
         .container {
             max-width: 1400px;
@@ -481,7 +566,18 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 </head>
 <body>
     <div class="header">
-        <h1>` + s.config.CompanyName + ` - Admin</h1>
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `
+            <img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `
+            <h1>` + s.config.CompanyName + ` - Admin</h1>`
+	}
+
+	html += `
+        </div>
         <nav>
             <a href="/admin">Dashboard</a>
             <a href="/admin/users">Users</a>
@@ -543,21 +639,6 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
-        .header nav a {
-            margin-left: 20px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-        }
         .container {
             max-width: 1400px;
             margin: 40px auto;
@@ -612,16 +693,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/files">Files</a>
-            <a href="/logout">Logout</a>
-        </nav>
-    </div>
-
+    ` + s.getAdminHeaderHTML("") + `
     <div class="container">
         <div class="actions">
             <h2>Manage Users</h2>
@@ -711,14 +783,19 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 <head>
     <title>` + title + `</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { margin-bottom: 24px; color: #333; }
         input, select { width: 100%; padding: 8px; margin: 8px 0; }
-        button { padding: 10px 20px; background: ` + s.config.PrimaryColor + `; color: white; border: none; cursor: pointer; }
+        button { padding: 10px 20px; background: ` + s.config.PrimaryColor + `; color: white; border: none; cursor: pointer; border-radius: 6px; }
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
 <body>
-    <h1>` + title + `</h1>`
+    ` + s.getAdminHeaderHTML("") + `
+    <div class="container">
+        <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
 		html += `<div class="error">` + errorMsg + `</div>`
@@ -793,6 +870,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
         <button type="submit">Save</button>
         <a href="/admin/users">Cancel</a>
     </form>
+    </div>
 
     <script>
         function togglePassword(fieldId) {
@@ -844,22 +922,6 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
-        .header nav a {
-            margin-left: 20px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
         .container {
             max-width: 1400px;
             margin: 40px auto;
@@ -944,18 +1006,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/files">Files</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/logout">Logout</a>
-        </nav>
-    </div>
-
+    ` + s.getAdminHeaderHTML("") + `
     <div class="container">
         <h2 style="margin-bottom: 20px;">All Files</h2>
 
@@ -1145,22 +1196,6 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
-        .header nav a {
-            margin-left: 20px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
         .container {
             max-width: 800px;
             margin: 40px auto;
@@ -1241,18 +1276,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/files">Files</a>
-            <a href="/admin/trash">Trash</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/logout">Logout</a>
-        </nav>
-    </div>
-
+    ` + s.getAdminHeaderHTML("") + `
     <div class="container">
         <h2>Branding Settings</h2>`
 
@@ -1336,22 +1360,6 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
-        .header nav a {
-            margin-left: 20px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
         .container {
             max-width: 800px;
             margin: 40px auto;
@@ -1432,19 +1440,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/files">Files</a>
-            <a href="/admin/trash">Trash</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/admin/settings">Settings</a>
-            <a href="/logout">Logout</a>
-        </nav>
-    </div>
-
+    ` + s.getAdminHeaderHTML("") + `
     <div class="container">
         <div class="card">
             <h2>System Settings</h2>`
@@ -1502,22 +1498,6 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        .header {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 { color: ` + s.config.PrimaryColor + `; font-size: 24px; }
-        .header nav a {
-            margin-left: 20px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .header nav a:hover { color: ` + s.config.PrimaryColor + `; }
         .container {
             max-width: 1400px;
             margin: 40px auto;
@@ -1571,18 +1551,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/files">Files</a>
-            <a href="/admin/trash">Trash</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/logout">Logout</a>
-        </nav>
-    </div>
-
+    ` + s.getAdminHeaderHTML("") + `
     <div class="container">
         <h2 style="margin-bottom: 20px;">Trash (Deleted Files)</h2>
 

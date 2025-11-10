@@ -644,6 +644,31 @@ manvarg-sharecare/
 
 ---
 
+## 📋 CHANGELOG
+
+### Version 1.33 - Custom Branding Throughout System (2025-11-10)
+**Improvements:**
+- ✨ Added custom branding to user dashboard with gradient header and logo support
+- ✨ Added custom branding to all admin pages (Dashboard, Users, Files, Branding, Settings, Trash)
+- ✨ All admin pages now use consistent branded header with logo and gradient background
+- 🐛 Fixed critical upload bug where "No File Uploaded" error appeared when selecting files
+- 🎨 Custom logo and colors now display consistently across entire system
+- 🏗️ Refactored admin header into reusable helper function for maintainability
+
+**Technical Changes:**
+- Created `getAdminHeaderHTML()` helper function in handlers_admin.go
+- Updated dashboard.js `showUploadOptions()` to preserve file input element
+- Updated all admin render functions to use branded header
+- Updated user dashboard render function with gradient and logo support
+
+### Version 1.32 - UX Improvements and Bug Fixes
+**Previous version improvements**
+
+### Version 1.31 - Poem of the Day on Splash Page
+**Previous version improvements**
+
+---
+
 ## 📞 SUPPORT & CONTACT
 
 **Project Maintainer**: Ulf Holmström @ Manvarg
