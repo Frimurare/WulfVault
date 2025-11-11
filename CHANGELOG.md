@@ -1,5 +1,37 @@
 # Changelog
 
+## [3.1.0] - 2025-11-11 🎊 Dashboard Enhancement Release
+
+### New Features
+- **Enhanced Admin Dashboard**: Comprehensive statistics and metrics for better oversight
+  - **Data Transfer Analytics**: Track bandwidth usage with granular time periods
+    - Total bytes sent today, this week, this month, and this year
+    - Human-readable size formatting (MB, GB, TB)
+  - **User Growth Metrics**: Monitor user base expansion
+    - Users added this month (regular + download accounts)
+    - Users removed this month
+    - Monthly growth percentage calculation
+  - **Fun Facts Section**: Engaging statistics about system usage
+    - Most downloaded file with download count
+  - **Improved Layout**: Quick Actions menu moved to top for better navigation
+  - **Visual Enhancements**: Gradient backgrounds and colored borders for statistics cards
+- **Discrete Branding**: Professional footer with Manvarg attribution and GitHub link
+
+### Technical Improvements
+- 7 new database query functions for real-time statistics
+- Optimized SQL queries with proper JOINs and aggregations
+- Time-based calculations for day/week/month/year periods
+- Consistent DeletedAt handling across all queries
+
+### Bug Fixes
+- Fixed byte calculation to use SizeBytes field instead of formatted Size string
+- Corrected Most Downloaded File query to properly filter deleted files
+
+### Community
+- We welcome ideas and suggestions for dashboard improvements! Please open an issue on GitHub.
+
+---
+
 ## [3.0.1] - 2025-11-11
 
 ### Bug Fixes
