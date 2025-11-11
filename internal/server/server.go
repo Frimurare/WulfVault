@@ -56,6 +56,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
 	mux.HandleFunc("/file/edit", s.requireAuth(s.handleFileEdit))
 	mux.HandleFunc("/file/downloads", s.requireAuth(s.handleFileDownloadHistory))
+	mux.HandleFunc("/file/email", s.requireAuth(s.handleFileEmail))
 	mux.HandleFunc("/file-request/create", s.requireAuth(s.handleFileRequestCreate))
 	mux.HandleFunc("/file-request/list", s.requireAuth(s.handleFileRequestList))
 	mux.HandleFunc("/file-request/delete", s.requireAuth(s.handleFileRequestDelete))

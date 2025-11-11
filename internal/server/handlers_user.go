@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/database"
+	"github.com/Frimurare/Sharecare/internal/email"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
 
@@ -137,14 +139,22 @@ func (s *Server) handleFileDownloadHistory(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get download logs
-	logs, err := database.DB.GetDownloadLogsByFileID(fileID)
+	downloadLogs, err := database.DB.GetDownloadLogsByFileID(fileID)
 	if err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to get download logs")
 		return
 	}
 
+	// Get email logs
+	emailLogs, err := database.DB.GetEmailLogsByFileID(fileID)
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to get email logs")
+		return
+	}
+
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
-		"logs": logs,
+		"downloadLogs": downloadLogs,
+		"emailLogs":    emailLogs,
 	})
 }
 
@@ -194,6 +204,121 @@ func (s *Server) handleFileDelete(w http.ResponseWriter, r *http.Request) {
 
 	s.sendJSON(w, http.StatusOK, map[string]string{
 		"message": "File deleted successfully",
+	})
+}
+
+// handleFileEmail sends a file link via email
+func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r.Context())
+	if !ok {
+		s.sendError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Parse JSON request body
+	var request struct {
+		FileID    string `json:"fileId"`
+		Recipient string `json:"recipient"`
+		Message   string `json:"message"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		s.sendError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
+		return
+	}
+
+	if request.FileID == "" || request.Recipient == "" {
+		s.sendError(w, http.StatusBadRequest, "Missing fileId or recipient")
+		return
+	}
+
+	// Get file to verify ownership
+	fileInfo, err := database.DB.GetFileByID(request.FileID)
+	if err != nil {
+		s.sendError(w, http.StatusNotFound, "File not found")
+		return
+	}
+
+	// Check ownership (unless admin)
+	if fileInfo.UserId != user.Id && !user.IsAdmin() {
+		s.sendError(w, http.StatusForbidden, "Not authorized to share this file")
+		return
+	}
+
+	// Construct file URL
+	fileURL := fmt.Sprintf("%s/s/%s", s.getPublicURL(), fileInfo.Id)
+
+	// Get active email provider
+	provider, err := email.GetActiveProvider(database.DB)
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "No active email provider configured")
+		return
+	}
+
+	// Construct email content
+	subject := fmt.Sprintf("%s has shared a file with you", user.Name)
+
+	htmlBody := fmt.Sprintf(`
+		<html>
+		<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #333;">You've received a file</h2>
+			<p><strong>%s</strong> has shared the following file with you:</p>
+			<div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+				<h3 style="margin: 0 0 10px 0; color: #2563eb;">%s</h3>
+				<p style="color: #666; margin: 0;">Size: %.2f MB</p>
+			</div>
+			%s
+			<p>
+				<a href="%s" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">Download File</a>
+			</p>
+			<p style="color: #999; font-size: 12px; margin-top: 30px;">
+				This link was sent from %s
+			</p>
+		</body>
+		</html>
+	`, user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
+		func() string {
+			if request.Message != "" {
+				return fmt.Sprintf(`<p style="color: #666;"><em>Message from sender:</em><br>%s</p>`, request.Message)
+			}
+			return ""
+		}(),
+		fileURL, s.config.CompanyName)
+
+	textBody := fmt.Sprintf(
+		"%s has shared a file with you\n\nFile: %s\nSize: %.2f MB\n\n%sDownload: %s\n\nThis link was sent from %s",
+		user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
+		func() string {
+			if request.Message != "" {
+				return fmt.Sprintf("Message: %s\n\n", request.Message)
+			}
+			return ""
+		}(),
+		fileURL, s.config.CompanyName,
+	)
+
+	// Send email
+	if err := provider.SendEmail(request.Recipient, subject, htmlBody, textBody); err != nil {
+		log.Printf("Failed to send email to %s: %v", request.Recipient, err)
+		s.sendError(w, http.StatusInternalServerError, "Failed to send email: "+err.Error())
+		return
+	}
+
+	// Log the email send to database
+	if err := database.DB.LogEmailSent(fileInfo.Id, user.Id, request.Recipient, request.Message, fileInfo.Name, fileInfo.SizeBytes); err != nil {
+		log.Printf("Warning: Failed to log email send: %v", err)
+		// Don't fail the request if logging fails
+	}
+
+	log.Printf("File link emailed: %s to %s by user %d", fileInfo.Name, request.Recipient, user.Id)
+
+	s.sendJSON(w, http.StatusOK, map[string]string{
+		"message": "Email sent successfully",
 	})
 }
 
@@ -555,56 +680,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             </div>
         </div>
 
-        <!-- File Request Section -->
-        <div class="file-request-section" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px;">
-            <h2 style="margin-bottom: 16px; color: #333;">📥 Request Files from Others</h2>
-            <p style="color: #666; margin-bottom: 20px;">Create a link that allows others to upload files directly to you. Perfect for collecting files from clients or colleagues.</p>
-            <button onclick="showCreateRequestModal()" style="padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                ➕ Create Upload Request
-            </button>
-            <div id="requestsList" style="margin-top: 20px;"></div>
-        </div>
-
-        <!-- File Request Modal -->
-        <div id="fileRequestModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
-            <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-                <h2 style="margin-bottom: 24px; color: #333;">Create Upload Request</h2>
-                <form id="fileRequestForm" onsubmit="submitFileRequest(event)">
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Title *</label>
-                        <input type="text" id="requestTitle" required placeholder="e.g., Upload Documents" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Short description of what you're requesting</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Message (optional)</label>
-                        <textarea id="requestMessage" placeholder="Additional instructions for the uploader..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
-                    </div>
-
-                    <div style="margin-bottom: 20px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
-                        <p style="color: #856404; font-size: 13px; margin: 0;">
-                            ⏰ <strong>Note:</strong> The upload link will automatically expire after 24 hours for security purposes.
-                        </p>
-                    </div>
-
-                    <div style="margin-bottom: 24px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Max file size (MB)</label>
-                        <input type="number" id="requestMaxSize" min="1" max="5000" value="100" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Maximum size per file (0 = no limit)</p>
-                    </div>
-
-                    <div style="display: flex; gap: 12px;">
-                        <button type="submit" style="flex: 1; padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                            Create Request
-                        </button>
-                        <button type="button" onclick="closeFileRequestModal()" style="flex: 1; padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
         <!-- Upload Form -->
         <div class="upload-section">
             <h2 style="margin-bottom: 20px; color: #333;">Upload File</h2>
@@ -676,6 +751,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="sendToEmail">📧 Send link to email (optional)</label>
+                        <input type="email" id="sendToEmail" name="send_to_email" placeholder="recipient@example.com" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">
+                            After upload, send the download link via email to this address
+                        </p>
+                    </div>
+
                     <button type="submit" class="btn btn-primary btn-large" id="uploadButton" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                         <span style="font-size: 24px;">📤</span>
                         <span style="font-size: 18px; font-weight: 700;">Upload File</span>
@@ -685,6 +768,62 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- File Request Section -->
+        <div class="file-request-section" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px;">
+            <h2 style="margin-bottom: 16px; color: #333;">📥 Request Files from Others</h2>
+            <p style="color: #666; margin-bottom: 20px;">Create a link that allows others to upload files directly to you. Perfect for collecting files from clients or colleagues.</p>
+            <button onclick="showCreateRequestModal()" style="padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                ➕ Create Upload Request
+            </button>
+            <div id="requestsList" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- File Request Modal -->
+        <div id="fileRequestModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                <h2 style="margin-bottom: 24px; color: #333;">Create Upload Request</h2>
+                <form id="fileRequestForm" onsubmit="submitFileRequest(event)">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Title *</label>
+                        <input type="text" id="requestTitle" required placeholder="e.g., Upload Documents" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Short description of what you're requesting</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Message (optional)</label>
+                        <textarea id="requestMessage" placeholder="Additional instructions for the uploader..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 20px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
+                        <p style="color: #856404; font-size: 13px; margin: 0;">
+                            ⏰ <strong>Note:</strong> The upload link will automatically expire after 24 hours for security purposes.
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Max file size (MB)</label>
+                        <input type="number" id="requestMaxSize" min="1" max="5000" value="100" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Maximum size per file (0 = no limit)</p>
+                    </div>
+
+                    <div style="margin-bottom: 24px; background: #fff9e6; padding: 16px; border-radius: 8px; border: 3px solid #ff9800;">
+                        <label style="display: block; margin-bottom: 8px; color: #e65100; font-weight: 700; font-size: 16px;">📧 Send upload request to email (optional)</label>
+                        <input type="email" id="requestRecipientEmail" placeholder="recipient@example.com" style="width: 100%; padding: 12px; border: 3px solid #ff9800; border-radius: 6px; font-size: 14px; background: white;">
+                        <p style="color: #e65100; font-size: 13px; margin-top: 8px; font-weight: 600;">Send the upload link directly to this email address</p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" style="flex: 1; padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                            Create Request
+                        </button>
+                        <button type="button" onclick="closeFileRequestModal()" style="flex: 1; padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <div class="files-section">
@@ -769,6 +908,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history">
                             📊 History
                         </button>
+                        <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="Send file link via email" style="background: #007bff;">
+                            📧 Email
+                        </button>
                         <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t)" title="Edit file settings">
                             ✏️ Edit
                         </button>
@@ -779,13 +921,34 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 </li>`, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
-				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.JSEscapeString(f.Name))
+				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.JSEscapeString(f.Name))
 		}
 		html += `
             </ul>`
 	}
 
 	html += `
+        </div>
+    </div>
+
+    <!-- Email File Modal -->
+    <div id="emailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
+            <h2 style="margin-bottom: 24px; color: #333;">Send File Link via Email</h2>
+            <input type="hidden" id="emailFileId">
+            <p style="margin-bottom: 20px; color: #666;">Sending link for: <strong id="emailFileName"></strong></p>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">Recipient Email:</label>
+                <input type="email" id="emailRecipient" placeholder="recipient@example.com" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+            </div>
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">Message (optional):</label>
+                <textarea id="emailMessage" rows="4" placeholder="Add a personal message..." style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeEmailModal()" class="btn btn-secondary" style="padding: 10px 20px;">Cancel</button>
+                <button onclick="sendEmailLink()" class="btn btn-primary" style="padding: 10px 20px; background: #007bff;">Send Email</button>
+            </div>
         </div>
     </div>
 
@@ -930,15 +1093,27 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             fetch('/file/downloads?file_id=' + encodeURIComponent(fileId))
                 .then(response => response.json())
                 .then(data => {
-                    if (data.logs && data.logs.length > 0) {
-                        let html = '<table style="width: 100%; border-collapse: collapse;">';
+                    const downloadLogs = data.downloadLogs || [];
+                    const emailLogs = data.emailLogs || [];
+
+                    if (downloadLogs.length === 0 && emailLogs.length === 0) {
+                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">No activity yet</p>';
+                        return;
+                    }
+
+                    let html = '';
+
+                    // Show download logs
+                    if (downloadLogs.length > 0) {
+                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📥 Downloads (' + downloadLogs.length + ')</h3>';
+                        html += '<table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
                         html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
                         html += '<th style="padding: 12px; text-align: left;">IP Address</th>';
                         html += '</tr></thead><tbody>';
 
-                        data.logs.forEach(log => {
+                        downloadLogs.forEach(log => {
                             const date = new Date(log.downloadedAt * 1000);
                             const dateStr = date.toLocaleString('sv-SE');
                             const downloader = log.email || 'Anonymous';
@@ -953,14 +1128,37 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         });
 
                         html += '</tbody></table>';
-                        html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
-                        document.getElementById('downloadHistoryContent').innerHTML = html;
-                    } else {
-                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">No downloads yet</p>';
                     }
+
+                    // Show email logs
+                    if (emailLogs.length > 0) {
+                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📧 Emails Sent (' + emailLogs.length + ')</h3>';
+                        html += '<table style="width: 100%; border-collapse: collapse;">';
+                        html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
+                        html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
+                        html += '<th style="padding: 12px; text-align: left;">Recipient</th>';
+                        html += '<th style="padding: 12px; text-align: left;">Message</th>';
+                        html += '</tr></thead><tbody>';
+
+                        emailLogs.forEach(log => {
+                            const date = new Date(log.sentAt * 1000);
+                            const dateStr = date.toLocaleString('sv-SE');
+                            const message = log.message || '<em style="color: #999;">No message</em>';
+
+                            html += '<tr style="border-bottom: 1px solid #eee;">';
+                            html += '<td style="padding: 12px;">' + dateStr + '</td>';
+                            html += '<td style="padding: 12px;">' + log.recipientEmail + '</td>';
+                            html += '<td style="padding: 12px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (log.message || '') + '">' + message + '</td>';
+                            html += '</tr>';
+                        });
+
+                        html += '</tbody></table>';
+                    }
+
+                    document.getElementById('downloadHistoryContent').innerHTML = html;
                 })
                 .catch(error => {
-                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">Error loading download history</p>';
+                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">Error loading history</p>';
                     console.error('Error:', error);
                 });
         }
@@ -995,88 +1193,54 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             }
         }
 
-        // File Request functions
-        function showCreateRequestModal() {
-            // Create modal HTML
-            var modalHtml = '<div id="request-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;">' +
-                '<div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">' +
-                '<h2 style="margin-top: 0; color: #333;">Create Upload Request</h2>' +
-                '<form id="request-form">' +
-                '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Title *</label>' +
-                '<input type="text" id="req-title" required placeholder="e.g., Upload Documents" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>' +
-                '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Message (optional)</label>' +
-                '<textarea id="req-message" placeholder="Optional message for uploader..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; box-sizing: border-box;"></textarea></div>' +
-                '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Expires in (days)</label>' +
-                '<input type="number" id="req-days" value="30" min="0" placeholder="0 = never expires" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">' +
-                '<small style="color: #666;">0 = never expires</small></div>' +
-                '<div style="margin-bottom: 20px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Max file size (MB)</label>' +
-                '<input type="number" id="req-size" value="100" min="0" placeholder="0 = no limit" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">' +
-                '<small style="color: #666;">0 = no limit</small></div>' +
-                '<div style="display: flex; gap: 10px; justify-content: flex-end;">' +
-                '<button type="button" onclick="closeRequestModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>' +
-                '<button type="submit" style="padding: 10px 20px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer;">Create Request</button>' +
-                '</div></form><div id="request-result" style="margin-top: 15px; display: none;"></div></div></div>';
-
-            // Add modal to page
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            document.getElementById('req-title').focus();
-
-            // Handle form submission
-            document.getElementById('request-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                var title = document.getElementById('req-title').value;
-                var message = document.getElementById('req-message').value;
-                var days = document.getElementById('req-days').value;
-                var maxSizeMB = document.getElementById('req-size').value;
-                var submitBtn = e.target.querySelector('button[type="submit"]');
-
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Creating...';
-
-                var data = new FormData();
-                data.append('title', title);
-                data.append('message', message);
-                data.append('expires_in_days', days);
-                data.append('max_file_size_mb', maxSizeMB);
-
-                fetch('/file-request/create', {
-                    method: 'POST',
-                    body: data,
-                    credentials: 'same-origin'
-                })
-                .then(function(response) { return response.json(); })
-                .then(function(result) {
-                    if (result.success) {
-                        var resultDiv = document.getElementById('request-result');
-                        resultDiv.style.display = 'block';
-                        resultDiv.innerHTML = '<div style="padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724;">' +
-                            '<strong>✓ Upload request created!</strong><br><br>' +
-                            '<div style="margin-top: 10px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Share this link:</label>' +
-                            '<div style="display: flex; gap: 10px;">' +
-                            '<input type="text" value="' + result.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #c3e6cb; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-                            '<button onclick="navigator.clipboard.writeText(\'' + result.upload_url + '\').then(function() { alert(\'Link copied!\'); })" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy</button>' +
-                            '</div></div>' +
-                            '<button onclick="closeRequestModal(); loadFileRequests();" style="margin-top: 15px; padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Done</button>' +
-                            '</div>';
-                        e.target.style.display = 'none';
-                    } else {
-                        alert('Error: ' + (result.error || 'Unknown error'));
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Create Request';
-                    }
-                })
-                .catch(function(error) {
-                    alert('Error creating request: ' + error);
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Create Request';
-                });
-            });
+        // Email Modal Functions
+        function showEmailModal(fileId, fileName, fileUrl) {
+            document.getElementById('emailFileId').value = fileId;
+            document.getElementById('emailFileName').textContent = fileName;
+            document.getElementById('emailModal').style.display = 'flex';
         }
 
-        function closeRequestModal() {
-            const modal = document.getElementById('request-modal');
-            if (modal) modal.remove();
+        function closeEmailModal() {
+            document.getElementById('emailModal').style.display = 'none';
+            document.getElementById('emailRecipient').value = '';
+            document.getElementById('emailMessage').value = '';
+        }
+
+        async function sendEmailLink() {
+            const fileId = document.getElementById('emailFileId').value;
+            const recipient = document.getElementById('emailRecipient').value;
+            const message = document.getElementById('emailMessage').value;
+
+            if (!recipient) {
+                alert('Please enter a recipient email address');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/file/email', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId, recipient, message })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Email sent successfully!');
+                    closeEmailModal();
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to send email'));
+                }
+            } catch (error) {
+                alert('Error sending email: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Email';
+            }
         }
 
         // Edit File Modal Functions

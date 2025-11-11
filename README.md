@@ -1,10 +1,16 @@
 # Sharecare - Secure File Sharing System
 
-**Open source alternative to costly web-based file transfer services**
+**Version 3.0.0-RC1** | **Open source alternative to costly web-based file transfer services**
 
-A lightweight, self-hosted file sharing platform with multi-user support, storage quotas, and complete download tracking. Perfect for sharing large files like exported video footage and sensitive documents with full accountability.
+A lightweight, self-hosted file sharing platform with multi-user support, storage quotas, email notifications, and complete download tracking. Perfect for sharing large files like exported video footage and sensitive documents with full accountability.
 
 **Based on [Gokapi](https://github.com/Forceu/Gokapi)** - See [NOTICE.md](NOTICE.md) for attribution.
+
+---
+
+## ⚠️ Important Note
+
+**Email server functionality is untested** - The SMTP/Brevo email integration has been implemented but not yet verified in a production environment. Test thoroughly before relying on email notifications in production.
 
 ---
 
