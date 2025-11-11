@@ -91,6 +91,20 @@ CREATE TABLE IF NOT EXISTS DownloadLogs (
 	FOREIGN KEY (DownloadAccountId) REFERENCES DownloadAccounts(Id)
 );
 
+-- Email Logs table (tracks when files are shared via email)
+CREATE TABLE IF NOT EXISTS EmailLogs (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	FileId TEXT NOT NULL,
+	SenderUserId INTEGER NOT NULL,
+	RecipientEmail TEXT NOT NULL,
+	Message TEXT,
+	SentAt INTEGER NOT NULL,
+	FileName TEXT,
+	FileSize INTEGER,
+	FOREIGN KEY (FileId) REFERENCES Files(Id),
+	FOREIGN KEY (SenderUserId) REFERENCES Users(Id)
+);
+
 -- Sessions table (from Gokapi)
 CREATE TABLE IF NOT EXISTS Sessions (
 	Id TEXT PRIMARY KEY,
@@ -138,6 +152,8 @@ CREATE INDEX IF NOT EXISTS idx_files_sha1 ON Files(SHA1);
 CREATE INDEX IF NOT EXISTS idx_downloadlogs_fileid ON DownloadLogs(FileId);
 CREATE INDEX IF NOT EXISTS idx_downloadlogs_accountid ON DownloadLogs(DownloadAccountId);
 CREATE INDEX IF NOT EXISTS idx_downloadlogs_downloadedat ON DownloadLogs(DownloadedAt);
+CREATE INDEX IF NOT EXISTS idx_emaillogs_fileid ON EmailLogs(FileId);
+CREATE INDEX IF NOT EXISTS idx_emaillogs_sentat ON EmailLogs(SentAt);
 CREATE INDEX IF NOT EXISTS idx_sessions_userid ON Sessions(UserId);
 CREATE INDEX IF NOT EXISTS idx_apikeys_userid ON ApiKeys(UserId);
 CREATE INDEX IF NOT EXISTS idx_filerequests_userid ON FileRequests(UserId);

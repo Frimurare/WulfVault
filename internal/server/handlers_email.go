@@ -84,12 +84,14 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Deactivate all other providers
-	_, err = database.DB.Exec("UPDATE EmailProviderConfig SET IsActive = 0")
+	result, err := database.DB.Exec("UPDATE EmailProviderConfig SET IsActive = 0")
 	if err != nil {
 		log.Printf("Failed to deactivate providers: %v", err)
 		s.sendError(w, http.StatusInternalServerError, "Database error")
 		return
 	}
+	rowsAffected, _ := result.RowsAffected()
+	log.Printf("Deactivated %d existing provider(s)", rowsAffected)
 
 	// Save or update configuration
 	now := time.Now().Unix()
@@ -101,25 +103,38 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 
 		if err == nil {
 			// Update existing
+			log.Printf("Updating existing Brevo config (ID: %d)", existingId)
 			updateSQL := `UPDATE EmailProviderConfig SET IsActive = 1, FromEmail = ?, FromName = ?, UpdatedAt = ?`
 			args := []interface{}{req.FromEmail, req.FromName, now}
 
 			if apiKeyEncrypted != "" {
 				updateSQL += ", ApiKeyEncrypted = ?"
 				args = append(args, apiKeyEncrypted)
+				log.Printf("Updating with new API key")
+			} else {
+				log.Printf("Keeping existing API key")
 			}
 
 			updateSQL += " WHERE Provider = ?"
 			args = append(args, "brevo")
 
-			_, err = database.DB.Exec(updateSQL, args...)
+			result, err = database.DB.Exec(updateSQL, args...)
+			if err == nil {
+				rowsAffected, _ := result.RowsAffected()
+				log.Printf("UPDATE affected %d row(s)", rowsAffected)
+			}
 		} else {
 			// Create new
-			_, err = database.DB.Exec(`
+			log.Printf("Creating new Brevo config (no existing found: %v)", err)
+			result, err = database.DB.Exec(`
 				INSERT INTO EmailProviderConfig
 					(Provider, IsActive, ApiKeyEncrypted, FromEmail, FromName, CreatedAt, UpdatedAt)
 				VALUES (?, 1, ?, ?, ?, ?, ?)
 			`, "brevo", apiKeyEncrypted, req.FromEmail, req.FromName, now, now)
+			if err == nil {
+				lastId, _ := result.LastInsertId()
+				log.Printf("INSERT created row with ID: %d", lastId)
+			}
 		}
 	} else {
 		// SMTP
@@ -159,6 +174,20 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify the configuration was saved by querying it back
+	var verifyId int
+	var verifyActive int
+	verifyErr := database.DB.QueryRow(`
+		SELECT Id, IsActive FROM EmailProviderConfig
+		WHERE Provider = ? AND IsActive = 1
+	`, req.Provider).Scan(&verifyId, &verifyActive)
+
+	if verifyErr != nil {
+		log.Printf("⚠️ WARNING: Configuration save reported success, but verification query failed: %v", verifyErr)
+	} else {
+		log.Printf("✅ Verified: Configuration saved with ID=%d, IsActive=%d", verifyId, verifyActive)
+	}
+
 	log.Printf("Email provider configured: %s", req.Provider)
 	s.sendJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
@@ -184,8 +213,12 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user from context
-	user := r.Context().Value("user").(*models.User)
+	// Get user from context (middleware ensures this exists)
+	user, ok := userFromContext(r.Context())
+	if !ok || user == nil {
+		s.sendError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
 
 	var provider email.EmailProvider
 	var err error
@@ -581,9 +614,15 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         <div id="success-message" class="success-message"></div>
         <div id="error-message" class="error-message"></div>
 
+        ` + getActiveProviderBanner(isBrevoActive, isSMTPActive) + `
+
         <div class="tab-buttons">
-            <button class="tab-btn ` + activeTabClass("brevo", activeTab) + `" data-provider="brevo">Brevo (Sendinblue)</button>
-            <button class="tab-btn ` + activeTabClass("smtp", activeTab) + `" data-provider="smtp">SMTP Server</button>
+            <button class="tab-btn ` + activeTabClass("brevo", activeTab) + `" data-provider="brevo">
+                Brevo (Sendinblue) ` + getActiveProviderBadge(isBrevoActive) + `
+            </button>
+            <button class="tab-btn ` + activeTabClass("smtp", activeTab) + `" data-provider="smtp">
+                SMTP Server ` + getActiveProviderBadge(isSMTPActive) + `
+            </button>
         </div>
 
         <!-- Brevo Configuration -->
@@ -818,29 +857,46 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         document.getElementById('test-brevo')?.addEventListener('click', async function() {
             const btn = this;
             const apiKey = document.getElementById('brevo-api-key').value;
+            const apiKeyPlaceholder = document.getElementById('brevo-api-key').placeholder;
             const fromEmail = document.getElementById('brevo-from-email').value;
             const fromName = document.getElementById('brevo-from-name').value;
-
-            if (!apiKey || !fromEmail) {
-                showError('Please enter API key and from email before testing');
-                return;
-            }
 
             btn.disabled = true;
             btn.textContent = 'Testing...';
 
             try {
-                const response = await fetch('/api/email/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        provider: 'brevo',
-                        apiKey: apiKey,
-                        fromEmail: fromEmail,
-                        fromName: fromName
-                    }),
-                    signal: AbortSignal.timeout(30000)
-                });
+                let response;
+
+                // If API key field has value, test with provided config (before save)
+                if (apiKey && fromEmail) {
+                    response = await fetch('/api/email/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            provider: 'brevo',
+                            apiKey: apiKey,
+                            fromEmail: fromEmail,
+                            fromName: fromName
+                        }),
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // If API key field is empty but placeholder shows saved (bullets), test saved config
+                else if (apiKeyPlaceholder && apiKeyPlaceholder.includes('•')) {
+                    response = await fetch('/api/email/test', {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // Neither provided nor saved config exists
+                else {
+                    showError('Please save your Brevo settings first, or enter API key and from email to test before saving');
+                    btn.disabled = false;
+                    btn.textContent = 'Test connection';
+                    return;
+                }
 
                 if (response.ok) {
                     const result = await response.json();
@@ -870,34 +926,51 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             const port = parseInt(document.getElementById('smtp-port').value) || 587;
             const username = document.getElementById('smtp-username').value;
             const password = document.getElementById('smtp-password').value;
+            const passwordPlaceholder = document.getElementById('smtp-password').placeholder;
             const fromEmail = document.getElementById('smtp-from-email').value;
             const fromName = document.getElementById('smtp-from-name').value;
             const useTLS = document.getElementById('smtp-use-tls').checked;
-
-            if (!host || !username || !password || !fromEmail) {
-                showError('Please fill in all required SMTP fields before testing');
-                return;
-            }
 
             btn.disabled = true;
             btn.textContent = 'Testing...';
 
             try {
-                const response = await fetch('/api/email/test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        provider: 'smtp',
-                        smtpHost: host,
-                        smtpPort: port,
-                        smtpUsername: username,
-                        smtpPassword: password,
-                        fromEmail: fromEmail,
-                        fromName: fromName,
-                        smtpUseTLS: useTLS
-                    }),
-                    signal: AbortSignal.timeout(30000)
-                });
+                let response;
+
+                // If all fields have values, test with provided config (before save)
+                if (host && username && password && fromEmail) {
+                    response = await fetch('/api/email/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            provider: 'smtp',
+                            smtpHost: host,
+                            smtpPort: port,
+                            smtpUsername: username,
+                            smtpPassword: password,
+                            fromEmail: fromEmail,
+                            fromName: fromName,
+                            smtpUseTLS: useTLS
+                        }),
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // If password field is empty but placeholder shows saved (bullets), test saved config
+                else if (passwordPlaceholder && passwordPlaceholder.includes('•')) {
+                    response = await fetch('/api/email/test', {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // Neither provided nor saved config exists
+                else {
+                    showError('Please save your SMTP settings first, or fill in all required fields to test before saving');
+                    btn.disabled = false;
+                    btn.textContent = 'Test connection';
+                    return;
+                }
 
                 if (response.ok) {
                     const result = await response.json();
@@ -990,4 +1063,29 @@ func btoi(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+func getActiveProviderBanner(isBrevoActive, isSMTPActive bool) string {
+	if isBrevoActive {
+		return `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>✓ Active Provider:</strong> Brevo (Sendinblue) - Email notifications are enabled
+        </div>`
+	} else if isSMTPActive {
+		return `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>✓ Active Provider:</strong> SMTP Server - Email notifications are enabled
+        </div>`
+	}
+	return `
+        <div style="background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>⚠ No Active Provider:</strong> Configure Brevo or SMTP to enable email notifications
+        </div>`
+}
+
+func getActiveProviderBadge(isActive bool) string {
+	if isActive {
+		return `<span style="display: inline-block; background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px;">ACTIVE</span>`
+	}
+	return ""
 }

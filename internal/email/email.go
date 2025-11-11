@@ -1,6 +1,7 @@
 package email
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 
@@ -33,8 +34,8 @@ func NewEmailService(provider EmailProvider, db *database.Database) *EmailServic
 // GetActiveProvider hämtar den aktiva e-postleverantören från databasen
 func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 	var provider string
-	var apiKeyEncrypted, smtpHost, smtpUsername, smtpPasswordEncrypted, fromEmail, fromName string
-	var smtpPort, smtpUseTLS int
+	var apiKeyEncrypted, smtpHost, smtpUsername, smtpPasswordEncrypted, fromEmail, fromName sql.NullString
+	var smtpPort, smtpUseTLS sql.NullInt64
 
 	row := db.QueryRow(`
 		SELECT Provider, ApiKeyEncrypted, SMTPHost, SMTPPort, SMTPUsername,
@@ -47,8 +48,12 @@ func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 	err := row.Scan(&provider, &apiKeyEncrypted, &smtpHost, &smtpPort,
 		&smtpUsername, &smtpPasswordEncrypted, &smtpUseTLS, &fromEmail, &fromName)
 	if err != nil {
+		log.Printf("GetActiveProvider scan error: %v", err)
 		return nil, errors.New("no active email provider configured")
 	}
+
+	log.Printf("GetActiveProvider found: provider=%s, hasApiKey=%v, fromEmail=%v",
+		provider, apiKeyEncrypted.Valid, fromEmail.Valid)
 
 	// Hämta master key för dekryptering
 	masterKey, err := GetOrCreateMasterKey(db)
@@ -58,25 +63,31 @@ func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 
 	switch provider {
 	case "brevo":
-		if apiKeyEncrypted == "" {
+		if !apiKeyEncrypted.Valid || apiKeyEncrypted.String == "" {
 			return nil, errors.New("brevo API key not configured")
 		}
-		apiKey, err := DecryptAPIKey(apiKeyEncrypted, masterKey)
+		apiKey, err := DecryptAPIKey(apiKeyEncrypted.String, masterKey)
 		if err != nil {
+			log.Printf("Failed to decrypt Brevo API key: %v", err)
 			return nil, err
 		}
-		return NewBrevoProvider(apiKey, fromEmail, fromName), nil
+		prefix := apiKey
+		if len(apiKey) > 10 {
+			prefix = apiKey[:10]
+		}
+		log.Printf("Decrypted API key length: %d chars, starts with: %s...", len(apiKey), prefix)
+		return NewBrevoProvider(apiKey, fromEmail.String, fromName.String), nil
 
 	case "smtp":
-		if smtpPasswordEncrypted == "" {
+		if !smtpPasswordEncrypted.Valid || smtpPasswordEncrypted.String == "" {
 			return nil, errors.New("SMTP password not configured")
 		}
-		password, err := DecryptAPIKey(smtpPasswordEncrypted, masterKey)
+		password, err := DecryptAPIKey(smtpPasswordEncrypted.String, masterKey)
 		if err != nil {
 			return nil, err
 		}
-		useTLS := smtpUseTLS == 1
-		return NewSMTPProvider(smtpHost, smtpPort, smtpUsername, password, fromEmail, fromName, useTLS), nil
+		useTLS := smtpUseTLS.Valid && smtpUseTLS.Int64 == 1
+		return NewSMTPProvider(smtpHost.String, int(smtpPort.Int64), smtpUsername.String, password, fromEmail.String, fromName.String, useTLS), nil
 
 	default:
 		return nil, errors.New("unknown email provider: " + provider)

@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
@@ -52,6 +54,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	unlimitedTime := r.FormValue("unlimited_time") == "true"
 	unlimitedDownloads := r.FormValue("unlimited_downloads") == "true"
 	filePassword := r.FormValue("file_password")
+	sendToEmail := r.FormValue("send_to_email")
 
 	// Check file size
 	fileSize := header.Size
@@ -158,6 +161,94 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	downloadLink := s.getPublicURL() + "/d/" + fileID
 
 	log.Printf("File uploaded: %s (%s) by user %d", header.Filename, database.FormatFileSize(fileSize), user.Id)
+
+	// Send email with download link if recipient email is provided
+	if sendToEmail != "" && strings.TrimSpace(sendToEmail) != "" {
+		go func() {
+			subject := "File ready for download"
+
+			htmlBody := fmt.Sprintf(`
+				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+					<h2 style="color: #333;">File Shared With You</h2>
+					<p>A file has been shared with you:</p>
+					<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+						<h3 style="margin-top: 0; color: #2563eb;">%s</h3>
+						<p><strong>Size:</strong> %s</p>
+						%s
+						%s
+					</div>
+					<div style="margin: 30px 0;">
+						<a href="%s" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View & Download File</a>
+					</div>
+					<p style="color: #666; font-size: 14px;">
+						<strong>Direct download link:</strong> <a href="%s">%s</a>
+					</p>
+					<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+					<p style="color: #999; font-size: 12px;">This file was sent to you via Sharecare.</p>
+				</div>
+			`, html.EscapeString(header.Filename),
+				database.FormatFileSize(fileSize),
+				func() string {
+					if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
+						return fmt.Sprintf("<p><strong>Expires:</strong> %s</p>", html.EscapeString(fileInfo.ExpireAtString))
+					}
+					return ""
+				}(),
+				func() string {
+					if !fileInfo.UnlimitedDownloads {
+						return fmt.Sprintf("<p><strong>Download limit:</strong> %d downloads</p>", fileInfo.DownloadsRemaining)
+					}
+					return ""
+				}(),
+				splashLink, downloadLink, downloadLink)
+
+			textBody := fmt.Sprintf(`File Shared With You
+
+File: %s
+Size: %s
+%s%s
+
+View and download here: %s
+
+Direct download link: %s
+
+This file was sent to you via Sharecare.`,
+				header.Filename,
+				database.FormatFileSize(fileSize),
+				func() string {
+					if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
+						return fmt.Sprintf("\nExpires: %s\n", fileInfo.ExpireAtString)
+					}
+					return ""
+				}(),
+				func() string {
+					if !fileInfo.UnlimitedDownloads {
+						return fmt.Sprintf("\nDownload limit: %d downloads\n", fileInfo.DownloadsRemaining)
+					}
+					return ""
+				}(),
+				splashLink, downloadLink)
+
+			provider, err := email.GetActiveProvider(database.DB)
+			if err != nil {
+				log.Printf("Failed to get email provider: %v", err)
+				return
+			}
+
+			err = provider.SendEmail(sendToEmail, subject, htmlBody, textBody)
+			if err != nil {
+				log.Printf("Failed to send file download link email to %s: %v", sendToEmail, err)
+			} else {
+				log.Printf("File download link email sent to %s", sendToEmail)
+
+				// Log email to database
+				err = database.DB.LogEmailSent(fileID, user.Id, sendToEmail, "", header.Filename, fileSize)
+				if err != nil {
+					log.Printf("Failed to log email to database: %v", err)
+				}
+			}
+		}()
+	}
 
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
 		"success":         true,

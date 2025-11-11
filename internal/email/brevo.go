@@ -1,55 +1,114 @@
 package email
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
 
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
-	sendinblue "github.com/sendinblue/APIv3-go-library/v2/lib"
 )
 
 // BrevoProvider implementerar EmailProvider för Brevo (Sendinblue)
 type BrevoProvider struct {
-	client    *sendinblue.APIClient
+	apiKey    string
 	fromEmail string
 	fromName  string
 }
 
 // NewBrevoProvider skapar en ny Brevo provider
 func NewBrevoProvider(apiKey, fromEmail, fromName string) *BrevoProvider {
-	cfg := sendinblue.NewConfiguration()
-	cfg.AddDefaultHeader("api-key", apiKey)
-
 	if fromName == "" {
 		fromName = "Sharecare"
 	}
 
 	return &BrevoProvider{
-		client:    sendinblue.NewAPIClient(cfg),
+		apiKey:    apiKey,
 		fromEmail: fromEmail,
 		fromName:  fromName,
 	}
 }
 
+// BrevoEmailRequest representerar Brevo API email request
+type BrevoEmailRequest struct {
+	Sender struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"sender"`
+	To []struct {
+		Email string `json:"email"`
+		Name  string `json:"name,omitempty"`
+	} `json:"to"`
+	Subject     string `json:"subject"`
+	HtmlContent string `json:"htmlContent,omitempty"`
+	TextContent string `json:"textContent,omitempty"`
+}
+
 // SendEmail skickar ett e-postmeddelande via Brevo
 func (bp *BrevoProvider) SendEmail(to, subject, htmlBody, textBody string) error {
-	ctx := context.Background()
+	// Prepare request
+	reqBody := BrevoEmailRequest{
+		Subject: subject,
+	}
+	reqBody.Sender.Name = bp.fromName
+	reqBody.Sender.Email = bp.fromEmail
+	reqBody.To = []struct {
+		Email string `json:"email"`
+		Name  string `json:"name,omitempty"`
+	}{
+		{Email: to},
+	}
+	reqBody.HtmlContent = htmlBody
+	reqBody.TextContent = textBody
 
-	sendEmail := sendinblue.SendSmtpEmail{
-		Sender: &sendinblue.SendSmtpEmailSender{
-			Email: bp.fromEmail,
-			Name:  bp.fromName,
-		},
-		To: []sendinblue.SendSmtpEmailTo{
-			{Email: to},
-		},
-		Subject:     subject,
-		HtmlContent: htmlBody,
-		TextContent: textBody,
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	_, _, err := bp.client.TransactionalEmailsApi.SendTransacEmail(ctx, sendEmail)
-	return err
+	// Send request to Brevo API
+	req, err := http.NewRequest("POST", "https://api.brevo.com/v3/smtp/email", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("accept", "application/json")
+	req.Header.Set("api-key", bp.apiKey)
+	req.Header.Set("content-type", "application/json")
+
+	// Log the full request for debugging
+	log.Printf("🔍 Brevo API Request:")
+	log.Printf("   URL: %s", req.URL.String())
+	log.Printf("   Method: %s", req.Method)
+	log.Printf("   API Key (full): '%s'", bp.apiKey)
+	log.Printf("   From: %s <%s>", bp.fromName, bp.fromEmail)
+	log.Printf("   To: %s", to)
+	log.Printf("   Subject: %s", subject)
+	log.Printf("   Request Body: %s", string(jsonData))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("❌ Brevo request failed: %v", err)
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body for logging
+	respBody, _ := io.ReadAll(resp.Body)
+	log.Printf("📩 Brevo Response Status: %d %s", resp.StatusCode, resp.Status)
+	log.Printf("📩 Brevo Response Body: %s", string(respBody))
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		var errResp map[string]interface{}
+		json.Unmarshal(respBody, &errResp)
+		return fmt.Errorf("%d %s: %v", resp.StatusCode, resp.Status, errResp)
+	}
+
+	return nil
 }
 
 // SendFileUploadNotification skickar notifiering när fil laddats upp via request

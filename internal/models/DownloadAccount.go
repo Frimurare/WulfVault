@@ -31,6 +31,18 @@ type DownloadLog struct {
 	IsAuthenticated   bool   `json:"isAuthenticated"`   // True if download required authentication
 }
 
+// EmailLog tracks when files are shared via email
+type EmailLog struct {
+	Id             int    `json:"id"`
+	FileId         string `json:"fileId"`         // The file that was shared
+	SenderUserId   int    `json:"senderUserId"`   // User who sent the email
+	RecipientEmail string `json:"recipientEmail"` // Email of recipient
+	Message        string `json:"message"`        // Optional personal message
+	SentAt         int64  `json:"sentAt"`         // Unix timestamp
+	FileName       string `json:"fileName"`       // Name of file shared
+	FileSize       int64  `json:"fileSize"`       // Size in bytes
+}
+
 // GetReadableDate returns the date as YYYY-MM-DD HH:MM
 func (d *DownloadAccount) GetReadableDate() string {
 	if d.CreatedAt == 0 {
@@ -70,6 +82,23 @@ func (d *DownloadLog) GetReadableDownloadDate() string {
 // ToJson returns the download log as a JSON object
 func (d *DownloadLog) ToJson() string {
 	result, err := json.Marshal(d)
+	if err != nil {
+		return "{}"
+	}
+	return string(result)
+}
+
+// GetReadableSentDate returns the sent timestamp as YYYY-MM-DD HH:MM
+func (e *EmailLog) GetReadableSentDate() string {
+	if e.SentAt == 0 {
+		return "Unknown"
+	}
+	return time.Unix(e.SentAt, 0).Format("2006-01-02 15:04")
+}
+
+// ToJson returns the email log as a JSON object
+func (e *EmailLog) ToJson() string {
+	result, err := json.Marshal(e)
 	if err != nil {
 		return "{}"
 	}

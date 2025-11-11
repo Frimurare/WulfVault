@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net/http"
@@ -69,6 +70,7 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 	message := r.FormValue("message")
 	maxFileSizeMB, _ := strconv.Atoi(r.FormValue("max_file_size_mb"))
 	allowedFileTypes := r.FormValue("allowed_file_types")
+	recipientEmail := r.FormValue("recipient_email")
 	// Note: expires_in_days is for uploaded files, not the request link itself
 
 	// Debug logging
@@ -101,6 +103,73 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 	}
 
 	uploadURL := fileRequest.GetUploadURL(s.getPublicURL())
+
+	// Send invitation email if recipient email is provided
+	if recipientEmail != "" && strings.TrimSpace(recipientEmail) != "" {
+		go func() {
+			expireTime := time.Unix(fileRequest.ExpiresAt, 0).Format("2006-01-02 15:04")
+			subject := "You've been invited to upload a file"
+
+			htmlBody := fmt.Sprintf(`
+				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+					<h2 style="color: #333;">File Upload Request</h2>
+					<p>You've received a file upload request:</p>
+					<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+						<h3 style="margin-top: 0; color: #2563eb;">%s</h3>
+						%s
+					</div>
+					<div style="margin: 30px 0;">
+						<a href="%s" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Upload File</a>
+					</div>
+					<p style="color: #666; font-size: 14px;">
+						<strong>Expires:</strong> %s<br>
+						<strong>Link:</strong> <a href="%s">%s</a>
+					</p>
+					<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+					<p style="color: #999; font-size: 12px;">This link will expire in 24 hours.</p>
+				</div>
+			`, html.EscapeString(title),
+			   func() string {
+				   if message != "" {
+					   return fmt.Sprintf("<p>%s</p>", html.EscapeString(message))
+				   }
+				   return ""
+			   }(),
+			   uploadURL, expireTime, uploadURL, uploadURL)
+
+			textBody := fmt.Sprintf(`File Upload Request
+
+Title: %s
+%s
+
+Upload your file here: %s
+
+This link expires: %s
+
+This link will expire in 24 hours.`,
+				title,
+				func() string {
+					if message != "" {
+						return fmt.Sprintf("\nMessage: %s\n", message)
+					}
+					return ""
+				}(),
+				uploadURL, expireTime)
+
+			provider, err := email.GetActiveProvider(database.DB)
+			if err != nil {
+				log.Printf("Failed to get email provider: %v", err)
+				return
+			}
+
+			err = provider.SendEmail(recipientEmail, subject, htmlBody, textBody)
+			if err != nil {
+				log.Printf("Failed to send file request invitation email to %s: %v", recipientEmail, err)
+			} else {
+				log.Printf("File request invitation email sent to %s", recipientEmail)
+			}
+		}()
+	}
 
 	log.Printf("File request created: %s by user %d", title, user.Id)
 

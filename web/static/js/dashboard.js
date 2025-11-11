@@ -173,6 +173,8 @@ if (uploadForm) {
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
                 showSuccess('File uploaded successfully!');
+
+                // Reload page after successful upload
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 let errorMsg = 'Upload failed';
@@ -384,13 +386,17 @@ function submitFileRequest(event) {
     const title = document.getElementById('requestTitle').value;
     const message = document.getElementById('requestMessage').value;
     const maxSizeMB = document.getElementById('requestMaxSize').value;
+    const recipientEmail = document.getElementById('requestRecipientEmail').value;
 
-    console.log('Creating file request:', {title, message, maxSizeMB});
+    console.log('Creating file request:', {title, message, maxSizeMB, recipientEmail});
 
     const data = new FormData();
     data.append('title', title);
     data.append('message', message);
     data.append('max_file_size_mb', maxSizeMB);
+    if (recipientEmail) {
+        data.append('recipient_email', recipientEmail);
+    }
 
     fetch('/file-request/create', {
         method: 'POST',
