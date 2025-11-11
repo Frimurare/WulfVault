@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -2318,7 +2319,7 @@ func (s *Server) handleAdminReboot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("⚠️  Server restart requested by admin")
-	
+
 	// Send response before shutting down
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -2329,10 +2330,17 @@ func (s *Server) handleAdminReboot(w http.ResponseWriter, r *http.Request) {
 		f.Flush()
 	}
 
-	// Gracefully shutdown in a goroutine
+	// Try to restart using systemctl if running as service
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		log.Println("🔄 Initiating graceful server shutdown...")
-		os.Exit(0)
+		log.Println("🔄 Attempting graceful server restart...")
+
+		// Try systemctl restart first
+		cmd := exec.Command("systemctl", "restart", "sharecare")
+		if err := cmd.Run(); err != nil {
+			// If systemctl doesn't work, just exit (process manager will restart)
+			log.Println("systemctl not available, exiting for process manager restart...")
+			os.Exit(0)
+		}
 	}()
 }
