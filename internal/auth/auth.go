@@ -105,6 +105,7 @@ func CleanupExpiredSessions() error {
 }
 
 // AuthenticateUser authenticates a user by email/username and password
+// Returns User or nil. For download accounts, use AuthenticateDownloadAccount directly.
 func AuthenticateUser(emailOrUsername, password string) (*models.User, error) {
 	// Try by email first
 	user, err := database.DB.GetUserByEmail(emailOrUsername)
@@ -127,6 +128,51 @@ func AuthenticateUser(emailOrUsername, password string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+// AccountType represents the type of account that was authenticated
+type AccountType string
+
+const (
+	AccountTypeUser           AccountType = "user"
+	AccountTypeDownloadAccount AccountType = "download_account"
+)
+
+// AuthResult contains information about an authenticated account
+type AuthResult struct {
+	User            *models.User            // Non-nil if it's a regular user
+	DownloadAccount *models.DownloadAccount // Non-nil if it's a download account
+	AccountType     AccountType             // Type of account
+	AccountID       int                     // ID of the account
+	Email           string                  // Email of the account
+}
+
+// AuthenticateAnyAccount tries to authenticate as either a User or DownloadAccount
+func AuthenticateAnyAccount(email, password string) (*AuthResult, error) {
+	// First try regular user authentication
+	user, err := AuthenticateUser(email, password)
+	if err == nil {
+		return &AuthResult{
+			User:        user,
+			AccountType: AccountTypeUser,
+			AccountID:   user.Id,
+			Email:       user.Email,
+		}, nil
+	}
+
+	// If user auth failed, try download account
+	downloadAccount, err := AuthenticateDownloadAccount(email, password)
+	if err == nil {
+		return &AuthResult{
+			DownloadAccount: downloadAccount,
+			AccountType:     AccountTypeDownloadAccount,
+			AccountID:       downloadAccount.Id,
+			Email:           downloadAccount.Email,
+		}, nil
+	}
+
+	// Both failed
+	return nil, errors.New("invalid credentials")
 }
 
 // AuthenticateDownloadAccount authenticates a download account
@@ -176,6 +222,37 @@ func CreateDownloadAccount(email, password string) (*models.DownloadAccount, err
 	if err != nil {
 		return nil, err
 	}
+
+	return account, nil
+}
+
+// CreateDownloadAccountSession creates a session token for a download account
+// Returns the email (used as session identifier)
+func CreateDownloadAccountSession(accountId int) (string, error) {
+	account, err := database.DB.GetDownloadAccountByID(accountId)
+	if err != nil {
+		return "", err
+	}
+
+	// For download accounts, we use their email as the session identifier
+	// This is simpler than creating a separate session table
+	return account.Email, nil
+}
+
+// GetDownloadAccountBySession retrieves a download account by session (email)
+func GetDownloadAccountBySession(sessionEmail string) (*models.DownloadAccount, error) {
+	account, err := database.DB.GetDownloadAccountByEmail(sessionEmail)
+	if err != nil {
+		return nil, errors.New("invalid session")
+	}
+
+	// Check if account is active
+	if !account.IsActive {
+		return nil, errors.New("account is disabled")
+	}
+
+	// Update last used
+	database.DB.UpdateDownloadAccountLastUsed(account.Id)
 
 	return account, nil
 }

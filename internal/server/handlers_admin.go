@@ -34,7 +34,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday)
 }
 
-// handleAdminUsers lists all users
+// handleAdminUsers lists all users and download accounts
 func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := database.DB.GetAllUsers()
 	if err != nil {
@@ -42,7 +42,13 @@ func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.renderAdminUsers(w, users)
+	downloadAccounts, err := database.DB.GetAllDownloadAccounts()
+	if err != nil {
+		log.Printf("Warning: Failed to fetch download accounts: %v", err)
+		downloadAccounts = []*models.DownloadAccount{}
+	}
+
+	s.renderAdminUsers(w, users, downloadAccounts)
 }
 
 // handleAdminUserCreate creates a new user
@@ -181,6 +187,266 @@ func (s *Server) handleAdminUserDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.sendJSON(w, http.StatusOK, map[string]string{"message": "User deleted"})
+}
+
+// handleAdminToggleDownloadAccount toggles download account active status
+func (s *Server) handleAdminToggleDownloadAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	accountID, _ := strconv.Atoi(r.FormValue("id"))
+	if accountID == 0 {
+		s.sendError(w, http.StatusBadRequest, "Invalid account ID")
+		return
+	}
+
+	// Get account
+	account, err := database.DB.GetDownloadAccountByID(accountID)
+	if err != nil {
+		s.sendError(w, http.StatusNotFound, "Download account not found")
+		return
+	}
+
+	// Toggle active status
+	account.IsActive = !account.IsActive
+	if err := database.DB.UpdateDownloadAccount(account); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to update account")
+		return
+	}
+
+	s.sendJSON(w, http.StatusOK, map[string]string{"message": "Account updated"})
+}
+
+// handleAdminCreateDownloadAccount creates a new download account
+func (s *Server) handleAdminCreateDownloadAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		s.renderAdminDownloadAccountForm(w, nil, "")
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		s.renderAdminDownloadAccountForm(w, nil, "Invalid form data")
+		return
+	}
+
+	name := r.FormValue("name")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	// Validate
+	if name == "" || email == "" || password == "" {
+		s.renderAdminDownloadAccountForm(w, nil, "All fields are required")
+		return
+	}
+
+	// Check if account already exists
+	existing, _ := database.DB.GetDownloadAccountByEmail(email)
+	if existing != nil {
+		s.renderAdminDownloadAccountForm(w, nil, "Account with this email already exists")
+		return
+	}
+
+	// Hash password
+	hashedPassword, err := auth.HashPassword(password)
+	if err != nil {
+		s.renderAdminDownloadAccountForm(w, nil, "Failed to hash password")
+		return
+	}
+
+	// Create account
+	account := &models.DownloadAccount{
+		Name:     name,
+		Email:    email,
+		Password: hashedPassword,
+		IsActive: true,
+	}
+
+	if err := database.DB.CreateDownloadAccount(account); err != nil {
+		s.renderAdminDownloadAccountForm(w, nil, "Failed to create account: "+err.Error())
+		return
+	}
+
+	log.Printf("Admin created download account: %s", email)
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+// handleAdminEditDownloadAccount edits a download account
+func (s *Server) handleAdminEditDownloadAccount(w http.ResponseWriter, r *http.Request) {
+	accountID, _ := strconv.Atoi(r.URL.Query().Get("id"))
+	if accountID == 0 {
+		http.Error(w, "Invalid account ID", http.StatusBadRequest)
+		return
+	}
+
+	existingAccount, err := database.DB.GetDownloadAccountByID(accountID)
+	if err != nil {
+		http.Error(w, "Account not found", http.StatusNotFound)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		s.renderAdminDownloadAccountForm(w, existingAccount, "")
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		s.renderAdminDownloadAccountForm(w, existingAccount, "Invalid form data")
+		return
+	}
+
+	existingAccount.Name = r.FormValue("name")
+	existingAccount.Email = r.FormValue("email")
+	existingAccount.IsActive = r.FormValue("is_active") == "1"
+
+	// Update password if provided
+	newPassword := r.FormValue("password")
+	if newPassword != "" {
+		hashedPassword, err := auth.HashPassword(newPassword)
+		if err != nil {
+			s.renderAdminDownloadAccountForm(w, existingAccount, "Failed to hash password")
+			return
+		}
+		existingAccount.Password = hashedPassword
+	}
+
+	if err := database.DB.UpdateDownloadAccount(existingAccount); err != nil {
+		s.renderAdminDownloadAccountForm(w, existingAccount, "Failed to update account: "+err.Error())
+		return
+	}
+
+	log.Printf("Admin updated download account: ID=%d, Email=%s", accountID, existingAccount.Email)
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+// handleAdminDeleteDownloadAccount soft deletes a download account
+func (s *Server) handleAdminDeleteDownloadAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	accountID, _ := strconv.Atoi(r.FormValue("id"))
+	if accountID == 0 {
+		s.sendError(w, http.StatusBadRequest, "Invalid account ID")
+		return
+	}
+
+	// Get account for logging
+	account, err := database.DB.GetDownloadAccountByID(accountID)
+	if err != nil {
+		s.sendError(w, http.StatusNotFound, "Account not found")
+		return
+	}
+
+	// Soft delete the account
+	if err := database.DB.SoftDeleteDownloadAccount(accountID, "admin"); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to delete account")
+		return
+	}
+
+	log.Printf("Admin soft deleted download account: ID=%d, Email=%s", accountID, account.Email)
+	s.sendJSON(w, http.StatusOK, map[string]string{"message": "Account deleted"})
+}
+
+// renderAdminDownloadAccountForm renders the download account form
+func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, account *models.DownloadAccount, errorMsg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	isEdit := account != nil
+	title := "Create Download Account"
+	action := "/admin/download-accounts/create"
+
+	if isEdit {
+		title = "Edit Download Account"
+		action = fmt.Sprintf("/admin/download-accounts/edit?id=%d", account.Id)
+	}
+
+	nameVal, emailVal := "", ""
+	if isEdit {
+		nameVal = account.Name
+		emailVal = account.Email
+	}
+
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <title>` + title + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { margin-bottom: 24px; color: #333; }
+        input { width: 100%; padding: 8px; margin: 8px 0; }
+        button { padding: 10px 20px; background: ` + s.getPrimaryColor() + `; color: white; border: none; cursor: pointer; border-radius: 6px; }
+        .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
+    </style>
+</head>
+<body>
+    ` + s.getAdminHeaderHTML("") + `
+    <div class="container">
+        <h2>` + title + `</h2>`
+
+	if errorMsg != "" {
+		html += `<div class="error">` + errorMsg + `</div>`
+	}
+
+	html += `
+        <form method="POST" action="` + action + `">
+            <label>Name:</label>
+            <input type="text" name="name" value="` + nameVal + `" required>
+
+            <label>Email:</label>
+            <input type="email" name="email" value="` + emailVal + `" required>
+
+            <label>Password` + func() string {
+		if isEdit {
+			return " (leave empty to keep current)"
+		}
+		return ""
+	}() + `:</label>
+            <input type="password" name="password"` + func() string {
+		if !isEdit {
+			return " required"
+		}
+		return ""
+	}() + `>
+
+            <br><br>
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="is_active" value="1"` + func() string {
+		if isEdit && account.IsActive {
+			return " checked"
+		} else if !isEdit {
+			return " checked"
+		}
+		return ""
+	}() + ` style="width: auto; margin-right: 8px;">
+                <span>Active (account can log in)</span>
+            </label>
+
+            <br><br>
+            <button type="submit">Save</button>
+            <a href="/admin/users">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
 
 // handleAdminFiles lists all files in the system
@@ -681,7 +947,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
+func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, downloadAccounts []*models.DownloadAccount) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
@@ -720,6 +986,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
         th, td {
             padding: 16px;
@@ -741,10 +1008,15 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
         }
         .badge-admin { background: #e3f2fd; color: #1976d2; }
         .badge-user { background: #f3e5f5; color: #7b1fa2; }
+        .badge-download { background: #fff3e0; color: #e65100; }
         .action-links a {
             margin-right: 12px;
             color: ` + s.getPrimaryColor() + `;
             text-decoration: none;
+        }
+        h3 {
+            margin: 30px 0 16px 0;
+            color: #333;
         }
     </style>
 </head>
@@ -770,6 +1042,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
             </thead>
             <tbody>`
 
+	// Regular users
 	for _, u := range users {
 		levelBadge := `<span class="badge badge-user">User</span>`
 		if u.UserLevel == models.UserLevelAdmin || u.UserLevel == models.UserLevelSuperAdmin {
@@ -800,6 +1073,64 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
 	html += `
             </tbody>
         </table>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; margin-bottom: 16px;">
+            <h3>Download Accounts (` + fmt.Sprintf("%d", len(downloadAccounts)) + `)</h3>
+            <a href="/admin/download-accounts/create" class="btn">+ Create Download Account</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Level</th>
+                    <th>Downloads</th>
+                    <th>Last Used</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>`
+
+	// Download accounts
+	for _, da := range downloadAccounts {
+		status := "Active"
+		if !da.IsActive {
+			status = "Inactive"
+		}
+
+		lastUsed := "Never"
+		if da.LastUsed > 0 {
+			lastUsed = time.Unix(da.LastUsed, 0).Format("2006-01-02 15:04")
+		}
+
+		html += fmt.Sprintf(`
+                <tr>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td><span class="badge badge-download">Download Account</span></td>
+                    <td>%d</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td class="action-links">
+                        <a href="/admin/download-accounts/edit?id=%d">Edit</a>
+                        <a href="#" onclick="toggleDownloadAccount(%d, %t); return false;">%s</a>
+                        <a href="#" onclick="deleteDownloadAccount(%d); return false;">Delete</a>
+                    </td>
+                </tr>`,
+			da.Name, da.Email, da.DownloadCount, lastUsed, status,
+			da.Id, da.Id, da.IsActive,
+			func() string {
+				if da.IsActive {
+					return "Deactivate"
+				}
+				return "Activate"
+			}(), da.Id)
+	}
+
+	html += `
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -813,6 +1144,31 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User) {
             })
             .then(() => window.location.reload())
             .catch(err => alert('Error deleting user'));
+        }
+
+        function toggleDownloadAccount(id, isActive) {
+            const action = isActive ? 'deactivate' : 'activate';
+            if (!confirm('Are you sure you want to ' + action + ' this download account?')) return;
+
+            fetch('/admin/download-accounts/toggle', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'id=' + id
+            })
+            .then(() => window.location.reload())
+            .catch(err => alert('Error toggling download account'));
+        }
+
+        function deleteDownloadAccount(id) {
+            if (!confirm('Are you sure you want to soft delete this download account? The account will be marked as deleted and fully removed after 90 days.')) return;
+
+            fetch('/admin/download-accounts/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'id=' + id
+            })
+            .then(() => window.location.reload())
+            .catch(err => alert('Error deleting download account'));
         }
     </script>
 </body>

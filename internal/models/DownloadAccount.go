@@ -15,6 +15,9 @@ type DownloadAccount struct {
 	LastUsed      int64  `json:"lastUsed" redis:"LastUsed"`
 	DownloadCount int    `json:"downloadCount" redis:"DownloadCount"`
 	IsActive      bool   `json:"isActive" redis:"IsActive"`
+	DeletedAt     int64  `json:"deletedAt" redis:"DeletedAt"`         // Unix timestamp, 0 = not deleted
+	DeletedBy     string `json:"deletedBy" redis:"DeletedBy"`         // "user", "admin", or "system"
+	OriginalEmail string `json:"originalEmail" redis:"OriginalEmail"` // Store original email before deletion
 }
 
 // DownloadLog tracks individual download events

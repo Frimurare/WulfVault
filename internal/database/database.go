@@ -179,6 +179,11 @@ func (d *Database) runMigrations() error {
 		log.Printf("Migration completed: EmailProviderConfig table created")
 	}
 
+	// Migration 7: Add soft delete columns to Users and DownloadAccounts (via migrations.go)
+	if err := d.RunMigrations(); err != nil {
+		log.Printf("Migration error for soft delete columns: %v", err)
+	}
+
 	return nil
 }
 

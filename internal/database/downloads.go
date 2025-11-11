@@ -36,16 +36,21 @@ func (d *Database) CreateDownloadAccount(account *models.DownloadAccount) error 
 	return nil
 }
 
-// GetDownloadAccountByEmail retrieves a download account by email
+// GetDownloadAccountByEmail retrieves a download account by email (excluding soft-deleted accounts)
 func (d *Database) GetDownloadAccountByEmail(email string) (*models.DownloadAccount, error) {
 	account := &models.DownloadAccount{}
 	var isActive int
+	var deletedAt int64
+	var deletedBy, originalEmail string
 
 	err := d.db.QueryRow(`
-		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
-		FROM DownloadAccounts WHERE Email = ?`, email).Scan(
+		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive,
+		       COALESCE(DeletedAt, 0), COALESCE(DeletedBy, ''), COALESCE(OriginalEmail, '')
+		FROM DownloadAccounts
+		WHERE Email = ? AND (DeletedAt = 0 OR DeletedAt IS NULL)`, email).Scan(
 		&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
 		&account.LastUsed, &account.DownloadCount, &isActive,
+		&deletedAt, &deletedBy, &originalEmail,
 	)
 
 	if err != nil {
@@ -56,19 +61,26 @@ func (d *Database) GetDownloadAccountByEmail(email string) (*models.DownloadAcco
 	}
 
 	account.IsActive = isActive == 1
+	account.DeletedAt = deletedAt
+	account.DeletedBy = deletedBy
+	account.OriginalEmail = originalEmail
 	return account, nil
 }
 
-// GetDownloadAccountByID retrieves a download account by ID
+// GetDownloadAccountByID retrieves a download account by ID (including soft-deleted for admin purposes)
 func (d *Database) GetDownloadAccountByID(id int) (*models.DownloadAccount, error) {
 	account := &models.DownloadAccount{}
 	var isActive int
+	var deletedAt int64
+	var deletedBy, originalEmail string
 
 	err := d.db.QueryRow(`
-		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
+		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive,
+		       COALESCE(DeletedAt, 0), COALESCE(DeletedBy, ''), COALESCE(OriginalEmail, '')
 		FROM DownloadAccounts WHERE Id = ?`, id).Scan(
 		&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
 		&account.LastUsed, &account.DownloadCount, &isActive,
+		&deletedAt, &deletedBy, &originalEmail,
 	)
 
 	if err != nil {
@@ -79,6 +91,9 @@ func (d *Database) GetDownloadAccountByID(id int) (*models.DownloadAccount, erro
 	}
 
 	account.IsActive = isActive == 1
+	account.DeletedAt = deletedAt
+	account.DeletedBy = deletedBy
+	account.OriginalEmail = originalEmail
 	return account, nil
 }
 
@@ -108,11 +123,14 @@ func (d *Database) UpdateDownloadAccountLastUsed(id int) error {
 	return err
 }
 
-// GetAllDownloadAccounts returns all download accounts
+// GetAllDownloadAccounts returns all download accounts (excluding soft-deleted)
 func (d *Database) GetAllDownloadAccounts() ([]*models.DownloadAccount, error) {
 	rows, err := d.db.Query(`
-		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive
-		FROM DownloadAccounts ORDER BY LastUsed DESC`)
+		SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive,
+		       COALESCE(DeletedAt, 0), COALESCE(DeletedBy, ''), COALESCE(OriginalEmail, '')
+		FROM DownloadAccounts
+		WHERE (DeletedAt = 0 OR DeletedAt IS NULL)
+		ORDER BY LastUsed DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -122,14 +140,20 @@ func (d *Database) GetAllDownloadAccounts() ([]*models.DownloadAccount, error) {
 	for rows.Next() {
 		account := &models.DownloadAccount{}
 		var isActive int
+		var deletedAt int64
+		var deletedBy, originalEmail string
 
 		err := rows.Scan(&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
-			&account.LastUsed, &account.DownloadCount, &isActive)
+			&account.LastUsed, &account.DownloadCount, &isActive,
+			&deletedAt, &deletedBy, &originalEmail)
 		if err != nil {
 			return nil, err
 		}
 
 		account.IsActive = isActive == 1
+		account.DeletedAt = deletedAt
+		account.DeletedBy = deletedBy
+		account.OriginalEmail = originalEmail
 		accounts = append(accounts, account)
 	}
 
@@ -264,4 +288,25 @@ func (d *Database) GetDownloadsToday() (int, error) {
 	var count int
 	err := d.db.QueryRow("SELECT COUNT(*) FROM DownloadLogs WHERE DownloadedAt >= ?", startOfDay).Scan(&count)
 	return count, err
+}
+
+// AnonymizeDownloadAccount anonymizes a download account for GDPR compliance
+// This uses soft delete approach - marks as deleted but keeps data for 90 days
+// NOTE: This is now handled by SoftDeleteDownloadAccount in migrations.go
+// Kept for backward compatibility
+func (d *Database) AnonymizeDownloadAccount(id int) error {
+	return d.SoftDeleteDownloadAccount(id, "user")
+}
+
+// DeleteDownloadAccount permanently deletes a download account (use with caution)
+func (d *Database) DeleteDownloadAccount(id int) error {
+	// First delete all download logs for this account
+	_, err := d.db.Exec("DELETE FROM DownloadLogs WHERE DownloadAccountId = ?", id)
+	if err != nil {
+		return err
+	}
+
+	// Then delete the account
+	_, err = d.db.Exec("DELETE FROM DownloadAccounts WHERE Id = ?", id)
+	return err
 }

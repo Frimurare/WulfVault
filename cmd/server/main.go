@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	Version = "3.0.0-rc1"
+	Version = "3.0.0-rc2"
 )
 
 var (
@@ -114,6 +114,45 @@ func main() {
 		for range ticker.C {
 			if err := database.DB.CleanupExpiredFileRequests(); err != nil {
 				log.Printf("Error cleaning up expired file requests: %v", err)
+			}
+		}
+	}()
+
+	// Cleanup old soft-deleted accounts (runs daily, deletes accounts soft-deleted for 90+ days)
+	go func() {
+		// Run immediately on startup
+		log.Println("Starting 90-day soft delete cleanup...")
+		userCount, err := database.DB.PermanentlyDeleteOldUsers(90)
+		if err != nil {
+			log.Printf("Error permanently deleting old users: %v", err)
+		} else if userCount > 0 {
+			log.Printf("Permanently deleted %d users that were soft-deleted 90+ days ago", userCount)
+		}
+
+		downloadAccountCount, err := database.DB.PermanentlyDeleteOldDownloadAccounts(90)
+		if err != nil {
+			log.Printf("Error permanently deleting old download accounts: %v", err)
+		} else if downloadAccountCount > 0 {
+			log.Printf("Permanently deleted %d download accounts that were soft-deleted 90+ days ago", downloadAccountCount)
+		}
+
+		// Then run every 24 hours
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			log.Println("Running daily 90-day soft delete cleanup...")
+			userCount, err := database.DB.PermanentlyDeleteOldUsers(90)
+			if err != nil {
+				log.Printf("Error permanently deleting old users: %v", err)
+			} else if userCount > 0 {
+				log.Printf("Permanently deleted %d users that were soft-deleted 90+ days ago", userCount)
+			}
+
+			downloadAccountCount, err := database.DB.PermanentlyDeleteOldDownloadAccounts(90)
+			if err != nil {
+				log.Printf("Error permanently deleting old download accounts: %v", err)
+			} else if downloadAccountCount > 0 {
+				log.Printf("Permanently deleted %d download accounts that were soft-deleted 90+ days ago", downloadAccountCount)
 			}
 		}
 	}()

@@ -49,6 +49,18 @@ func (s *Server) Start() error {
 	// Public file request routes
 	mux.HandleFunc("/upload-request/", s.handleUploadRequest)
 
+	// Download account GDPR self-service (legacy route - kept for compatibility)
+	mux.HandleFunc("/download-account/gdpr", s.handleDownloadAccountGDPR)
+	mux.HandleFunc("/download-account/delete", s.handleDownloadAccountDelete)
+
+	// Download user routes (require download account authentication)
+	mux.HandleFunc("/download/dashboard", s.requireDownloadAuth(s.handleDownloadDashboard))
+	mux.HandleFunc("/download/change-password", s.requireDownloadAuth(s.handleDownloadChangePassword))
+	mux.HandleFunc("/download/account-settings", s.requireDownloadAuth(s.handleDownloadAccountSettings))
+	mux.HandleFunc("/download/delete-account", s.requireDownloadAuth(s.handleDownloadAccountDeleteSelf))
+	mux.HandleFunc("/download/logout", s.handleDownloadLogout)
+	mux.HandleFunc("/download/deleted-success", s.handleDownloadDeletedSuccess)
+
 	// User routes (require authentication)
 	mux.HandleFunc("/dashboard", s.requireAuth(s.handleUserDashboard))
 	mux.HandleFunc("/upload", s.requireAuth(s.handleUpload))
@@ -67,6 +79,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/users/create", s.requireAdmin(s.handleAdminUserCreate))
 	mux.HandleFunc("/admin/users/edit", s.requireAdmin(s.handleAdminUserEdit))
 	mux.HandleFunc("/admin/users/delete", s.requireAdmin(s.handleAdminUserDelete))
+	mux.HandleFunc("/admin/download-accounts/toggle", s.requireAdmin(s.handleAdminToggleDownloadAccount))
+	mux.HandleFunc("/admin/download-accounts/create", s.requireAdmin(s.handleAdminCreateDownloadAccount))
+	mux.HandleFunc("/admin/download-accounts/edit", s.requireAdmin(s.handleAdminEditDownloadAccount))
+	mux.HandleFunc("/admin/download-accounts/delete", s.requireAdmin(s.handleAdminDeleteDownloadAccount))
 	mux.HandleFunc("/admin/files", s.requireAdmin(s.handleAdminFiles))
 	mux.HandleFunc("/admin/trash", s.requireAdmin(s.handleAdminTrash))
 	mux.HandleFunc("/admin/trash/restore", s.requireAdmin(s.handleAdminRestoreFile))

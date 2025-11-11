@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.0.0-rc2] - 2025-11-11
+
+### New Features
+- **Download Account Auto-Login**: New users creating accounts during file download are automatically logged in and redirected to their dashboard
+- **Account Settings Cancel Button**: Fixed cancel button to redirect to dashboard instead of logging out
+
+### Improvements
+- Enhanced user experience for first-time download account creation
+- Better session management for download accounts
+- Improved redirect flow after account creation
+
+### Planned for v3.1
+- Password reset functionality for all user types (admin, users, download accounts)
+- Two-factor authentication via email or authenticator app
+
+---
+
 ## [3.0.0-rc1] - 2025-01-11
 
 ### New Features
