@@ -130,5 +130,5 @@ location / {
 
 ---
 
-**Version:** 3.1.0
+**Version:** 3.1.1
 **Support:** https://github.com/Frimurare/Sharecare/issues

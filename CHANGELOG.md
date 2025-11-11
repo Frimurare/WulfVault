@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.1.1] - 2025-11-11 🔧 Critical Bug Fix
+
+### Bug Fixes
+- **Upload Timeout Issue**: Fixed network error when uploading large files (500MB+)
+  - Increased WriteTimeout from 15 seconds to 8 hours for very large file uploads on slow connections
+  - Increased ReadTimeout from 15 to 60 seconds for better header processing
+  - This allows users to upload multi-gigabyte files even on slow internet connections
+  - Server now supports uploads taking up to 8 hours to complete
+- **Maximum File Size Limit**: Increased from 5GB to 150GB
+  - UI now reflects the new 150GB maximum file size limit
+  - Suitable for large video files, backups, and forensic data
+
+### Technical Details
+- WriteTimeout: 8 hours (28,800 seconds) - for large file transfers
+- ReadTimeout: 60 seconds - for request header processing
+- IdleTimeout: 120 seconds - for keep-alive connections
+- Maximum file size: 150 GB
+
+---
+
 ## [3.1.0] - 2025-11-11 🎊 Dashboard Enhancement Release
 
 ### New Features
