@@ -252,6 +252,9 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             </div>
             <button type="submit" class="btn">Login</button>
         </form>
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="/forgot-password" style="color: ` + s.getPrimaryColor() + `; text-decoration: none; font-size: 14px;">Forgot Password?</a>
+        </div>
         <div class="footer">
             ` + s.config.FooterText + `
         </div>

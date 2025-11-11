@@ -42,6 +42,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/", s.handleHome)
 	mux.HandleFunc("/login", s.handleLogin)
 	mux.HandleFunc("/logout", s.handleLogout)
+	mux.HandleFunc("/forgot-password", s.handleForgotPassword)
+	mux.HandleFunc("/reset-password", s.handleResetPassword)
 	mux.HandleFunc("/s/", s.handleSplashPage)
 	mux.HandleFunc("/d/", s.handleDownload)
 	mux.HandleFunc("/health", s.handleHealth)
@@ -90,6 +92,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
+	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
 
 	// Email API routes
 	mux.HandleFunc("/api/email/configure", s.requireAuth(s.requireAdmin(s.handleEmailConfigure)))

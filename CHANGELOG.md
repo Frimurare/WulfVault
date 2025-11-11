@@ -1,5 +1,36 @@
 # Changelog
 
+## [3.0.0] - 2025-11-11 🎉 GOLD RELEASE
+
+### New Features
+- **Password Reset System**: Complete "Forgot Password" functionality for all user types (admin, regular users, download accounts)
+  - Secure token-based reset links with 1-hour expiration
+  - Humorous yet professional email notifications
+  - Password visibility toggle (hold to view)
+  - Dual-field password confirmation with validation
+- **Server Restart Control**: Admin can restart server from Settings interface
+  - Red warning-styled button with confirmation dialog
+  - Graceful shutdown support
+  - Compatible with process managers (systemd, supervisor)
+- **Download Account Auto-Login**: New users are automatically logged into their dashboard after registration
+- **Account Settings Navigation**: Fixed cancel button to return to dashboard instead of logging out
+
+### Improvements
+- Enhanced security with one-time use reset tokens
+- Professional email templates with branding
+- Mobile-responsive password reset pages
+- Comprehensive audit logging for all security events
+- Improved user experience across all account types
+
+### Production Readiness
+- All core features tested and stable
+- GDPR-compliant data handling
+- Secure password hashing with bcrypt
+- Complete audit trail for compliance
+- Professional documentation
+
+---
+
 ## [3.0.0-rc2] - 2025-11-11
 
 ### New Features
