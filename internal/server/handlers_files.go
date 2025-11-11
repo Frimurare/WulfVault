@@ -327,6 +327,21 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if this is a direct download request (from iframe redirect)
+	isDirect := r.URL.Query().Get("direct") == "1"
+
+	// If direct download and user has session, just download
+	if isDirect && fileInfo.RequireAuth {
+		cookie, err := r.Cookie("download_session_" + fileInfo.Id)
+		if err == nil {
+			account, err := database.DB.GetDownloadAccountByEmail(cookie.Value)
+			if err == nil && account.IsActive {
+				s.performDownload(w, r, fileInfo, account)
+				return
+			}
+		}
+	}
+
 	// Check if file password is required
 	if fileInfo.FilePasswordPlain != "" {
 		s.handlePasswordProtectedDownload(w, r, fileInfo)
@@ -444,6 +459,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 
 	// Check if account exists
 	account, err := database.DB.GetDownloadAccountByEmail(email)
+	isNewAccount := false
 	if err != nil {
 		// Create new account - name is required for new accounts
 		if name == "" {
@@ -455,6 +471,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 			s.renderDownloadAuthPage(w, fileInfo, "Failed to create account: "+err.Error())
 			return
 		}
+		isNewAccount = true
 		log.Printf("Download account created: %s (%s)", email, name)
 	} else {
 		// Verify password
@@ -464,7 +481,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	// Set download session cookie
+	// Set file-specific download session cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "download_session_" + fileInfo.Id,
 		Value:    email,
@@ -474,8 +491,32 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	// Perform download
-	s.performDownload(w, r, fileInfo, account)
+	// If this is a new account, also set global download session for dashboard access
+	if isNewAccount {
+		log.Printf("🔐 Setting up global session for new download account: %s", email)
+		sessionEmail, err := auth.CreateDownloadAccountSession(account.Id)
+		if err != nil {
+			log.Printf("❌ Warning: Could not create global session for new account: %v", err)
+		} else {
+			log.Printf("✅ Global download_session cookie set for: %s", sessionEmail)
+			http.SetCookie(w, &http.Cookie{
+				Name:     "download_session",
+				Value:    sessionEmail,
+				Path:     "/",
+				Expires:  time.Now().Add(24 * time.Hour),
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			})
+		}
+	}
+
+	// For new accounts, render a special page that downloads the file and redirects to dashboard
+	if isNewAccount {
+		s.performDownloadWithRedirect(w, r, fileInfo, account)
+	} else {
+		// Perform normal download
+		s.performDownload(w, r, fileInfo, account)
+	}
 }
 
 // performDownload performs the actual file download
@@ -1325,6 +1366,182 @@ func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *databa
         <div class="footer">
             Powered by ` + companyName + `
         </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// performDownloadWithRedirect performs a download and redirects to dashboard (for new accounts)
+func (s *Server) performDownloadWithRedirect(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo, account *models.DownloadAccount) {
+	filePath := filepath.Join(s.config.UploadsDir, fileInfo.Id)
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		http.Error(w, "File not found on disk", http.StatusNotFound)
+		return
+	}
+
+	// Update download count
+	if err := database.DB.UpdateFileDownloadCount(fileInfo.Id); err != nil {
+		log.Printf("Warning: Could not update download count: %v", err)
+	}
+
+	// Create download log
+	downloadLog := &models.DownloadLog{
+		FileId:          fileInfo.Id,
+		FileName:        fileInfo.Name,
+		FileSize:        fileInfo.SizeBytes,
+		DownloadedAt:    time.Now().Unix(),
+		IpAddress:       r.RemoteAddr,
+		UserAgent:       r.UserAgent(),
+		IsAuthenticated: true,
+		DownloadAccountId: account.Id,
+		Email:           account.Email,
+	}
+
+	if err := database.DB.CreateDownloadLog(downloadLog); err != nil {
+		log.Printf("Warning: Could not create download log: %v", err)
+	}
+
+	// Update account last used
+	database.DB.UpdateDownloadAccountLastUsed(account.Id)
+
+	// Send email notification to file owner
+	go func() {
+		owner, err := database.DB.GetUserByID(fileInfo.UserId)
+		if err != nil {
+			log.Printf("Could not get file owner for download notification: %v", err)
+			return
+		}
+
+		clientIP := getClientIP(r)
+		err = email.SendFileDownloadNotification(fileInfo, clientIP, s.getPublicURL(), owner.Email)
+		if err != nil {
+			log.Printf("Failed to send download notification email: %v", err)
+		} else {
+			log.Printf("Download notification email sent to %s", owner.Email)
+		}
+	}()
+
+	log.Printf("File downloaded: %s (%s) by %s (new account - redirecting to dashboard)", fileInfo.Name, fileInfo.Size, account.Email)
+
+	// Render HTML page that downloads file and redirects to dashboard
+	downloadURL := "/d/" + fileInfo.Id
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Created - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .success-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #d4edda;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 40px;
+        }
+        h1 {
+            color: #155724;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        p {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid ` + s.getPrimaryColor() + `;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .info-box p {
+            margin: 8px 0;
+            color: #333;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid ` + s.getPrimaryColor() + `;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .redirect-text {
+            color: #999;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        // Start download immediately
+        window.onload = function() {
+            // Create hidden iframe to trigger download
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = '` + downloadURL + `?direct=1';
+            document.body.appendChild(iframe);
+
+            // Redirect to dashboard after 3 seconds
+            setTimeout(function() {
+                window.location.href = '/download/dashboard';
+            }, 3000);
+        };
+    </script>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">✓</div>
+
+        <h1>Account Created Successfully!</h1>
+
+        <div class="info-box">
+            <p><strong>✓</strong> Your download account has been created</p>
+            <p><strong>✓</strong> You are now logged in</p>
+            <p><strong>✓</strong> Your file download is starting...</p>
+        </div>
+
+        <p>Welcome <strong>` + account.Name + `</strong>!</p>
+        <p>Your file <strong>` + fileInfo.Name + `</strong> is being downloaded.</p>
+
+        <div class="spinner"></div>
+
+        <p class="redirect-text">Redirecting you to your dashboard in 3 seconds...</p>
     </div>
 </body>
 </html>`

@@ -15,6 +15,7 @@ type EmailProvider interface {
 	SendFileUploadNotification(request *models.FileRequest, file *database.FileInfo, uploaderIP, serverURL string, recipientEmail string) error
 	SendFileDownloadNotification(file *database.FileInfo, downloaderIP, serverURL string, recipientEmail string) error
 	SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message string) error
+	SendAccountDeletionConfirmation(to, accountName string) error
 }
 
 // EmailService hanterar e-posttjänster
@@ -124,4 +125,15 @@ func SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message
 	}
 
 	return provider.SendSplashLinkEmail(to, splashLink, file, message)
+}
+
+// SendAccountDeletionConfirmation skickar bekräftelse på kontoradering (GDPR)
+func SendAccountDeletionConfirmation(to, accountName string) error {
+	provider, err := GetActiveProvider(database.DB)
+	if err != nil {
+		log.Printf("Email not configured, skipping deletion confirmation: %v", err)
+		return nil // Don't fail the deletion if email fails
+	}
+
+	return provider.SendAccountDeletionConfirmation(to, accountName)
 }

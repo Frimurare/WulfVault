@@ -8,7 +8,7 @@ import (
 	"github.com/Frimurare/Sharecare/internal/database"
 )
 
-// handleLogin handles user login
+// handleLogin handles user and download account login
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		s.renderLoginPage(w, r, "")
@@ -29,41 +29,73 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	// Authenticate user
-	user, err := auth.AuthenticateUser(email, password)
+	// Try to authenticate as any account type (User or DownloadAccount)
+	authResult, err := auth.AuthenticateAnyAccount(email, password)
 	if err != nil {
 		s.renderLoginPage(w, r, "Invalid credentials")
 		return
 	}
 
-	// Create session
-	sessionID, err := auth.CreateSession(user.Id)
-	if err != nil {
-		s.renderLoginPage(w, r, "Failed to create session")
-		return
-	}
+	// Handle based on account type
+	if authResult.AccountType == auth.AccountTypeUser {
+		// Regular user login
+		user := authResult.User
 
-	// Set cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
-		Value:    sessionID,
-		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	})
-
-	// Redirect
-	redirect := r.URL.Query().Get("redirect")
-	if redirect == "" {
-		if user.IsAdmin() {
-			redirect = "/admin"
-		} else {
-			redirect = "/dashboard"
+		// Create session
+		sessionID, err := auth.CreateSession(user.Id)
+		if err != nil {
+			s.renderLoginPage(w, r, "Failed to create session")
+			return
 		}
-	}
 
-	http.Redirect(w, r, redirect, http.StatusSeeOther)
+		// Set cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    sessionID,
+			Path:     "/",
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		// Redirect
+		redirect := r.URL.Query().Get("redirect")
+		if redirect == "" {
+			if user.IsAdmin() {
+				redirect = "/admin"
+			} else {
+				redirect = "/dashboard"
+			}
+		}
+
+		http.Redirect(w, r, redirect, http.StatusSeeOther)
+
+	} else if authResult.AccountType == auth.AccountTypeDownloadAccount {
+		// Download account login
+		downloadAccount := authResult.DownloadAccount
+
+		// Create session (using email as session identifier)
+		sessionEmail, err := auth.CreateDownloadAccountSession(downloadAccount.Id)
+		if err != nil {
+			s.renderLoginPage(w, r, "Failed to create session")
+			return
+		}
+
+		// Set download account session cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "download_session",
+			Value:    sessionEmail,
+			Path:     "/",
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		// Redirect to download user dashboard
+		http.Redirect(w, r, "/download/dashboard", http.StatusSeeOther)
+	} else {
+		s.renderLoginPage(w, r, "Unknown account type")
+	}
 }
 
 // handleLogout handles user logout

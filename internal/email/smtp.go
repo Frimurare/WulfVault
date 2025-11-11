@@ -87,3 +87,12 @@ func (sp *SMTPProvider) SendSplashLinkEmail(to, splashLink string, file *databas
 
 	return sp.SendEmail(to, subject, htmlBody, textBody)
 }
+
+// SendAccountDeletionConfirmation skickar bekräftelse på kontoradering (GDPR)
+func (sp *SMTPProvider) SendAccountDeletionConfirmation(to, accountName string) error {
+	subject := "Bekräftelse: Ditt konto har raderats"
+	htmlBody := GenerateAccountDeletionHTML(accountName)
+	textBody := GenerateAccountDeletionText(accountName)
+
+	return sp.SendEmail(to, subject, htmlBody, textBody)
+}

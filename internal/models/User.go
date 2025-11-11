@@ -22,6 +22,9 @@ type User struct {
 	StorageUsedMB  int64          `json:"storageUsedMB" redis:"StorageUsedMB"`   // Current storage used in MB
 	CreatedAt      int64          `json:"createdAt" redis:"CreatedAt"`           // Unix timestamp
 	IsActive       bool           `json:"isActive" redis:"IsActive"`             // Account active status
+	DeletedAt      int64          `json:"deletedAt" redis:"DeletedAt"`           // Unix timestamp, 0 = not deleted
+	DeletedBy      string         `json:"deletedBy" redis:"DeletedBy"`           // "user", "admin", or "system"
+	OriginalEmail  string         `json:"originalEmail" redis:"OriginalEmail"`   // Store original email before deletion
 }
 
 // GetReadableDate returns the date as YYYY-MM-DD HH:MM

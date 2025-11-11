@@ -137,3 +137,12 @@ func (bp *BrevoProvider) SendSplashLinkEmail(to, splashLink string, file *databa
 
 	return bp.SendEmail(to, subject, htmlBody, textBody)
 }
+
+// SendAccountDeletionConfirmation skickar bekräftelse på kontoradering (GDPR)
+func (bp *BrevoProvider) SendAccountDeletionConfirmation(to, accountName string) error {
+	subject := "Bekräftelse: Ditt konto har raderats"
+	htmlBody := GenerateAccountDeletionHTML(accountName)
+	textBody := GenerateAccountDeletionText(accountName)
+
+	return bp.SendEmail(to, subject, htmlBody, textBody)
+}

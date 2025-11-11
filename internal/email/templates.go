@@ -40,24 +40,24 @@ func GenerateUploadNotificationHTML(request *models.FileRequest, file *database.
 <body>
 	<div class="container">
 		<div class="header">
-			<h2>✓ Ny fil uppladdad</h2>
+			<h2>✓ New File Uploaded</h2>
 		</div>
 		<div class="content">
-			<p>Någon har laddat upp en fil via din upload request:</p>
+			<p>Someone has uploaded a file via your upload request:</p>
 
 			<div class="file-info">
 				<p><strong>Request:</strong> %s</p>
-				<p><strong>Filnamn:</strong> %s</p>
-				<p><strong>Storlek:</strong> %s</p>
-				<p><strong>Uppladdad:</strong> %s</p>
-				<p><strong>IP-adress:</strong> %s</p>
+				<p><strong>Filename:</strong> %s</p>
+				<p><strong>Size:</strong> %s</p>
+				<p><strong>Uploaded:</strong> %s</p>
+				<p><strong>IP Address:</strong> %s</p>
 			</div>
 
-			<a href="%s/dashboard" class="button">Visa i Dashboard</a>
+			<a href="%s/dashboard" class="button">View in Dashboard</a>
 
 			<div class="footer">
-				<p>Filen finns nu i din dashboard och kan laddas ner.</p>
-				<p>Detta är ett automatiskt meddelande från Sharecare.</p>
+				<p>The file is now available in your dashboard and can be downloaded.</p>
+				<p>This is an automated message from Sharecare.</p>
 			</div>
 		</div>
 	</div>
@@ -70,21 +70,21 @@ func GenerateUploadNotificationHTML(request *models.FileRequest, file *database.
 func GenerateUploadNotificationText(request *models.FileRequest, file *database.FileInfo, uploaderIP, serverURL string) string {
 	uploadTime := time.Unix(file.UploadDate, 0).Format("2006-01-02 15:04:05")
 
-	return fmt.Sprintf(`Ny fil uppladdad!
+	return fmt.Sprintf(`New File Uploaded!
 
-Någon har laddat upp en fil via din upload request:
+Someone has uploaded a file via your upload request:
 
 Request: %s
-Filnamn: %s
-Storlek: %s
-Uppladdad: %s
-IP-adress: %s
+Filename: %s
+Size: %s
+Uploaded: %s
+IP Address: %s
 
-Logga in för att se och ladda ner filen:
+Log in to view and download the file:
 %s/dashboard
 
 ---
-Detta är ett automatiskt meddelande från Sharecare.
+This is an automated message from Sharecare.
 `, request.Title, file.Name, file.Size, uploadTime, uploaderIP, serverURL)
 }
 
@@ -268,4 +268,88 @@ func getMessageText(message string) string {
 		return ""
 	}
 	return fmt.Sprintf("Meddelande: %s\n\n", message)
+}
+
+// GenerateAccountDeletionHTML skapar HTML-version av bekräftelse på kontoradering
+func GenerateAccountDeletionHTML(accountName string) string {
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header { background: #c53030; color: white; padding: 20px; border-radius: 5px 5px 0 0; text-align: center; }
+		.header h2 { margin: 0; }
+		.content { background: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+		.info-box { background: #fff5f5; border-left: 4px solid #c53030; padding: 15px; margin: 15px 0; }
+		.info-box p { margin: 5px 0; }
+		.footer { margin-top: 20px; font-size: 12px; color: #666; text-align: center; }
+		.checkmark {
+			width: 60px;
+			height: 60px;
+			background: #d4edda;
+			border-radius: 50%%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin: 20px auto;
+			font-size: 32px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h2>✓ Ditt konto har raderats</h2>
+		</div>
+		<div class="content">
+			<div class="checkmark">✓</div>
+
+			<p>Hej %s,</p>
+
+			<p>Detta är en bekräftelse på att ditt nedladdningskonto har raderats från vårt system enligt GDPR.</p>
+
+			<div class="info-box">
+				<p><strong>Vad har hänt:</strong></p>
+				<ul>
+					<li>Din personliga information har anonymiserats permanent</li>
+					<li>Du kan inte längre ladda ner filer med detta konto</li>
+					<li>Om du vill ladda ner filer igen måste du registrera ett nytt konto</li>
+				</ul>
+			</div>
+
+			<p>Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.</p>
+
+			<div class="footer">
+				<p>Detta är ett automatiskt meddelande från Sharecare.</p>
+				<p>Om du har frågor, vänligen kontakta oss.</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
+`, accountName)
+}
+
+// GenerateAccountDeletionText skapar text-version av bekräftelse på kontoradering
+func GenerateAccountDeletionText(accountName string) string {
+	return fmt.Sprintf(`Ditt konto har raderats
+
+Hej %s,
+
+Detta är en bekräftelse på att ditt nedladdningskonto har raderats från vårt system enligt GDPR.
+
+Vad har hänt:
+- Din personliga information har anonymiserats permanent
+- Du kan inte längre ladda ner filer med detta konto
+- Om du vill ladda ner filer igen måste du registrera ett nytt konto
+
+Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.
+
+---
+Detta är ett automatiskt meddelande från Sharecare.
+Om du har frågor, vänligen kontakta oss.
+`, accountName)
 }
