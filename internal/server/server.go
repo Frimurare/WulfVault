@@ -111,11 +111,11 @@ func (s *Server) Start() error {
 	// Server configuration
 	addr := ":" + s.config.Port
 	server := &http.Server{
-		Addr:         addr,
-		Handler:      s.loggingMiddleware(mux),
-		ReadTimeout:  60 * time.Second,       // Time to read request headers
-		WriteTimeout: 8 * time.Hour,          // Extended for very large file uploads on slow connections (up to 8 hours)
-		IdleTimeout:  120 * time.Second,      // Keep-alive timeout
+		Addr:              addr,
+		Handler:           s.loggingMiddleware(mux),
+		ReadHeaderTimeout: 60 * time.Second, // Time to read request headers only (not body)
+		WriteTimeout:      8 * time.Hour,    // Extended for very large file uploads on slow connections (up to 8 hours)
+		IdleTimeout:       120 * time.Second, // Keep-alive timeout
 	}
 
 	log.Printf("🚀 Server starting on %s", addr)

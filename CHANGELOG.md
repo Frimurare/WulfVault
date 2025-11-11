@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.1.2] - 2025-11-11 🔧 Critical Upload Timeout Fix
+
+### Bug Fixes
+- **Critical Upload Timeout Fix**: Fixed 60-second timeout causing large file uploads to fail at ~60%
+  - Changed `ReadTimeout` to `ReadHeaderTimeout` - timeout now only applies to headers, not upload body
+  - This allows uploads to take the full 8 hours as intended (not just 60 seconds)
+  - Fixes "Upload Failed - Network Error" for files taking longer than 60 seconds to upload
+  - Critical fix for 1TB+ file uploads or slower network connections
+
+### Technical Details
+- ReadHeaderTimeout: 60 seconds - for request headers only (not body)
+- WriteTimeout: 8 hours - full time available for uploads
+- No more 60-second upload body timeout
+
 ## [3.1.1] - 2025-11-11 🔧 Critical Bug Fix
 
 ### Bug Fixes
