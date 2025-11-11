@@ -26,13 +26,30 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get statistics
+	// Get basic statistics
 	totalUsers, _ := database.DB.GetTotalUsers()
 	activeUsers, _ := database.DB.GetActiveUsers()
 	totalDownloads, _ := database.DB.GetTotalDownloads()
 	downloadsToday, _ := database.DB.GetDownloadsToday()
 
-	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday)
+	// Get data transfer statistics
+	bytesToday, _ := database.DB.GetBytesSentToday()
+	bytesWeek, _ := database.DB.GetBytesSentThisWeek()
+	bytesMonth, _ := database.DB.GetBytesSentThisMonth()
+	bytesYear, _ := database.DB.GetBytesSentThisYear()
+
+	// Get user growth statistics
+	usersAdded, _ := database.DB.GetUsersAddedThisMonth()
+	usersRemoved, _ := database.DB.GetUsersRemovedThisMonth()
+	userGrowth, _ := database.DB.GetUserGrowthPercentage()
+
+	// Get fun fact
+	mostDownloadedFile, downloadCount, _ := database.DB.GetMostDownloadedFile()
+
+	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday,
+		bytesToday, bytesWeek, bytesMonth, bytesYear,
+		usersAdded, usersRemoved, userGrowth,
+		mostDownloadedFile, downloadCount)
 }
 
 // handleAdminUsers lists all users and download accounts
@@ -772,8 +789,31 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 	return `<style>` + headerCSS + `</style>` + headerHTML
 }
 
-func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int) {
+func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
+	bytesToday, bytesWeek, bytesMonth, bytesYear int64,
+	usersAdded, usersRemoved int, userGrowth float64,
+	mostDownloadedFile string, downloadCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Helper function to format bytes
+	formatBytes := func(bytes int64) string {
+		const unit = 1024
+		if bytes < unit {
+			return fmt.Sprintf("%d B", bytes)
+		}
+		div, exp := int64(unit), 0
+		for n := bytes / unit; n >= unit; n /= unit {
+			div *= unit
+			exp++
+		}
+		return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	}
+
+	// Format all byte statistics
+	bytesTodayStr := formatBytes(bytesToday)
+	bytesWeekStr := formatBytes(bytesWeek)
+	bytesMonthStr := formatBytes(bytesMonth)
+	bytesYearStr := formatBytes(bytesYear)
 
 	// Get branding config for logo
 	brandingConfig, _ := database.DB.GetBrandingConfig()
@@ -911,7 +951,17 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     </div>
 
     <div class="container">
-        <h2>Dashboard Overview</h2>
+        <h2>Quick Actions</h2>
+        <div class="quick-actions">
+            <a href="/admin/users/create" class="action-btn">➕ Create User</a>
+            <a href="/admin/users" class="action-btn">👥 Manage Users</a>
+            <a href="/admin/files" class="action-btn">📁 View All Files</a>
+            <a href="/admin/trash" class="action-btn">🗑️ View Trash</a>
+            <a href="/admin/branding" class="action-btn">🎨 Customize Branding</a>
+            <a href="/admin/settings" class="action-btn">⚙️ System Settings</a>
+        </div>
+
+        <h2 style="margin-top: 40px;">Dashboard Overview</h2>
 
         <div class="stats">
             <div class="stat-card">
@@ -932,14 +982,49 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             </div>
         </div>
 
-        <h2>Quick Actions</h2>
-        <div class="quick-actions">
-            <a href="/admin/users/create" class="action-btn">➕ Create User</a>
-            <a href="/admin/users" class="action-btn">👥 Manage Users</a>
-            <a href="/admin/files" class="action-btn">📁 View All Files</a>
-            <a href="/admin/trash" class="action-btn">🗑️ View Trash</a>
-            <a href="/admin/branding" class="action-btn">🎨 Customize Branding</a>
-            <a href="/admin/settings" class="action-btn">⚙️ System Settings</a>
+        <h2 style="margin-top: 40px;">📊 Data Transfer</h2>
+        <div class="stats">
+            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">Today</h3>
+                <div class="value" style="color: white;">` + bytesTodayStr + `</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">This Week</h3>
+                <div class="value" style="color: white;">` + bytesWeekStr + `</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">This Month</h3>
+                <div class="value" style="color: white;">` + bytesMonthStr + `</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">This Year</h3>
+                <div class="value" style="color: white;">` + bytesYearStr + `</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">👥 User Growth (This Month)</h2>
+        <div class="stats">
+            <div class="stat-card" style="border-left: 4px solid #4CAF50;">
+                <h3>Users Added</h3>
+                <div class="value" style="color: #4CAF50;">` + fmt.Sprintf("%d", usersAdded) + `</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #f44336;">
+                <h3>Users Removed</h3>
+                <div class="value" style="color: #f44336;">` + fmt.Sprintf("%d", usersRemoved) + `</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #2196F3;">
+                <h3>Growth</h3>
+                <div class="value" style="color: #2196F3;">` + fmt.Sprintf("%.1f%%", userGrowth) + `</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">🎯 Fun Fact</h2>
+        <div class="stats">
+            <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; grid-column: span 2;">
+                <h3 style="color: rgba(255,255,255,0.9);">Most Downloaded File</h3>
+                <div class="value" style="color: white; font-size: 24px; word-break: break-word;">` + mostDownloadedFile + `</div>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
+            </div>
         </div>
     </div>
 </body>

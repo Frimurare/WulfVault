@@ -369,3 +369,28 @@ func scanFiles(rows *sql.Rows) ([]*FileInfo, error) {
 
 	return files, nil
 }
+
+// GetMostDownloadedFile returns the file with most downloads and its download count
+func (d *Database) GetMostDownloadedFile() (string, int, error) {
+	var fileName string
+	var downloadCount int
+
+	err := d.db.QueryRow(`
+		SELECT Files.Name, COUNT(DownloadLogs.Id) as downloads
+		FROM Files
+		LEFT JOIN DownloadLogs ON Files.Id = DownloadLogs.FileId
+		WHERE Files.DeletedAt IS NULL OR Files.DeletedAt = ''
+		GROUP BY Files.Id
+		ORDER BY downloads DESC
+		LIMIT 1
+	`).Scan(&fileName, &downloadCount)
+
+	if err == sql.ErrNoRows {
+		return "No files yet", 0, nil
+	}
+	if err != nil {
+		return "", 0, err
+	}
+
+	return fileName, downloadCount, nil
+}

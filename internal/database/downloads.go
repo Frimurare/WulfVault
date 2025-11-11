@@ -310,3 +310,68 @@ func (d *Database) DeleteDownloadAccount(id int) error {
 	_, err = d.db.Exec("DELETE FROM DownloadAccounts WHERE Id = ?", id)
 	return err
 }
+
+// GetBytesSentToday returns total bytes transferred today
+func (d *Database) GetBytesSentToday() (int64, error) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix()
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		FROM DownloadLogs
+		JOIN Files ON DownloadLogs.FileId = Files.Id
+		WHERE DownloadLogs.DownloadedAt >= ?
+	`, startOfDay).Scan(&total)
+	return total, err
+}
+
+// GetBytesSentThisWeek returns total bytes transferred this week
+func (d *Database) GetBytesSentThisWeek() (int64, error) {
+	now := time.Now()
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7 // Sunday
+	}
+	startOfWeek := now.AddDate(0, 0, -weekday+1)
+	startOfWeek = time.Date(startOfWeek.Year(), startOfWeek.Month(), startOfWeek.Day(), 0, 0, 0, 0, startOfWeek.Location())
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		FROM DownloadLogs
+		JOIN Files ON DownloadLogs.FileId = Files.Id
+		WHERE DownloadLogs.DownloadedAt >= ?
+	`, startOfWeek.Unix()).Scan(&total)
+	return total, err
+}
+
+// GetBytesSentThisMonth returns total bytes transferred this month
+func (d *Database) GetBytesSentThisMonth() (int64, error) {
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		FROM DownloadLogs
+		JOIN Files ON DownloadLogs.FileId = Files.Id
+		WHERE DownloadLogs.DownloadedAt >= ?
+	`, startOfMonth).Scan(&total)
+	return total, err
+}
+
+// GetBytesSentThisYear returns total bytes transferred this year
+func (d *Database) GetBytesSentThisYear() (int64, error) {
+	now := time.Now()
+	startOfYear := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		FROM DownloadLogs
+		JOIN Files ON DownloadLogs.FileId = Files.Id
+		WHERE DownloadLogs.DownloadedAt >= ?
+	`, startOfYear).Scan(&total)
+	return total, err
+}

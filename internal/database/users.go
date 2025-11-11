@@ -204,3 +204,65 @@ func (d *Database) GetActiveUsers() (int, error) {
 	err := d.db.QueryRow("SELECT COUNT(*) FROM Users WHERE IsActive = 1").Scan(&count)
 	return count, err
 }
+
+// GetUsersAddedThisMonth returns count of users (including download accounts) created this month
+func (d *Database) GetUsersAddedThisMonth() (int, error) {
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var regularUsers, downloadAccounts int
+
+	// Count regular users
+	err := d.db.QueryRow("SELECT COUNT(*) FROM Users WHERE CreatedAt >= ?", startOfMonth).Scan(&regularUsers)
+	if err != nil {
+		return 0, err
+	}
+
+	// Count download accounts
+	err = d.db.QueryRow("SELECT COUNT(*) FROM DownloadAccounts WHERE CreatedAt >= ? AND DeletedAt = 0", startOfMonth).Scan(&downloadAccounts)
+	if err != nil {
+		return 0, err
+	}
+
+	return regularUsers + downloadAccounts, nil
+}
+
+// GetUsersRemovedThisMonth returns count of download accounts deleted this month
+func (d *Database) GetUsersRemovedThisMonth() (int, error) {
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var count int
+	err := d.db.QueryRow("SELECT COUNT(*) FROM DownloadAccounts WHERE DeletedAt >= ? AND DeletedAt < ?",
+		startOfMonth, now.Unix()).Scan(&count)
+	return count, err
+}
+
+// GetUserGrowthPercentage returns the user growth percentage for this month
+func (d *Database) GetUserGrowthPercentage() (float64, error) {
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var usersAtStart, usersNow int
+
+	// Count users at start of month
+	err := d.db.QueryRow("SELECT COUNT(*) FROM Users WHERE CreatedAt < ?", startOfMonth).Scan(&usersAtStart)
+	if err != nil {
+		return 0, err
+	}
+
+	// Count users now
+	totalNow, err := d.GetTotalUsers()
+	if err != nil {
+		return 0, err
+	}
+	usersNow = totalNow
+
+	// Calculate percentage
+	if usersAtStart == 0 {
+		return 0, nil
+	}
+
+	growth := float64(usersNow-usersAtStart) / float64(usersAtStart) * 100
+	return growth, nil
+}
