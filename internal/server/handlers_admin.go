@@ -2005,6 +2005,10 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
             </form>
         </div>
 
+        <!-- RESTART SERVER BUTTON - DISABLED UNTIL SYSTEMD IS INSTALLED
+             To enable: Uncomment this section after installing systemd service
+             See README.md section "Server Restart Feature" for details
+
         <div class="card" style="margin-top: 30px; border: 2px solid #f44336;">
             <h2 style="color: #f44336;">⚙️ Server Management</h2>
             <p style="color: #666; margin-bottom: 20px;">
@@ -2014,12 +2018,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                 🔄 Restart Server
             </button>
             <p style="color: #999; font-size: 12px; margin-top: 10px;">
-                Note: If running with a process manager (systemd, supervisor), the server will restart automatically. Otherwise, manual restart may be required.
+                Note: Requires systemd service to be installed. See DEPLOYMENT.md for setup.
             </p>
         </div>
+        -->
     </div>
 
     <script>
+        /* RESTART SERVER FUNCTION - Uncomment when systemd is installed
         function confirmReboot() {
             if (confirm('Are you sure you want to restart the server?\n\nThis will briefly interrupt service. Continue?')) {
                 fetch('/admin/reboot', { method: 'POST' })
@@ -2031,6 +2037,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                     .catch(err => console.error('Reboot error:', err));
             }
         }
+        */
     </script>
 </body>
 </html>`

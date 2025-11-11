@@ -294,6 +294,38 @@ See full API documentation in [API.md](docs/API.md) (coming soon).
 
 ---
 
+## Server Restart Feature
+
+The Admin Settings page includes a **"Restart Server"** button that is **currently disabled** until systemd service is installed.
+
+### Why is it disabled?
+
+The restart button requires a process manager (systemd, supervisor, etc.) to automatically restart the server after shutdown. Without this, clicking the button will stop the server without restarting it.
+
+### How to enable it
+
+1. **Install systemd service** (requires sudo):
+   ```bash
+   sudo cp /tmp/sharecare.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable sharecare
+   sudo systemctl start sharecare
+   ```
+
+2. **Uncomment the restart button** in the code:
+   - Open `internal/server/handlers_admin.go`
+   - Find the section marked `<!-- RESTART SERVER BUTTON - DISABLED`
+   - Remove the `<!--` and `-->` comment markers
+   - Also uncomment the JavaScript function at the bottom
+   - Rebuild: `go build -o sharecare cmd/server/main.go`
+   - Restart the service: `sudo systemctl restart sharecare`
+
+3. **The button will now work!** It will use `systemctl restart sharecare` to gracefully restart the server.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment and autostart instructions.
+
+---
+
 ## Troubleshooting
 
 ### Can't login with default credentials
