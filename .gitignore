@@ -36,3 +36,9 @@ config.json
 # Temporary files
 /tmp/
 *.tmp
+
+# Development documentation (not for public repo)
+BREVO_INTEGRATION_ANALYS.md
+FORGOT_PASSWORD_v3.0_BETA.md
+V3.0_BETA*_CHANGELOG.md
+reset_email_config.go
