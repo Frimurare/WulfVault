@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.0.1] - 2025-11-11
+
+### Bug Fixes
+- **File Edit Form Submission**: Fixed "Missing file_id" error when editing file settings
+  - Added multipart/form-data parsing support for JavaScript FormData API
+  - Client-side form data is now correctly parsed by the server
+  - Added validation to prevent empty fileId submission
+
+---
+
 ## [3.0.0] - 2025-11-11 🎉 GOLD RELEASE
 
 ### New Features

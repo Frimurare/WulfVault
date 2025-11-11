@@ -1,6 +1,6 @@
 # Sharecare - Enterprise File Sharing Platform
 
-**Version 3.0.0** | **Production Ready** | **Self-Hosted** | **Open Source**
+**Version 3.0.1** | **Production Ready** | **Self-Hosted** | **Open Source**
 
 Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare eliminates the need for expensive cloud-based file transfer services while providing enterprise features like multi-user management, granular storage quotas, comprehensive audit trails, and automatic password reset functionality.
 
