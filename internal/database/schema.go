@@ -146,6 +146,17 @@ CREATE TABLE IF NOT EXISTS EmailProviderConfig (
 	UpdatedAt INTEGER NOT NULL
 );
 
+-- Password Reset Tokens table
+CREATE TABLE IF NOT EXISTS PasswordResetTokens (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	Token TEXT NOT NULL UNIQUE,
+	Email TEXT NOT NULL,
+	AccountType TEXT NOT NULL,
+	ExpiresAt INTEGER NOT NULL,
+	Used INTEGER DEFAULT 0,
+	CreatedAt INTEGER NOT NULL
+);
+
 -- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_files_userid ON Files(UserId);
 CREATE INDEX IF NOT EXISTS idx_files_sha1 ON Files(SHA1);
@@ -158,4 +169,6 @@ CREATE INDEX IF NOT EXISTS idx_sessions_userid ON Sessions(UserId);
 CREATE INDEX IF NOT EXISTS idx_apikeys_userid ON ApiKeys(UserId);
 CREATE INDEX IF NOT EXISTS idx_filerequests_userid ON FileRequests(UserId);
 CREATE INDEX IF NOT EXISTS idx_filerequests_token ON FileRequests(RequestToken);
+CREATE INDEX IF NOT EXISTS idx_passwordresets_token ON PasswordResetTokens(Token);
+CREATE INDEX IF NOT EXISTS idx_passwordresets_email ON PasswordResetTokens(Email);
 `

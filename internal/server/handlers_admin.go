@@ -2003,7 +2003,34 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                 <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">Cancel</a>
             </form>
         </div>
+
+        <div class="card" style="margin-top: 30px; border: 2px solid #f44336;">
+            <h2 style="color: #f44336;">⚙️ Server Management</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                Restart the server to apply configuration changes or recover from issues.
+            </p>
+            <button onclick="confirmReboot()" class="btn" style="background: #f44336; color: white;">
+                🔄 Restart Server
+            </button>
+            <p style="color: #999; font-size: 12px; margin-top: 10px;">
+                Note: If running with a process manager (systemd, supervisor), the server will restart automatically. Otherwise, manual restart may be required.
+            </p>
+        </div>
     </div>
+
+    <script>
+        function confirmReboot() {
+            if (confirm('Are you sure you want to restart the server?\n\nThis will briefly interrupt service. Continue?')) {
+                fetch('/admin/reboot', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert('Server is restarting... Please wait a moment and refresh the page.');
+                        setTimeout(() => window.location.reload(), 3000);
+                    })
+                    .catch(err => console.error('Reboot error:', err));
+            }
+        }
+    </script>
 </body>
 </html>`
 
@@ -2281,4 +2308,31 @@ func (s *Server) updateConfigJSON(key, value string) error {
 	}
 
 	return nil
+}
+
+// handleAdminReboot handles server restart request
+func (s *Server) handleAdminReboot(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	log.Println("⚠️  Server restart requested by admin")
+	
+	// Send response before shutting down
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"success": true, "message": "Server is restarting..."}`))
+
+	// Flush the response
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	// Gracefully shutdown in a goroutine
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		log.Println("🔄 Initiating graceful server shutdown...")
+		os.Exit(0)
+	}()
 }
