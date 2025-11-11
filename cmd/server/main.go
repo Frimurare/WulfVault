@@ -71,6 +71,9 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Set runtime version
+	cfg.Version = Version
+
 	// Override config with command-line flags ONLY if they were explicitly set
 	// Check if port flag was explicitly provided (not just default value)
 	portFromEnv := getEnv("PORT", "")

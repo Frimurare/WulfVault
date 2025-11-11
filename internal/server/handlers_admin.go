@@ -764,7 +764,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Settings</a>
             <a href="/logout">Logout</a>
-            <span style="color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 10px;">v3.0.0-rc1</span>
+            <span style="color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 10px;">v` + s.config.Version + `</span>
         </nav>
     </div>`
 
@@ -905,7 +905,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Settings</a>
             <a href="/logout">Logout</a>
-            <span style="color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 10px;">v3.0.0-rc1</span>
+            <span style="color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 10px;">v` + s.config.Version + `</span>
         </nav>
     </div>
 

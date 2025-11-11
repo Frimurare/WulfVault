@@ -20,6 +20,7 @@ type Config struct {
 	SessionTimeoutHours  int    `json:"sessionTimeoutHours"`
 	TrashRetentionDays   int    `json:"trashRetentionDays"`
 	SaveIP               bool   `json:"saveIp"`
+	Version              string `json:"-"` // Runtime version, not persisted
 	models.Branding      `json:"branding"`
 }
 
