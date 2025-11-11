@@ -997,35 +997,174 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
         // File Request functions
         function showCreateRequestModal() {
-            const title = prompt('Enter request title (e.g., "Upload Documents"):');
-            if (!title) return;
+            // Create modal HTML
+            var modalHtml = '<div id="request-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;">' +
+                '<div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">' +
+                '<h2 style="margin-top: 0; color: #333;">Create Upload Request</h2>' +
+                '<form id="request-form">' +
+                '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Title *</label>' +
+                '<input type="text" id="req-title" required placeholder="e.g., Upload Documents" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>' +
+                '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Message (optional)</label>' +
+                '<textarea id="req-message" placeholder="Optional message for uploader..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; box-sizing: border-box;"></textarea></div>' +
+                '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Expires in (days)</label>' +
+                '<input type="number" id="req-days" value="30" min="0" placeholder="0 = never expires" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">' +
+                '<small style="color: #666;">0 = never expires</small></div>' +
+                '<div style="margin-bottom: 20px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Max file size (MB)</label>' +
+                '<input type="number" id="req-size" value="100" min="0" placeholder="0 = no limit" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">' +
+                '<small style="color: #666;">0 = no limit</small></div>' +
+                '<div style="display: flex; gap: 10px; justify-content: flex-end;">' +
+                '<button type="button" onclick="closeRequestModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>' +
+                '<button type="submit" style="padding: 10px 20px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer;">Create Request</button>' +
+                '</div></form><div id="request-result" style="margin-top: 15px; display: none;"></div></div></div>';
 
-            const message = prompt('Optional message for uploader:') || '';
-            const days = prompt('Expires in how many days? (0 = never)', '30');
-            const maxSizeMB = prompt('Max file size in MB? (0 = no limit)', '100');
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('req-title').focus();
 
-            const data = new FormData();
-            data.append('title', title);
-            data.append('message', message);
-            data.append('expires_in_days', days);
-            data.append('max_file_size_mb', maxSizeMB);
+            // Handle form submission
+            document.getElementById('request-form').addEventListener('submit', function(e) {
+                e.preventDefault();
 
-            fetch('/file-request/create', {
+                var title = document.getElementById('req-title').value;
+                var message = document.getElementById('req-message').value;
+                var days = document.getElementById('req-days').value;
+                var maxSizeMB = document.getElementById('req-size').value;
+                var submitBtn = e.target.querySelector('button[type="submit"]');
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+
+                var data = new FormData();
+                data.append('title', title);
+                data.append('message', message);
+                data.append('expires_in_days', days);
+                data.append('max_file_size_mb', maxSizeMB);
+
+                fetch('/file-request/create', {
+                    method: 'POST',
+                    body: data,
+                    credentials: 'same-origin'
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (result.success) {
+                        var resultDiv = document.getElementById('request-result');
+                        resultDiv.style.display = 'block';
+                        resultDiv.innerHTML = '<div style="padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724;">' +
+                            '<strong>✓ Upload request created!</strong><br><br>' +
+                            '<div style="margin-top: 10px;"><label style="display: block; margin-bottom: 5px; font-weight: 500;">Share this link:</label>' +
+                            '<div style="display: flex; gap: 10px;">' +
+                            '<input type="text" value="' + result.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #c3e6cb; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
+                            '<button onclick="navigator.clipboard.writeText(\'' + result.upload_url + '\').then(function() { alert(\'Link copied!\'); })" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy</button>' +
+                            '</div></div>' +
+                            '<button onclick="closeRequestModal(); loadFileRequests();" style="margin-top: 15px; padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Done</button>' +
+                            '</div>';
+                        e.target.style.display = 'none';
+                    } else {
+                        alert('Error: ' + (result.error || 'Unknown error'));
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Create Request';
+                    }
+                })
+                .catch(function(error) {
+                    alert('Error creating request: ' + error);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Request';
+                });
+            });
+        }
+
+        function closeRequestModal() {
+            const modal = document.getElementById('request-modal');
+            if (modal) modal.remove();
+        }
+
+        // Edit File Modal Functions
+        function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime) {
+            // Store file info
+            document.getElementById('editFileId').value = fileId;
+            document.getElementById('editFileName').textContent = fileName;
+
+            // Set unlimited checkboxes
+            document.getElementById('editUnlimitedTime').checked = unlimitedTime;
+            document.getElementById('editUnlimitedDownloads').checked = unlimitedDownloads;
+
+            // Calculate days until expiration
+            if (expireAt > 0 && !unlimitedTime) {
+                const now = Math.floor(Date.now() / 1000);
+                const daysRemaining = Math.max(0, Math.ceil((expireAt - now) / (24 * 60 * 60)));
+                document.getElementById('editExpirationDays').value = daysRemaining;
+            } else {
+                document.getElementById('editExpirationDays').value = 7;
+            }
+
+            // Set downloads limit
+            if (unlimitedDownloads) {
+                document.getElementById('editDownloadsLimit').value = 5;
+            } else {
+                document.getElementById('editDownloadsLimit').value = downloadsRemaining;
+            }
+
+            // Toggle sections based on unlimited flags
+            toggleEditTimeLimit();
+            toggleEditDownloadLimit();
+
+            // Show modal
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function toggleEditTimeLimit() {
+            const checkbox = document.getElementById('editUnlimitedTime');
+            const section = document.getElementById('editTimeLimitSection');
+            section.style.display = checkbox.checked ? 'none' : 'block';
+        }
+
+        function toggleEditDownloadLimit() {
+            const checkbox = document.getElementById('editUnlimitedDownloads');
+            const section = document.getElementById('editDownloadLimitSection');
+            section.style.display = checkbox.checked ? 'none' : 'block';
+        }
+
+        function saveFileEdit() {
+            const fileId = document.getElementById('editFileId').value;
+            const unlimitedTime = document.getElementById('editUnlimitedTime').checked;
+            const unlimitedDownloads = document.getElementById('editUnlimitedDownloads').checked;
+
+            let expirationDays = 0;
+            if (!unlimitedTime) {
+                expirationDays = parseInt(document.getElementById('editExpirationDays').value) || 0;
+            }
+
+            let downloadsLimit = 0;
+            if (!unlimitedDownloads) {
+                downloadsLimit = parseInt(document.getElementById('editDownloadsLimit').value) || 0;
+            }
+
+            const formData = new FormData();
+            formData.append('file_id', fileId);
+            formData.append('expiration_days', expirationDays);
+            formData.append('downloads_limit', downloadsLimit);
+
+            fetch('/file/edit', {
                 method: 'POST',
-                body: data,
+                body: formData,
                 credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(result => {
-                if (result.success) {
-                    alert('Upload request created!\\n\\nShare this link:\\n' + result.upload_url);
-                    loadFileRequests();
-                } else {
-                    alert('Error: ' + (result.error || 'Unknown error'));
+                if (result.message) {
+                    closeEditModal();
+                    location.reload();
+                } else if (result.error) {
+                    alert('Error: ' + result.error);
                 }
             })
             .catch(error => {
-                alert('Error creating request: ' + error);
+                alert('Error saving changes: ' + error);
             });
         }
 

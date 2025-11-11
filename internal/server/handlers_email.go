@@ -164,8 +164,22 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleEmailTest tests the email configuration
+// EmailTestRequest represents a request to test email settings
+type EmailTestRequest struct {
+	Provider     string `json:"provider"`
+	ApiKey       string `json:"apiKey"`
+	FromEmail    string `json:"fromEmail"`
+	FromName     string `json:"fromName"`
+	SMTPHost     string `json:"smtpHost"`
+	SMTPPort     int    `json:"smtpPort"`
+	SMTPUsername string `json:"smtpUsername"`
+	SMTPPassword string `json:"smtpPassword"`
+	SMTPUseTLS   bool   `json:"smtpUseTLS"`
+}
+
 func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	// Accept both GET and POST
+	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
@@ -173,12 +187,54 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
 	user := r.Context().Value("user").(*models.User)
 
-	// Get active provider
-	provider, err := email.GetActiveProvider(database.DB)
-	if err != nil {
-		log.Printf("No email provider configured: %v", err)
-		s.sendError(w, http.StatusBadRequest, "No email provider configured")
-		return
+	var provider email.EmailProvider
+	var err error
+
+	if r.Method == http.MethodPost {
+		// Test with provided settings (without saving)
+		var req EmailTestRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			s.sendError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+
+		// Create temporary provider for testing
+		switch req.Provider {
+		case "brevo":
+			if req.ApiKey == "" {
+				s.sendError(w, http.StatusBadRequest, "API key is required")
+				return
+			}
+			if req.FromEmail == "" {
+				s.sendError(w, http.StatusBadRequest, "From email is required")
+				return
+			}
+			provider = email.NewBrevoProvider(req.ApiKey, req.FromEmail, req.FromName)
+			log.Printf("Testing Brevo with API key: %s...", req.ApiKey[:min(10, len(req.ApiKey))])
+
+		case "smtp":
+			if req.SMTPHost == "" || req.SMTPUsername == "" || req.SMTPPassword == "" {
+				s.sendError(w, http.StatusBadRequest, "SMTP host, username and password are required")
+				return
+			}
+			if req.FromEmail == "" {
+				s.sendError(w, http.StatusBadRequest, "From email is required")
+				return
+			}
+			provider = email.NewSMTPProvider(req.SMTPHost, req.SMTPPort, req.SMTPUsername, req.SMTPPassword, req.FromEmail, req.FromName, req.SMTPUseTLS)
+
+		default:
+			s.sendError(w, http.StatusBadRequest, "Invalid provider")
+			return
+		}
+	} else {
+		// GET method - use saved configuration
+		provider, err = email.GetActiveProvider(database.DB)
+		if err != nil {
+			log.Printf("No email provider configured: %v", err)
+			s.sendError(w, http.StatusBadRequest, "No email provider configured")
+			return
+		}
 	}
 
 	// Send test email
@@ -196,7 +252,14 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Test email sent to: %s", user.Email)
-	s.sendJSON(w, http.StatusOK, map[string]string{"status": "success"})
+	s.sendJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Test email sent successfully!"})
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // SendSplashLinkRequest represents a request to send a splash link
@@ -754,16 +817,34 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         // Test Brevo
         document.getElementById('test-brevo')?.addEventListener('click', async function() {
             const btn = this;
+            const apiKey = document.getElementById('brevo-api-key').value;
+            const fromEmail = document.getElementById('brevo-from-email').value;
+            const fromName = document.getElementById('brevo-from-name').value;
+
+            if (!apiKey || !fromEmail) {
+                showError('Please enter API key and from email before testing');
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Testing...';
 
             try {
-                const response = await fetch('/api/email/test?provider=brevo', {
+                const response = await fetch('/api/email/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: 'brevo',
+                        apiKey: apiKey,
+                        fromEmail: fromEmail,
+                        fromName: fromName
+                    }),
                     signal: AbortSignal.timeout(30000)
                 });
 
                 if (response.ok) {
-                    showSuccess('Connection to Brevo successful! Test email sent.');
+                    const result = await response.json();
+                    showSuccess(result.message || 'Connection to Brevo successful! Test email sent.');
                 } else {
                     const error = await response.json();
                     showError('Test failed: ' + error.error);
@@ -785,16 +866,42 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         // Test SMTP
         document.getElementById('test-smtp')?.addEventListener('click', async function() {
             const btn = this;
+            const host = document.getElementById('smtp-host').value;
+            const port = parseInt(document.getElementById('smtp-port').value) || 587;
+            const username = document.getElementById('smtp-username').value;
+            const password = document.getElementById('smtp-password').value;
+            const fromEmail = document.getElementById('smtp-from-email').value;
+            const fromName = document.getElementById('smtp-from-name').value;
+            const useTLS = document.getElementById('smtp-use-tls').checked;
+
+            if (!host || !username || !password || !fromEmail) {
+                showError('Please fill in all required SMTP fields before testing');
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Testing...';
 
             try {
-                const response = await fetch('/api/email/test?provider=smtp', {
+                const response = await fetch('/api/email/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: 'smtp',
+                        smtpHost: host,
+                        smtpPort: port,
+                        smtpUsername: username,
+                        smtpPassword: password,
+                        fromEmail: fromEmail,
+                        fromName: fromName,
+                        smtpUseTLS: useTLS
+                    }),
                     signal: AbortSignal.timeout(30000)
                 });
 
                 if (response.ok) {
-                    showSuccess('Connection to SMTP server successful! Test email sent.');
+                    const result = await response.json();
+                    showSuccess(result.message || 'Connection to SMTP server successful! Test email sent.');
                 } else {
                     const error = await response.json();
                     showError('Test failed: ' + error.error);
