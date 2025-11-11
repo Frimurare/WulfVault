@@ -55,9 +55,14 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		s.sendError(w, http.StatusBadRequest, "Invalid form data")
-		return
+	// Parse multipart form (since FormData sends multipart/form-data)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		// Fallback to regular form parsing
+		if err := r.ParseForm(); err != nil {
+			log.Printf("ERROR: Failed to parse form: %v", err)
+			s.sendError(w, http.StatusBadRequest, "Invalid form data")
+			return
+		}
 	}
 
 	fileID := r.FormValue("file_id")
@@ -1246,7 +1251,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         // Edit File Modal Functions
         function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime) {
             // Store file info
-            document.getElementById('editFileId').value = fileId;
+            const fileIdInput = document.getElementById('editFileId');
+            if (!fileIdInput) {
+                console.error('ERROR: editFileId input element not found!');
+                alert('Error: Edit form not properly loaded. Please refresh the page.');
+                return;
+            }
+            fileIdInput.value = fileId;
             document.getElementById('editFileName').textContent = fileName;
 
             // Set unlimited checkboxes
@@ -1297,6 +1308,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             const fileId = document.getElementById('editFileId').value;
             const unlimitedTime = document.getElementById('editUnlimitedTime').checked;
             const unlimitedDownloads = document.getElementById('editUnlimitedDownloads').checked;
+
+            if (!fileId || fileId === '') {
+                alert('Error: File ID is missing. Please close and reopen the edit dialog.');
+                return;
+            }
 
             let expirationDays = 0;
             if (!unlimitedTime) {
