@@ -318,7 +318,7 @@ func (d *Database) GetBytesSentToday() (int64, error) {
 
 	var total int64
 	err := d.db.QueryRow(`
-		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		SELECT COALESCE(SUM(Files.SizeBytes), 0)
 		FROM DownloadLogs
 		JOIN Files ON DownloadLogs.FileId = Files.Id
 		WHERE DownloadLogs.DownloadedAt >= ?
@@ -338,7 +338,7 @@ func (d *Database) GetBytesSentThisWeek() (int64, error) {
 
 	var total int64
 	err := d.db.QueryRow(`
-		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		SELECT COALESCE(SUM(Files.SizeBytes), 0)
 		FROM DownloadLogs
 		JOIN Files ON DownloadLogs.FileId = Files.Id
 		WHERE DownloadLogs.DownloadedAt >= ?
@@ -353,7 +353,7 @@ func (d *Database) GetBytesSentThisMonth() (int64, error) {
 
 	var total int64
 	err := d.db.QueryRow(`
-		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		SELECT COALESCE(SUM(Files.SizeBytes), 0)
 		FROM DownloadLogs
 		JOIN Files ON DownloadLogs.FileId = Files.Id
 		WHERE DownloadLogs.DownloadedAt >= ?
@@ -368,7 +368,7 @@ func (d *Database) GetBytesSentThisYear() (int64, error) {
 
 	var total int64
 	err := d.db.QueryRow(`
-		SELECT COALESCE(SUM(CAST(Files.Size AS INTEGER)), 0)
+		SELECT COALESCE(SUM(Files.SizeBytes), 0)
 		FROM DownloadLogs
 		JOIN Files ON DownloadLogs.FileId = Files.Id
 		WHERE DownloadLogs.DownloadedAt >= ?

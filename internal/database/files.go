@@ -379,7 +379,7 @@ func (d *Database) GetMostDownloadedFile() (string, int, error) {
 		SELECT Files.Name, COUNT(DownloadLogs.Id) as downloads
 		FROM Files
 		LEFT JOIN DownloadLogs ON Files.Id = DownloadLogs.FileId
-		WHERE Files.DeletedAt IS NULL OR Files.DeletedAt = ''
+		WHERE Files.DeletedAt = 0
 		GROUP BY Files.Id
 		ORDER BY downloads DESC
 		LIMIT 1
