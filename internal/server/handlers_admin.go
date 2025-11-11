@@ -2039,6 +2039,10 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
         }
         */
     </script>
+
+    <div style="text-align: center; padding: 20px; margin-top: 40px; color: #999; font-size: 12px;">
+        Sharecare Powered by <a href="https://github.com/Frimurare/Sharecare" target="_blank" style="color: #999; text-decoration: none;">Manvarg</a>
+    </div>
 </body>
 </html>`
 
