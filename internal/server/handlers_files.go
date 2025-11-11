@@ -14,6 +14,7 @@ import (
 
 	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/database"
+	"github.com/Frimurare/Sharecare/internal/email"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
 
@@ -421,6 +422,23 @@ func (s *Server) performDownload(w http.ResponseWriter, r *http.Request, fileInf
 	if err := database.DB.CreateDownloadLog(downloadLog); err != nil {
 		log.Printf("Warning: Could not create download log: %v", err)
 	}
+
+	// Send email notification to file owner
+	go func() {
+		owner, err := database.DB.GetUserByID(fileInfo.UserId)
+		if err != nil {
+			log.Printf("Could not get file owner for download notification: %v", err)
+			return
+		}
+
+		clientIP := getClientIP(r)
+		err = email.SendFileDownloadNotification(fileInfo, clientIP, s.getPublicURL(), owner.Email)
+		if err != nil {
+			log.Printf("Failed to send download notification email: %v", err)
+		} else {
+			log.Printf("Download notification email sent to %s", owner.Email)
+		}
+	}()
 
 	// Set headers for download
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileInfo.Name))

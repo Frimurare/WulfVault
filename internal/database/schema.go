@@ -115,6 +115,23 @@ CREATE TABLE IF NOT EXISTS Configuration (
 	Value TEXT NOT NULL
 );
 
+-- Email Provider Configuration table (stores email settings)
+CREATE TABLE IF NOT EXISTS EmailProviderConfig (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	Provider TEXT NOT NULL UNIQUE,
+	IsActive INTEGER DEFAULT 0,
+	ApiKeyEncrypted TEXT,
+	SMTPHost TEXT,
+	SMTPPort INTEGER,
+	SMTPUsername TEXT,
+	SMTPPasswordEncrypted TEXT,
+	SMTPUseTLS INTEGER DEFAULT 1,
+	FromEmail TEXT NOT NULL,
+	FromName TEXT,
+	CreatedAt INTEGER NOT NULL,
+	UpdatedAt INTEGER NOT NULL
+);
+
 -- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_files_userid ON Files(UserId);
 CREATE INDEX IF NOT EXISTS idx_files_sha1 ON Files(SHA1);

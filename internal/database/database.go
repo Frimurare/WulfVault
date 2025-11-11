@@ -153,6 +153,32 @@ func (d *Database) runMigrations() error {
 		log.Printf("Migration completed: UsedByIP and UsedAt columns added to FileRequests")
 	}
 
+	// Migration 6: Create EmailProviderConfig table
+	row = d.db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='EmailProviderConfig'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Creating EmailProviderConfig table")
+		if _, err := d.db.Exec(`
+			CREATE TABLE IF NOT EXISTS EmailProviderConfig (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				Provider TEXT NOT NULL UNIQUE,
+				IsActive INTEGER DEFAULT 0,
+				ApiKeyEncrypted TEXT,
+				SMTPHost TEXT,
+				SMTPPort INTEGER,
+				SMTPUsername TEXT,
+				SMTPPasswordEncrypted TEXT,
+				SMTPUseTLS INTEGER DEFAULT 1,
+				FromEmail TEXT NOT NULL,
+				FromName TEXT,
+				CreatedAt INTEGER NOT NULL,
+				UpdatedAt INTEGER NOT NULL
+			)
+		`); err != nil {
+			log.Printf("Migration error for EmailProviderConfig table: %v", err)
+		}
+		log.Printf("Migration completed: EmailProviderConfig table created")
+	}
+
 	return nil
 }
 

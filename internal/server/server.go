@@ -72,6 +72,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/trash/delete", s.requireAdmin(s.handleAdminPermanentDelete))
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
+	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
+
+	// Email API routes
+	mux.HandleFunc("/api/email/configure", s.requireAuth(s.requireAdmin(s.handleEmailConfigure)))
+	mux.HandleFunc("/api/email/test", s.requireAuth(s.requireAdmin(s.handleEmailTest)))
+	mux.HandleFunc("/api/email/send-splash-link", s.requireAuth(s.handleSendSplashLink))
 
 	// API routes
 	mux.HandleFunc("/api/v1/upload", s.requireAuth(s.handleAPIUpload))
