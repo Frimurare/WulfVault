@@ -1,6 +1,6 @@
 // Sharecare - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
-// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
 
 package server
@@ -568,7 +568,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
     </script>
 
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-        Powered by Sharecare © Ulf Holmström – GPL-3.0
+        Powered by Sharecare © Ulf Holmström – AGPL-3.0
     </div>
 </body>
 </html>`

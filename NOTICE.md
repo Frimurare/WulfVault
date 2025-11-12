@@ -34,6 +34,16 @@ Sharecare is a complete rewrite that adds extensive enterprise features:
 
 ## License
 
-This project is licensed under the GPL-3.0 license.
+This project is licensed under the **AGPL-3.0** license.
+
+**Why AGPL-3.0?**
+The GNU Affero General Public License (AGPL-3.0) is specifically designed to prevent proprietary use of open-source software in network services. Key protections:
+
+- **Network copyleft:** Companies running Sharecare as a SaaS must share their source code
+- **Attribution protection:** All modifications must credit the original author
+- **Community benefit:** Improvements must be contributed back to the community
+- **Anti-exploitation:** Prevents "taking without giving back" in cloud deployments
+
+This ensures that Sharecare remains free and open-source, even when used to provide commercial services.
 
 See [LICENSE](LICENSE) for the full license text.

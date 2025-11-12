@@ -475,7 +475,7 @@ Sharecare/
 │   ├── static/         # CSS, JavaScript, images
 │   └── templates/      # HTML templates
 ├── INSTALLATION.md     # Detailed installation guide
-├── LICENSE            # GPL-3.0 license
+├── LICENSE            # AGPL-3.0 license
 └── README.md          # This file
 ```
 
@@ -491,7 +491,9 @@ Contributions welcome! Please:
 
 ## License
 
-This project is licensed under the **GPL-3.0** license - see [LICENSE](LICENSE) for details.
+This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
+
+**Why AGPL-3.0?** This license ensures that if anyone uses Sharecare to provide a service over a network (like SaaS), they must share their modifications with the community. This prevents companies from taking the code, making improvements, and keeping them proprietary. It protects the open-source nature of the project while requiring attribution and source disclosure for all network use.
 
 **Architecturally inspired by Gokapi** by Forceu - https://github.com/Forceu/Gokapi
 
