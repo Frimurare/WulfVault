@@ -1,4 +1,4 @@
-# Sharecare User Guide v3.2.3
+# Sharecare User Guide v3.3.0
 
 **Complete Guide for Administrators and Users**
 
@@ -381,7 +381,7 @@ environment:
 docker logs sharecare
 
 # Output shows:
-# Sharecare File Sharing System v3.2.3
+# Sharecare File Sharing System v3.3.0
 # Server starting on :8080
 # Server URL: https://files.yourdomain.com
 ```
@@ -1397,7 +1397,7 @@ Recipients can:
 
 ---
 
-**Sharecare v3.2.3 Golden Release**
+**Sharecare v3.3.0**
 **Copyright © 2025 Ulf Holmström (Frimurare)**
 **Licensed under AGPL-3.0**
 
