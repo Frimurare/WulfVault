@@ -6,7 +6,9 @@
 package server
 
 import (
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -20,6 +22,7 @@ import (
 
 	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/database"
+	emailpkg "github.com/Frimurare/Sharecare/internal/email"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
 
@@ -127,25 +130,48 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	quotaMB, _ := strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
 	userLevel, _ := strconv.Atoi(r.FormValue("user_level"))
+	sendWelcomeEmail := r.FormValue("send_welcome_email") == "1"
 
 	// Validate
-	if name == "" || email == "" || password == "" {
-		s.renderAdminUserForm(w, nil, "All fields are required")
+	if name == "" || email == "" {
+		s.renderAdminUserForm(w, nil, "Name and email are required")
 		return
 	}
 
-	// Hash password
-	hashedPassword, err := auth.HashPassword(password)
-	if err != nil {
-		s.renderAdminUserForm(w, nil, "Failed to hash password")
+	// If not sending welcome email, password is required
+	if !sendWelcomeEmail && password == "" {
+		s.renderAdminUserForm(w, nil, "Password is required (or check 'Send welcome email')")
 		return
+	}
+
+	// Hash password (use temporary password if sending welcome email)
+	var err error
+	if sendWelcomeEmail {
+		// Generate temporary random password that will be replaced via email
+		tempBytes := make([]byte, 32)
+		if _, err := rand.Read(tempBytes); err != nil {
+			s.renderAdminUserForm(w, nil, "Failed to generate temporary password")
+			return
+		}
+		tempPassword := hex.EncodeToString(tempBytes)
+		password, err = auth.HashPassword(tempPassword)
+		if err != nil {
+			s.renderAdminUserForm(w, nil, "Failed to generate temporary password")
+			return
+		}
+	} else {
+		password, err = auth.HashPassword(password)
+		if err != nil {
+			s.renderAdminUserForm(w, nil, "Failed to hash password")
+			return
+		}
 	}
 
 	// Create user
 	newUser := &models.User{
 		Name:           name,
 		Email:          email,
-		Password:       hashedPassword,
+		Password:       password,
 		UserLevel:      models.UserRank(userLevel),
 		Permissions:    models.UserPermissionNone,
 		StorageQuotaMB: quotaMB,
@@ -161,6 +187,29 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	if err := database.DB.CreateUser(newUser); err != nil {
 		s.renderAdminUserForm(w, nil, "Failed to create user: "+err.Error())
 		return
+	}
+
+	// Send welcome email if requested
+	if sendWelcomeEmail {
+		// Create password reset token
+		resetToken, err := database.DB.CreatePasswordResetToken(email, database.AccountTypeUser)
+		if err != nil {
+			log.Printf("Failed to create reset token for welcome email: %v", err)
+			// Don't fail user creation, just log the error
+		} else {
+			// Get branding info
+			brandingConfig, _ := database.DB.GetBrandingConfig()
+			companyName := s.config.CompanyName
+			logoData := brandingConfig["branding_logo"]
+
+			// Send welcome email
+			if err := emailpkg.SendWelcomeEmail(email, resetToken, s.config.ServerURL, companyName, logoData); err != nil {
+				log.Printf("Failed to send welcome email to %s: %v", email, err)
+				// Don't fail user creation, just log the error
+			} else {
+				log.Printf("Welcome email sent to new user: %s (%s)", name, email)
+			}
+		}
 	}
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
@@ -1555,7 +1604,21 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 		return ""
 	}() + ` style="width: auto; margin-right: 8px;">
             <span>Active (user can log in)</span>
+        </label>` + func() string {
+		if !isEdit {
+			return `
+
+        <br>
+        <label style="display: flex; align-items: center; cursor: pointer; background: #e3f2fd; padding: 12px; border-radius: 6px; border-left: 4px solid #2196f3;">
+            <input type="checkbox" name="send_welcome_email" value="1" checked style="width: auto; margin-right: 8px;">
+            <span style="font-weight: 500;">📧 Send welcome email with password setup link</span>
         </label>
+        <div style="font-size: 13px; color: #666; margin-top: 8px; margin-left: 28px;">
+            User will receive an email to set their own password. The password entered above will be ignored if checked.
+        </div>`
+		}
+		return ""
+	}() + `
 
         <br><br>
         <button type="submit">Save</button>
