@@ -2226,7 +2226,24 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 		}
 	}
 
+	// Build full public URL for display
+	fullPublicURL := serverURL + ":" + port
+
 	html += `
+            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;">📋 Current Public URL</h3>
+                <p style="color: #856404; font-size: 13px; margin-bottom: 12px;">Share this URL with your users to access the system:</p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="text" id="publicUrl" value="` + fullPublicURL + `" readonly
+                           style="flex: 1; padding: 12px; background: white; border: 2px solid #ffc107; font-family: monospace; font-size: 14px; font-weight: 600; color: #d32f2f;">
+                    <button type="button" onclick="copyPublicURL()" class="btn"
+                            style="background: #ffc107; color: #856404; font-weight: 700; white-space: nowrap;">
+                        📋 COPY URL
+                    </button>
+                </div>
+                <p id="copyStatus" style="color: #28a745; font-size: 12px; margin-top: 8px; display: none;">✓ Copied to clipboard!</p>
+            </div>
+
             <form method="POST" action="/admin/settings">
                 <div class="form-group">
                     <label for="server_url">Server URL</label>
@@ -2284,6 +2301,28 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
     </div>
 
     <script>
+        function copyPublicURL() {
+            const urlInput = document.getElementById('publicUrl');
+            const statusMsg = document.getElementById('copyStatus');
+
+            // Select and copy the URL
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999); // For mobile devices
+
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                // Show success message
+                statusMsg.style.display = 'block';
+
+                // Hide message after 2 seconds
+                setTimeout(() => {
+                    statusMsg.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy URL. Please copy manually.');
+            });
+        }
+
         /* RESTART SERVER FUNCTION - Uncomment when systemd is installed
         function confirmReboot() {
             if (confirm('Are you sure you want to restart the server?\n\nThis will briefly interrupt service. Continue?')) {
