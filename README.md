@@ -266,16 +266,20 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including 
 | `PORT` | Server port | `8080` |
 | `DATA_DIR` | Data directory for database | `./data` |
 | `UPLOADS_DIR` | Directory for uploaded files | `./uploads` |
-| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` |
-| `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` |
+| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` (2 GB) |
+| `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` (5 GB) |
+| `SESSION_TIMEOUT_HOURS` | Session expiration time | `24` |
+| `TRASH_RETENTION_DAYS` | Days to keep deleted files | `5` |
 
 ### Admin Settings (Web UI)
 
 After logging in as admin, configure:
 - **Branding** - Logo, colors, company name
-- **Storage Quotas** - Set custom limits per user
-- **Trash Retention** - How long deleted files are kept (default: 5 days)
-- **File Size Limits** - Maximum upload size
+- **Storage Quotas** - Set custom limits per user (default: 5 GB per user)
+- **Trash Retention** - How long deleted files are kept (default: 5 days, range: 1-365 days)
+- **File Size Limits** - Maximum upload size (default: 2 GB, configurable up to 5GB+)
+- **Session Timeout** - Login session duration (default: 24 hours)
+- **IP Logging** - Enable/disable IP address tracking (default: disabled)
 
 ---
 

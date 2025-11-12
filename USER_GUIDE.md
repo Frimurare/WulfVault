@@ -364,7 +364,7 @@ From dashboard, admins can:
 
 Same process as admin, but:
 - **User Level:** Select "User"
-- **Storage Quota:** Typically lower (e.g., 10GB)
+- **Storage Quota:** Default is 5GB (5000 MB), adjust as needed
 
 ### Editing Users
 
@@ -381,9 +381,11 @@ Same process as admin, but:
 ### Managing Storage Quotas
 
 **Quota Levels:**
-- **Custom:** Any size in MB (e.g., 5000 MB = 5GB)
-- **Recommended:**
-  - Regular users: 5-10 GB
+- **Default:** 5000 MB (5 GB) - Applied to new users automatically
+- **Custom:** Any size in MB (e.g., 10000 MB = 10GB, 50000 MB = 50GB)
+- **Recommended based on use case:**
+  - Light users: 5 GB (default)
+  - Regular users: 10-20 GB
   - Power users: 50-100 GB
   - Admins: 100+ GB
 
@@ -470,11 +472,11 @@ Click on any file to see:
 **Access:** Admin → Trash
 
 **Trash Features:**
-- **Retention Period:** Files kept for configured days (default: 5)
-- **Automatic Cleanup:** Old items permanently deleted
+- **Retention Period:** Files kept for configured days (default: 5 days, configurable 1-365)
+- **Automatic Cleanup:** Items older than retention period are permanently deleted
 - **Manual Actions:**
   - **Restore:** Bring file back (restores to original uploader)
-  - **Permanent Delete:** Delete immediately (cannot be undone)
+  - **Permanent Delete:** Delete immediately (cannot be undone, bypasses retention period)
 
 **View Trash:**
 - See deleted files
@@ -699,9 +701,10 @@ From: yourname@gmail.com
 ### Session Security
 
 **Session Features:**
-- **Auto-expiration:** 24 hours (configurable)
+- **Auto-expiration:** 24 hours (default, configurable via `SESSION_TIMEOUT_HOURS`)
 - **Secure cookies:** HttpOnly, SameSite protection
 - **CSRF protection:** All forms protected
+- **Session cleanup:** Expired sessions automatically removed every hour
 
 **Best Practices:**
 - Always logout on shared computers
@@ -711,16 +714,19 @@ From: yourname@gmail.com
 ### IP Address Logging
 
 **Configuration:** Admin → Settings → Save IP Addresses
+**Default:** Disabled (for privacy)
 
 **When enabled:**
 - IP addresses logged for all downloads
-- Useful for security audits
+- Useful for security audits and compliance
 - Helps trace unauthorized access
+- Required for detailed forensic analysis
 
-**When disabled:**
+**When disabled (default):**
 - Privacy-focused mode
-- GDPR compliance in some regions
-- Still logs download events (without IP)
+- Better GDPR compliance
+- Still logs download events (date, time, email)
+- No IP addresses stored
 
 ---
 
@@ -983,9 +989,10 @@ Recipients can:
 ### File Size Limits
 
 **Default Configuration:**
-- Maximum file size: 2GB
-- Configurable up to 5GB+ (tested with large video files)
-- Total storage: Based on quota per user
+- Maximum file size: **2000 MB (2 GB)** - Configurable via `MAX_FILE_SIZE_MB` environment variable
+- Maximum upload size: **2000 MB (2 GB)** - Can be increased up to 5GB+ (tested with large video files)
+- Default user quota: **5000 MB (5 GB)** - Configurable per user by admin
+- Total storage: Based on individual user quotas
 
 **Network Considerations:**
 - Large files (>1GB): Use wired connection
@@ -1012,13 +1019,13 @@ Recipients can:
 **Minimum Server:**
 - CPU: 1 core
 - RAM: 512 MB
-- Storage: 10 GB (plus file storage)
+- Storage: 10 GB + file storage space
 - OS: Linux (Ubuntu, Debian, RHEL)
 
 **Recommended Server:**
 - CPU: 2+ cores
 - RAM: 2+ GB
-- Storage: 100+ GB SSD
+- Storage: 100+ GB (SSD/NVMe recommended for better performance, spinning disks supported)
 - OS: Linux with Docker support
 
 ### Support & Resources
