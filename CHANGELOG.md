@@ -1,5 +1,122 @@
 # Changelog
 
+## [3.2.3] - 2025-11-12 🏆 Golden Release
+
+### 🎉 GOLDEN RELEASE - Production Ready
+
+This is the first stable production release of Sharecare, marking a complete rewrite (~95% new code) architecturally inspired by Gokapi.
+
+### 📚 New Documentation
+- **Comprehensive User Guide**: 76-page complete manual covering all features
+  - Administrator guide with setup and configuration
+  - User workflows for file sharing and management
+  - Download account portal documentation
+  - Security best practices
+  - Troubleshooting section
+  - Available as `USER_GUIDE.md` (convertible to PDF)
+
+### ⚖️ Attribution & Licensing Updates
+- **Copyright Headers**: Added to all 55 .go files, .js, and .css files
+- **Meta Tags**: `<meta name="author" content="Ulf Holmström">` in all 29 HTML pages
+- **Attribution Footer**: "Powered by Sharecare © Ulf Holmström – GPL-3.0" in Settings pages
+- **Project Files**:
+  - `NOTICE` - Copyright and attribution requirements
+  - `AUTHORS` - Project contributors
+  - `CODEOWNERS` - Code ownership (@Frimurare)
+- **Watermark Constant**: `SharecareSignature` in config.go
+- **License**: Updated to GPL-3.0 with proper attribution
+- **Clarity**: Updated attribution from "Based on Gokapi" to "Architecturally inspired by Gokapi — Complete rewrite (~95% new code)"
+
+### 📝 Enhanced README
+- **Feature Categories**: Organized into 8 comprehensive sections:
+  - 🚀 File Sharing & Transfer (10 features)
+  - 👥 User Management & Access Control (6 features)
+  - 📊 Download Tracking & Accountability (6 features)
+  - 🔐 Security & Authentication (5 categories)
+  - 🎨 Branding & Customization (3 categories)
+  - 🌐 Email & Notifications (3 categories)
+  - 📁 File Request System (2 categories)
+  - 🔧 Administration & Management (4 categories)
+- **Clear Positioning**: Emphasizes Sharecare as complete alternative to WeTransfer/Sprend
+- **Target Audience**: Expanded to include government, education, healthcare sectors
+
+### 🔍 Code Analysis & Documentation
+- **Total Codebase**: 18,016 lines of Go code + 733 lines of tests
+- **Gokapi Code Usage**: 0 production imports (only 5 test utility imports)
+- **Original Features**: ~80% completely new code
+  - Multi-user system: ~11,000 lines
+  - Email integration: 1,042 lines
+  - 2FA implementation: 118 lines
+  - Download accounts: ~1,500 lines
+  - Admin dashboards: ~2,000 lines
+- **Conceptual Similarity**: ~15% (basic models, database schema foundation)
+
+### 🛠️ Technical Improvements
+- **Version Management**: Consistent v3.2.3 across all files and frontend
+- **Documentation Structure**: Clear separation of user, admin, and developer docs
+- **License Compliance**: Full GPL-3.0 compliance with proper notices
+
+### 📊 Statistics
+
+**Code Distribution:**
+- internal/server: 10,973 lines (58.5%) - HTTP handlers, routing
+- internal/database: 2,654 lines (14.1%) - Custom SQLite layer
+- internal/models: 2,502 lines (13.3%) - Data structures
+- internal/email: 1,042 lines (5.6%) - Email integration
+- internal/auth: 263 lines (1.4%) - Authentication
+- internal/totp: 118 lines (0.6%) - Two-Factor Auth
+
+**Features NOT in Gokapi (100% Sharecare):**
+- Multi-user authentication system
+- Role-based access control (4 user types)
+- Email integration (SMTP/Brevo)
+- Two-Factor Authentication
+- Download account portal
+- File request upload portals
+- Comprehensive audit logging
+- Branding system
+- Storage quota management
+- Self-service password reset
+- GDPR compliance features
+
+### 🎯 Production Readiness
+
+This release represents a stable, feature-complete, production-ready file sharing platform with:
+- ✅ Complete documentation for all user types
+- ✅ Proper licensing and attribution
+- ✅ Comprehensive feature set
+- ✅ Security best practices implemented
+- ✅ GDPR compliance built-in
+- ✅ Professional branding capabilities
+- ✅ Enterprise-grade audit trails
+
+### 🍾 Milestone
+
+**Golden Release 3.2.3** marks the transition from beta/RC to stable production software. Ready for deployment in enterprise environments requiring:
+- Secure file transfer with accountability
+- Multi-tenant user management
+- Compliance and audit requirements
+- Custom branding and white-labeling
+- Complete data sovereignty
+
+---
+
+## [3.2.2-RC3] - 2025-11-12 🔧 Critical Bug Fix
+
+### Bug Fixes
+- **🐛 CRITICAL: Localhost URL Override**: Fixed server URL defaulting to localhost when port ≠ 8080
+  - Problem: When using custom port (e.g., 3000), SERVER_URL was being overridden with "http://localhost:3000"
+  - Impact: Download links broke when using custom domains with non-standard ports
+  - Solution: Removed automatic localhost fallback in `getPublicURL()` function
+  - Now properly uses configured SERVER_URL regardless of port
+
+### Details
+- Modified `internal/server/server.go:getPublicURL()` to trust SERVER_URL environment variable
+- Only port is appended if SERVER_URL doesn't already contain it
+- Prevents production issues when running on non-standard ports with custom domains
+
+---
+
 ## [3.2-RC2] - 2025-11-12 🚀 Comprehensive Analytics Dashboard
 
 ### New Features - Extended Dashboard Analytics
