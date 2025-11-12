@@ -1,5 +1,55 @@
 # Changelog
 
+## [3.3.6] - 2025-11-12 ✨ Welcome Email Design Improvements
+
+### ✨ Design Improvements
+
+**Enhanced Email Design:**
+- Removed broken logo image - replaced with admin information
+- Larger, more prominent blue button: "SET PASSWORD & LOGIN"
+- Blue header background (#2563eb) instead of gradient
+- Cleaner, more professional appearance
+
+**Dynamic Admin Information:**
+- Email now shows which admin created the account
+- Format: "[Admin Name] ([Admin Email]) has added you to [Company Name]"
+- Example: "Ulf Holmström (ulf@example.com) has added you to Sharecare"
+- More personal and informative welcome message
+
+**Improved Messaging:**
+- Clear description: "You can now share, receive, and request both small and huge files securely"
+- Better call-to-action with larger button
+- Professional blue color scheme throughout
+
+### Technical Details
+
+**Modified Files:**
+- `internal/email/templates.go` (lines 362-499):
+  - Changed SendWelcomeEmail() signature to accept adminName and adminEmail
+  - Removed logo parameter and logo handling
+  - Updated header background from gradient to solid blue (#2563eb)
+  - Enlarged button: 18px font, 50px horizontal padding
+  - Changed button text to uppercase: "SET PASSWORD & LOGIN"
+  - Updated welcome message to include admin information
+  - Updated both HTML and text email versions
+
+- `internal/server/handlers_admin.go` (lines 200-224):
+  - Get admin info from request context
+  - Pass admin name and email to SendWelcomeEmail()
+  - Removed logo data retrieval and validation
+  - Enhanced logging: includes admin name in success message
+
+- `cmd/server/main.go` (line 25):
+  - Version bumped to 3.3.6
+
+**Email Design Changes:**
+- Header: Solid blue background (#2563eb), larger title (32px)
+- Button: Larger (18px font, 50px padding), blue background, white text
+- Welcome box: Shows admin who added user
+- Professional, clean design without broken images
+
+---
+
 ## [3.3.5] - 2025-11-12 🐛 Welcome Email Bugfixes
 
 ### 🐛 Bug Fixes

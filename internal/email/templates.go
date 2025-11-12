@@ -360,18 +360,10 @@ Om du har frågor, vänligen kontakta oss.
 }
 
 // SendWelcomeEmail sends a welcome email to newly created users with password setup link
-func SendWelcomeEmail(email, resetToken, serverURL, companyName, logoData string) error {
+func SendWelcomeEmail(email, resetToken, serverURL, companyName, adminName, adminEmail string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
 
 	subject := fmt.Sprintf("Welcome to %s - Set Your Password", companyName)
-
-	// Build logo HTML if provided
-	logoHTML := ""
-	if logoData != "" {
-		logoHTML = fmt.Sprintf(`<div style="text-align: center; margin-bottom: 20px;">
-			<img src="%s" alt="%s" style="max-height: 80px; max-width: 300px;">
-		</div>`, logoData, companyName)
-	}
 
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -382,13 +374,13 @@ func SendWelcomeEmail(email, resetToken, serverURL, companyName, logoData string
 		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
 		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
 		.header {
-			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+			background: #2563eb;
 			color: white;
-			padding: 30px;
+			padding: 35px;
 			border-radius: 10px 10px 0 0;
 			text-align: center;
 		}
-		.header h1 { margin: 0; font-size: 28px; }
+		.header h1 { margin: 0; font-size: 32px; }
 		.header p { margin: 10px 0 0 0; opacity: 0.9; }
 		.content {
 			background: #f9f9f9;
@@ -408,22 +400,22 @@ func SendWelcomeEmail(email, resetToken, serverURL, companyName, logoData string
 		}
 		.setup-box {
 			background: white;
-			padding: 25px;
+			padding: 30px;
 			margin: 25px 0;
 			border-radius: 8px;
-			border: 2px solid #667eea;
+			border: 2px solid #2563eb;
 			text-align: center;
 		}
 		.button {
 			display: inline-block;
-			padding: 15px 35px;
-			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-			color: white;
+			padding: 18px 50px;
+			background: #2563eb;
+			color: white !important;
 			text-decoration: none;
-			border-radius: 25px;
+			border-radius: 8px;
 			margin: 20px 0;
 			font-weight: bold;
-			font-size: 16px;
+			font-size: 18px;
 		}
 		.footer {
 			margin-top: 30px;
@@ -450,20 +442,18 @@ func SendWelcomeEmail(email, resetToken, serverURL, companyName, logoData string
 		</div>
 
 		<div class="content">
-			%s
-
 			<div class="welcome-box">
 				<h2>Congratulations!</h2>
-				<p>You have been added to <strong>%s</strong> and can now share and receive files securely.</p>
+				<p><strong>%s</strong> (%s) has added you to <strong>%s</strong>. You can now share, receive, and request both small and huge files securely.</p>
 			</div>
 
 			<p>To get started, you need to set your password and log in to your account.</p>
 
 			<div class="setup-box">
-				<h2 style="color: #667eea;">Set Your Password</h2>
-				<p>Click the button below to create your password and access your account.</p>
+				<h2 style="color: #2563eb; margin-bottom: 15px;">Set Your Password</h2>
+				<p style="margin-bottom: 25px;">Click the button below to create your password and access your account.</p>
 
-				<a href="%s" class="button">Set Password &amp; Login</a>
+				<a href="%s" class="button">SET PASSWORD &amp; LOGIN</a>
 
 				<p style="font-size: 13px; color: #999; margin-top: 20px;">
 					This link is valid for 1 hour
@@ -489,11 +479,11 @@ func SendWelcomeEmail(email, resetToken, serverURL, companyName, logoData string
 		</div>
 	</div>
 </body>
-</html>`, companyName, logoHTML, companyName, resetLink, email, resetLink, companyName)
+</html>`, companyName, adminName, adminEmail, companyName, resetLink, email, resetLink, companyName)
 
 	textBody := fmt.Sprintf(`Welcome to %s!
 
-Congratulations! You have been added to %s and can now share and receive files securely.
+Congratulations! %s (%s) has added you to %s. You can now share, receive, and request both small and huge files securely.
 
 To get started, you need to set your password and log in to your account.
 
@@ -506,7 +496,7 @@ This link is valid for 1 hour.
 
 ---
 This is an automated message from %s.
-Do not reply to this email.`, companyName, companyName, email, resetLink, companyName)
+Do not reply to this email.`, companyName, adminName, adminEmail, companyName, email, resetLink, companyName)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {

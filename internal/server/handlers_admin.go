@@ -197,10 +197,15 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Failed to create reset token for welcome email: %v", err)
 			// Don't fail user creation, just log the error
 		} else {
+			// Get admin info from context
+			admin, ok := userFromContext(r.Context())
+			if !ok {
+				log.Printf("Failed to get admin info from context for welcome email")
+				return
+			}
+
 			// Get branding info
-			brandingConfig, _ := database.DB.GetBrandingConfig()
 			companyName := s.config.CompanyName
-			logoData := brandingConfig["branding_logo"]
 
 			// Fix server URL - ensure it uses http:// if running on port 8080 without SSL
 			emailServerURL := s.config.ServerURL
@@ -210,18 +215,12 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 				log.Printf("Corrected server URL from HTTPS to HTTP for email: %s", emailServerURL)
 			}
 
-			// Validate logo data - must be a valid data URI
-			if logoData != "" && len(logoData) > 11 && logoData[:11] != "data:image/" {
-				log.Printf("Warning: Invalid logo data format, ignoring logo in email")
-				logoData = "" // Clear invalid logo data
-			}
-
-			// Send welcome email
-			if err := emailpkg.SendWelcomeEmail(email, resetToken, emailServerURL, companyName, logoData); err != nil {
+			// Send welcome email with admin info
+			if err := emailpkg.SendWelcomeEmail(email, resetToken, emailServerURL, companyName, admin.Name, admin.Email); err != nil {
 				log.Printf("Failed to send welcome email to %s: %v", email, err)
 				// Don't fail user creation, just log the error
 			} else {
-				log.Printf("Welcome email sent to new user: %s (%s)", name, email)
+				log.Printf("Welcome email sent to new user: %s (%s) by admin %s", name, email, admin.Name)
 			}
 		}
 	}
