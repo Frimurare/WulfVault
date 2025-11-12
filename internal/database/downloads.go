@@ -375,3 +375,64 @@ func (d *Database) GetBytesSentThisYear() (int64, error) {
 	`, startOfYear).Scan(&total)
 	return total, err
 }
+
+// GetBytesUploadedToday returns total bytes uploaded today
+func (d *Database) GetBytesUploadedToday() (int64, error) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix()
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(SizeBytes), 0)
+		FROM Files
+		WHERE UploadDate >= ? AND DeletedAt = 0
+	`, startOfDay).Scan(&total)
+	return total, err
+}
+
+// GetBytesUploadedThisWeek returns total bytes uploaded this week
+func (d *Database) GetBytesUploadedThisWeek() (int64, error) {
+	now := time.Now()
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7 // Sunday
+	}
+	startOfWeek := now.AddDate(0, 0, -weekday+1)
+	startOfWeek = time.Date(startOfWeek.Year(), startOfWeek.Month(), startOfWeek.Day(), 0, 0, 0, 0, startOfWeek.Location())
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(SizeBytes), 0)
+		FROM Files
+		WHERE UploadDate >= ? AND DeletedAt = 0
+	`, startOfWeek.Unix()).Scan(&total)
+	return total, err
+}
+
+// GetBytesUploadedThisMonth returns total bytes uploaded this month
+func (d *Database) GetBytesUploadedThisMonth() (int64, error) {
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(SizeBytes), 0)
+		FROM Files
+		WHERE UploadDate >= ? AND DeletedAt = 0
+	`, startOfMonth).Scan(&total)
+	return total, err
+}
+
+// GetBytesUploadedThisYear returns total bytes uploaded this year
+func (d *Database) GetBytesUploadedThisYear() (int64, error) {
+	now := time.Now()
+	startOfYear := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()).Unix()
+
+	var total int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(SizeBytes), 0)
+		FROM Files
+		WHERE UploadDate >= ? AND DeletedAt = 0
+	`, startOfYear).Scan(&total)
+	return total, err
+}

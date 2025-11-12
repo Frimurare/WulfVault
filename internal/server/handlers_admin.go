@@ -32,11 +32,17 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	totalDownloads, _ := database.DB.GetTotalDownloads()
 	downloadsToday, _ := database.DB.GetDownloadsToday()
 
-	// Get data transfer statistics
-	bytesToday, _ := database.DB.GetBytesSentToday()
-	bytesWeek, _ := database.DB.GetBytesSentThisWeek()
-	bytesMonth, _ := database.DB.GetBytesSentThisMonth()
-	bytesYear, _ := database.DB.GetBytesSentThisYear()
+	// Get data transfer statistics (downloaded)
+	bytesDownloadedToday, _ := database.DB.GetBytesSentToday()
+	bytesDownloadedWeek, _ := database.DB.GetBytesSentThisWeek()
+	bytesDownloadedMonth, _ := database.DB.GetBytesSentThisMonth()
+	bytesDownloadedYear, _ := database.DB.GetBytesSentThisYear()
+
+	// Get upload statistics
+	bytesUploadedToday, _ := database.DB.GetBytesUploadedToday()
+	bytesUploadedWeek, _ := database.DB.GetBytesUploadedThisWeek()
+	bytesUploadedMonth, _ := database.DB.GetBytesUploadedThisMonth()
+	bytesUploadedYear, _ := database.DB.GetBytesUploadedThisYear()
 
 	// Get user growth statistics
 	usersAdded, _ := database.DB.GetUsersAddedThisMonth()
@@ -47,7 +53,8 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	mostDownloadedFile, downloadCount, _ := database.DB.GetMostDownloadedFile()
 
 	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday,
-		bytesToday, bytesWeek, bytesMonth, bytesYear,
+		bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear,
+		bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear,
 		usersAdded, usersRemoved, userGrowth,
 		mostDownloadedFile, downloadCount)
 }
@@ -791,7 +798,8 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 }
 
 func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
-	bytesToday, bytesWeek, bytesMonth, bytesYear int64,
+	bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear int64,
+	bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear int64,
 	usersAdded, usersRemoved int, userGrowth float64,
 	mostDownloadedFile string, downloadCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -810,11 +818,17 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 		return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 	}
 
-	// Format all byte statistics
-	bytesTodayStr := formatBytes(bytesToday)
-	bytesWeekStr := formatBytes(bytesWeek)
-	bytesMonthStr := formatBytes(bytesMonth)
-	bytesYearStr := formatBytes(bytesYear)
+	// Format all byte statistics (downloaded)
+	bytesDownloadedTodayStr := formatBytes(bytesDownloadedToday)
+	bytesDownloadedWeekStr := formatBytes(bytesDownloadedWeek)
+	bytesDownloadedMonthStr := formatBytes(bytesDownloadedMonth)
+	bytesDownloadedYearStr := formatBytes(bytesDownloadedYear)
+
+	// Format upload statistics
+	bytesUploadedTodayStr := formatBytes(bytesUploadedToday)
+	bytesUploadedWeekStr := formatBytes(bytesUploadedWeek)
+	bytesUploadedMonthStr := formatBytes(bytesUploadedMonth)
+	bytesUploadedYearStr := formatBytes(bytesUploadedYear)
 
 	// Get branding config for logo
 	brandingConfig, _ := database.DB.GetBrandingConfig()
@@ -984,23 +998,43 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             </div>
         </div>
 
-        <h2 style="margin-top: 40px;">📊 Data Transfer</h2>
+        <h2 style="margin-top: 40px;">📥 Downloaded Data</h2>
         <div class="stats">
             <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                 <h3 style="color: rgba(255,255,255,0.9);">Today</h3>
-                <div class="value" style="color: white;">` + bytesTodayStr + `</div>
+                <div class="value" style="color: white;">` + bytesDownloadedTodayStr + `</div>
             </div>
             <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
                 <h3 style="color: rgba(255,255,255,0.9);">This Week</h3>
-                <div class="value" style="color: white;">` + bytesWeekStr + `</div>
+                <div class="value" style="color: white;">` + bytesDownloadedWeekStr + `</div>
             </div>
             <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
                 <h3 style="color: rgba(255,255,255,0.9);">This Month</h3>
-                <div class="value" style="color: white;">` + bytesMonthStr + `</div>
+                <div class="value" style="color: white;">` + bytesDownloadedMonthStr + `</div>
             </div>
             <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
                 <h3 style="color: rgba(255,255,255,0.9);">This Year</h3>
-                <div class="value" style="color: white;">` + bytesYearStr + `</div>
+                <div class="value" style="color: white;">` + bytesDownloadedYearStr + `</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">📤 Uploaded Data</h2>
+        <div class="stats">
+            <div class="stat-card" style="background: linear-gradient(135deg, #FA8BFF 0%, #2BD2FF 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">Today</h3>
+                <div class="value" style="color: white;">` + bytesUploadedTodayStr + `</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #FF6B95 0%, #FFC796 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">This Week</h3>
+                <div class="value" style="color: white;">` + bytesUploadedWeekStr + `</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">This Month</h3>
+                <div class="value" style="color: white;">` + bytesUploadedMonthStr + `</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #FDBB2D 0%, #3A1C71 100%); color: white;">
+                <h3 style="color: rgba(255,255,255,0.9);">This Year</h3>
+                <div class="value" style="color: white;">` + bytesUploadedYearStr + `</div>
             </div>
         </div>
 

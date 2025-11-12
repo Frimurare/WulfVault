@@ -1,5 +1,32 @@
 # Changelog
 
+## [3.2-beta4] - 2025-11-12 📊 Data Transfer Statistics Enhancement
+
+### New Features
+- **📊 Enhanced Data Transfer Dashboard**: Split statistics into Downloaded and Uploaded data
+  - **📥 Downloaded Data**: Displays data transferred to users (4 cards: Today, This Week, This Month, This Year)
+  - **📤 Uploaded Data**: Displays data uploaded by users (4 cards: Today, This Week, This Month, This Year)
+  - Beautiful gradient designs for each card to distinguish downloaded vs uploaded stats
+  - Real-time tracking of both upload and download bandwidth usage
+
+### Implementation Details
+- **Database Methods**: 4 new methods added to track uploads separately
+  - `GetBytesUploadedToday()` - Tracks uploads from start of day
+  - `GetBytesUploadedThisWeek()` - Tracks uploads from start of week (Monday)
+  - `GetBytesUploadedThisMonth()` - Tracks uploads from start of month
+  - `GetBytesUploadedThisYear()` - Tracks uploads from start of year
+- **Query Logic**: Upload stats query Files table by UploadDate (excludes soft-deleted files)
+- **Download Stats**: Existing methods query DownloadLogs with Files join for accurate size tracking
+- **Dashboard UI**: Two separate sections with 8 total cards (4 downloaded + 4 uploaded)
+
+### Benefits
+- Better visibility into upload vs download bandwidth consumption
+- Helps identify patterns in user behavior
+- Useful for capacity planning and quota management
+- Separate tracking enables more granular analytics
+
+---
+
 ## [3.2-beta2] - 2025-11-12 🔑 Password Management Update
 
 ### New Features
