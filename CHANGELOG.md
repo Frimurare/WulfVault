@@ -1,5 +1,60 @@
 # Changelog
 
+## [3.2-beta1] - 2025-11-12 🔐 Two-Factor Authentication (2FA) Beta Release
+
+### New Features
+- **🔐 TOTP Two-Factor Authentication (2FA)**: Enterprise-grade security for user and admin accounts
+  - TOTP support using authenticator apps (Google Authenticator, Authy, Microsoft Authenticator, etc.)
+  - QR code generation for easy setup - just scan and verify
+  - 10 backup codes per user for account recovery
+  - One-time use backup codes (automatically removed after use)
+  - User-friendly settings page at `/settings` for managing 2FA
+  - Enable/disable 2FA with password confirmation for security
+  - Regenerate backup codes with tracking of remaining codes
+  - Secure login flow with 2FA verification page
+  - 5-minute session timeout for 2FA setup and verification
+  - **Note**: 2FA is available for Users and Admins only (not download accounts)
+
+### Implementation Details
+- **Database**: New columns added to Users table (TOTPSecret, TOTPEnabled, BackupCodes)
+- **Security**: bcrypt hashing for backup codes, HttpOnly cookies, strict SameSite policy
+- **Libraries**: pquerna/otp for TOTP generation, skip2/go-qrcode for QR code images
+- **Migration**: Automatic database migration on startup (no manual steps required)
+- **Login Flow**: Seamlessly redirects to 2FA verification when enabled
+- **Time Skew**: Accepts codes within ±30 seconds window for reliability
+
+### New Routes
+- `/settings` - User settings page with 2FA controls
+- `/2fa/setup` - Generate QR code and backup codes
+- `/2fa/enable` - Verify TOTP code and activate 2FA
+- `/2fa/disable` - Disable 2FA (requires password)
+- `/2fa/verify` - TOTP verification during login
+- `/2fa/regenerate-backup-codes` - Create new backup codes
+
+### Security Features
+- HttpOnly cookies prevent XSS attacks
+- Backup codes are bcrypt-hashed (cost 12)
+- One-time use backup codes enhance security
+- Password required to disable 2FA
+- Time-limited setup sessions (5 minutes)
+- TOTP time skew tolerance (±1 period = 30 seconds)
+
+### User Experience
+- Clean, modern UI for 2FA management
+- Visual status badges (ENABLED/DISABLED)
+- Inline QR code display for easy scanning
+- Backup codes shown with warning to save them
+- Counter for remaining backup codes
+- Automatic form submission when 6-digit code is entered
+- Alternative backup code input option
+
+### Known Limitations (Beta)
+- Download accounts do not support 2FA (by design - simpler auth flow)
+- No email notifications for 2FA events yet (planned for stable release)
+- Rate limiting not implemented yet (planned for stable release)
+
+---
+
 ## [3.1.2] - 2025-11-11 🔧 Critical Upload Timeout Fix
 
 ### Bug Fixes
