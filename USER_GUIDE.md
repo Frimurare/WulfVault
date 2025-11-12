@@ -1399,7 +1399,7 @@ Recipients can:
 
 **Sharecare v3.2.3 Golden Release**
 **Copyright © 2025 Ulf Holmström (Frimurare)**
-**Licensed under GPL-3.0**
+**Licensed under AGPL-3.0**
 
 *Architecturally inspired by Gokapi - Complete rewrite with enterprise features*
 

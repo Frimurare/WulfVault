@@ -18,13 +18,13 @@ This is the first stable production release of Sharecare, marking a complete rew
 ### ⚖️ Attribution & Licensing Updates
 - **Copyright Headers**: Added to all 55 .go files, .js, and .css files
 - **Meta Tags**: `<meta name="author" content="Ulf Holmström">` in all 29 HTML pages
-- **Attribution Footer**: "Powered by Sharecare © Ulf Holmström – GPL-3.0" in Settings pages
+- **Attribution Footer**: "Powered by Sharecare © Ulf Holmström – AGPL-3.0" in Settings pages
 - **Project Files**:
   - `NOTICE` - Copyright and attribution requirements
   - `AUTHORS` - Project contributors
   - `CODEOWNERS` - Code ownership (@Frimurare)
 - **Watermark Constant**: `SharecareSignature` in config.go
-- **License**: Updated to GPL-3.0 with proper attribution
+- **License**: Updated to AGPL-3.0 with network copyleft protection
 - **Clarity**: Updated attribution from "Based on Gokapi" to "Architecturally inspired by Gokapi — Complete rewrite (~95% new code)"
 
 ### 📝 Enhanced README
@@ -54,7 +54,7 @@ This is the first stable production release of Sharecare, marking a complete rew
 ### 🛠️ Technical Improvements
 - **Version Management**: Consistent v3.2.3 across all files and frontend
 - **Documentation Structure**: Clear separation of user, admin, and developer docs
-- **License Compliance**: Full GPL-3.0 compliance with proper notices
+- **License Compliance**: Full AGPL-3.0 compliance with proper notices and network copyleft
 
 ### 📊 Statistics
 
