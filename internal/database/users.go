@@ -8,6 +8,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/models"
@@ -200,7 +201,14 @@ func (d *Database) UpdateUserStorage(id int, storageUsedMB int64) error {
 }
 
 // DeleteUser deletes a user by ID
-func (d *Database) DeleteUser(id int) error {
+// Before deletion, all user's files are moved to trash (soft-deleted)
+func (d *Database) DeleteUser(id int, deletedBy int) error {
+	// First, soft-delete all files belonging to this user (move to trash)
+	if err := d.SoftDeleteUserFiles(id, deletedBy); err != nil {
+		return fmt.Errorf("failed to soft-delete user files: %w", err)
+	}
+
+	// Then delete the user
 	_, err := d.db.Exec("DELETE FROM Users WHERE Id = ?", id)
 	return err
 }

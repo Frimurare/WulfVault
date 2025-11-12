@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.3.0] - 2025-11-12 🔧 Critical Bugfix Release
+
+### 🐛 Critical Bug Fixes
+
+**File Orphaning Prevention**
+- **Issue Fixed**: When admins deleted users, their uploaded files remained in the system without an owner, consuming storage indefinitely
+- **Solution**: All user files are now automatically moved to trash (soft-deleted) when user is deleted
+- **Impact**: Prevents storage waste, maintains data integrity, enables file recovery
+
+### ✨ Improvements
+
+**Enhanced User Deletion Workflow**
+- Added `SoftDeleteUserFiles()` database function to handle file cleanup
+- Updated `DeleteUser()` to accept `deletedBy` parameter for audit trail
+- Modified admin handler to capture admin ID during deletion
+- Improved confirmation dialog with detailed information:
+  - Warns admin that files will be moved to trash
+  - Explains 5-day retention period
+  - Clarifies files can be recovered or permanently deleted
+
+**Benefits:**
+- ✅ No orphaned files consuming storage
+- ✅ Files recoverable from trash for 5 days
+- ✅ Complete audit trail (who deleted files)
+- ✅ Admin informed before destructive actions
+- ✅ Consistent with existing trash workflow
+
+**Technical Details:**
+- `internal/database/files.go`: Added `SoftDeleteUserFiles(userId, deletedBy)`
+- `internal/database/users.go`: Updated `DeleteUser(id, deletedBy)` signature
+- `internal/server/handlers_admin.go`: Enhanced confirmation message and admin ID tracking
+
+---
+
 ## [3.2.3] - 2025-11-12 🏆 Golden Release
 
 ### 🎉 GOLDEN RELEASE - Production Ready

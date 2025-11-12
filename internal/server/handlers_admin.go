@@ -228,18 +228,26 @@ func (s *Server) handleAdminUserDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get admin user from context
+	admin, ok := userFromContext(r.Context())
+	if !ok {
+		s.sendError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
 	userID, _ := strconv.Atoi(r.FormValue("id"))
 	if userID == 0 {
 		s.sendError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
-	if err := database.DB.DeleteUser(userID); err != nil {
+	// Delete user (this will also soft-delete all their files to trash)
+	if err := database.DB.DeleteUser(userID, admin.Id); err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to delete user")
 		return
 	}
 
-	s.sendJSON(w, http.StatusOK, map[string]string{"message": "User deleted"})
+	s.sendJSON(w, http.StatusOK, map[string]string{"message": "User deleted, files moved to trash"})
 }
 
 // handleAdminToggleDownloadAccount toggles download account active status
@@ -1383,7 +1391,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 
     <script>
         function deleteUser(id) {
-            if (!confirm('Are you sure you want to delete this user?')) return;
+            if (!confirm('Are you sure you want to delete this user?\n\nIf you choose yes, the account will be deleted and all the user\'s uploaded files will be available in the trash for 5 days if not deleted manually.')) return;
 
             fetch('/admin/users/delete', {
                 method: 'POST',
