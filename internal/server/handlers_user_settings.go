@@ -1,9 +1,11 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
+	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/database"
 	"github.com/Frimurare/Sharecare/internal/models"
 )
@@ -271,6 +273,18 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 
             <div class="setting-item">
                 <div class="setting-info">
+                    <h3>Password</h3>
+                    <p>Change your account password</p>
+                </div>
+                <div>
+                    <button onclick="changePassword()" style="background: ` + s.getPrimaryColor() + `; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                        Change Password
+                    </button>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
                     <h3>Two-Factor Authentication ` + totpStatusBadge + `</h3>
                     <p>Add an extra layer of security to your account using an authenticator app</p>
                 </div>
@@ -278,6 +292,29 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
                     ` + totpActionButton + `
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('changePasswordModal')">&times;</span>
+            <h3>Change Password</h3>
+            <div id="changePasswordMessage"></div>
+            <div class="form-group">
+                <label for="current-password">Current Password</label>
+                <input type="password" id="current-password" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <label for="new-password">New Password</label>
+                <input type="password" id="new-password" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="confirm-password">Confirm New Password</label>
+                <input type="password" id="confirm-password" required autocomplete="new-password">
+            </div>
+            <button onclick="confirmChangePassword()" class="btn btn-primary">Change Password</button>
+            <button onclick="closeModal('changePasswordModal')" class="btn btn-secondary" style="margin-left: 10px;">Cancel</button>
         </div>
     </div>
 
@@ -319,6 +356,64 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
     </div>
 
     <script>
+        function changePassword() {
+            document.getElementById('changePasswordModal').style.display = 'flex';
+            document.getElementById('changePasswordMessage').innerHTML = '';
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+        }
+
+        async function confirmChangePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const messageDiv = document.getElementById('changePasswordMessage');
+
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                messageDiv.innerHTML = '<div class="alert alert-error">All fields are required</div>';
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                messageDiv.innerHTML = '<div class="alert alert-error">New password must be at least 8 characters</div>';
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                messageDiv.innerHTML = '<div class="alert alert-error">New passwords do not match</div>';
+                return;
+            }
+
+            if (currentPassword === newPassword) {
+                messageDiv.innerHTML = '<div class="alert alert-error">New password must be different from current password</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'current_password=' + encodeURIComponent(currentPassword) +
+                          '&new_password=' + encodeURIComponent(newPassword),
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    messageDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                    setTimeout(() => {
+                        closeModal('changePasswordModal');
+                    }, 2000);
+                } else {
+                    messageDiv.innerHTML = '<div class="alert alert-error">' + data.error + '</div>';
+                }
+            } catch (error) {
+                messageDiv.innerHTML = '<div class="alert alert-error">Error: ' + error.message + '</div>';
+            }
+        }
+
         function enable2FA() {
             document.getElementById('enable2FAModal').style.display = 'flex';
         }
@@ -469,4 +564,97 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 </html>`
 
 	w.Write([]byte(html))
+}
+
+// handleChangePassword handles password change for users and admins
+func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
+	user, err := s.getUserFromSession(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Invalid form data",
+		})
+		return
+	}
+
+	currentPassword := r.FormValue("current_password")
+	newPassword := r.FormValue("new_password")
+
+	// Validate inputs
+	if currentPassword == "" || newPassword == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "All fields are required",
+		})
+		return
+	}
+
+	if len(newPassword) < 8 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "New password must be at least 8 characters",
+		})
+		return
+	}
+
+	if currentPassword == newPassword {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "New password must be different from current password",
+		})
+		return
+	}
+
+	// Verify current password
+	_, err = auth.AuthenticateUser(user.Email, currentPassword)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Current password is incorrect",
+		})
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := auth.HashPassword(newPassword)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Failed to hash password",
+		})
+		return
+	}
+
+	// Update password in database
+	if err := database.DB.UpdateUserPassword(user.Id, hashedPassword); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Failed to update password",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Password changed successfully",
+	})
 }

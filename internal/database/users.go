@@ -182,6 +182,12 @@ func (d *Database) UpdateUserLastOnline(id int) error {
 	return err
 }
 
+// UpdateUserPassword updates a user's password
+func (d *Database) UpdateUserPassword(id int, hashedPassword string) error {
+	_, err := d.db.Exec("UPDATE Users SET Password = ? WHERE Id = ?", hashedPassword, id)
+	return err
+}
+
 // UpdateUserStorage updates a user's storage usage
 func (d *Database) UpdateUserStorage(id int, storageUsedMB int64) error {
 	_, err := d.db.Exec("UPDATE Users SET StorageUsedMB = ? WHERE Id = ?", storageUsedMB, id)

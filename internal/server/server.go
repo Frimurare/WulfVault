@@ -73,6 +73,7 @@ func (s *Server) Start() error {
 	// User routes (require authentication)
 	mux.HandleFunc("/dashboard", s.requireAuth(s.handleUserDashboard))
 	mux.HandleFunc("/settings", s.requireAuth(s.handleUserSettings))
+	mux.HandleFunc("/change-password", s.requireAuth(s.handleChangePassword))
 	mux.HandleFunc("/upload", s.requireAuth(s.handleUpload))
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))

@@ -1,5 +1,35 @@
 # Changelog
 
+## [3.2-beta2] - 2025-11-12 🔑 Password Management Update
+
+### New Features
+- **🔑 Self-Service Password Change**: Users and admins can now change their own passwords
+  - Accessible from `/settings` page under "Security Settings"
+  - Requires current password verification for security
+  - Minimum 8 characters for new password
+  - Client-side and server-side validation
+  - Must be different from current password
+  - Instant feedback on success or errors
+
+### Implementation Details
+- **Route**: `/change-password` (POST, requires authentication)
+- **Handler**: `handleChangePassword` in `handlers_user_settings.go`
+- **Database**: New `UpdateUserPassword` method in `database/users.go`
+- **Security**: Current password must be verified before change
+- **Validation**:
+  - All fields required
+  - Min 8 characters
+  - New password ≠ current password
+  - Passwords must match (confirmation)
+
+### User Experience
+- Modal dialog for password change
+- Clear error messages for validation failures
+- Success message with auto-close (2 seconds)
+- Accessible to both users and admins from Settings page
+
+---
+
 ## [3.2-beta1] - 2025-11-12 🔐 Two-Factor Authentication (2FA) Beta Release
 
 ### New Features
