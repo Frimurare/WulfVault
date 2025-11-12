@@ -134,7 +134,7 @@ func AuthenticateUser(emailOrUsername, password string) (*models.User, error) {
 type AccountType string
 
 const (
-	AccountTypeUser           AccountType = "user"
+	AccountTypeUser            AccountType = "user"
 	AccountTypeDownloadAccount AccountType = "download_account"
 )
 

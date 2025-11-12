@@ -29,6 +29,17 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Add TOTP (Two-Factor Authentication) columns to Users table
+	if err := d.addColumnIfNotExists("Users", "TOTPSecret", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := d.addColumnIfNotExists("Users", "TOTPEnabled", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := d.addColumnIfNotExists("Users", "BackupCodes", "TEXT DEFAULT ''"); err != nil {
+		return err
+	}
+
 	log.Println("Database migrations completed successfully")
 	return nil
 }

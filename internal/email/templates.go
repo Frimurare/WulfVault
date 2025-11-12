@@ -357,9 +357,9 @@ Om du har frågor, vänligen kontakta oss.
 // SendPasswordResetEmail sends a password reset email with a humoristic/ironic tone
 func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
-	
+
 	subject := "Glömt lösenordet... igen? 🤔"
-	
+
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
 <html lang="sv">

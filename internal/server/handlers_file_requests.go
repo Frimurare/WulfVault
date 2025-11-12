@@ -129,13 +129,13 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 					<p style="color: #999; font-size: 12px;">This link will expire in 24 hours.</p>
 				</div>
 			`, html.EscapeString(title),
-			   func() string {
-				   if message != "" {
-					   return fmt.Sprintf("<p>%s</p>", html.EscapeString(message))
-				   }
-				   return ""
-			   }(),
-			   uploadURL, expireTime, uploadURL, uploadURL)
+				func() string {
+					if message != "" {
+						return fmt.Sprintf("<p>%s</p>", html.EscapeString(message))
+					}
+					return ""
+				}(),
+				uploadURL, expireTime, uploadURL, uploadURL)
 
 			textBody := fmt.Sprintf(`File Upload Request
 

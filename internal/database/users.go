@@ -45,15 +45,15 @@ func (d *Database) CreateUser(user *models.User) error {
 // GetUserByID retrieves a user by ID
 func (d *Database) GetUserByID(id int) (*models.User, error) {
 	user := &models.User{}
-	var resetPw, isActive int
+	var resetPw, isActive, totpEnabled int
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes
 		FROM Users WHERE Id = ?`, id).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
-		&user.CreatedAt, &isActive,
+		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 	)
 
 	if err != nil {
@@ -65,21 +65,22 @@ func (d *Database) GetUserByID(id int) (*models.User, error) {
 
 	user.ResetPassword = resetPw == 1
 	user.IsActive = isActive == 1
+	user.TOTPEnabled = totpEnabled == 1
 	return user, nil
 }
 
 // GetUserByEmail retrieves a user by email
 func (d *Database) GetUserByEmail(email string) (*models.User, error) {
 	user := &models.User{}
-	var resetPw, isActive int
+	var resetPw, isActive, totpEnabled int
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes
 		FROM Users WHERE Email = ?`, email).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
-		&user.CreatedAt, &isActive,
+		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 	)
 
 	if err != nil {
@@ -91,21 +92,22 @@ func (d *Database) GetUserByEmail(email string) (*models.User, error) {
 
 	user.ResetPassword = resetPw == 1
 	user.IsActive = isActive == 1
+	user.TOTPEnabled = totpEnabled == 1
 	return user, nil
 }
 
 // GetUserByName retrieves a user by username
 func (d *Database) GetUserByName(name string) (*models.User, error) {
 	user := &models.User{}
-	var resetPw, isActive int
+	var resetPw, isActive, totpEnabled int
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes
 		FROM Users WHERE Name = ?`, name).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
-		&user.CreatedAt, &isActive,
+		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 	)
 
 	if err != nil {
@@ -117,6 +119,7 @@ func (d *Database) GetUserByName(name string) (*models.User, error) {
 
 	user.ResetPassword = resetPw == 1
 	user.IsActive = isActive == 1
+	user.TOTPEnabled = totpEnabled == 1
 	return user, nil
 }
 

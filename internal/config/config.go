@@ -10,18 +10,18 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	ServerURL            string `json:"serverUrl"`
-	Port                 string `json:"port"`
-	DataDir              string `json:"dataDir"`
-	UploadsDir           string `json:"uploadsDir"`
-	MaxFileSizeMB        int    `json:"maxFileSizeMB"`
-	MaxUploadSizeMB      int    `json:"maxUploadSizeMB"`
-	DefaultQuotaMB       int64  `json:"defaultQuotaMB"`
-	SessionTimeoutHours  int    `json:"sessionTimeoutHours"`
-	TrashRetentionDays   int    `json:"trashRetentionDays"`
-	SaveIP               bool   `json:"saveIp"`
-	Version              string `json:"-"` // Runtime version, not persisted
-	models.Branding      `json:"branding"`
+	ServerURL           string `json:"serverUrl"`
+	Port                string `json:"port"`
+	DataDir             string `json:"dataDir"`
+	UploadsDir          string `json:"uploadsDir"`
+	MaxFileSizeMB       int    `json:"maxFileSizeMB"`
+	MaxUploadSizeMB     int    `json:"maxUploadSizeMB"`
+	DefaultQuotaMB      int64  `json:"defaultQuotaMB"`
+	SessionTimeoutHours int    `json:"sessionTimeoutHours"`
+	TrashRetentionDays  int    `json:"trashRetentionDays"`
+	SaveIP              bool   `json:"saveIp"`
+	Version             string `json:"-"` // Runtime version, not persisted
+	models.Branding     `json:"branding"`
 }
 
 var Current *Config

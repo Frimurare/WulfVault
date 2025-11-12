@@ -48,6 +48,13 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/d/", s.handleDownload)
 	mux.HandleFunc("/health", s.handleHealth)
 
+	// 2FA routes
+	mux.HandleFunc("/2fa/verify", s.handle2FAVerify)
+	mux.HandleFunc("/2fa/setup", s.requireAuth(s.handle2FASetup))
+	mux.HandleFunc("/2fa/enable", s.requireAuth(s.handle2FAEnable))
+	mux.HandleFunc("/2fa/disable", s.requireAuth(s.handle2FADisable))
+	mux.HandleFunc("/2fa/regenerate-backup-codes", s.requireAuth(s.handle2FARegenerateBackupCodes))
+
 	// Public file request routes
 	mux.HandleFunc("/upload-request/", s.handleUploadRequest)
 
@@ -65,6 +72,7 @@ func (s *Server) Start() error {
 
 	// User routes (require authentication)
 	mux.HandleFunc("/dashboard", s.requireAuth(s.handleUserDashboard))
+	mux.HandleFunc("/settings", s.requireAuth(s.handleUserSettings))
 	mux.HandleFunc("/upload", s.requireAuth(s.handleUpload))
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
@@ -113,8 +121,8 @@ func (s *Server) Start() error {
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           s.loggingMiddleware(mux),
-		ReadHeaderTimeout: 60 * time.Second, // Time to read request headers only (not body)
-		WriteTimeout:      8 * time.Hour,    // Extended for very large file uploads on slow connections (up to 8 hours)
+		ReadHeaderTimeout: 60 * time.Second,  // Time to read request headers only (not body)
+		WriteTimeout:      8 * time.Hour,     // Extended for very large file uploads on slow connections (up to 8 hours)
 		IdleTimeout:       120 * time.Second, // Keep-alive timeout
 	}
 
@@ -211,9 +219,9 @@ func (s *Server) getPrimaryColor() string {
 	color := s.config.PrimaryColor
 	// Reject empty, white, or near-white colors
 	if color == "" || color == "#ffffff" || color == "#fff" ||
-	   color == "#FFFFFF" || color == "#FFF" ||
-	   color == "white" || color == "White" || color == "WHITE" ||
-	   color == "#fefefe" || color == "#FEFEFE" {
+		color == "#FFFFFF" || color == "#FFF" ||
+		color == "white" || color == "White" || color == "WHITE" ||
+		color == "#fefefe" || color == "#FEFEFE" {
 		return "#2563eb" // Default blue
 	}
 	return color
@@ -223,9 +231,9 @@ func (s *Server) getSecondaryColor() string {
 	color := s.config.SecondaryColor
 	// Reject empty, white, or near-white colors
 	if color == "" || color == "#ffffff" || color == "#fff" ||
-	   color == "#FFFFFF" || color == "#FFF" ||
-	   color == "white" || color == "White" || color == "WHITE" ||
-	   color == "#fefefe" || color == "#FEFEFE" {
+		color == "#FFFFFF" || color == "#FFF" ||
+		color == "white" || color == "White" || color == "WHITE" ||
+		color == "#fefefe" || color == "#FEFEFE" {
 		return "#1e40af" // Default darker blue
 	}
 	return color

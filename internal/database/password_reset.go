@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	AccountTypeUser           = "user"
+	AccountTypeUser            = "user"
 	AccountTypeDownloadAccount = "download_account"
-	ResetTokenDuration        = 1 * time.Hour
+	ResetTokenDuration         = 1 * time.Hour
 )
 
 // PasswordResetToken represents a password reset token

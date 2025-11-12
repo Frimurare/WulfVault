@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -41,7 +43,29 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		// Regular user login
 		user := authResult.User
 
-		// Create session
+		// Check if 2FA is enabled for this user
+		if user.TOTPEnabled {
+			// Store user ID in temporary cookie and redirect to 2FA verification
+			pendingData := map[string]interface{}{
+				"user_id":    user.Id,
+				"created_at": time.Now().Unix(),
+			}
+			pendingJSON, _ := json.Marshal(pendingData)
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "totp_pending",
+				Value:    base64.StdEncoding.EncodeToString(pendingJSON),
+				Path:     "/",
+				Expires:  time.Now().Add(5 * time.Minute),
+				HttpOnly: true,
+				SameSite: http.SameSiteStrictMode,
+			})
+
+			http.Redirect(w, r, "/2fa/verify", http.StatusSeeOther)
+			return
+		}
+
+		// No 2FA, create session directly
 		sessionID, err := auth.CreateSession(user.Id)
 		if err != nil {
 			s.renderLoginPage(w, r, "Failed to create session")

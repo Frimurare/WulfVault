@@ -14,15 +14,15 @@ import (
 
 // EmailConfigRequest represents a request for email configuration
 type EmailConfigRequest struct {
-	Provider         string `json:"provider"`         // "brevo" or "smtp"
-	ApiKey           string `json:"apiKey"`           // For Brevo
-	SMTPHost         string `json:"smtpHost"`         // For SMTP
-	SMTPPort         int    `json:"smtpPort"`         // For SMTP
-	SMTPUsername     string `json:"smtpUsername"`     // For SMTP
-	SMTPPassword     string `json:"smtpPassword"`     // For SMTP
-	SMTPUseTLS       bool   `json:"smtpUseTLS"`       // For SMTP
-	FromEmail        string `json:"fromEmail"`        // Common
-	FromName         string `json:"fromName"`         // Common
+	Provider     string `json:"provider"`     // "brevo" or "smtp"
+	ApiKey       string `json:"apiKey"`       // For Brevo
+	SMTPHost     string `json:"smtpHost"`     // For SMTP
+	SMTPPort     int    `json:"smtpPort"`     // For SMTP
+	SMTPUsername string `json:"smtpUsername"` // For SMTP
+	SMTPPassword string `json:"smtpPassword"` // For SMTP
+	SMTPUseTLS   bool   `json:"smtpUseTLS"`   // For SMTP
+	FromEmail    string `json:"fromEmail"`    // Common
+	FromName     string `json:"fromName"`     // Common
 }
 
 // handleEmailConfigure handles configuration of email settings

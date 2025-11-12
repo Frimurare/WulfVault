@@ -1389,15 +1389,15 @@ func (s *Server) performDownloadWithRedirect(w http.ResponseWriter, r *http.Requ
 
 	// Create download log
 	downloadLog := &models.DownloadLog{
-		FileId:          fileInfo.Id,
-		FileName:        fileInfo.Name,
-		FileSize:        fileInfo.SizeBytes,
-		DownloadedAt:    time.Now().Unix(),
-		IpAddress:       r.RemoteAddr,
-		UserAgent:       r.UserAgent(),
-		IsAuthenticated: true,
+		FileId:            fileInfo.Id,
+		FileName:          fileInfo.Name,
+		FileSize:          fileInfo.SizeBytes,
+		DownloadedAt:      time.Now().Unix(),
+		IpAddress:         r.RemoteAddr,
+		UserAgent:         r.UserAgent(),
+		IsAuthenticated:   true,
 		DownloadAccountId: account.Id,
-		Email:           account.Email,
+		Email:             account.Email,
 	}
 
 	if err := database.DB.CreateDownloadLog(downloadLog); err != nil {
