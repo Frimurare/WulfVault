@@ -26,6 +26,9 @@ Thumbs.db
 # Go
 vendor/
 
+# Node
+node_modules/
+
 # Config
 config.json
 *.local.yaml

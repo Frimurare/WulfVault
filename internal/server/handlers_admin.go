@@ -1390,16 +1390,25 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
     </div>
 
     <script>
-        function deleteUser(id) {
+        async function deleteUser(id) {
             if (!confirm('Are you sure you want to delete this user?\n\nIf you choose yes, the account will be deleted and all the user\'s uploaded files will be available in the trash for 5 days if not deleted manually.')) return;
 
-            fetch('/admin/users/delete', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'id=' + id
-            })
-            .then(() => window.location.reload())
-            .catch(err => alert('Error deleting user'));
+            try {
+                const response = await fetch('/admin/users/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'id=' + id
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error deleting user: ' + error.message);
+            }
         }
 
         function toggleDownloadAccount(id, isActive) {
@@ -1733,7 +1742,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
 	for _, f := range files {
 		// Get user info
-		userName := "Unknown"
+		userName := "Deleted user"
 		user, err := database.DB.GetUserByID(f.UserId)
 		if err == nil {
 			userName = user.Name
@@ -2475,7 +2484,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 
 	for _, f := range files {
 		// Get user info
-		userName := "Unknown"
+		userName := "Deleted user"
 		user, err := database.DB.GetUserByID(f.UserId)
 		if err == nil {
 			userName = user.Name
