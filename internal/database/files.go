@@ -193,6 +193,14 @@ func (d *Database) DeleteFile(fileId string, userId int) error {
 	return err
 }
 
+// SoftDeleteUserFiles soft-deletes all files belonging to a user (moves to trash)
+// This is used when deleting a user account to preserve files in trash
+func (d *Database) SoftDeleteUserFiles(userId int, deletedBy int) error {
+	now := time.Now().Unix()
+	_, err := d.db.Exec("UPDATE Files SET DeletedAt = ?, DeletedBy = ? WHERE UserId = ? AND DeletedAt = 0", now, deletedBy, userId)
+	return err
+}
+
 // PermanentDeleteFile permanently deletes a file from the database
 func (d *Database) PermanentDeleteFile(fileId string) error {
 	// First delete associated download logs to avoid foreign key constraint violation
