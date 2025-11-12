@@ -1,10 +1,10 @@
 # Sharecare - Enterprise File Sharing Platform
 
-**Version 3.2 Beta 2** | **Beta Testing** | **Self-Hosted** | **Open Source**
+**Version 3.2.2-RC3** | **Release Candidate** | **Self-Hosted** | **Open Source**
 
-Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare eliminates the need for expensive cloud-based file transfer services while providing enterprise features like multi-user management, granular storage quotas, comprehensive audit trails, and automatic password reset functionality.
+Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare provides a complete alternative to commercial services like WeTransfer and Sprend, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
-**Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, and any organization handling sensitive or large files that require detailed download tracking and GDPR compliance.
+**Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
 **Based on [Gokapi](https://github.com/Forceu/Gokapi)** - See [NOTICE.md](NOTICE.md) for attribution.
 
@@ -29,43 +29,134 @@ Sharecare solves this by providing:
 
 ## Key Features
 
-### File Sharing
-- Drag-and-drop upload interface
-- Files up to 5GB+ (configurable, tested with large video files)
-- Two link types:
-  - **Authenticated downloads** - Recipient creates account (email + password)
-  - **Direct links** - No authentication required
-- Password protection for sensitive files
-- Expiring shares - auto-delete after X downloads or Y days
-- Upload requests - Allow others to upload files to you
+### 🚀 File Sharing & Transfer
+- **Drag-and-drop upload interface** - Modern, intuitive file upload experience
+- **Large file support** - Files up to 5GB+ (configurable, tested with video surveillance footage)
+- **Two sharing modes:**
+  - **Authenticated downloads** - Recipients create secure download accounts (email + password)
+  - **Direct download links** - No authentication required for quick sharing
+- **Password-protected files** - Add extra security layer with password protection per file
+- **Expiring shares** - Auto-delete after X downloads or Y days (or both)
+- **Custom expiration settings** - Flexible download limits (1-999) and date-based expiration
+- **Upload request portals** - Create shareable links for others to upload files to you
+- **Email integration** - Send download links directly via email with customizable templates
+- **File preview & metadata** - View file details, size, upload date, and download statistics
+- **Trash system** - Deleted files kept for configurable retention period (1-365 days) with restore capability
 
-### User Management
-- **Admin users** - Full system access, manage users, view all files
-- **Regular users** - Upload and share files within their quota
-- **Download accounts** - Automatically created for authenticated downloads
-- Per-user storage quotas (configurable individually)
-- Active/inactive user status
+### 👥 User Management & Access Control
+- **Role-based access:**
+  - **Super Admin** - Full system control, user management, branding, settings
+  - **Admin users** - Manage users and view all files across the system
+  - **Regular users** - Upload and share files within their storage quota
+  - **Download accounts** - Automatically created for authenticated downloads with self-service portal
+- **Per-user storage quotas** - Individually configurable storage limits (MB to TB)
+- **User dashboard** - Real-time quota usage, file management, and download statistics
+- **Active/inactive status** - Temporarily disable users without deletion
+- **Bulk user operations** - Efficient management of multiple users
+- **Download account portal** - Recipients can view their download history and manage their accounts
 
-### Download Tracking & Accountability
-- Know exactly **who** downloaded files (email address for authenticated downloads)
-- See **when** files were downloaded (timestamps)
-- Track **from where** downloads originated (IP addresses)
-- Complete audit trail for compliance and evidence chains
-- Downloadable download history per file
+### 📊 Download Tracking & Accountability
+- **Complete audit trail:**
+  - Track exactly **who** downloaded files (email addresses for authenticated downloads)
+  - Record **when** downloads occurred (precise timestamps)
+  - Log **from where** downloads originated (IP addresses with configurable privacy controls)
+- **Per-file download history** - View detailed download logs for each file
+- **Exportable reports** - Download tracking data in CSV format for compliance
+- **Real-time statistics** - Dashboard shows total files, downloads, and storage usage
+- **Download count limits** - Automatically expire files after reaching download threshold
+- **Email notifications** - Optional notifications when files are downloaded (configurable)
 
-### Security & Privacy
-- bcrypt password hashing (cost factor 12)
-- Session management with automatic expiration (24 hours)
-- Secure random hash generation for download links
-- Optional password protection per file
-- IP address logging for audit trails
-- SameSite cookies for CSRF protection
+### 🔐 Security & Authentication
+- **Two-Factor Authentication (2FA):**
+  - TOTP-based (compatible with Google Authenticator, Authy, etc.)
+  - Backup codes for account recovery
+  - Regenerable backup codes with old code invalidation
+  - Per-user 2FA enrollment
+- **Password security:**
+  - bcrypt hashing with cost factor 12
+  - Self-service password change for all user types
+  - Password reset via email with secure tokens (24-hour expiration)
+  - Minimum password length enforcement (8 characters)
+- **Session management:**
+  - Secure session cookies with automatic expiration (24 hours configurable)
+  - SameSite cookies for CSRF protection
+  - Secure logout with session invalidation
+- **File access control:**
+  - Secure random hash generation for download links (128-bit entropy)
+  - Optional password protection per file
+  - Automatic link expiration
+  - No file enumeration or directory listing
+- **Privacy controls:**
+  - Optional IP address logging (GDPR-configurable)
+  - GDPR-compliant download account self-deletion
+  - Self-service data export for download accounts
 
-### Customization
-- Custom branding - Upload logo, set colors and company name
-- Configurable trash retention (1-365 days)
-- Automated cleanup of expired files
-- Flexible file size limits and storage quotas
+### 🎨 Branding & Customization
+- **Full branding control:**
+  - Upload custom logo (replaces default Sharecare branding)
+  - Custom primary and secondary colors for entire interface
+  - Custom company name displayed throughout system
+  - Branded download pages shown to all recipients
+- **Configurable system settings:**
+  - Trash retention period (1-365 days)
+  - Default storage quota for new users
+  - Maximum file size limits
+  - Server URL and port configuration
+- **Automated maintenance:**
+  - Scheduled cleanup of expired files
+  - Automatic trash purging based on retention policy
+  - Database optimization and maintenance
+
+### 🌐 Email & Notifications
+- **Multiple email providers:**
+  - SMTP configuration for self-hosted email
+  - Brevo (SendInBlue) API integration for transactional email
+  - Encrypted credential storage
+  - Test email functionality before deployment
+- **Email templates:**
+  - Password reset emails with secure tokens
+  - File sharing notifications with download links
+  - Custom branding in all email communications
+  - Professional HTML email templates
+- **Email tracking:**
+  - Log all sent emails with timestamps
+  - Track email delivery status
+  - Audit trail for compliance
+
+### 📁 File Request System
+- **Inbound file collection:**
+  - Create upload request links for receiving files from others
+  - Customizable upload limits (file size and count)
+  - Expiration dates for upload requests
+  - Password protection for upload portals
+- **Use cases:**
+  - Collect files from customers or contractors
+  - Receive large files without email attachments
+  - Temporary upload portals with time limits
+  - Anonymous file submission with accountability
+
+### 🔧 Administration & Management
+- **Comprehensive admin dashboard:**
+  - System-wide statistics (total files, downloads, users, storage)
+  - Recent activity monitoring
+  - User growth analytics
+  - Quick access to all management functions
+- **File management:**
+  - View all files across all users
+  - Search and filter capabilities
+  - Delete files with trash safety net
+  - Restore accidentally deleted files
+  - Permanent deletion from trash
+- **User administration:**
+  - Create, edit, and delete users
+  - Manage download accounts
+  - Adjust quotas on the fly
+  - Toggle user active/inactive status
+- **System settings:**
+  - Configure server URL and port
+  - Set system-wide defaults
+  - Manage trash retention
+  - Control privacy and logging settings
 
 ---
 

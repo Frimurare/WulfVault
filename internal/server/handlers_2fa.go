@@ -1,3 +1,8 @@
+// Sharecare - Secure File Transfer System
+// Copyright (c) 2025 Ulf Holmström (Frimurare)
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// You must retain this notice in any copy or derivative work.
+
 package server
 
 import (
@@ -339,6 +344,7 @@ func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, err
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Two-Factor Authentication - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

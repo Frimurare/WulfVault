@@ -1,3 +1,8 @@
+// Sharecare - Secure File Transfer System
+// Copyright (c) 2025 Ulf Holmström (Frimurare)
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// You must retain this notice in any copy or derivative work.
+
 package server
 
 import (
@@ -432,6 +437,7 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, account *
 	html := `<!DOCTYPE html>
 <html>
 <head>
+    <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -891,6 +897,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Admin Dashboard - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1194,6 +1201,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
     <title>Manage Users - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1433,6 +1441,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 	html := `<!DOCTYPE html>
 <html>
 <head>
+    <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1580,6 +1589,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
     <title>All Files - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1928,6 +1938,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
     <title>Branding Settings - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2106,6 +2117,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
     <title>Settings - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2279,8 +2291,8 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
         */
     </script>
 
-    <div style="text-align: center; padding: 20px; margin-top: 40px; color: #999; font-size: 12px;">
-        Sharecare Powered by <a href="https://github.com/Frimurare/Sharecare" target="_blank" style="color: #999; text-decoration: none;">Manvarg</a>
+    <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
+        Powered by Sharecare © Ulf Holmström – GPL-3.0
     </div>
 </body>
 </html>`
@@ -2295,6 +2307,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
     <title>Trash - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

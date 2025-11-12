@@ -1,3 +1,8 @@
+// Sharecare - Secure File Transfer System
+// Copyright (c) 2025 Ulf Holmström (Frimurare)
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// You must retain this notice in any copy or derivative work.
+
 package server
 
 import (
@@ -502,6 +507,7 @@ func (s *Server) renderUploadRequestPage(w http.ResponseWriter, fileRequest *mod
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Upload File - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -775,6 +781,7 @@ func (s *Server) renderUploadRequestExpired(w http.ResponseWriter, fileRequest *
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Request Expired - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -842,6 +849,7 @@ func (s *Server) renderUploadRequestUsed(w http.ResponseWriter, fileRequest *mod
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Link Already Used - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

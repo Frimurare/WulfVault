@@ -1,3 +1,8 @@
+// Sharecare - Secure File Transfer System
+// Copyright (c) 2025 Ulf Holmström (Frimurare)
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// You must retain this notice in any copy or derivative work.
+
 package config
 
 import (
@@ -25,6 +30,9 @@ type Config struct {
 }
 
 var Current *Config
+
+// SharecareSignature is the watermark constant for attribution
+const SharecareSignature = "Sharecare::UlfHolmström::2025"
 
 // LoadOrCreate loads configuration from file or creates default
 func LoadOrCreate(dataDir string) (*Config, error) {
