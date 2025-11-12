@@ -475,7 +475,7 @@ Sharecare/
 │   ├── static/         # CSS, JavaScript, images
 │   └── templates/      # HTML templates
 ├── INSTALLATION.md     # Detailed installation guide
-├── LICENSE            # AGPL-3.0 license
+├── LICENSE            # GPL-3.0 license
 └── README.md          # This file
 ```
 
@@ -491,9 +491,9 @@ Contributions welcome! Please:
 
 ## License
 
-This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
+This project is licensed under the **GPL-3.0** license - see [LICENSE](LICENSE) for details.
 
-Based on **Gokapi** by Forceu - https://github.com/Forceu/Gokapi
+**Architecturally inspired by Gokapi** by Forceu - https://github.com/Forceu/Gokapi
 
 See [NOTICE.md](NOTICE.md) for full attribution and license information.
 
