@@ -297,3 +297,83 @@ func (d *Database) GetUserGrowthPercentage() (float64, error) {
 	growth := float64(usersNow-usersAtStart) / float64(usersAtStart) * 100
 	return growth, nil
 }
+
+// ============================================================================
+// SECURITY STATISTICS
+// ============================================================================
+
+// Get2FAAdoptionRate returns the percentage of Users and Admins who have enabled 2FA
+func (d *Database) Get2FAAdoptionRate() (float64, error) {
+	var totalUsers, usersWithTOTP int
+
+	// Count total Users and Admins (exclude Download accounts which don't have AccountType field)
+	err := d.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM Users
+		WHERE AccountType IN ('User', 'Admin')
+	`).Scan(&totalUsers)
+	if err != nil {
+		return 0, err
+	}
+
+	if totalUsers == 0 {
+		return 0, nil
+	}
+
+	// Count users with TOTP enabled
+	err = d.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM Users
+		WHERE AccountType IN ('User', 'Admin') AND TOTPEnabled = 1
+	`).Scan(&usersWithTOTP)
+	if err != nil {
+		return 0, err
+	}
+
+	adoption := float64(usersWithTOTP) / float64(totalUsers) * 100
+	return adoption, nil
+}
+
+// GetAverageBackupCodesRemaining returns the average number of backup codes remaining per user with 2FA enabled
+func (d *Database) GetAverageBackupCodesRemaining() (float64, error) {
+	rows, err := d.db.Query(`
+		SELECT BackupCodes
+		FROM Users
+		WHERE TOTPEnabled = 1 AND BackupCodes != ''
+	`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	totalCodes := 0
+	userCount := 0
+
+	for rows.Next() {
+		var backupCodesJSON string
+		if err := rows.Scan(&backupCodesJSON); err != nil {
+			continue
+		}
+
+		// Count non-empty codes in JSON array (simple count of commas + 1)
+		// More accurate would be to parse JSON, but this is lightweight
+		if backupCodesJSON != "" && backupCodesJSON != "[]" {
+			// Rough estimate: count opening brackets for hashed codes
+			// Each code looks like "$2a$12$..." so count "$2a$" occurrences
+			count := 0
+			for i := 0; i < len(backupCodesJSON)-3; i++ {
+				if backupCodesJSON[i:i+4] == "$2a$" {
+					count++
+				}
+			}
+			totalCodes += count
+			userCount++
+		}
+	}
+
+	if userCount == 0 {
+		return 10.0, nil // Default: assume full set if no one has used any
+	}
+
+	return float64(totalCodes) / float64(userCount), rows.Err()
+}

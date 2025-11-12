@@ -311,7 +311,7 @@ func (d *Database) DeleteDownloadAccount(id int) error {
 	return err
 }
 
-// GetBytesSentToday returns total bytes transferred today
+// GetBytesSentToday returns total bytes transferred today (includes deleted files for historical accuracy)
 func (d *Database) GetBytesSentToday() (int64, error) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix()
@@ -326,7 +326,7 @@ func (d *Database) GetBytesSentToday() (int64, error) {
 	return total, err
 }
 
-// GetBytesSentThisWeek returns total bytes transferred this week
+// GetBytesSentThisWeek returns total bytes transferred this week (includes deleted files for historical accuracy)
 func (d *Database) GetBytesSentThisWeek() (int64, error) {
 	now := time.Now()
 	weekday := int(now.Weekday())
@@ -346,7 +346,7 @@ func (d *Database) GetBytesSentThisWeek() (int64, error) {
 	return total, err
 }
 
-// GetBytesSentThisMonth returns total bytes transferred this month
+// GetBytesSentThisMonth returns total bytes transferred this month (includes deleted files for historical accuracy)
 func (d *Database) GetBytesSentThisMonth() (int64, error) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
@@ -361,7 +361,7 @@ func (d *Database) GetBytesSentThisMonth() (int64, error) {
 	return total, err
 }
 
-// GetBytesSentThisYear returns total bytes transferred this year
+// GetBytesSentThisYear returns total bytes transferred this year (includes deleted files for historical accuracy)
 func (d *Database) GetBytesSentThisYear() (int64, error) {
 	now := time.Now()
 	startOfYear := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()).Unix()
@@ -376,7 +376,7 @@ func (d *Database) GetBytesSentThisYear() (int64, error) {
 	return total, err
 }
 
-// GetBytesUploadedToday returns total bytes uploaded today
+// GetBytesUploadedToday returns total bytes uploaded today (includes deleted files for historical accuracy)
 func (d *Database) GetBytesUploadedToday() (int64, error) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix()
@@ -385,12 +385,12 @@ func (d *Database) GetBytesUploadedToday() (int64, error) {
 	err := d.db.QueryRow(`
 		SELECT COALESCE(SUM(SizeBytes), 0)
 		FROM Files
-		WHERE UploadDate >= ? AND DeletedAt = 0
+		WHERE UploadDate >= ?
 	`, startOfDay).Scan(&total)
 	return total, err
 }
 
-// GetBytesUploadedThisWeek returns total bytes uploaded this week
+// GetBytesUploadedThisWeek returns total bytes uploaded this week (includes deleted files for historical accuracy)
 func (d *Database) GetBytesUploadedThisWeek() (int64, error) {
 	now := time.Now()
 	weekday := int(now.Weekday())
@@ -404,12 +404,12 @@ func (d *Database) GetBytesUploadedThisWeek() (int64, error) {
 	err := d.db.QueryRow(`
 		SELECT COALESCE(SUM(SizeBytes), 0)
 		FROM Files
-		WHERE UploadDate >= ? AND DeletedAt = 0
+		WHERE UploadDate >= ?
 	`, startOfWeek.Unix()).Scan(&total)
 	return total, err
 }
 
-// GetBytesUploadedThisMonth returns total bytes uploaded this month
+// GetBytesUploadedThisMonth returns total bytes uploaded this month (includes deleted files for historical accuracy)
 func (d *Database) GetBytesUploadedThisMonth() (int64, error) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
@@ -418,12 +418,12 @@ func (d *Database) GetBytesUploadedThisMonth() (int64, error) {
 	err := d.db.QueryRow(`
 		SELECT COALESCE(SUM(SizeBytes), 0)
 		FROM Files
-		WHERE UploadDate >= ? AND DeletedAt = 0
+		WHERE UploadDate >= ?
 	`, startOfMonth).Scan(&total)
 	return total, err
 }
 
-// GetBytesUploadedThisYear returns total bytes uploaded this year
+// GetBytesUploadedThisYear returns total bytes uploaded this year (includes deleted files for historical accuracy)
 func (d *Database) GetBytesUploadedThisYear() (int64, error) {
 	now := time.Now()
 	startOfYear := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()).Unix()
@@ -432,7 +432,216 @@ func (d *Database) GetBytesUploadedThisYear() (int64, error) {
 	err := d.db.QueryRow(`
 		SELECT COALESCE(SUM(SizeBytes), 0)
 		FROM Files
-		WHERE UploadDate >= ? AND DeletedAt = 0
+		WHERE UploadDate >= ?
 	`, startOfYear).Scan(&total)
 	return total, err
+}
+
+// ============================================================================
+// USAGE STATISTICS
+// ============================================================================
+
+// GetActiveFilesLast7Days returns the count of files that have been downloaded in the last 7 days
+func (d *Database) GetActiveFilesLast7Days() (int, error) {
+	sevenDaysAgo := time.Now().AddDate(0, 0, -7).Unix()
+
+	var count int
+	err := d.db.QueryRow(`
+		SELECT COUNT(DISTINCT FileId)
+		FROM DownloadLogs
+		WHERE DownloadedAt >= ?
+	`, sevenDaysAgo).Scan(&count)
+	return count, err
+}
+
+// GetActiveFilesLast30Days returns the count of files that have been downloaded in the last 30 days
+func (d *Database) GetActiveFilesLast30Days() (int, error) {
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30).Unix()
+
+	var count int
+	err := d.db.QueryRow(`
+		SELECT COUNT(DISTINCT FileId)
+		FROM DownloadLogs
+		WHERE DownloadedAt >= ?
+	`, thirtyDaysAgo).Scan(&count)
+	return count, err
+}
+
+// GetAverageFileSize returns the average file size in bytes (excluding deleted files)
+func (d *Database) GetAverageFileSize() (int64, error) {
+	var avg int64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(AVG(SizeBytes), 0)
+		FROM Files
+		WHERE DeletedAt = 0
+	`).Scan(&avg)
+	return avg, err
+}
+
+// GetAverageDownloadsPerFile returns the average number of downloads per file
+func (d *Database) GetAverageDownloadsPerFile() (float64, error) {
+	var avg float64
+	err := d.db.QueryRow(`
+		SELECT COALESCE(AVG(download_count), 0)
+		FROM (
+			SELECT FileId, COUNT(*) as download_count
+			FROM DownloadLogs
+			GROUP BY FileId
+		)
+	`).Scan(&avg)
+	return avg, err
+}
+
+// ============================================================================
+// FILE STATISTICS
+// ============================================================================
+
+// GetLargestFile returns the name and size of the largest file
+func (d *Database) GetLargestFile() (string, int64, error) {
+	var name string
+	var size int64
+
+	err := d.db.QueryRow(`
+		SELECT FileName, SizeBytes
+		FROM Files
+		WHERE DeletedAt = 0
+		ORDER BY SizeBytes DESC
+		LIMIT 1
+	`).Scan(&name, &size)
+
+	if err == sql.ErrNoRows {
+		return "N/A", 0, nil
+	}
+	return name, size, err
+}
+
+// GetMostActiveUser returns the username who has uploaded the most files
+func (d *Database) GetMostActiveUser() (string, int, error) {
+	var username string
+	var fileCount int
+
+	err := d.db.QueryRow(`
+		SELECT u.Name, COUNT(f.Id) as file_count
+		FROM Files f
+		JOIN Users u ON f.CreatedBy = u.Id
+		WHERE f.DeletedAt = 0
+		GROUP BY f.CreatedBy, u.Name
+		ORDER BY file_count DESC
+		LIMIT 1
+	`).Scan(&username, &fileCount)
+
+	if err == sql.ErrNoRows {
+		return "N/A", 0, nil
+	}
+	return username, fileCount, err
+}
+
+// ============================================================================
+// TREND DATA
+// ============================================================================
+
+// GetTopFileTypes returns the top 3 most common file types (by extension)
+func (d *Database) GetTopFileTypes() ([]string, []int, error) {
+	rows, err := d.db.Query(`
+		SELECT
+			CASE
+				WHEN INSTR(FileName, '.') > 0
+				THEN SUBSTR(FileName, INSTR(FileName, '.') + 1)
+				ELSE 'no extension'
+			END as extension,
+			COUNT(*) as count
+		FROM Files
+		WHERE DeletedAt = 0
+		GROUP BY extension
+		ORDER BY count DESC
+		LIMIT 3
+	`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var extensions []string
+	var counts []int
+
+	for rows.Next() {
+		var ext string
+		var count int
+		if err := rows.Scan(&ext, &count); err != nil {
+			return nil, nil, err
+		}
+		extensions = append(extensions, ext)
+		counts = append(counts, count)
+	}
+
+	if len(extensions) == 0 {
+		return []string{"N/A"}, []int{0}, nil
+	}
+
+	return extensions, counts, rows.Err()
+}
+
+// GetMostActiveWeekday returns the weekday with the most downloads
+func (d *Database) GetMostActiveWeekday() (string, int, error) {
+	// SQLite doesn't have built-in day name function, so we'll get day number and convert
+	rows, err := d.db.Query(`
+		SELECT strftime('%w', datetime(DownloadedAt, 'unixepoch')) as day_num, COUNT(*) as count
+		FROM DownloadLogs
+		GROUP BY day_num
+		ORDER BY count DESC
+		LIMIT 1
+	`)
+	if err != nil {
+		return "N/A", 0, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return "N/A", 0, nil
+	}
+
+	var dayNum string
+	var count int
+	if err := rows.Scan(&dayNum, &count); err != nil {
+		return "N/A", 0, err
+	}
+
+	// Convert day number to name (0=Sunday, 1=Monday, etc.)
+	dayNames := []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+	dayIndex := 0
+	if dayNum != "" && dayNum >= "0" && dayNum <= "6" {
+		dayIndex = int(dayNum[0] - '0')
+	}
+
+	return dayNames[dayIndex], count, nil
+}
+
+// GetStorageTrendLastMonth returns total storage used 30 days ago vs now (in bytes)
+func (d *Database) GetStorageTrendLastMonth() (int64, int64, error) {
+	now := time.Now()
+	thirtyDaysAgo := now.AddDate(0, 0, -30).Unix()
+
+	var storageThirtyDaysAgo, storageNow int64
+
+	// Storage 30 days ago (files uploaded before that time and not yet deleted)
+	err := d.db.QueryRow(`
+		SELECT COALESCE(SUM(SizeBytes), 0)
+		FROM Files
+		WHERE UploadDate < ? AND (DeletedAt = 0 OR DeletedAt >= ?)
+	`, thirtyDaysAgo, thirtyDaysAgo).Scan(&storageThirtyDaysAgo)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Storage now (files not deleted)
+	err = d.db.QueryRow(`
+		SELECT COALESCE(SUM(SizeBytes), 0)
+		FROM Files
+		WHERE DeletedAt = 0
+	`).Scan(&storageNow)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return storageThirtyDaysAgo, storageNow, nil
 }
