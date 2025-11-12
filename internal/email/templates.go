@@ -359,6 +359,163 @@ Om du har frågor, vänligen kontakta oss.
 `, accountName)
 }
 
+// SendWelcomeEmail sends a welcome email to newly created users with password setup link
+func SendWelcomeEmail(email, resetToken, serverURL, companyName, logoData string) error {
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
+
+	subject := fmt.Sprintf("Welcome to %s - Set Your Password", companyName)
+
+	// Build logo HTML if provided
+	logoHTML := ""
+	if logoData != "" {
+		logoHTML = fmt.Sprintf(`<div style="text-align: center; margin-bottom: 20px;">
+			<img src="%s" alt="%s" style="max-height: 80px; max-width: 300px;">
+		</div>`, logoData, companyName)
+	}
+
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header {
+			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+			color: white;
+			padding: 30px;
+			border-radius: 10px 10px 0 0;
+			text-align: center;
+		}
+		.header h1 { margin: 0; font-size: 28px; }
+		.header p { margin: 10px 0 0 0; opacity: 0.9; }
+		.content {
+			background: #f9f9f9;
+			padding: 30px;
+			border-radius: 0 0 10px 10px;
+		}
+		.welcome-box {
+			background: #d4edda;
+			border-left: 4px solid #28a745;
+			padding: 20px;
+			margin: 20px 0;
+			border-radius: 5px;
+		}
+		.welcome-box h2 {
+			color: #155724;
+			margin-top: 0;
+		}
+		.setup-box {
+			background: white;
+			padding: 25px;
+			margin: 25px 0;
+			border-radius: 8px;
+			border: 2px solid #667eea;
+			text-align: center;
+		}
+		.button {
+			display: inline-block;
+			padding: 15px 35px;
+			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+			color: white;
+			text-decoration: none;
+			border-radius: 25px;
+			margin: 20px 0;
+			font-weight: bold;
+			font-size: 16px;
+		}
+		.footer {
+			margin-top: 30px;
+			padding-top: 20px;
+			border-top: 2px solid #ddd;
+			font-size: 12px;
+			color: #666;
+			text-align: center;
+		}
+		.info-box {
+			background: #e3f2fd;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+			border-left: 4px solid #2196f3;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🎉 Welcome to %s!</h1>
+			<p>Your account has been created</p>
+		</div>
+
+		<div class="content">
+			%s
+
+			<div class="welcome-box">
+				<h2>Congratulations!</h2>
+				<p>You have been added to <strong>%s</strong> and can now share and receive files securely.</p>
+			</div>
+
+			<p>To get started, you need to set your password and log in to your account.</p>
+
+			<div class="setup-box">
+				<h2 style="color: #667eea;">Set Your Password</h2>
+				<p>Click the button below to create your password and access your account.</p>
+
+				<a href="%s" class="button">Set Password &amp; Login</a>
+
+				<p style="font-size: 13px; color: #999; margin-top: 20px;">
+					This link is valid for 1 hour
+				</p>
+			</div>
+
+			<div class="info-box">
+				<p style="margin: 0;"><strong>📧 Your Login Email:</strong></p>
+				<p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">%s</p>
+			</div>
+
+			<p style="text-align: center; color: #666; margin-top: 30px;">
+				If the button doesn't work, copy and paste this link into your browser:
+			</p>
+			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">
+				%s
+			</p>
+		</div>
+
+		<div class="footer">
+			<p>This is an automated message from %s.</p>
+			<p>Do not reply to this email.</p>
+		</div>
+	</div>
+</body>
+</html>`, companyName, logoHTML, companyName, resetLink, email, resetLink, companyName)
+
+	textBody := fmt.Sprintf(`Welcome to %s!
+
+Congratulations! You have been added to %s and can now share and receive files securely.
+
+To get started, you need to set your password and log in to your account.
+
+Your login email: %s
+
+Set your password by visiting this link:
+%s
+
+This link is valid for 1 hour.
+
+---
+This is an automated message from %s.
+Do not reply to this email.`, companyName, companyName, email, resetLink, companyName)
+
+	provider, err := GetActiveProvider(database.DB)
+	if err != nil {
+		return err
+	}
+
+	return provider.SendEmail(email, subject, htmlBody, textBody)
+}
+
 // SendPasswordResetEmail sends a password reset email with a humoristic/ironic tone
 func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)

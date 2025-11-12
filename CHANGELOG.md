@@ -1,5 +1,70 @@
 # Changelog
 
+## [3.3.4] - 2025-11-12 ✨ Welcome Email Feature
+
+### ✨ New Feature
+
+**Welcome Email with Password Setup Link**
+- **Feature Added**: Admins can now send welcome emails to new users with a password setup link
+- **Use Case**: No need to share passwords manually - users set their own password securely
+- **Email Branding**: Includes company logo and name from branding settings
+- **User Experience**: Clean, professional welcome email with clear instructions
+
+### 📋 How It Works
+
+**Admin Experience:**
+1. Navigate to Admin → Users → Create User
+2. Fill in user details (name, email, quota, level)
+3. Check "📧 Send welcome email with password setup link" (checked by default)
+4. Click Save
+5. User receives branded welcome email immediately
+
+**User Experience:**
+1. Receives professional welcome email with company branding
+2. Email includes their login email and a "Set Password & Login" button
+3. Click button to visit secure password setup page
+4. Creates their own password
+5. Automatically logs in to their account
+
+### 📧 Email Template Features
+- Company logo display (from branding settings)
+- Personalized with company name
+- Secure one-time password setup link (1-hour validity)
+- Mobile-friendly responsive design
+- Clear instructions and call-to-action button
+- Professional gradient design matching Sharecare style
+
+### Technical Details
+
+**Modified Files:**
+- `internal/email/templates.go`:
+  - Added `SendWelcomeEmail()` function with branding support
+  - Accepts company name and logo for customization
+  - Generates secure reset token link
+
+- `internal/server/handlers_admin.go` (lines 107-217):
+  - Added welcome email checkbox to user creation form
+  - Generates temporary password if welcome email is enabled
+  - Creates password reset token after user creation
+  - Sends branded welcome email via Brevo
+  - Logs email sending success/failure
+
+- `cmd/server/main.go` (line 25):
+  - Version bumped to 3.3.4
+
+**Security:**
+- Uses existing password reset infrastructure (1-hour token validity)
+- Temporary password generated and immediately replaced via email
+- User must have email access to complete setup
+- Failed email sends don't prevent user creation (graceful degradation)
+
+**Configuration:**
+- Requires email provider configured in admin settings (Brevo)
+- Uses branding settings for company name and logo
+- Respects server URL configuration for link generation
+
+---
+
 ## [3.3.3] - 2025-11-12 🐛 Critical User Deletion Fix
 
 ### 🐛 Bug Fixes
