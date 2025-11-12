@@ -27,7 +27,7 @@
 
 ### What is Sharecare?
 
-Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Unlike commercial services like WeTransfer or Sprend, Sharecare gives you:
+Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Unlike commercial file transfer services, Sharecare gives you:
 
 - **Complete data ownership** - Files stay on your infrastructure
 - **No subscription fees** - One-time setup, unlimited transfers

@@ -2,7 +2,7 @@
 
 **Version 3.2.3** | **Golden Release** | **Self-Hosted** | **Open Source**
 
-Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare provides a complete alternative to commercial services like WeTransfer and Sprend, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
+Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
