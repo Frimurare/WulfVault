@@ -1,5 +1,37 @@
 # Changelog
 
+## [3.3.5] - 2025-11-12 🐛 Welcome Email Bugfixes
+
+### 🐛 Bug Fixes
+
+**HTTPS → HTTP Link Correction**
+- **Issue Fixed**: Welcome email used HTTPS links even when server runs on HTTP
+- **Solution**: Automatically replaces `https://` with `http://` in email links
+- **Impact**: Password setup links now work correctly without manual URL editing
+
+**Logo Image Validation**
+- **Issue Fixed**: Broken logo image in welcome email if logo data invalid
+- **Solution**: Validates logo data format before including in email
+- **Validation**: Checks that logo starts with `data:image/` (valid data URI)
+- **Fallback**: Removes logo from email if invalid, email still sends successfully
+
+### Technical Details
+
+**Modified Files:**
+- `internal/server/handlers_admin.go` (lines 205-217):
+  - Added HTTPS → HTTP URL correction for email links
+  - Added logo data validation (must be valid data URI)
+  - Logs corrections and warnings for debugging
+
+- `cmd/server/main.go` (line 25):
+  - Version bumped to 3.3.5
+
+**Logging:**
+- Logs when HTTPS is corrected to HTTP: `"Corrected server URL from HTTPS to HTTP for email"`
+- Warns when logo data is invalid: `"Warning: Invalid logo data format, ignoring logo in email"`
+
+---
+
 ## [3.3.4] - 2025-11-12 ✨ Welcome Email Feature
 
 ### ✨ New Feature

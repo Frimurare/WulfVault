@@ -202,8 +202,22 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 			companyName := s.config.CompanyName
 			logoData := brandingConfig["branding_logo"]
 
+			// Fix server URL - ensure it uses http:// if running on port 8080 without SSL
+			emailServerURL := s.config.ServerURL
+			// Replace https:// with http:// if present (since we don't have SSL on port 8080)
+			if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
+				emailServerURL = "http://" + emailServerURL[8:]
+				log.Printf("Corrected server URL from HTTPS to HTTP for email: %s", emailServerURL)
+			}
+
+			// Validate logo data - must be a valid data URI
+			if logoData != "" && len(logoData) > 11 && logoData[:11] != "data:image/" {
+				log.Printf("Warning: Invalid logo data format, ignoring logo in email")
+				logoData = "" // Clear invalid logo data
+			}
+
 			// Send welcome email
-			if err := emailpkg.SendWelcomeEmail(email, resetToken, s.config.ServerURL, companyName, logoData); err != nil {
+			if err := emailpkg.SendWelcomeEmail(email, resetToken, emailServerURL, companyName, logoData); err != nil {
 				log.Printf("Failed to send welcome email to %s: %v", email, err)
 				// Don't fail user creation, just log the error
 			} else {
