@@ -1,12 +1,12 @@
 # Sharecare - Enterprise File Sharing Platform
 
-**Version 3.2.2-RC3** | **Release Candidate** | **Self-Hosted** | **Open Source**
+**Version 3.2.3** | **Golden Release** | **Self-Hosted** | **Open Source**
 
-Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare provides a complete alternative to commercial services like WeTransfer and Sprend, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
+Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
-**Based on [Gokapi](https://github.com/Forceu/Gokapi)** - See [NOTICE.md](NOTICE.md) for attribution.
+**Architecturally inspired by [Gokapi](https://github.com/Forceu/Gokapi)** — Sharecare is a complete rewrite (~95% new code) adding multi-user management, audit logging, email integration, 2FA, branding, and enterprise features.
 
 ---
 
@@ -266,16 +266,20 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including 
 | `PORT` | Server port | `8080` |
 | `DATA_DIR` | Data directory for database | `./data` |
 | `UPLOADS_DIR` | Directory for uploaded files | `./uploads` |
-| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` |
-| `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` |
+| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` (2 GB) |
+| `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` (5 GB) |
+| `SESSION_TIMEOUT_HOURS` | Session expiration time | `24` |
+| `TRASH_RETENTION_DAYS` | Days to keep deleted files | `5` |
 
 ### Admin Settings (Web UI)
 
 After logging in as admin, configure:
 - **Branding** - Logo, colors, company name
-- **Storage Quotas** - Set custom limits per user
-- **Trash Retention** - How long deleted files are kept (default: 5 days)
-- **File Size Limits** - Maximum upload size
+- **Storage Quotas** - Set custom limits per user (default: 5 GB per user)
+- **Trash Retention** - How long deleted files are kept (default: 5 days, range: 1-365 days)
+- **File Size Limits** - Maximum upload size (default: 2 GB, configurable up to 5GB+)
+- **Session Timeout** - Login session duration (default: 24 hours)
+- **IP Logging** - Enable/disable IP address tracking (default: disabled)
 
 ---
 
@@ -489,7 +493,9 @@ Contributions welcome! Please:
 
 This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
 
-Based on **Gokapi** by Forceu - https://github.com/Forceu/Gokapi
+**Why AGPL-3.0?** This license ensures that if anyone uses Sharecare to provide a service over a network (like SaaS), they must share their modifications with the community. This prevents companies from taking the code, making improvements, and keeping them proprietary. It protects the open-source nature of the project while requiring attribution and source disclosure for all network use.
+
+**Architecturally inspired by Gokapi** by Forceu - https://github.com/Forceu/Gokapi
 
 See [NOTICE.md](NOTICE.md) for full attribution and license information.
 
