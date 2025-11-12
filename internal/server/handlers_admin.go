@@ -49,6 +49,25 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	usersRemoved, _ := database.DB.GetUsersRemovedThisMonth()
 	userGrowth, _ := database.DB.GetUserGrowthPercentage()
 
+	// Get usage statistics
+	activeFiles7Days, _ := database.DB.GetActiveFilesLast7Days()
+	activeFiles30Days, _ := database.DB.GetActiveFilesLast30Days()
+	avgFileSize, _ := database.DB.GetAverageFileSize()
+	avgDownloadsPerFile, _ := database.DB.GetAverageDownloadsPerFile()
+
+	// Get security statistics
+	twoFAAdoption, _ := database.DB.Get2FAAdoptionRate()
+	avgBackupCodes, _ := database.DB.GetAverageBackupCodesRemaining()
+
+	// Get file statistics
+	largestFileName, largestFileSize, _ := database.DB.GetLargestFile()
+	mostActiveUser, userFileCount, _ := database.DB.GetMostActiveUser()
+
+	// Get trend data
+	topFileTypes, fileTypeCounts, _ := database.DB.GetTopFileTypes()
+	topWeekday, weekdayCount, _ := database.DB.GetMostActiveWeekday()
+	storagePast, storageNow, _ := database.DB.GetStorageTrendLastMonth()
+
 	// Get fun fact
 	mostDownloadedFile, downloadCount, _ := database.DB.GetMostDownloadedFile()
 
@@ -56,6 +75,10 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear,
 		bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear,
 		usersAdded, usersRemoved, userGrowth,
+		activeFiles7Days, activeFiles30Days, avgFileSize, avgDownloadsPerFile,
+		twoFAAdoption, avgBackupCodes,
+		largestFileName, largestFileSize, mostActiveUser, userFileCount,
+		topFileTypes, fileTypeCounts, topWeekday, weekdayCount, storagePast, storageNow,
 		mostDownloadedFile, downloadCount)
 }
 
@@ -801,6 +824,10 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear int64,
 	bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear int64,
 	usersAdded, usersRemoved int, userGrowth float64,
+	activeFiles7Days, activeFiles30Days int, avgFileSize int64, avgDownloadsPerFile float64,
+	twoFAAdoption, avgBackupCodes float64,
+	largestFileName string, largestFileSize int64, mostActiveUser string, userFileCount int,
+	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
 	mostDownloadedFile string, downloadCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -829,6 +856,31 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	bytesUploadedWeekStr := formatBytes(bytesUploadedWeek)
 	bytesUploadedMonthStr := formatBytes(bytesUploadedMonth)
 	bytesUploadedYearStr := formatBytes(bytesUploadedYear)
+
+	// Format usage statistics
+	avgFileSizeStr := formatBytes(avgFileSize)
+
+	// Format file statistics
+	largestFileSizeStr := formatBytes(largestFileSize)
+
+	// Format trend data - file types string
+	fileTypesStr := ""
+	if len(topFileTypes) > 0 {
+		for i, ext := range topFileTypes {
+			if i > 0 {
+				fileTypesStr += ", "
+			}
+			fileTypesStr += fmt.Sprintf(".%s (%d)", ext, fileTypeCounts[i])
+		}
+	}
+
+	// Format storage trend
+	storagePastStr := formatBytes(storagePast)
+	storageNowStr := formatBytes(storageNow)
+	storageGrowth := 0.0
+	if storagePast > 0 {
+		storageGrowth = float64(storageNow-storagePast) / float64(storagePast) * 100
+	}
 
 	// Get branding config for logo
 	brandingConfig, _ := database.DB.GetBrandingConfig()
@@ -1051,6 +1103,72 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <div class="stat-card" style="border-left: 4px solid #2196F3;">
                 <h3>Growth</h3>
                 <div class="value" style="color: #2196F3;">` + fmt.Sprintf("%.1f%%", userGrowth) + `</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">📈 Usage Statistics</h2>
+        <div class="stats">
+            <div class="stat-card" style="border-left: 4px solid #9C27B0;">
+                <h3>Active Files (7 days)</h3>
+                <div class="value" style="color: #9C27B0;">` + fmt.Sprintf("%d", activeFiles7Days) + `</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #673AB7;">
+                <h3>Active Files (30 days)</h3>
+                <div class="value" style="color: #673AB7;">` + fmt.Sprintf("%d", activeFiles30Days) + `</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #3F51B5;">
+                <h3>Avg File Size</h3>
+                <div class="value" style="color: #3F51B5;">` + avgFileSizeStr + `</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #2196F3;">
+                <h3>Avg Downloads/File</h3>
+                <div class="value" style="color: #2196F3;">` + fmt.Sprintf("%.1f", avgDownloadsPerFile) + `</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">🔐 Security Overview</h2>
+        <div class="stats">
+            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; grid-column: span 2;">
+                <h3 style="color: rgba(255,255,255,0.9);">2FA Adoption Rate</h3>
+                <div class="value" style="color: white;">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 14px;">Percentage of Users/Admins with 2FA enabled</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; grid-column: span 2;">
+                <h3 style="color: rgba(255,255,255,0.9);">Avg Backup Codes Remaining</h3>
+                <div class="value" style="color: white;">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 14px;">Average per user with 2FA enabled</p>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">📁 File Statistics</h2>
+        <div class="stats">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; grid-column: span 2;">
+                <h3 style="color: rgba(255,255,255,0.9);">Largest File</h3>
+                <div class="value" style="color: white; font-size: 24px; word-break: break-word;">` + largestFileName + `</div>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 16px;">` + largestFileSizeStr + `</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; grid-column: span 2;">
+                <h3 style="color: rgba(255,255,255,0.9);">Most Active User</h3>
+                <div class="value" style="color: white; font-size: 24px;">` + mostActiveUser + `</div>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d files uploaded", userFileCount) + `</p>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">⚡ Trend Data</h2>
+        <div class="stats">
+            <div class="stat-card" style="border-left: 4px solid #FF5722;">
+                <h3>Top File Types</h3>
+                <div class="value" style="color: #FF5722; font-size: 16px; word-break: break-word;">` + fileTypesStr + `</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #FF9800;">
+                <h3>Most Active Day</h3>
+                <div class="value" style="color: #FF9800; font-size: 20px;">` + topWeekday + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 14px;">` + fmt.Sprintf("%d downloads", weekdayCount) + `</p>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #FFC107; grid-column: span 2;">
+                <h3>Storage Trend (Last 30 Days)</h3>
+                <div class="value" style="color: #FFC107; font-size: 20px;">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 14px;">` + storagePastStr + ` → ` + storageNowStr + `</p>
             </div>
         </div>
 

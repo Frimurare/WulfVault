@@ -1,5 +1,52 @@
 # Changelog
 
+## [3.2-RC2] - 2025-11-12 🚀 Comprehensive Analytics Dashboard
+
+### New Features - Extended Dashboard Analytics
+This release adds extensive new analytics capabilities to the admin dashboard, providing deep insights into usage patterns, security posture, file statistics, and trends.
+
+#### 📈 Usage Statistics
+- **Active Files**: Track files downloaded in last 7 and 30 days
+- **Average File Size**: Monitor typical file sizes across the platform
+- **Average Downloads per File**: Understand file popularity and sharing patterns
+
+#### 🔐 Security Overview
+- **2FA Adoption Rate**: Track percentage of Users/Admins with Two-Factor Authentication enabled
+- **Average Backup Codes Remaining**: Monitor backup code usage to identify users who may need to regenerate
+
+#### 📁 File Statistics
+- **Largest File**: Display the biggest file currently stored with size
+- **Most Active User**: Highlight the user who has uploaded the most files
+
+#### ⚡ Trend Data
+- **Top File Types**: Show the 3 most common file extensions with counts
+- **Most Active Weekday**: Identify which day of the week has the most download activity
+- **Storage Trend**: Display storage growth over the last 30 days with percentage change
+
+### Bug Fixes
+- **🐛 Critical: Historical Data Accuracy**: Fixed bug where deleting files would retroactively remove them from historical statistics
+  - Previously, when a file was deleted, ALL statistics (uploaded/downloaded data for all periods) would decrease
+  - Now statistics correctly reflect historical data - if a file was uploaded in January, it remains in the year's upload statistics even after deletion
+  - Affects: `GetBytesUploadedToday/Week/Month/Year()` - removed `AND DeletedAt = 0` clause
+  - Download statistics were already correct (using DownloadLogs) but added clarifying comments
+
+### Implementation Details
+- **New Database Methods** (15 new methods in `internal/database/`):
+  - Usage: `GetActiveFilesLast7Days()`, `GetActiveFilesLast30Days()`, `GetAverageFileSize()`, `GetAverageDownloadsPerFile()`
+  - Security: `Get2FAAdoptionRate()`, `GetAverageBackupCodesRemaining()`
+  - Files: `GetLargestFile()`, `GetMostActiveUser()`
+  - Trends: `GetTopFileTypes()`, `GetMostActiveWeekday()`, `GetStorageTrendLastMonth()`
+- **Dashboard UI**: 5 new sections with 14 additional stat cards
+- **Performance**: All queries optimized with proper aggregation and indexing
+
+### Benefits
+- **Complete Visibility**: Admins now have comprehensive insights into platform usage
+- **Proactive Security**: Monitor 2FA adoption and identify users needing attention
+- **Trend Analysis**: Understand usage patterns to inform capacity planning
+- **Historical Accuracy**: Statistics now correctly represent historical data regardless of deletions
+
+---
+
 ## [3.2-beta4] - 2025-11-12 📊 Data Transfer Statistics Enhancement
 
 ### New Features
