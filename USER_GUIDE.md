@@ -8,18 +8,19 @@
 
 1. [Introduction](#introduction)
 2. [Getting Started](#getting-started)
-3. [User Roles & Permissions](#user-roles--permissions)
-4. [File Sharing Guide](#file-sharing-guide)
-5. [Download Account Guide](#download-account-guide)
-6. [Admin Dashboard](#admin-dashboard)
-7. [User Management](#user-management)
-8. [File Management](#file-management)
-9. [Branding & Customization](#branding--customization)
-10. [Email Configuration](#email-configuration)
-11. [Security Features](#security-features)
-12. [File Request Portals](#file-request-portals)
-13. [Troubleshooting](#troubleshooting)
-14. [Best Practices](#best-practices)
+3. [Configuration](#configuration)
+4. [User Roles & Permissions](#user-roles--permissions)
+5. [File Sharing Guide](#file-sharing-guide)
+6. [Download Account Guide](#download-account-guide)
+7. [Admin Dashboard](#admin-dashboard)
+8. [User Management](#user-management)
+9. [File Management](#file-management)
+10. [Branding & Customization](#branding--customization)
+11. [Email Configuration](#email-configuration)
+12. [Security Features](#security-features)
+13. [File Request Portals](#file-request-portals)
+14. [Troubleshooting](#troubleshooting)
+15. [Best Practices](#best-practices)
 
 ---
 
@@ -95,6 +96,325 @@ Sharecare is a professional-grade, self-hosted file sharing platform designed fo
 - Change password
 - Account settings
 - GDPR self-deletion option
+
+---
+
+## Configuration
+
+Sharecare can be configured through environment variables, command-line flags, and the web interface.
+
+### Environment Variables
+
+All configuration can be set via environment variables. These are the primary way to configure Sharecare in Docker deployments.
+
+#### Complete Variable Reference
+
+| Variable | Description | Default Value | Requires Restart |
+|----------|-------------|---------------|------------------|
+| `SERVER_URL` | Public URL where Sharecare is accessible | `http://localhost:8080` | ❌ No* |
+| `PORT` | Port the server listens on | `8080` | ✅ Yes |
+| `DATA_DIR` | Directory for database storage | `./data` | ✅ Yes |
+| `UPLOADS_DIR` | Directory for uploaded files | `./uploads` | ✅ Yes |
+| `MAX_FILE_SIZE_MB` | Maximum file size in megabytes | `2000` (2 GB) | ❌ No* |
+| `DEFAULT_QUOTA_MB` | Default storage quota for new users | `5000` (5 GB) | ❌ No* |
+| `SESSION_TIMEOUT_HOURS` | Session expiration time in hours | `24` | ✅ Yes |
+| `TRASH_RETENTION_DAYS` | Days to keep deleted files in trash | `5` | ❌ No* |
+
+**Note:** Variables marked with * can be changed via Admin Settings in the web interface and take effect immediately. Environment variables override web settings on startup.
+
+### How to Set Environment Variables
+
+#### Method 1: Docker Run Command
+
+When starting Sharecare with `docker run`, use `-e` flags:
+
+```bash
+docker run -d \
+  --name sharecare \
+  -p 8080:8080 \
+  -v ./data:/data \
+  -v ./uploads:/uploads \
+  -e SERVER_URL=https://files.yourdomain.com \
+  -e PORT=8080 \
+  -e MAX_FILE_SIZE_MB=5000 \
+  -e DEFAULT_QUOTA_MB=10000 \
+  -e SESSION_TIMEOUT_HOURS=48 \
+  -e TRASH_RETENTION_DAYS=7 \
+  frimurare/sharecare:latest
+```
+
+**Example with all variables:**
+```bash
+docker run -d \
+  --name sharecare \
+  -p 3000:3000 \
+  -v /mnt/sharecare-data:/data \
+  -v /mnt/sharecare-uploads:/uploads \
+  -e SERVER_URL=https://files.company.com \
+  -e PORT=3000 \
+  -e DATA_DIR=/data \
+  -e UPLOADS_DIR=/uploads \
+  -e MAX_FILE_SIZE_MB=5000 \
+  -e DEFAULT_QUOTA_MB=20000 \
+  -e SESSION_TIMEOUT_HOURS=24 \
+  -e TRASH_RETENTION_DAYS=30 \
+  frimurare/sharecare:latest
+```
+
+#### Method 2: Docker Compose
+
+Create or edit `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+services:
+  sharecare:
+    image: frimurare/sharecare:latest
+    container_name: sharecare
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+      - ./uploads:/uploads
+    environment:
+      # Required: Set your public URL
+      SERVER_URL: https://files.yourdomain.com
+
+      # Optional: Customize these as needed
+      PORT: 8080
+      DATA_DIR: /data
+      UPLOADS_DIR: /data
+      MAX_FILE_SIZE_MB: 2000          # 2 GB default
+      DEFAULT_QUOTA_MB: 5000          # 5 GB default per user
+      SESSION_TIMEOUT_HOURS: 24       # 24 hours default
+      TRASH_RETENTION_DAYS: 5         # 5 days default
+    restart: unless-stopped
+```
+
+**Start with:**
+```bash
+docker-compose up -d
+```
+
+**Restart after changes:**
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+#### Method 3: Binary Executable (Command Line)
+
+When running the compiled binary directly, use flags:
+
+```bash
+./sharecare \
+  -url=https://files.yourdomain.com \
+  -port=8080 \
+  -data=./data \
+  -uploads=./uploads
+```
+
+**Available flags:**
+- `-url` → SERVER_URL
+- `-port` → PORT
+- `-data` → DATA_DIR
+- `-uploads` → UPLOADS_DIR
+
+**Note:** File size limits, quotas, session timeout, and trash retention can only be set via environment variables or web interface, not command-line flags.
+
+#### Method 4: Environment File (.env)
+
+Create a `.env` file in your project directory:
+
+```bash
+# .env file for Sharecare configuration
+
+# Server Configuration
+SERVER_URL=https://files.yourdomain.com
+PORT=8080
+DATA_DIR=/data
+UPLOADS_DIR=/uploads
+
+# File and Storage Limits
+MAX_FILE_SIZE_MB=2000
+DEFAULT_QUOTA_MB=5000
+
+# Security and Retention
+SESSION_TIMEOUT_HOURS=24
+TRASH_RETENTION_DAYS=5
+```
+
+**Use with Docker Compose:**
+```yaml
+version: '3.8'
+services:
+  sharecare:
+    image: frimurare/sharecare:latest
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ./data:/data
+      - ./uploads:/uploads
+    restart: unless-stopped
+```
+
+### Configuration Priority
+
+Settings are applied in this order (later overrides earlier):
+
+1. **Default values** (hardcoded in application)
+2. **Environment variables** (set at container/process start)
+3. **Command-line flags** (when using binary)
+4. **Web interface settings** (stored in database)
+
+**Example:**
+- Default: `MAX_FILE_SIZE_MB=2000`
+- Environment variable: `MAX_FILE_SIZE_MB=5000` → Overrides default
+- Admin Settings page: Set to 3000 MB → Overrides environment variable
+
+### Runtime vs Restart-Required Changes
+
+#### Can be changed without restart (via Admin Settings):
+- ✅ `SERVER_URL` - Change via Admin → Settings
+- ✅ `MAX_FILE_SIZE_MB` - Change via Admin → Settings
+- ✅ `DEFAULT_QUOTA_MB` - Change via Admin → Settings
+- ✅ `TRASH_RETENTION_DAYS` - Change via Admin → Settings
+- ✅ Branding (logo, colors, company name)
+- ✅ Per-user storage quotas
+
+#### Requires container/service restart:
+- ⚠️ `PORT` - Change requires restart
+- ⚠️ `DATA_DIR` - Change requires restart
+- ⚠️ `UPLOADS_DIR` - Change requires restart
+- ⚠️ `SESSION_TIMEOUT_HOURS` - Change requires restart
+
+### Common Configuration Scenarios
+
+#### Scenario 1: Increase File Size Limit
+
+**Quick (no restart):**
+1. Login as admin
+2. Go to Admin → Settings
+3. Change "Max File Size (MB)" to desired value
+4. Click "Save Settings"
+5. ✅ Takes effect immediately
+
+**Permanent (with environment variable):**
+```bash
+docker-compose down
+# Edit docker-compose.yml - add or change:
+#   MAX_FILE_SIZE_MB: 5000
+docker-compose up -d
+```
+
+#### Scenario 2: Change Port
+
+**Requires restart:**
+```bash
+docker-compose down
+# Edit docker-compose.yml:
+#   ports:
+#     - "3000:3000"
+#   environment:
+#     PORT: 3000
+docker-compose up -d
+```
+
+#### Scenario 3: Increase User Quotas
+
+**For existing users:**
+1. Admin → Users
+2. Click edit on user
+3. Change "Storage Quota" value
+4. Save
+
+**For new users (default):**
+1. Admin → Settings
+2. Change "Default User Quota (MB)"
+3. Save
+4. ✅ Applies to users created after this change
+
+#### Scenario 4: Custom Domain Setup
+
+**Step 1: Set environment variable**
+```yaml
+environment:
+  SERVER_URL: https://files.company.com
+```
+
+**Step 2: Restart container**
+```bash
+docker-compose down && docker-compose up -d
+```
+
+**Step 3: Verify in Admin → Settings**
+- Should show your domain
+- Download links will use this URL
+
+#### Scenario 5: Extended Trash Retention
+
+**Option A: Environment variable (permanent)**
+```yaml
+environment:
+  TRASH_RETENTION_DAYS: 30
+```
+
+**Option B: Admin Settings (runtime)**
+1. Admin → Settings
+2. "Trash Retention Period (Days)" → 30
+3. Save
+4. ✅ Effective immediately
+
+### Verifying Configuration
+
+#### Check Current Settings
+
+**Via Admin Dashboard:**
+1. Login as admin
+2. Go to Admin → Settings
+3. See all current values
+
+**Via Docker logs:**
+```bash
+docker logs sharecare
+
+# Output shows:
+# Sharecare File Sharing System v3.2.3
+# Server starting on :8080
+# Server URL: https://files.yourdomain.com
+```
+
+**Via environment inspection:**
+```bash
+docker exec sharecare env | grep -E "SERVER_URL|PORT|MAX_FILE"
+```
+
+### Troubleshooting Configuration
+
+#### Problem: Changes not taking effect
+
+**Solution:**
+1. Check if change requires restart (see table above)
+2. For Docker: `docker-compose down && docker-compose up -d`
+3. Check logs: `docker logs sharecare`
+4. Verify no syntax errors in docker-compose.yml
+
+#### Problem: Download links use wrong URL
+
+**Solution:**
+1. Set `SERVER_URL` environment variable correctly
+2. Do NOT include port if using standard 80/443
+3. Do NOT include trailing slash
+4. Example: `https://files.company.com` not `https://files.company.com:8080/`
+
+#### Problem: File uploads fail with size error
+
+**Solution:**
+1. Check `MAX_FILE_SIZE_MB` setting
+2. Ensure reverse proxy (nginx/Caddy) allows large uploads
+3. For nginx, set: `client_max_body_size 5000M;`
 
 ---
 
