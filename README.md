@@ -6,7 +6,7 @@ Sharecare is a professional-grade, self-hosted file sharing platform designed fo
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
-**Based on [Gokapi](https://github.com/Forceu/Gokapi)** - See [NOTICE.md](NOTICE.md) for attribution.
+**Architecturally inspired by [Gokapi](https://github.com/Forceu/Gokapi)** — Sharecare is a complete rewrite (~95% new code) adding multi-user management, audit logging, email integration, 2FA, branding, and enterprise features.
 
 ---
 
