@@ -1,3 +1,8 @@
+// Sharecare - Secure File Transfer System
+// Copyright (c) 2025 Ulf Holmström (Frimurare)
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// You must retain this notice in any copy or derivative work.
+
 package server
 
 import (
@@ -175,6 +180,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>My Downloads - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -321,6 +327,10 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
             </tbody>
         </table>
     </div>
+
+    <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
+        Powered by Sharecare © Ulf Holmström – GPL-3.0
+    </div>
 </body>
 </html>`
 
@@ -344,6 +354,7 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
     <title>Change Password - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -437,6 +448,10 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
                 <button type="submit" class="btn btn-primary">Change Password</button>
             </form>
         </div>
+    </div>
+
+    <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
+        Powered by Sharecare © Ulf Holmström – GPL-3.0
     </div>
 </body>
 </html>`

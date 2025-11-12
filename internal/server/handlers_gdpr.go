@@ -1,3 +1,8 @@
+// Sharecare - Secure File Transfer System
+// Copyright (c) 2025 Ulf Holmström (Frimurare)
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+// You must retain this notice in any copy or derivative work.
+
 package server
 
 import (
@@ -125,6 +130,7 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Mitt konto - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -306,6 +312,10 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
             <p>Detta är en GDPR-kompatibel självbetjäningsfunktion</p>
             <p>&copy; ` + s.config.CompanyName + `</p>
         </div>
+
+        <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
+            Powered by Sharecare © Ulf Holmström – GPL-3.0
+        </div>
     </div>
 </body>
 </html>`
@@ -322,6 +332,7 @@ func (s *Server) renderAccountDeletionSuccess(w http.ResponseWriter) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
     <title>Konto raderat - ` + s.config.CompanyName + `</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
