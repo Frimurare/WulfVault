@@ -1,5 +1,48 @@
 # Changelog
 
+## [3.3.3] - 2025-11-12 🐛 Critical User Deletion Fix
+
+### 🐛 Bug Fixes
+
+**User Deletion Now Works**
+- **Issue Fixed**: Admin user deletion button appeared to do nothing - users weren't deleted
+- **Root Cause**: JavaScript `deleteUser()` function reloaded page without validating server response
+- **Solution**: Implemented proper async/await pattern with response validation
+- **Impact**: Users can now be successfully deleted via admin panel, files properly moved to trash
+
+**Trash Display for Deleted Users**
+- **Issue Fixed**: Files from deleted users showed "Unknown" as owner in trash view
+- **Solution**: Changed default display text to "Deleted user" for better clarity
+- **Impact**: More intuitive trash view when viewing files from deleted accounts
+
+### 📋 Technical Details
+
+**Modified Files:**
+- `internal/server/handlers_admin.go` (lines 1393-1412):
+  - Converted `deleteUser()` from callback to async/await
+  - Added `response.ok` validation before page reload
+  - Proper error handling with user-friendly messages
+  - Files correctly moved to trash with 5-day retention
+
+- `internal/server/handlers_admin.go` (line 2487):
+  - Changed owner display from "Unknown" to "Deleted user"
+  - Applied to both trash view instances
+
+- `cmd/server/main.go` (line 25):
+  - Version bumped to 3.3.3
+
+- `.gitignore`:
+  - Added node_modules/ to ignore list
+
+**User Deletion Flow (Now Fixed):**
+1. Admin clicks Delete → Confirmation dialog
+2. Server validates and deletes user from database
+3. User's files moved to trash (DeletedAt set, 5-day retention)
+4. Success: Page reloads, user removed from list
+5. Error: Alert shown with specific error message
+
+---
+
 ## [3.3.2] - 2025-11-12 🐛 Quick Bugfix - Copy Button
 
 ### 🐛 Bug Fix
