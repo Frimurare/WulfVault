@@ -248,24 +248,46 @@ func (d *Database) GetUsersRemovedThisMonth() (int, error) {
 }
 
 // GetUserGrowthPercentage returns the user growth percentage for this month
+// Includes both Users and DownloadAccounts to match Users Added/Removed statistics
 func (d *Database) GetUserGrowthPercentage() (float64, error) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Unix()
 
-	var usersAtStart, usersNow int
-
-	// Count users at start of month
-	err := d.db.QueryRow("SELECT COUNT(*) FROM Users WHERE CreatedAt < ?", startOfMonth).Scan(&usersAtStart)
+	// Count Users at start of month
+	var regularUsersAtStart int
+	err := d.db.QueryRow("SELECT COUNT(*) FROM Users WHERE CreatedAt < ?", startOfMonth).Scan(&regularUsersAtStart)
 	if err != nil {
 		return 0, err
 	}
 
-	// Count users now
-	totalNow, err := d.GetTotalUsers()
+	// Count DownloadAccounts active at start of month
+	// (created before month start AND not deleted, OR deleted after month start)
+	var downloadAccountsAtStart int
+	err = d.db.QueryRow(`
+		SELECT COUNT(*) FROM DownloadAccounts
+		WHERE CreatedAt < ? AND (DeletedAt = 0 OR DeletedAt >= ?)
+	`, startOfMonth, startOfMonth).Scan(&downloadAccountsAtStart)
 	if err != nil {
 		return 0, err
 	}
-	usersNow = totalNow
+
+	usersAtStart := regularUsersAtStart + downloadAccountsAtStart
+
+	// Count Users now
+	var regularUsersNow int
+	err = d.db.QueryRow("SELECT COUNT(*) FROM Users").Scan(&regularUsersNow)
+	if err != nil {
+		return 0, err
+	}
+
+	// Count active DownloadAccounts now
+	var downloadAccountsNow int
+	err = d.db.QueryRow("SELECT COUNT(*) FROM DownloadAccounts WHERE DeletedAt = 0").Scan(&downloadAccountsNow)
+	if err != nil {
+		return 0, err
+	}
+
+	usersNow := regularUsersNow + downloadAccountsNow
 
 	// Calculate percentage
 	if usersAtStart == 0 {
