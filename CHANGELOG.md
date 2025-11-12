@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.3.1] - 2025-11-12 🔧 Critical Configuration Fix
+
+### 🐛 Critical Bug Fixes
+
+**Server URL Configuration Priority Fixed**
+- **Issue Fixed**: Environment variable `SERVER_URL` was overriding admin panel settings, causing link generation issues
+- **Solution**: Database settings (from admin panel) now have highest priority over environment variables
+- **Impact**: Admin-configured URLs persist across server restarts, fixing incorrect link generation
+
+### ✨ UI Improvements
+
+**Public URL Display in Admin Settings**
+- Added prominent "Current Public URL" display box at top of settings page
+- Shows the exact URL that users should use to access the system
+- One-click "COPY URL" button for easy sharing
+- Visual feedback when URL is copied to clipboard
+- Highlighted in yellow with red text for high visibility
+
+**Configuration Priority (Fixed):**
+1. **Database (Admin Panel Settings)** - Highest priority ✅
+2. **Environment Variables** - Second priority
+3. **Config.json** - Fallback default
+
+**Benefits:**
+- ✅ Settings configured in admin panel persist across restarts
+- ✅ No need to edit systemd service files for URL changes
+- ✅ Clear visibility of public URL for easy user communication
+- ✅ One-click URL copying for administrators
+
+**Technical Details:**
+- `cmd/server/main.go`: Fixed configuration priority loading (lines 82-97)
+- `internal/server/handlers_admin.go`: Added public URL display and copy functionality
+
+---
+
 ## [3.3.0] - 2025-11-12 🔧 Critical Bugfix Release
 
 ### 🐛 Critical Bug Fixes

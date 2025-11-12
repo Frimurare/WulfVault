@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	Version = "3.3.0"
+	Version = "3.3.1"
 )
 
 var (
@@ -79,17 +79,28 @@ func main() {
 	// Set runtime version
 	cfg.Version = Version
 
+	// Load server URL from database first (highest priority)
+	// This allows admin panel settings to override environment variables
+	if dbServerURL, err := database.DB.GetConfigValue("server_url"); err == nil && dbServerURL != "" {
+		// Add port if it's stored separately
+		if dbPort, portErr := database.DB.GetConfigValue("port"); portErr == nil && dbPort != "" {
+			cfg.ServerURL = dbServerURL + ":" + dbPort
+		} else {
+			cfg.ServerURL = dbServerURL + ":" + cfg.Port
+		}
+	} else {
+		// If not in database, check environment variable or command-line flag
+		serverURLFromEnv := getEnv("SERVER_URL", "")
+		if serverURLFromEnv != "" || isFlagPassed("url") {
+			cfg.ServerURL = *serverURL
+		}
+	}
+
 	// Override config with command-line flags ONLY if they were explicitly set
 	// Check if port flag was explicitly provided (not just default value)
 	portFromEnv := getEnv("PORT", "")
 	if portFromEnv != "" || isFlagPassed("port") {
 		cfg.Port = *port
-	}
-
-	// Check if server URL was explicitly provided
-	serverURLFromEnv := getEnv("SERVER_URL", "")
-	if serverURLFromEnv != "" || isFlagPassed("url") {
-		cfg.ServerURL = *serverURL
 	}
 
 	// Always override uploads dir if provided
