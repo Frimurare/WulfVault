@@ -2305,22 +2305,49 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
             const urlInput = document.getElementById('publicUrl');
             const statusMsg = document.getElementById('copyStatus');
 
-            // Select and copy the URL
+            // Select the text
             urlInput.select();
             urlInput.setSelectionRange(0, 99999); // For mobile devices
 
-            navigator.clipboard.writeText(urlInput.value).then(() => {
-                // Show success message
-                statusMsg.style.display = 'block';
+            // Try multiple methods to ensure compatibility
+            let success = false;
 
-                // Hide message after 2 seconds
+            // Method 1: Try modern clipboard API first (works on HTTPS)
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(urlInput.value)
+                    .then(() => {
+                        showCopySuccess();
+                    })
+                    .catch(() => {
+                        // Fallback to execCommand
+                        fallbackCopy();
+                    });
+            } else {
+                // Method 2: Fallback to execCommand (works on HTTP)
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                try {
+                    // Use the older but more compatible execCommand
+                    success = document.execCommand('copy');
+                    if (success) {
+                        showCopySuccess();
+                    } else {
+                        alert('Failed to copy URL. Please copy manually: ' + urlInput.value);
+                    }
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    alert('Failed to copy URL. Please copy manually: ' + urlInput.value);
+                }
+            }
+
+            function showCopySuccess() {
+                statusMsg.style.display = 'block';
                 setTimeout(() => {
                     statusMsg.style.display = 'none';
                 }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                alert('Failed to copy URL. Please copy manually.');
-            });
+            }
         }
 
         /* RESTART SERVER FUNCTION - Uncomment when systemd is installed

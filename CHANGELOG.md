@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.3.2] - 2025-11-12 🐛 Quick Bugfix - Copy Button
+
+### 🐛 Bug Fix
+
+**Copy URL Button Fixed**
+- **Issue Fixed**: "COPY URL" button in admin settings didn't work due to clipboard API limitations on HTTP
+- **Solution**: Added fallback to `document.execCommand('copy')` for HTTP contexts
+- **Impact**: Copy button now works reliably on both HTTP and HTTPS connections
+
+**Technical Details:**
+- `internal/server/handlers_admin.go`: Improved copy function with dual-method approach
+  - Primary: Modern clipboard API (for HTTPS)
+  - Fallback: execCommand (for HTTP - more compatible)
+- Better error handling with user-friendly messages
+
+---
+
 ## [3.3.1] - 2025-11-12 🔧 Critical Configuration Fix
 
 ### 🐛 Critical Bug Fixes
