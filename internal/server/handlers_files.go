@@ -38,8 +38,16 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get session cookie to track active transfer
+	sessionCookie, err := r.Cookie("session")
+	if err == nil {
+		// Mark this session as having an active transfer
+		s.markTransferActive(sessionCookie.Value)
+		defer s.markTransferInactive(sessionCookie.Value)
+	}
+
 	// Parse multipart form (max 10GB)
-	err := r.ParseMultipartForm(10 << 30)
+	err = r.ParseMultipartForm(10 << 30)
 	if err != nil {
 		s.sendError(w, http.StatusBadRequest, "Failed to parse form: "+err.Error())
 		return
@@ -526,6 +534,20 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 
 // performDownload performs the actual file download
 func (s *Server) performDownload(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo, account *models.DownloadAccount) {
+	// Mark transfer as active to prevent inactivity timeout during download
+	// Try to get session cookie (for regular users) or download_session cookie (for download accounts)
+	var sessionId string
+	if cookie, err := r.Cookie("session"); err == nil {
+		sessionId = cookie.Value
+	} else if cookie, err := r.Cookie("download_session"); err == nil {
+		sessionId = cookie.Value
+	}
+
+	if sessionId != "" {
+		s.markTransferActive(sessionId)
+		defer s.markTransferInactive(sessionId)
+	}
+
 	filePath := filepath.Join(s.config.UploadsDir, fileInfo.Id)
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {

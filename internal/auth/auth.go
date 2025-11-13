@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	SessionDuration = 24 * time.Hour
-	BcryptCost      = 12
+	SessionDuration      = 24 * time.Hour
+	InactivityTimeout    = 10 * time.Minute
+	BcryptCost           = 12
 )
 
 // HashPassword hashes a password using bcrypt

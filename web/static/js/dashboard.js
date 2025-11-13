@@ -162,6 +162,11 @@ if (uploadForm) {
         uploadButton.textContent = '⏳ Uploading...';
         uploadButton.disabled = true;
 
+        // Mark transfer as active to prevent inactivity timeout
+        if (window.inactivityTracker) {
+            window.inactivityTracker.markTransferActive();
+        }
+
         // Create XMLHttpRequest for progress tracking
         const xhr = new XMLHttpRequest();
 
@@ -173,6 +178,11 @@ if (uploadForm) {
         });
 
         xhr.addEventListener('load', () => {
+            // Mark transfer as inactive
+            if (window.inactivityTracker) {
+                window.inactivityTracker.markTransferInactive();
+            }
+
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
                 showSuccess('File uploaded successfully!');
@@ -194,6 +204,11 @@ if (uploadForm) {
         });
 
         xhr.addEventListener('error', () => {
+            // Mark transfer as inactive on error
+            if (window.inactivityTracker) {
+                window.inactivityTracker.markTransferInactive();
+            }
+
             showError('Upload failed - network error');
             uploadButton.textContent = '📤 Upload File';
             uploadButton.disabled = false;

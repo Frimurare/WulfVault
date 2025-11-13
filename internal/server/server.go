@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
@@ -19,14 +20,17 @@ import (
 )
 
 type Server struct {
-	config    *config.Config
-	templates *template.Template
+	config           *config.Config
+	templates        *template.Template
+	activeTransfers  map[string]bool // sessionId -> has active transfer
+	transfersMutex   sync.RWMutex
 }
 
 // New creates a new web server instance
 func New(cfg *config.Config) *Server {
 	return &Server{
-		config: cfg,
+		config:          cfg,
+		activeTransfers: make(map[string]bool),
 	}
 }
 
@@ -157,10 +161,34 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 // Middleware: Require authentication
 func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session")
+		if err != nil {
+			http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
+			return
+		}
+
 		user, err := s.getUserFromSession(r)
 		if err != nil {
 			http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
 			return
+		}
+
+		// Check for inactivity timeout (10 minutes), but only if no active transfer
+		if !s.hasActiveTransfer(cookie.Value) {
+			timeSinceLastActivity := time.Since(time.Unix(user.LastOnline, 0))
+			if timeSinceLastActivity > auth.InactivityTimeout {
+				// Force logout due to inactivity
+				auth.DeleteSession(cookie.Value)
+				http.SetCookie(w, &http.Cookie{
+					Name:     "session",
+					Value:    "",
+					Path:     "/",
+					MaxAge:   -1,
+					HttpOnly: true,
+				})
+				http.Redirect(w, r, "/login?timeout=1", http.StatusSeeOther)
+				return
+			}
 		}
 
 		// Store user in context (simple approach: we'll pass it via request context)
@@ -172,10 +200,34 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 // Middleware: Require admin authentication
 func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session")
+		if err != nil {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
 		user, err := s.getUserFromSession(r)
 		if err != nil || !user.IsAdmin() {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
+		}
+
+		// Check for inactivity timeout (10 minutes), but only if no active transfer
+		if !s.hasActiveTransfer(cookie.Value) {
+			timeSinceLastActivity := time.Since(time.Unix(user.LastOnline, 0))
+			if timeSinceLastActivity > auth.InactivityTimeout {
+				// Force logout due to inactivity
+				auth.DeleteSession(cookie.Value)
+				http.SetCookie(w, &http.Cookie{
+					Name:     "session",
+					Value:    "",
+					Path:     "/",
+					MaxAge:   -1,
+					HttpOnly: true,
+				})
+				http.Redirect(w, r, "/login?timeout=1", http.StatusSeeOther)
+				return
+			}
 		}
 
 		r = r.WithContext(contextWithUser(r.Context(), user))
@@ -318,4 +370,25 @@ func (s *Server) sendJSON(w http.ResponseWriter, status int, data interface{}) {
 // sendError sends an error response
 func (s *Server) sendError(w http.ResponseWriter, status int, message string) {
 	s.sendJSON(w, status, map[string]string{"error": message})
+}
+
+// hasActiveTransfer checks if a session has an active file transfer
+func (s *Server) hasActiveTransfer(sessionId string) bool {
+	s.transfersMutex.RLock()
+	defer s.transfersMutex.RUnlock()
+	return s.activeTransfers[sessionId]
+}
+
+// markTransferActive marks a session as having an active transfer
+func (s *Server) markTransferActive(sessionId string) {
+	s.transfersMutex.Lock()
+	defer s.transfersMutex.Unlock()
+	s.activeTransfers[sessionId] = true
+}
+
+// markTransferInactive removes the active transfer flag from a session
+func (s *Server) markTransferInactive(sessionId string) {
+	s.transfersMutex.Lock()
+	defer s.transfersMutex.Unlock()
+	delete(s.activeTransfers, sessionId)
 }

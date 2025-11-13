@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Frimurare/Sharecare/internal/auth"
 	"github.com/Frimurare/Sharecare/internal/database"
@@ -19,10 +20,34 @@ import (
 // requireDownloadAuth is middleware that requires download account authentication
 func (s *Server) requireDownloadAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("download_session")
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
 		account, err := s.getDownloadAccountFromSession(r)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
+		}
+
+		// Check for inactivity timeout (10 minutes), but only if no active transfer
+		// Use email as session identifier for download accounts
+		if !s.hasActiveTransfer(cookie.Value) {
+			timeSinceLastActivity := time.Since(time.Unix(account.LastUsed, 0))
+			if timeSinceLastActivity > auth.InactivityTimeout {
+				// Force logout due to inactivity
+				http.SetCookie(w, &http.Cookie{
+					Name:     "download_session",
+					Value:    "",
+					Path:     "/",
+					MaxAge:   -1,
+					HttpOnly: true,
+				})
+				http.Redirect(w, r, "/login?timeout=1", http.StatusSeeOther)
+				return
+			}
 		}
 
 		// Store account in context

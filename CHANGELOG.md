@@ -1,5 +1,88 @@
 # Changelog
 
+## [3.3.7] - 2025-11-13 🔒 Inactivity Timeout Feature
+
+### ✨ New Feature
+
+**Automatic Logout After Inactivity:**
+- Users are automatically logged out after 10 minutes of inactivity
+- Prevents unauthorized access when users leave their sessions unattended
+- Warning displayed 1 minute before automatic logout
+- Applies to all user types: admins, regular users, and download users
+
+**Smart Transfer Detection:**
+- Inactivity timer pauses during active file uploads and downloads
+- No interruptions during file transfers - users won't be logged out while transferring files
+- Timer resumes automatically when transfer completes
+
+**User-Friendly Experience:**
+- Visual warning banner appears 1 minute before logout with countdown
+- "Stay Logged In" button to reset the timer
+- Activity tracking: mouse movements, keyboard input, clicks, scrolls, and touches
+- Seamless integration with existing authentication system
+
+### Technical Details
+
+**Modified Files:**
+
+**Server-Side Changes:**
+- `internal/auth/auth.go` (line 22):
+  - Added `InactivityTimeout` constant (10 minutes)
+
+- `internal/server/server.go` (lines 22-27, 327-346):
+  - Added `activeTransfers` map with mutex for thread-safe tracking
+  - Added methods: `hasActiveTransfer()`, `markTransferActive()`, `markTransferInactive()`
+  - Updated `requireAuth()` middleware (lines 161-198):
+    - Checks time since last activity
+    - Skips check if transfer is active
+    - Redirects to login with timeout parameter if inactive
+  - Updated `requireAdmin()` middleware (lines 200-236):
+    - Same inactivity logic for admin users
+
+- `internal/server/handlers_download_user.go` (lines 8-56):
+  - Added `time` import
+  - Updated `requireDownloadAuth()` middleware:
+    - Inactivity checking for download accounts
+    - Uses `LastUsed` timestamp for download accounts
+
+- `internal/server/handlers_files.go`:
+  - Updated `handleUpload()` (lines 41-47):
+    - Marks transfer as active when upload starts
+    - Uses defer to mark inactive when complete
+  - Updated `performDownload()` (lines 537-549):
+    - Marks transfer as active for both regular and download sessions
+    - Automatically marks inactive when download completes
+
+**Frontend Changes:**
+- `web/static/js/inactivity-tracker.js` (new file):
+  - Tracks user activity across multiple event types
+  - 10-minute inactivity timeout with 1-minute warning
+  - Visual warning banner with countdown timer
+  - Public API for transfer state management
+  - Auto-initialization on page load
+
+- `web/static/js/dashboard.js` (lines 165-215):
+  - Calls `markTransferActive()` when upload starts
+  - Calls `markTransferInactive()` when upload completes or fails
+  - Prevents timeout during file operations
+
+**Security Improvements:**
+- Reduced risk of session hijacking by limiting inactive session lifetime
+- Automatic cleanup of abandoned sessions
+- No logout during legitimate file operations
+
+**Behavioral Notes:**
+- Timer resets on any user interaction
+- Transfer state tracked per session ID
+- Download accounts use email as session identifier
+- Login redirect includes `?timeout=1` parameter for user feedback
+
+### 🔄 Version Update
+- Version bumped from 3.3.6 to 3.3.7
+- Updated `cmd/server/main.go` (line 25)
+
+---
+
 ## [3.3.6] - 2025-11-12 ✨ Welcome Email Design Improvements
 
 ### ✨ Design Improvements
