@@ -250,6 +250,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 		}
 		return "/dashboard"
 	})() + `">Dashboard</a>
+            <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
             <a href="/logout">Logout</a>
         </nav>

@@ -1085,6 +1085,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <a href="/admin">Dashboard</a>
             <a href="/dashboard">My Files</a>
             <a href="/admin/users">Users</a>
+            <a href="/admin/teams">Teams</a>
             <a href="/admin/files">Files</a>
             <a href="/admin/trash">Trash</a>
             <a href="/admin/branding">Branding</a>
