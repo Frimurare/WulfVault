@@ -42,12 +42,7 @@ func (s *Server) handleAdminTeams(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	data := map[string]interface{}{
-		"User":  user,
-		"Teams": teamInfos,
-	}
-
-	renderTemplate(w, "admin-teams", data)
+	s.renderAdminTeams(w, teamInfos)
 }
 
 // handleAPITeamCreate creates a new team (Admin only)
@@ -448,12 +443,7 @@ func (s *Server) handleUserTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := map[string]interface{}{
-		"User":  user,
-		"Teams": teams,
-	}
-
-	renderTemplate(w, "user-teams", data)
+	s.renderUserTeams(w, user, teams)
 }
 
 // handleAPITeamFiles returns all files shared with a team
@@ -532,14 +522,564 @@ func (s *Server) handleAPIMyTeams(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Helper function to render templates
-func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
-	// This is a placeholder - you'll need to implement proper template rendering
-	// For now, return JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"template": tmpl,
-		"data":     data,
-		"message":  fmt.Sprintf("Template rendering not yet implemented for: %s", tmpl),
-	})
+// renderAdminTeams renders the admin teams management page
+func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
+	*models.Team
+	MemberCount int
+}) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
+    <title>Manage Teams - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn-danger {
+            background: #dc2626;
+        }
+        .btn-secondary {
+            background: #6b7280;
+            margin-left: 8px;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+        }
+        th {
+            background: #f9f9f9;
+            font-weight: 600;
+            color: #666;
+        }
+        tr:not(:last-child) td {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .action-links a, .action-links button {
+            margin-right: 12px;
+            color: ` + s.getPrimaryColor() + `;
+            text-decoration: none;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 14px;
+        }
+        .action-links button:hover {
+            text-decoration: underline;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #374151;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        .storage-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .storage-bar-fill {
+            height: 100%;
+            background: ` + s.getPrimaryColor() + `;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    ` + s.getAdminHeaderHTML("") + `
+    <div class="container">
+        <div class="actions">
+            <h2>📁 Manage Teams</h2>
+            <button class="btn" onclick="showCreateModal()">+ Create Team</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Team Name</th>
+                    <th>Description</th>
+                    <th>Members</th>
+                    <th>Storage</th>
+                    <th>Created</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="teamsTable">`
+
+	if len(teams) == 0 {
+		html += `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                        No teams yet. Click "Create Team" to get started.
+                    </td>
+                </tr>`
+	} else {
+		for _, team := range teams {
+			statusBadge := `<span class="badge badge-active">Active</span>`
+			if !team.IsActive {
+				statusBadge = `<span class="badge badge-inactive">Inactive</span>`
+			}
+
+			storagePercent := team.GetStoragePercentage()
+			storageUsed := fmt.Sprintf("%.1f GB", float64(team.StorageUsedMB)/1024)
+			storageTotal := fmt.Sprintf("%.1f GB", float64(team.StorageQuotaMB)/1024)
+
+			html += fmt.Sprintf(`
+                <tr>
+                    <td><strong>%s</strong></td>
+                    <td>%s</td>
+                    <td>%d members</td>
+                    <td>
+                        %s / %s (%d%%)
+                        <div class="storage-bar">
+                            <div class="storage-bar-fill" style="width: %d%%"></div>
+                        </div>
+                    </td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td class="action-links">
+                        <button onclick="viewMembers(%d, '%s')">Members</button>
+                        <button onclick="editTeam(%d)">Edit</button>
+                        <button onclick="deleteTeam(%d, '%s')">Delete</button>
+                    </td>
+                </tr>`,
+				team.Name, team.Description, team.MemberCount,
+				storageUsed, storageTotal, storagePercent, storagePercent,
+				team.GetReadableCreatedAt(), statusBadge,
+				team.Id, team.Name, team.Id, team.Id, team.Name)
+		}
+	}
+
+	html += `
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Create/Edit Team Modal -->
+    <div id="teamModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Create Team</h2>
+            <div class="form-group">
+                <label for="teamName">Team Name *</label>
+                <input type="text" id="teamName" placeholder="e.g., Prudencia" required>
+            </div>
+            <div class="form-group">
+                <label for="teamDescription">Description</label>
+                <textarea id="teamDescription" placeholder="Optional description"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="teamQuota">Storage Quota (MB) *</label>
+                <input type="number" id="teamQuota" value="10240" min="1" required>
+                <small style="color: #666;">Default: 10240 MB (10 GB)</small>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn" onclick="saveTeam()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Modal -->
+    <div id="membersModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h2 id="membersTitle">Team Members</h2>
+            <div id="membersList" style="margin: 20px 0;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeMembersModal()">Close</button>
+                <button class="btn" onclick="showAddMemberForm()">+ Add Member</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTeamId = null;
+
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Create Team';
+            document.getElementById('teamName').value = '';
+            document.getElementById('teamDescription').value = '';
+            document.getElementById('teamQuota').value = '10240';
+            currentTeamId = null;
+            document.getElementById('teamModal').classList.add('active');
+        }
+
+        function editTeam(teamId) {
+            // Fetch team data and populate form
+            fetch('/api/teams/members?teamId=' + teamId)
+                .then(r => r.json())
+                .then(data => {
+                    // For now, just show a basic edit form
+                    document.getElementById('modalTitle').textContent = 'Edit Team';
+                    currentTeamId = teamId;
+                    document.getElementById('teamModal').classList.add('active');
+                });
+        }
+
+        function closeModal() {
+            document.getElementById('teamModal').classList.remove('active');
+        }
+
+        function saveTeam() {
+            const name = document.getElementById('teamName').value.trim();
+            const description = document.getElementById('teamDescription').value.trim();
+            const quota = parseInt(document.getElementById('teamQuota').value);
+
+            if (!name) {
+                alert('Team name is required');
+                return;
+            }
+
+            const url = currentTeamId ? '/api/admin/teams/update' : '/api/admin/teams/create';
+            const body = {
+                name: name,
+                description: description,
+                storageQuotaMB: quota
+            };
+
+            if (currentTeamId) {
+                body.teamId = currentTeamId;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Team saved successfully!');
+                    location.reload();
+                } else {
+                    alert('Error saving team');
+                }
+            })
+            .catch(err => {
+                alert('Error: ' + err.message);
+            });
+        }
+
+        function deleteTeam(teamId, teamName) {
+            if (!confirm('Are you sure you want to delete team "' + teamName + '"?')) {
+                return;
+            }
+
+            fetch('/api/admin/teams/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({teamId: teamId})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Team deleted successfully!');
+                    location.reload();
+                } else {
+                    alert('Error deleting team');
+                }
+            });
+        }
+
+        function viewMembers(teamId, teamName) {
+            document.getElementById('membersTitle').textContent = 'Members of ' + teamName;
+
+            fetch('/api/teams/members?teamId=' + teamId)
+                .then(r => r.json())
+                .then(data => {
+                    let html = '<table style="width: 100%;"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead><tbody>';
+
+                    if (data.members && data.members.length > 0) {
+                        data.members.forEach(m => {
+                            const role = m.role === 0 ? 'Owner' : m.role === 1 ? 'Admin' : 'Member';
+                            const joinedDate = new Date(m.joinedAt * 1000).toLocaleDateString();
+                            html += '<tr><td>' + m.userName + '</td><td>' + m.userEmail + '</td><td>' + role + '</td><td>' + joinedDate + '</td><td><button onclick="removeMember(' + teamId + ', ' + m.userId + ', \'' + m.userName + '\')">Remove</button></td></tr>';
+                        });
+                    } else {
+                        html += '<tr><td colspan="5" style="text-align: center; padding: 20px;">No members yet</td></tr>';
+                    }
+
+                    html += '</tbody></table>';
+                    document.getElementById('membersList').innerHTML = html;
+                    document.getElementById('membersModal').classList.add('active');
+                });
+        }
+
+        function closeMembersModal() {
+            document.getElementById('membersModal').classList.remove('active');
+        }
+
+        function showAddMemberForm() {
+            // This would open another modal to add members
+            alert('Add member functionality - you can add this UI later');
+        }
+
+        function removeMember(teamId, userId, userName) {
+            if (!confirm('Remove ' + userName + ' from this team?')) {
+                return;
+            }
+
+            fetch('/api/teams/remove-member', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({teamId: teamId, userId: userId})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Member removed!');
+                    closeMembersModal();
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// renderUserTeams renders the user teams page
+func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams []*models.TeamWithMembers) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Ulf Holmström">
+    <title>My Teams - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .header-user {
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            padding: 20px 40px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-user nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .team-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .team-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .team-card h3 {
+            color: #111;
+            margin-bottom: 8px;
+        }
+        .team-card p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .team-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #666;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .empty-state h3 {
+            margin-bottom: 12px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-user">
+        <h1>` + s.config.CompanyName + `</h1>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/teams">Teams</a>
+            <a href="/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 8px;">👥 My Teams</h2>
+        <p style="color: #666; margin-bottom: 24px;">Teams you're a member of</p>
+
+        <div class="teams-grid">`
+
+	if len(teams) == 0 {
+		html += `
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <h3>No teams yet</h3>
+                <p>You haven't been added to any teams yet. Contact your administrator to get started.</p>
+            </div>`
+	} else {
+		for _, team := range teams {
+			roleText := "Member"
+			if team.UserRole == models.TeamRoleOwner {
+				roleText = "Owner"
+			} else if team.UserRole == models.TeamRoleAdmin {
+				roleText = "Admin"
+			}
+
+			storageUsed := fmt.Sprintf("%.1f GB", float64(team.StorageUsedMB)/1024)
+			storageTotal := fmt.Sprintf("%.1f GB", float64(team.StorageQuotaMB)/1024)
+
+			html += fmt.Sprintf(`
+            <div class="team-card" onclick="viewTeamFiles(%d, '%s')">
+                <h3>%s</h3>
+                <p>%s</p>
+                <div class="team-stats">
+                    <span>👤 %d members</span>
+                    <span>💾 %s / %s</span>
+                    <span class="badge">%s</span>
+                </div>
+            </div>`,
+				team.Id, team.Name, team.Name, team.Description,
+				team.MemberCount, storageUsed, storageTotal, roleText)
+		}
+	}
+
+	html += `
+        </div>
+    </div>
+
+    <script>
+        function viewTeamFiles(teamId, teamName) {
+            window.location.href = '/teams?id=' + teamId;
+        }
+    </script>
+</body>
+</html>`
+
+	w.Write([]byte(html))
 }
