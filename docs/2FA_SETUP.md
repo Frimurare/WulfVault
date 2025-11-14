@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sharecare 3.2 Beta 1 introduces TOTP-based Two-Factor Authentication (2FA) for enhanced account security. This feature adds an extra layer of protection by requiring a time-based code from an authenticator app in addition to your password.
+WulfVault 3.2 Beta 1 introduces TOTP-based Two-Factor Authentication (2FA) for enhanced account security. This feature adds an extra layer of protection by requiring a time-based code from an authenticator app in addition to your password.
 
 ## Features
 
@@ -24,7 +24,7 @@ Sharecare 3.2 Beta 1 introduces TOTP-based Two-Factor Authentication (2FA) for e
 
 ### Enabling 2FA
 
-1. **Login** to your Sharecare account
+1. **Login** to your WulfVault account
 2. **Navigate** to Settings (click your name or go to `/settings`)
 3. **Click** "Enable 2FA" button
 4. **Click** "Generate QR Code"
@@ -225,7 +225,7 @@ BackupCodes TEXT DEFAULT ''       -- JSON array of bcrypt-hashed codes
 ## FAQ
 
 **Q: Can I use SMS for 2FA instead of an authenticator app?**
-A: No, Sharecare only supports TOTP authenticator apps. SMS is less secure and not recommended for enterprise use.
+A: No, WulfVault only supports TOTP authenticator apps. SMS is less secure and not recommended for enterprise use.
 
 **Q: What happens if I lose my phone?**
 A: Use one of your 10 backup codes to login, then disable and re-enable 2FA with your new device.
@@ -273,7 +273,7 @@ A: There's no lockout mechanism yet (beta limitation). However, codes expire eve
 ## Support
 
 For issues or questions:
-- **GitHub Issues**: https://github.com/Frimurare/Sharecare/issues
+- **GitHub Issues**: https://github.com/Frimurare/WulfVault/issues
 - **Documentation**: See `CHANGELOG.md` for detailed release notes
 
 ---

@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -13,7 +13,7 @@ import (
 // UserPermission contains zero or more permissions as uint16
 type UserPermission uint16
 
-// User contains information about the Sharecare user
+// User contains information about the WulfVault user
 type User struct {
 	Id             int            `json:"id" redis:"id"`
 	Name           string         `json:"name" redis:"Name"`

@@ -1,16 +1,16 @@
-# Sharecare - Enterprise File Sharing Platform
+# WulfVault - Enterprise File Sharing Platform
 
 **Version 3.3.6** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
-Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, Sharecare provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
+WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
-**Architecturally inspired by [Gokapi](https://github.com/Forceu/Gokapi)** — Sharecare is a complete rewrite (~95% new code) adding multi-user management, audit logging, email integration, 2FA, branding, and enterprise features.
+**Architecturally inspired by [Gokapi](https://github.com/Forceu/Gokapi)** — WulfVault is a complete rewrite (~95% new code) adding multi-user management, audit logging, email integration, 2FA, branding, and enterprise features.
 
 ---
 
-## Why Sharecare?
+## Why WulfVault?
 
 Many organizations need to share large files regularly but face challenges:
 - Commercial file transfer services charge high fees per user or transfer
@@ -18,7 +18,7 @@ Many organizations need to share large files regularly but face challenges:
 - Need to know exactly who downloaded what and when for compliance
 - Want complete control over data security and retention
 
-Sharecare solves this by providing:
+WulfVault solves this by providing:
 - Self-hosted solution - your data stays on your infrastructure
 - No per-transfer costs or user limits
 - Complete download tracking with email addresses and timestamps
@@ -93,7 +93,7 @@ Sharecare solves this by providing:
 
 ### 🎨 Branding & Customization
 - **Full branding control:**
-  - Upload custom logo (replaces default Sharecare branding)
+  - Upload custom logo (replaces default WulfVault branding)
   - Custom primary and secondary colors for entire interface
   - Custom company name displayed throughout system
   - Branded download pages shown to all recipients
@@ -164,11 +164,11 @@ Sharecare solves this by providing:
 
 ### First-Time Setup
 
-1. **Download and start Sharecare** (see installation methods below)
+1. **Download and start WulfVault** (see installation methods below)
 
 2. **Initial admin credentials:**
    - **Email:** `admin@sharecare.local`
-   - **Password:** `SharecareAdmin2024!`
+   - **Password:** `WulfVaultAdmin2024!`
 
    **⚠️ IMPORTANT:** Change the admin password immediately after first login!
 
@@ -235,8 +235,8 @@ docker-compose up -d
 
 ```bash
 # Clone repository
-git clone https://github.com/Frimurare/Sharecare.git
-cd Sharecare
+git clone https://github.com/Frimurare/WulfVault.git
+cd WulfVault
 
 # Install dependencies
 go mod download
@@ -250,7 +250,7 @@ go build -o sharecare cmd/server/main.go
 
 **Default credentials on first run:**
 - Email: `admin@sharecare.local`
-- Password: `SharecareAdmin2024!`
+- Password: `WulfVaultAdmin2024!`
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including Proxmox LXC, reverse proxy configuration, and SSL setup.
 
@@ -288,7 +288,7 @@ After logging in as admin, configure:
 ### Large Video File Sharing
 Organizations with surveillance systems or video production need to share large video exports:
 - Export video footage (often 1GB+ files)
-- Upload to Sharecare with expiration and authentication
+- Upload to WulfVault with expiration and authentication
 - Share link with investigators, management, or customers
 - Track exactly who downloaded the footage and when
 - Maintain complete audit trail for legal compliance
@@ -352,7 +352,7 @@ Create upload request links for:
 
 ## API
 
-Sharecare provides a REST API for automation and integrations.
+WulfVault provides a REST API for automation and integrations.
 
 **Basic endpoints:**
 - `/api/upload` - Upload files programmatically
@@ -384,7 +384,7 @@ See full API documentation in [API.md](docs/API.md) (coming soon).
 3. **Enable firewall** - Only expose ports 80/443
 4. **Regular backups** - Backup `./data` and `./uploads` directories
 5. **Monitor logs** - Watch for suspicious download patterns
-6. **Update regularly** - Keep Sharecare up to date
+6. **Update regularly** - Keep WulfVault up to date
 7. **Strong passwords** - Enforce password policies for all users
 
 ---
@@ -427,7 +427,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment and autostart instruc
 
 Make sure you're using:
 - Email: `admin@sharecare.local`
-- Password: `SharecareAdmin2024!`
+- Password: `WulfVaultAdmin2024!`
 
 If it still doesn't work, check the server logs for initialization errors.
 
@@ -449,7 +449,7 @@ If it still doesn't work, check the server logs for initialization errors.
 
 - Check [INSTALLATION.md](INSTALLATION.md) for detailed setup
 - Review logs: `docker-compose logs -f sharecare`
-- Open issue on GitHub: https://github.com/Frimurare/Sharecare/issues
+- Open issue on GitHub: https://github.com/Frimurare/WulfVault/issues
 
 ---
 
@@ -464,7 +464,7 @@ go test ./...
 ### Project Structure
 
 ```
-Sharecare/
+WulfVault/
 ├── cmd/server/          # Main application entry point
 ├── internal/
 │   ├── auth/           # Authentication and sessions
@@ -493,7 +493,7 @@ Contributions welcome! Please:
 
 This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
 
-**Why AGPL-3.0?** This license ensures that if anyone uses Sharecare to provide a service over a network (like SaaS), they must share their modifications with the community. This prevents companies from taking the code, making improvements, and keeping them proprietary. It protects the open-source nature of the project while requiring attribution and source disclosure for all network use.
+**Why AGPL-3.0?** This license ensures that if anyone uses WulfVault to provide a service over a network (like SaaS), they must share their modifications with the community. This prevents companies from taking the code, making improvements, and keeping them proprietary. It protects the open-source nature of the project while requiring attribution and source disclosure for all network use.
 
 **Architecturally inspired by Gokapi** by Forceu - https://github.com/Forceu/Gokapi
 
@@ -503,9 +503,9 @@ See [NOTICE.md](NOTICE.md) for full attribution and license information.
 
 ## Support
 
-- **Issues:** https://github.com/Frimurare/Sharecare/issues
-- **Discussions:** https://github.com/Frimurare/Sharecare/discussions
-- **Documentation:** https://github.com/Frimurare/Sharecare/wiki
+- **Issues:** https://github.com/Frimurare/WulfVault/issues
+- **Discussions:** https://github.com/Frimurare/WulfVault/discussions
+- **Documentation:** https://github.com/Frimurare/WulfVault/wiki
 
 ---
 

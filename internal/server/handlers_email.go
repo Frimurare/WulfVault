@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -12,9 +12,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/email"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // EmailConfigRequest represents a request for email configuration
@@ -278,7 +278,7 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 	// Send test email
 	err = provider.SendEmail(
 		user.Email,
-		"Sharecare Email Test",
+		"WulfVault Email Test",
 		"<h1>Test successful!</h1><p>Your email configuration is working correctly.</p>",
 		"Test successful! Your email configuration is working correctly.",
 	)
@@ -422,7 +422,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Email Settings - Sharecare</title>
+    <title>Email Settings - WulfVault</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -657,7 +657,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                     <label>From Name (optional)</label>
                     <input type="text"
                            id="brevo-from-name"
-                           placeholder="Sharecare"
+                           placeholder="WulfVault"
                            value="` + brevoFromName + `">
                 </div>
 
@@ -723,7 +723,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                     <label>From Name (optional)</label>
                     <input type="text"
                            id="smtp-from-name"
-                           placeholder="Sharecare"
+                           placeholder="WulfVault"
                            value="` + smtpFromName + `">
                 </div>
 

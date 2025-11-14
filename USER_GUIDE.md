@@ -1,4 +1,4 @@
-# Sharecare User Guide v3.3.0
+# WulfVault User Guide v3.3.0
 
 **Complete Guide for Administrators and Users**
 
@@ -26,9 +26,9 @@
 
 ## Introduction
 
-### What is Sharecare?
+### What is WulfVault?
 
-Sharecare is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Unlike commercial file transfer services, Sharecare gives you:
+WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Unlike commercial file transfer services, WulfVault gives you:
 
 - **Complete data ownership** - Files stay on your infrastructure
 - **No subscription fees** - One-time setup, unlimited transfers
@@ -48,7 +48,7 @@ Sharecare is a professional-grade, self-hosted file sharing platform designed fo
 
 ### Who Should Use This Guide?
 
-- **System Administrators** - Setting up and managing Sharecare
+- **System Administrators** - Setting up and managing WulfVault
 - **Regular Users** - Uploading and sharing files
 - **Download Users** - Receiving and accessing files
 - **IT Managers** - Understanding security and compliance features
@@ -59,7 +59,7 @@ Sharecare is a professional-grade, self-hosted file sharing platform designed fo
 
 ### First-Time Login
 
-1. **Navigate to your Sharecare instance:**
+1. **Navigate to your WulfVault instance:**
    ```
    http://your-server:8080
    or
@@ -68,7 +68,7 @@ Sharecare is a professional-grade, self-hosted file sharing platform designed fo
 
 2. **Default Admin Credentials** (first-time setup only):
    - Email: `admin@sharecare.local`
-   - Password: `SharecareAdmin2024!`
+   - Password: `WulfVaultAdmin2024!`
 
 3. **⚠️ CRITICAL SECURITY STEP:**
    - Immediately go to Settings → Change Password
@@ -101,17 +101,17 @@ Sharecare is a professional-grade, self-hosted file sharing platform designed fo
 
 ## Configuration
 
-Sharecare can be configured through environment variables, command-line flags, and the web interface.
+WulfVault can be configured through environment variables, command-line flags, and the web interface.
 
 ### Environment Variables
 
-All configuration can be set via environment variables. These are the primary way to configure Sharecare in Docker deployments.
+All configuration can be set via environment variables. These are the primary way to configure WulfVault in Docker deployments.
 
 #### Complete Variable Reference
 
 | Variable | Description | Default Value | Requires Restart |
 |----------|-------------|---------------|------------------|
-| `SERVER_URL` | Public URL where Sharecare is accessible | `http://localhost:8080` | ❌ No* |
+| `SERVER_URL` | Public URL where WulfVault is accessible | `http://localhost:8080` | ❌ No* |
 | `PORT` | Port the server listens on | `8080` | ✅ Yes |
 | `DATA_DIR` | Directory for database storage | `./data` | ✅ Yes |
 | `UPLOADS_DIR` | Directory for uploaded files | `./uploads` | ✅ Yes |
@@ -126,7 +126,7 @@ All configuration can be set via environment variables. These are the primary wa
 
 #### Method 1: Docker Run Command
 
-When starting Sharecare with `docker run`, use `-e` flags:
+When starting WulfVault with `docker run`, use `-e` flags:
 
 ```bash
 docker run -d \
@@ -227,7 +227,7 @@ When running the compiled binary directly, use flags:
 Create a `.env` file in your project directory:
 
 ```bash
-# .env file for Sharecare configuration
+# .env file for WulfVault configuration
 
 # Server Configuration
 SERVER_URL=https://files.yourdomain.com
@@ -381,7 +381,7 @@ environment:
 docker logs sharecare
 
 # Output shows:
-# Sharecare File Sharing System v3.3.0
+# WulfVault File Sharing System v3.3.0
 # Server starting on :8080
 # Server URL: https://files.yourdomain.com
 ```
@@ -871,7 +871,7 @@ Click on any file to see:
 ### Why Configure Email?
 
 Enable email functionality to:
-- Send download links directly from Sharecare
+- Send download links directly from WulfVault
 - Send password reset emails
 - Provide professional branded communications
 
@@ -911,7 +911,7 @@ From: yourname@gmail.com
 **Setup:**
 1. Create account at https://www.brevo.com
 2. Get API key from Brevo dashboard
-3. In Sharecare:
+3. In WulfVault:
    - Select **Brevo Provider**
    - Enter API Key
    - Set From Address (must be verified in Brevo)
@@ -937,7 +937,7 @@ From: yourname@gmail.com
 
 ### Email Templates
 
-**Sharecare sends emails for:**
+**WulfVault sends emails for:**
 - File sharing (when user emails download link)
 - Password reset requests
 - Account notifications
@@ -1231,7 +1231,7 @@ Recipients can:
 - ✅ Enable 2FA for all admin accounts
 - ✅ Use HTTPS in production (SSL certificate)
 - ✅ Regular backups of data and uploads directories
-- ✅ Keep Sharecare updated
+- ✅ Keep WulfVault updated
 - ✅ Review user accounts quarterly (remove inactive)
 - ✅ Monitor storage usage and set appropriate quotas
 - ✅ Configure email for password resets
@@ -1352,7 +1352,7 @@ Recipients can:
 
 **Documentation:**
 - User Guide (this document)
-- README: https://github.com/Frimurare/Sharecare
+- README: https://github.com/Frimurare/WulfVault
 - Installation Guide: INSTALLATION.md
 
 **Community:**
@@ -1375,7 +1375,7 @@ Recipients can:
 
 **Backup Codes:** One-time use codes for 2FA emergency access if authenticator app unavailable.
 
-**Branding:** Customization of Sharecare appearance with logo, colors, and company name.
+**Branding:** Customization of WulfVault appearance with logo, colors, and company name.
 
 **Direct Download:** File sharing mode allowing immediate download without recipient account.
 
@@ -1385,7 +1385,7 @@ Recipients can:
 
 **File Request:** Upload portal allowing others to upload files to you.
 
-**GDPR:** General Data Protection Regulation - EU privacy law. Sharecare includes compliance features.
+**GDPR:** General Data Protection Regulation - EU privacy law. WulfVault includes compliance features.
 
 **Quota:** Storage limit per user, configurable by administrators.
 
@@ -1397,7 +1397,7 @@ Recipients can:
 
 ---
 
-**Sharecare v3.3.0**
+**WulfVault v3.3.0**
 **Copyright © 2025 Ulf Holmström (Frimurare)**
 **Licensed under AGPL-3.0**
 
@@ -1408,6 +1408,6 @@ Recipients can:
 **End of User Guide**
 
 For the latest version of this guide and additional documentation, visit:
-https://github.com/Frimurare/Sharecare
+https://github.com/Frimurare/WulfVault
 
 🎉 **Enjoy secure, professional file sharing with complete control!**

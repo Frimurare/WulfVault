@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -8,8 +8,8 @@ package email
 import (
 	"crypto/tls"
 
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/models"
 	"gopkg.in/gomail.v2"
 )
 
@@ -27,7 +27,7 @@ type SMTPProvider struct {
 // NewSMTPProvider skapar en ny SMTP provider
 func NewSMTPProvider(host string, port int, username, password, fromEmail, fromName string, useTLS bool) *SMTPProvider {
 	if fromName == "" {
-		fromName = "Sharecare"
+		fromName = "WulfVault"
 	}
 
 	return &SMTPProvider{

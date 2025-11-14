@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -87,7 +87,7 @@ func GenerateBackupCodes() ([]string, error) {
 
 // HashBackupCode hashes a backup code using bcrypt
 func HashBackupCode(code string) (string, error) {
-	// Use bcrypt with cost 12 (same as passwords in Sharecare)
+	// Use bcrypt with cost 12 (same as passwords in WulfVault)
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(code), 12)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash backup code: %w", err)

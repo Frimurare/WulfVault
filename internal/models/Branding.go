@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -23,11 +23,11 @@ type Branding struct {
 // DefaultBranding returns the default branding configuration
 func DefaultBranding() Branding {
 	return Branding{
-		CompanyName:    "Manvarg Sharecare",
+		CompanyName:    "Manvarg WulfVault",
 		PrimaryColor:   "#2563eb",
 		SecondaryColor: "#1e40af",
 		FooterText:     "Secure File Sharing • Contact: ulf@manvarg.se",
-		WelcomeMessage: "Welcome to Manvarg Sharecare - Secure File Sharing",
+		WelcomeMessage: "Welcome to Manvarg WulfVault - Secure File Sharing",
 	}
 }
 

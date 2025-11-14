@@ -1,4 +1,4 @@
-module github.com/Frimurare/Sharecare
+module github.com/Frimurare/WulfVault
 
 go 1.23
 

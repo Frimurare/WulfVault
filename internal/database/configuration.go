@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -53,7 +53,7 @@ func (d *Database) GetBrandingConfig() (map[string]string, error) {
 		config["branding_logo"] = ""
 	}
 	if _, ok := config["branding_company_name"]; !ok {
-		config["branding_company_name"] = "Manvarg Sharecare"
+		config["branding_company_name"] = "Manvarg WulfVault"
 	}
 	if _, ok := config["branding_primary_color"]; !ok {
 		config["branding_primary_color"] = "#2563eb"

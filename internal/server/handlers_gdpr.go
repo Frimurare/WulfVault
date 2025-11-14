@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/email"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // handleDownloadAccountGDPR shows download account self-service page with GDPR delete option
@@ -314,7 +314,7 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
         </div>
 
         <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-            Powered by Sharecare © Ulf Holmström – AGPL-3.0
+            Powered by WulfVault © Ulf Holmström – AGPL-3.0
         </div>
     </div>
 </body>

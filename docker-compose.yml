@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  sharecare:
+  wulfvault:
     build: .
-    image: sharecare/sharecare:latest
-    container_name: sharecare
+    image: wulfvault/wulfvault:latest
+    container_name: wulfvault
     ports:
       - "8080:8080"
     volumes:
@@ -15,8 +15,8 @@ services:
       - PORT=8080
       - DATA_DIR=/data
       - UPLOADS_DIR=/uploads
-      - ADMIN_EMAIL=admin@sharecare.local
-      - ADMIN_PASSWORD=SharecareAdmin2024!
+      - ADMIN_EMAIL=admin@wulfvault.local
+      - ADMIN_PASSWORD=WulfVaultAdmin2024!
       - MAX_FILE_SIZE_MB=5000
       - DEFAULT_QUOTA_MB=10000
     restart: unless-stopped

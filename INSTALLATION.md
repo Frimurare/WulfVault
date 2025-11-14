@@ -1,6 +1,6 @@
-# Sharecare - Installation Guide
+# WulfVault - Installation Guide
 
-Complete guide to installing and deploying Sharecare file sharing system.
+Complete guide to installing and deploying WulfVault file sharing system.
 
 ## Quick Start (Docker - Recommended)
 
@@ -14,8 +14,8 @@ Complete guide to installing and deploying Sharecare file sharing system.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Frimurare/Sharecare.git
-   cd Sharecare
+   git clone https://github.com/Frimurare/WulfVault.git
+   cd WulfVault
    ```
 
 2. **Configure environment**
@@ -77,7 +77,7 @@ docker --version
 docker compose version
 ```
 
-### 3. Deploy Sharecare
+### 3. Deploy WulfVault
 
 ```bash
 # Create directory
@@ -108,8 +108,8 @@ services:
 EOF
 
 # Build image (if not using pre-built)
-# git clone https://github.com/Frimurare/Sharecare.git
-# cd Sharecare
+# git clone https://github.com/Frimurare/WulfVault.git
+# cd WulfVault
 # docker build -t sharecare/sharecare:latest .
 
 # Start service
@@ -176,8 +176,8 @@ certbot --nginx -d files.yourdomain.com
 
 1. **Clone and build**
    ```bash
-   git clone https://github.com/Frimurare/Sharecare.git
-   cd Sharecare
+   git clone https://github.com/Frimurare/WulfVault.git
+   cd WulfVault
 
    # Install dependencies
    go mod download
@@ -204,7 +204,7 @@ certbot --nginx -d files.yourdomain.com
    ```bash
    cat > /etc/systemd/system/sharecare.service << 'EOF'
    [Unit]
-   Description=Sharecare File Sharing
+   Description=WulfVault File Sharing
    After=network.target
 
    [Service]
@@ -259,14 +259,14 @@ Located at `data/config.json`:
   "defaultQuotaMB": 5000,
   "saveIp": false,
   "branding": {
-    "companyName": "Sharecare",
+    "companyName": "WulfVault",
     "primaryColor": "#0066CC",
     "secondaryColor": "#333333",
     "logoPath": "",
     "logoBase64": "",
     "faviconPath": "",
     "footerText": "Secure File Sharing",
-    "welcomeMessage": "Welcome to Sharecare - Secure File Sharing",
+    "welcomeMessage": "Welcome to WulfVault - Secure File Sharing",
     "customCSS": ""
   }
 }
@@ -292,7 +292,7 @@ cp -r data data.backup
 cp -r uploads uploads.backup
 
 # Download new version
-wget https://github.com/Frimurare/Sharecare/releases/latest/download/sharecare-linux-amd64
+wget https://github.com/Frimurare/WulfVault/releases/latest/download/sharecare-linux-amd64
 chmod +x sharecare-linux-amd64
 mv sharecare-linux-amd64 sharecare
 
@@ -396,8 +396,8 @@ docker compose up -d
 
 ## Support
 
-- **GitHub Issues**: https://github.com/Frimurare/Sharecare/issues
-- **Documentation**: https://github.com/Frimurare/Sharecare/wiki
+- **GitHub Issues**: https://github.com/Frimurare/WulfVault/issues
+- **Documentation**: https://github.com/Frimurare/WulfVault/wiki
 
 ---
 

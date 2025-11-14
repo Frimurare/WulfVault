@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -13,8 +13,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // BrevoProvider implementerar EmailProvider för Brevo (Sendinblue)
@@ -27,7 +27,7 @@ type BrevoProvider struct {
 // NewBrevoProvider skapar en ny Brevo provider
 func NewBrevoProvider(apiKey, fromEmail, fromName string) *BrevoProvider {
 	if fromName == "" {
-		fromName = "Sharecare"
+		fromName = "WulfVault"
 	}
 
 	return &BrevoProvider{

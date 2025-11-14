@@ -96,7 +96,7 @@
 **Dynamic Admin Information:**
 - Email now shows which admin created the account
 - Format: "[Admin Name] ([Admin Email]) has added you to [Company Name]"
-- Example: "Ulf Holmström (ulf@example.com) has added you to Sharecare"
+- Example: "Ulf Holmström (ulf@example.com) has added you to WulfVault"
 - More personal and informative welcome message
 
 **Improved Messaging:**
@@ -197,7 +197,7 @@
 - Secure one-time password setup link (1-hour validity)
 - Mobile-friendly responsive design
 - Clear instructions and call-to-action button
-- Professional gradient design matching Sharecare style
+- Professional gradient design matching WulfVault style
 
 ### Technical Details
 
@@ -363,7 +363,7 @@
 
 ### 🎉 GOLDEN RELEASE - Production Ready
 
-This is the first stable production release of Sharecare, marking a complete rewrite (~95% new code) architecturally inspired by Gokapi.
+This is the first stable production release of WulfVault, marking a complete rewrite (~95% new code) architecturally inspired by Gokapi.
 
 ### 📚 New Documentation
 - **Comprehensive User Guide**: 76-page complete manual covering all features
@@ -377,12 +377,12 @@ This is the first stable production release of Sharecare, marking a complete rew
 ### ⚖️ Attribution & Licensing Updates
 - **Copyright Headers**: Added to all 55 .go files, .js, and .css files
 - **Meta Tags**: `<meta name="author" content="Ulf Holmström">` in all 29 HTML pages
-- **Attribution Footer**: "Powered by Sharecare © Ulf Holmström – AGPL-3.0" in Settings pages
+- **Attribution Footer**: "Powered by WulfVault © Ulf Holmström – AGPL-3.0" in Settings pages
 - **Project Files**:
   - `NOTICE` - Copyright and attribution requirements
   - `AUTHORS` - Project contributors
   - `CODEOWNERS` - Code ownership (@Frimurare)
-- **Watermark Constant**: `SharecareSignature` in config.go
+- **Watermark Constant**: `WulfVaultSignature` in config.go
 - **License**: Updated to AGPL-3.0 with network copyleft protection
 - **Clarity**: Updated attribution from "Based on Gokapi" to "Architecturally inspired by Gokapi — Complete rewrite (~95% new code)"
 
@@ -396,7 +396,7 @@ This is the first stable production release of Sharecare, marking a complete rew
   - 🌐 Email & Notifications (3 categories)
   - 📁 File Request System (2 categories)
   - 🔧 Administration & Management (4 categories)
-- **Clear Positioning**: Emphasizes Sharecare as complete alternative to commercial file transfer services
+- **Clear Positioning**: Emphasizes WulfVault as complete alternative to commercial file transfer services
 - **Target Audience**: Expanded to include government, education, healthcare sectors
 
 ### 🔍 Code Analysis & Documentation
@@ -425,7 +425,7 @@ This is the first stable production release of Sharecare, marking a complete rew
 - internal/auth: 263 lines (1.4%) - Authentication
 - internal/totp: 118 lines (0.6%) - Two-Factor Auth
 
-**Features NOT in Gokapi (100% Sharecare):**
+**Features NOT in Gokapi (100% WulfVault):**
 - Multi-user authentication system
 - Role-based access control (4 user types)
 - Email integration (SMTP/Brevo)

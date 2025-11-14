@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // GenerateUploadNotificationHTML skapar HTML-version av uppladdningsnotifiering
@@ -62,7 +62,7 @@ func GenerateUploadNotificationHTML(request *models.FileRequest, file *database.
 
 			<div class="footer">
 				<p>The file is now available in your dashboard and can be downloaded.</p>
-				<p>This is an automated message from Sharecare.</p>
+				<p>This is an automated message from WulfVault.</p>
 			</div>
 		</div>
 	</div>
@@ -89,7 +89,7 @@ Log in to view and download the file:
 %s/dashboard
 
 ---
-This is an automated message from Sharecare.
+This is an automated message from WulfVault.
 `, request.Title, file.Name, file.Size, uploadTime, uploaderIP, serverURL)
 }
 
@@ -141,7 +141,7 @@ func GenerateDownloadNotificationHTML(file *database.FileInfo, downloaderIP, ser
 			<a href="%s/dashboard" class="button">Visa i Dashboard</a>
 
 			<div class="footer">
-				<p>Detta är ett automatiskt meddelande från Sharecare.</p>
+				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
 			</div>
 		</div>
 	</div>
@@ -168,7 +168,7 @@ Logga in för att se detaljer:
 %s/dashboard
 
 ---
-Detta är ett automatiskt meddelande från Sharecare.
+Detta är ett automatiskt meddelande från WulfVault.
 `, file.Name, file.Size, downloadTime, downloaderIP, getDownloadsRemainingText(file), serverURL)
 }
 
@@ -225,7 +225,7 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message 
 			</div>
 
 			<div class="footer">
-				<p>Detta är ett automatiskt meddelande från Sharecare.</p>
+				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
 			</div>
 		</div>
 	</div>
@@ -245,7 +245,7 @@ Storlek: %s
 Ladda ner filen här: %s
 
 ---
-Detta är ett automatiskt meddelande från Sharecare.
+Detta är ett automatiskt meddelande från WulfVault.
 `, getMessageText(message), file.Name, file.Size, splashLink)
 }
 
@@ -328,7 +328,7 @@ func GenerateAccountDeletionHTML(accountName string) string {
 			<p>Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.</p>
 
 			<div class="footer">
-				<p>Detta är ett automatiskt meddelande från Sharecare.</p>
+				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
 				<p>Om du har frågor, vänligen kontakta oss.</p>
 			</div>
 		</div>
@@ -354,7 +354,7 @@ Vad har hänt:
 Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.
 
 ---
-Detta är ett automatiskt meddelande från Sharecare.
+Detta är ett automatiskt meddelande från WulfVault.
 Om du har frågor, vänligen kontakta oss.
 `, accountName)
 }
@@ -656,7 +656,7 @@ func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 		</div>
 
 		<div class="footer">
-			<p>Detta är ett automatiskt meddelande från Sharecare.</p>
+			<p>Detta är ett automatiskt meddelande från WulfVault.</p>
 			<p>Svara inte på detta mail.</p>
 		</div>
 	</div>
@@ -679,7 +679,7 @@ Om du inte begärde denna återställning, ignorera detta mail.
 Tips: Använd gärna en lösenordshanterare för att slippa detta i framtiden! 😊
 
 ---
-Detta är ett automatiskt meddelande från Sharecare.
+Detta är ett automatiskt meddelande från WulfVault.
 Svara inte på detta mail.`, resetLink)
 
 	provider, err := GetActiveProvider(database.DB)

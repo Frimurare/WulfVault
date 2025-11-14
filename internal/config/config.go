@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // Config holds the application configuration
@@ -31,8 +31,8 @@ type Config struct {
 
 var Current *Config
 
-// SharecareSignature is the watermark constant for attribution
-const SharecareSignature = "Sharecare::UlfHolmström::2025"
+// WulfVaultSignature is the watermark constant for attribution
+const WulfVaultSignature = "WulfVault::UlfHolmström::2025"
 
 // LoadOrCreate loads configuration from file or creates default
 func LoadOrCreate(dataDir string) (*Config, error) {

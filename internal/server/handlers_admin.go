@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -20,10 +20,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Frimurare/Sharecare/internal/auth"
-	"github.com/Frimurare/Sharecare/internal/database"
-	emailpkg "github.com/Frimurare/Sharecare/internal/email"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/auth"
+	"github.com/Frimurare/WulfVault/internal/database"
+	emailpkg "github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // handleAdminDashboard renders the admin dashboard
@@ -2132,7 +2132,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
             <form method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Company Name</label>
-                    <input type="text" name="company_name" value="` + brandingConfig["branding_company_name"] + `" placeholder="Sharecare">
+                    <input type="text" name="company_name" value="` + brandingConfig["branding_company_name"] + `" placeholder="WulfVault">
                 </div>
 
                 <div class="form-group">
@@ -2451,7 +2451,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
     </script>
 
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-        Powered by Sharecare © Ulf Holmström – AGPL-3.0
+        Powered by WulfVault © Ulf Holmström – AGPL-3.0
     </div>
 </body>
 </html>`

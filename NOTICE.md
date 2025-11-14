@@ -2,7 +2,7 @@
 
 ## Architecturally Inspired by Gokapi
 
-Sharecare is architecturally inspired by **Gokapi** by Forceu, but represents a complete rewrite (~95% new code).
+WulfVault is architecturally inspired by **Gokapi** by Forceu, but represents a complete rewrite (~95% new code).
 
 - **Original Project:** https://github.com/Forceu/Gokapi
 - **License:** AGPL-3.0
@@ -10,9 +10,9 @@ Sharecare is architecturally inspired by **Gokapi** by Forceu, but represents a 
 
 We thank the Gokapi team for their excellent work that inspired the foundational architecture of temporary file sharing with expiration.
 
-## Sharecare Enhancements (Complete Rewrite)
+## WulfVault Enhancements (Complete Rewrite)
 
-Sharecare is a complete rewrite that adds extensive enterprise features:
+WulfVault is a complete rewrite that adds extensive enterprise features:
 
 - **Multi-user system** (~11,000 lines) - Role-based access (Super Admin, Admin, Users, Download Accounts)
 - **Email integration** (1,042 lines) - SMTP/Brevo support, email sharing, audit logs
@@ -39,11 +39,11 @@ This project is licensed under the **AGPL-3.0** license.
 **Why AGPL-3.0?**
 The GNU Affero General Public License (AGPL-3.0) is specifically designed to prevent proprietary use of open-source software in network services. Key protections:
 
-- **Network copyleft:** Companies running Sharecare as a SaaS must share their source code
+- **Network copyleft:** Companies running WulfVault as a SaaS must share their source code
 - **Attribution protection:** All modifications must credit the original author
 - **Community benefit:** Improvements must be contributed back to the community
 - **Anti-exploitation:** Prevents "taking without giving back" in cloud deployments
 
-This ensures that Sharecare remains free and open-source, even when used to provide commercial services.
+This ensures that WulfVault remains free and open-source, even when used to provide commercial services.
 
 See [LICENSE](LICENSE) for the full license text.

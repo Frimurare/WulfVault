@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Frimurare/Sharecare/internal/auth"
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/auth"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // handleUserSettings displays user settings including 2FA
@@ -568,7 +568,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
     </script>
 
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-        Powered by Sharecare © Ulf Holmström – AGPL-3.0
+        Powered by WulfVault © Ulf Holmström – AGPL-3.0
     </div>
 </body>
 </html>`

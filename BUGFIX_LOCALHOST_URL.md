@@ -20,7 +20,7 @@ All file download links displayed "localhost" in the URL instead of the correct 
 ## Root Cause Analysis
 
 ### Configuration System
-Sharecare uses a two-tier configuration system:
+WulfVault uses a two-tier configuration system:
 1. **config.json file** (`data/config.json`) - Persistent configuration storage
 2. **Command-line flags** - Override config file when explicitly set
 

@@ -1,4 +1,4 @@
-// Sharecare - Secure File Transfer System
+// WulfVault - Secure File Transfer System
 // Copyright (c) 2025 Ulf Holmström (Frimurare)
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
@@ -19,10 +19,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Frimurare/Sharecare/internal/auth"
-	"github.com/Frimurare/Sharecare/internal/database"
-	"github.com/Frimurare/Sharecare/internal/email"
-	"github.com/Frimurare/Sharecare/internal/models"
+	"github.com/Frimurare/WulfVault/internal/auth"
+	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // handleUpload handles file upload
@@ -197,7 +197,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 						<strong>Direct download link:</strong> <a href="%s">%s</a>
 					</p>
 					<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-					<p style="color: #999; font-size: 12px;">This file was sent to you via Sharecare.</p>
+					<p style="color: #999; font-size: 12px;">This file was sent to you via WulfVault.</p>
 				</div>
 			`, html.EscapeString(header.Filename),
 				database.FormatFileSize(fileSize),
@@ -225,7 +225,7 @@ View and download here: %s
 
 Direct download link: %s
 
-This file was sent to you via Sharecare.`,
+This file was sent to you via WulfVault.`,
 				header.Filename,
 				database.FormatFileSize(fileSize),
 				func() string {

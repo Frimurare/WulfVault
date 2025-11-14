@@ -1,4 +1,4 @@
-# Sharecare - Deployment Guide
+# WulfVault - Deployment Guide
 
 ## Manual Start/Stop
 
@@ -113,7 +113,7 @@ sudo systemctl restart sharecare
 ```
 
 ### Reverse Proxy (Nginx/Caddy)
-För produktionsmiljö, använd en reverse proxy framför Sharecare:
+För produktionsmiljö, använd en reverse proxy framför WulfVault:
 - Hanterar SSL/TLS certificates
 - Rate limiting
 - DDoS-skydd
@@ -131,4 +131,4 @@ location / {
 ---
 
 **Version:** 3.2-beta2
-**Support:** https://github.com/Frimurare/Sharecare/issues
+**Support:** https://github.com/Frimurare/WulfVault/issues
