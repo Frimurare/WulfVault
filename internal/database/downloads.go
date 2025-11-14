@@ -507,7 +507,7 @@ func (d *Database) GetLargestFile() (string, int64, error) {
 	var size int64
 
 	err := d.db.QueryRow(`
-		SELECT FileName, SizeBytes
+		SELECT Name, SizeBytes
 		FROM Files
 		WHERE DeletedAt = 0
 		ORDER BY SizeBytes DESC
@@ -528,9 +528,9 @@ func (d *Database) GetMostActiveUser() (string, int, error) {
 	err := d.db.QueryRow(`
 		SELECT u.Name, COUNT(f.Id) as file_count
 		FROM Files f
-		JOIN Users u ON f.CreatedBy = u.Id
+		JOIN Users u ON f.UserId = u.Id
 		WHERE f.DeletedAt = 0
-		GROUP BY f.CreatedBy, u.Name
+		GROUP BY f.UserId, u.Name
 		ORDER BY file_count DESC
 		LIMIT 1
 	`).Scan(&username, &fileCount)
@@ -550,8 +550,8 @@ func (d *Database) GetTopFileTypes() ([]string, []int, error) {
 	rows, err := d.db.Query(`
 		SELECT
 			CASE
-				WHEN INSTR(FileName, '.') > 0
-				THEN SUBSTR(FileName, INSTR(FileName, '.') + 1)
+				WHEN INSTR(Name, '.') > 0
+				THEN SUBSTR(Name, INSTR(Name, '.') + 1)
 				ELSE 'no extension'
 			END as extension,
 			COUNT(*) as count
