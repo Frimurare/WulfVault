@@ -467,20 +467,25 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             color: white;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 40px auto;
+            padding: 0 20px;
+        }
+        .settings-card {
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             padding: 30px;
         }
         h1 {
-            color: #333;
+            color: #1a1a2e;
             margin-bottom: 10px;
+            font-size: 28px;
         }
         .subtitle {
             color: #666;
             margin-bottom: 30px;
+            font-size: 15px;
         }
         .tab-buttons {
             display: flex;
@@ -666,13 +671,14 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
     </div>
 
     <div class="container">
-        <h1>Email Settings</h1>
-        <p class="subtitle">Configure email provider to send notifications</p>
+        <div class="settings-card">
+            <h1>Email Settings</h1>
+            <p class="subtitle">Configure email provider to send notifications</p>
 
-        <div id="success-message" class="success-message"></div>
-        <div id="error-message" class="error-message"></div>
+            <div id="success-message" class="success-message"></div>
+            <div id="error-message" class="error-message"></div>
 
-        ` + getActiveProviderBanner(isBrevoActive, isSMTPActive) + `
+            ` + getActiveProviderBanner(isBrevoActive, isSMTPActive) + `
 
         <div class="tab-buttons">
             <button class="tab-btn ` + activeTabClass("brevo", activeTab) + `" data-provider="brevo">
@@ -800,6 +806,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 <li>Encrypted values are hidden in the interface after saving</li>
                 <li>Only you can decrypt and view these values by entering them again</li>
             </ul>
+        </div>
         </div>
     </div>
 
