@@ -319,11 +319,11 @@ func (d *Database) GetUserGrowthPercentage() (float64, error) {
 func (d *Database) Get2FAAdoptionRate() (float64, error) {
 	var totalUsers, usersWithTOTP int
 
-	// Count total Users and Admins (exclude Download accounts which don't have AccountType field)
+	// Count total active users (exclude deleted users)
 	err := d.db.QueryRow(`
 		SELECT COUNT(*)
 		FROM Users
-		WHERE AccountType IN ('User', 'Admin')
+		WHERE DeletedAt = 0
 	`).Scan(&totalUsers)
 	if err != nil {
 		return 0, err
@@ -337,7 +337,7 @@ func (d *Database) Get2FAAdoptionRate() (float64, error) {
 	err = d.db.QueryRow(`
 		SELECT COUNT(*)
 		FROM Users
-		WHERE AccountType IN ('User', 'Admin') AND TOTPEnabled = 1
+		WHERE DeletedAt = 0 AND TOTPEnabled = 1
 	`).Scan(&usersWithTOTP)
 	if err != nil {
 		return 0, err
