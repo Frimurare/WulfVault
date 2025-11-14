@@ -688,6 +688,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
 	html += `
             <a href="/dashboard">Dashboard</a>
+            <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
             <a href="/logout">Logout</a>
         </nav>

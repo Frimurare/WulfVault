@@ -787,6 +787,32 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
         </div>
     </div>
 
+    <!-- Add Member Modal -->
+    <div id="addMemberModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Team Member</h2>
+            <input type="hidden" id="addMemberTeamId">
+            <div class="form-group">
+                <label>Select User</label>
+                <select id="userSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="">Loading users...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select id="roleSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <option value="2">Member</option>
+                    <option value="1">Admin</option>
+                    <option value="0">Owner</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeAddMemberModal()">Cancel</button>
+                <button class="btn" onclick="addMemberToTeam()">Add Member</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentTeamId = null;
 
@@ -879,6 +905,10 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
         function viewMembers(teamId, teamName) {
             document.getElementById('membersTitle').textContent = 'Members of ' + teamName;
 
+            // Store team ID for add member functionality
+            currentAddMemberTeamId = teamId;
+            document.getElementById('addMemberTeamId').value = teamId;
+
             fetch('/api/teams/members?teamId=' + teamId)
                 .then(r => r.json())
                 .then(data => {
@@ -904,9 +934,76 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             document.getElementById('membersModal').classList.remove('active');
         }
 
+        let currentAddMemberTeamId = null;
+
         function showAddMemberForm() {
-            // This would open another modal to add members
-            alert('Add member functionality - you can add this UI later');
+            // Get the current team ID from the members modal title or store it when opening
+            const teamId = document.getElementById('addMemberTeamId').value || currentAddMemberTeamId;
+            if (!teamId) {
+                alert('Error: Team ID not found');
+                return;
+            }
+
+            // Load all users
+            fetch('/api/admin/users/list')
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('userSelect');
+                    select.innerHTML = '<option value="">-- Select a user --</option>';
+
+                    if (data.users && data.users.length > 0) {
+                        data.users.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.name + ' (' + user.email + ')';
+                            select.appendChild(option);
+                        });
+                    }
+
+                    document.getElementById('addMemberModal').classList.add('active');
+                })
+                .catch(err => {
+                    alert('Error loading users: ' + err.message);
+                });
+        }
+
+        function closeAddMemberModal() {
+            document.getElementById('addMemberModal').classList.remove('active');
+        }
+
+        function addMemberToTeam() {
+            const teamId = document.getElementById('addMemberTeamId').value || currentAddMemberTeamId;
+            const userId = parseInt(document.getElementById('userSelect').value);
+            const role = parseInt(document.getElementById('roleSelect').value);
+
+            if (!userId) {
+                alert('Please select a user');
+                return;
+            }
+
+            fetch('/api/teams/add-member', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    teamId: parseInt(teamId),
+                    userId: userId,
+                    role: role
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Member added successfully!');
+                    closeAddMemberModal();
+                    closeMembersModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to add member'));
+                }
+            })
+            .catch(err => {
+                alert('Error: ' + err.message);
+            });
         }
 
         function removeMember(teamId, userId, userName) {

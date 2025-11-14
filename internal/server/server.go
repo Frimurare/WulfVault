@@ -129,6 +129,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/admin/teams/create", s.requireAdmin(s.handleAPITeamCreate))
 	mux.HandleFunc("/api/admin/teams/update", s.requireAdmin(s.handleAPITeamUpdate))
 	mux.HandleFunc("/api/admin/teams/delete", s.requireAdmin(s.handleAPITeamDelete))
+	mux.HandleFunc("/api/admin/users/list", s.requireAdmin(s.handleAPIUsersList))
 
 	// Email API routes
 	mux.HandleFunc("/api/email/configure", s.requireAuth(s.requireAdmin(s.handleEmailConfigure)))
