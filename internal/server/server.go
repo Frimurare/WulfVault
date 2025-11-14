@@ -93,6 +93,9 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/file-request/list", s.requireAuth(s.handleFileRequestList))
 	mux.HandleFunc("/file-request/delete", s.requireAuth(s.handleFileRequestDelete))
 
+	// Teams routes (require authentication)
+	mux.HandleFunc("/teams", s.requireAuth(s.handleUserTeams))
+
 	// Admin routes (require admin authentication)
 	mux.HandleFunc("/admin", s.requireAdmin(s.handleAdminDashboard))
 	mux.HandleFunc("/admin/users", s.requireAdmin(s.handleAdminUsers))
@@ -110,7 +113,22 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
+	mux.HandleFunc("/admin/teams", s.requireAdmin(s.handleAdminTeams))
 	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
+
+	// Teams API routes (require authentication)
+	mux.HandleFunc("/api/teams/my", s.requireAuth(s.handleAPIMyTeams))
+	mux.HandleFunc("/api/teams/members", s.requireAuth(s.handleAPITeamMembers))
+	mux.HandleFunc("/api/teams/files", s.requireAuth(s.handleAPITeamFiles))
+	mux.HandleFunc("/api/teams/add-member", s.requireAuth(s.handleAPITeamAddMember))
+	mux.HandleFunc("/api/teams/remove-member", s.requireAuth(s.handleAPITeamRemoveMember))
+	mux.HandleFunc("/api/teams/share-file", s.requireAuth(s.handleAPIShareFileToTeam))
+	mux.HandleFunc("/api/teams/unshare-file", s.requireAuth(s.handleAPIUnshareFileFromTeam))
+
+	// Teams Admin API routes (require admin)
+	mux.HandleFunc("/api/admin/teams/create", s.requireAdmin(s.handleAPITeamCreate))
+	mux.HandleFunc("/api/admin/teams/update", s.requireAdmin(s.handleAPITeamUpdate))
+	mux.HandleFunc("/api/admin/teams/delete", s.requireAdmin(s.handleAPITeamDelete))
 
 	// Email API routes
 	mux.HandleFunc("/api/email/configure", s.requireAuth(s.requireAdmin(s.handleEmailConfigure)))

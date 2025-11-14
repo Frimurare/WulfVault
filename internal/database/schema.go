@@ -162,6 +162,46 @@ CREATE TABLE IF NOT EXISTS PasswordResetTokens (
 	CreatedAt INTEGER NOT NULL
 );
 
+-- Teams table (for team collaboration)
+CREATE TABLE IF NOT EXISTS Teams (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	Name TEXT NOT NULL,
+	Description TEXT,
+	CreatedBy INTEGER NOT NULL,
+	CreatedAt INTEGER NOT NULL,
+	StorageQuotaMB INTEGER NOT NULL DEFAULT 10240,
+	StorageUsedMB INTEGER NOT NULL DEFAULT 0,
+	IsActive INTEGER DEFAULT 1,
+	FOREIGN KEY (CreatedBy) REFERENCES Users(Id)
+);
+
+-- Team Members table (junction table for users and teams)
+CREATE TABLE IF NOT EXISTS TeamMembers (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	TeamId INTEGER NOT NULL,
+	UserId INTEGER NOT NULL,
+	Role INTEGER DEFAULT 2,
+	JoinedAt INTEGER NOT NULL,
+	AddedBy INTEGER,
+	FOREIGN KEY (TeamId) REFERENCES Teams(Id) ON DELETE CASCADE,
+	FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+	FOREIGN KEY (AddedBy) REFERENCES Users(Id),
+	UNIQUE(TeamId, UserId)
+);
+
+-- Team Files table (tracks which files are shared to teams)
+CREATE TABLE IF NOT EXISTS TeamFiles (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	FileId TEXT NOT NULL,
+	TeamId INTEGER NOT NULL,
+	SharedBy INTEGER NOT NULL,
+	SharedAt INTEGER NOT NULL,
+	FOREIGN KEY (FileId) REFERENCES Files(Id) ON DELETE CASCADE,
+	FOREIGN KEY (TeamId) REFERENCES Teams(Id) ON DELETE CASCADE,
+	FOREIGN KEY (SharedBy) REFERENCES Users(Id),
+	UNIQUE(FileId, TeamId)
+);
+
 -- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_files_userid ON Files(UserId);
 CREATE INDEX IF NOT EXISTS idx_files_sha1 ON Files(SHA1);
@@ -176,4 +216,8 @@ CREATE INDEX IF NOT EXISTS idx_filerequests_userid ON FileRequests(UserId);
 CREATE INDEX IF NOT EXISTS idx_filerequests_token ON FileRequests(RequestToken);
 CREATE INDEX IF NOT EXISTS idx_passwordresets_token ON PasswordResetTokens(Token);
 CREATE INDEX IF NOT EXISTS idx_passwordresets_email ON PasswordResetTokens(Email);
+CREATE INDEX IF NOT EXISTS idx_team_members_team ON TeamMembers(TeamId);
+CREATE INDEX IF NOT EXISTS idx_team_members_user ON TeamMembers(UserId);
+CREATE INDEX IF NOT EXISTS idx_team_files_team ON TeamFiles(TeamId);
+CREATE INDEX IF NOT EXISTS idx_team_files_file ON TeamFiles(FileId);
 `

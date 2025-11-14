@@ -506,6 +506,154 @@ Do not reply to this email.`, companyName, adminName, adminEmail, companyName, e
 	return provider.SendEmail(email, subject, htmlBody, textBody)
 }
 
+// SendTeamInvitationEmail sends an invitation email when a user is added to a team
+func SendTeamInvitationEmail(email, teamName, serverURL, companyName string) error {
+	subject := fmt.Sprintf("Welcome to teamshare group %s in the %s fileshare", teamName, companyName)
+
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header {
+			background: #2563eb;
+			color: white;
+			padding: 35px;
+			border-radius: 10px 10px 0 0;
+			text-align: center;
+		}
+		.header h1 { margin: 0; font-size: 32px; }
+		.header p { margin: 10px 0 0 0; opacity: 0.9; }
+		.content {
+			background: #f9f9f9;
+			padding: 30px;
+			border-radius: 0 0 10px 10px;
+		}
+		.team-box {
+			background: #d4edda;
+			border-left: 4px solid #28a745;
+			padding: 20px;
+			margin: 20px 0;
+			border-radius: 5px;
+		}
+		.team-box h2 {
+			color: #155724;
+			margin-top: 0;
+		}
+		.login-box {
+			background: white;
+			padding: 30px;
+			margin: 25px 0;
+			border-radius: 8px;
+			border: 2px solid #2563eb;
+			text-align: center;
+		}
+		.button {
+			display: inline-block;
+			padding: 18px 50px;
+			background: #2563eb;
+			color: white !important;
+			text-decoration: none;
+			border-radius: 8px;
+			margin: 20px 0;
+			font-weight: bold;
+			font-size: 18px;
+		}
+		.footer {
+			margin-top: 30px;
+			padding-top: 20px;
+			border-top: 2px solid #ddd;
+			font-size: 12px;
+			color: #666;
+			text-align: center;
+		}
+		.info-box {
+			background: #e3f2fd;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+			border-left: 4px solid #2196f3;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🎉 Welcome to Team: %s</h1>
+			<p>You've been added to a collaborative team</p>
+		</div>
+
+		<div class="content">
+			<div class="team-box">
+				<h2>Congratulations!</h2>
+				<p>You have been added to the teamshare group <strong>"%s"</strong> in the <strong>%s</strong> fileshare platform.</p>
+			</div>
+
+			<p>As a team member, you can now:</p>
+			<ul>
+				<li>📁 Access all files shared with the team</li>
+				<li>⬆️ Upload files to share with team members</li>
+				<li>👥 Collaborate with other team members</li>
+				<li>🔒 Securely transfer files within your team</li>
+			</ul>
+
+			<div class="login-box">
+				<h2 style="color: #2563eb; margin-bottom: 15px;">Get Started</h2>
+				<p style="margin-bottom: 25px;">Click the button below to log in and access your team workspace.</p>
+
+				<a href="%s/login" class="button">LOG IN TO YOUR TEAM</a>
+			</div>
+
+			<div class="info-box">
+				<p style="margin: 0;"><strong>📧 Your Login Email:</strong></p>
+				<p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">%s</p>
+			</div>
+
+			<p style="text-align: center; color: #666; margin-top: 30px;">
+				If the button doesn't work, copy and paste this link into your browser:
+			</p>
+			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">
+				%s/login
+			</p>
+		</div>
+
+		<div class="footer">
+			<p>This is an automated message from %s.</p>
+			<p>Do not reply to this email.</p>
+		</div>
+	</div>
+</body>
+</html>`, teamName, teamName, companyName, serverURL, email, serverURL, companyName)
+
+	textBody := fmt.Sprintf(`Welcome to teamshare group %s in the %s fileshare
+
+Congratulations! You have been added to the teamshare group "%s" in the %s fileshare platform.
+
+As a team member, you can now:
+- Access all files shared with the team
+- Upload files to share with team members
+- Collaborate with other team members
+- Securely transfer files within your team
+
+Your login email: %s
+
+Log in here: %s/login
+
+---
+This is an automated message from %s.
+Do not reply to this email.`, teamName, companyName, teamName, companyName, email, serverURL, companyName)
+
+	provider, err := GetActiveProvider(database.DB)
+	if err != nil {
+		return err
+	}
+
+	return provider.SendEmail(email, subject, htmlBody, textBody)
+}
+
 // SendPasswordResetEmail sends a password reset email with a humoristic/ironic tone
 func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
