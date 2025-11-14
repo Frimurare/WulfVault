@@ -19,7 +19,7 @@ import (
 
 // handleAdminTeams displays the team management page (Admin only)
 func (s *Server) handleAdminTeams(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
+	_, _ = userFromContext(r.Context())
 
 	teams, err := database.DB.GetAllTeams()
 	if err != nil {
@@ -29,14 +29,16 @@ func (s *Server) handleAdminTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get member count for each team
-	type TeamInfo struct {
+	var teamInfos []struct {
 		*models.Team
 		MemberCount int
 	}
-	var teamInfos []TeamInfo
 	for _, team := range teams {
 		members, _ := database.DB.GetTeamMembers(team.Id)
-		teamInfos = append(teamInfos, TeamInfo{
+		teamInfos = append(teamInfos, struct {
+			*models.Team
+			MemberCount int
+		}{
 			Team:        team,
 			MemberCount: len(members),
 		})
@@ -52,7 +54,7 @@ func (s *Server) handleAPITeamCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	var req struct {
 		Name           string `json:"name"`
@@ -174,7 +176,7 @@ func (s *Server) handleAPITeamMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	// Check if user is admin or team member
 	if !user.IsAdmin() {
@@ -206,7 +208,7 @@ func (s *Server) handleAPITeamAddMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	var req struct {
 		TeamId int `json:"teamId"`
@@ -289,7 +291,7 @@ func (s *Server) handleAPITeamRemoveMember(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	var req struct {
 		TeamId int `json:"teamId"`
@@ -336,7 +338,7 @@ func (s *Server) handleAPIShareFileToTeam(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	var req struct {
 		FileId string `json:"fileId"`
@@ -387,7 +389,7 @@ func (s *Server) handleAPIUnshareFileFromTeam(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	var req struct {
 		FileId string `json:"fileId"`
@@ -434,7 +436,7 @@ func (s *Server) handleAPIUnshareFileFromTeam(w http.ResponseWriter, r *http.Req
 
 // handleUserTeams displays user's teams page
 func (s *Server) handleUserTeams(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	teams, err := database.DB.GetTeamsByUser(user.Id)
 	if err != nil {
@@ -455,7 +457,7 @@ func (s *Server) handleAPITeamFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	// Check if user is team member or admin
 	if !user.IsAdmin() {
@@ -506,7 +508,7 @@ func (s *Server) handleAPITeamFiles(w http.ResponseWriter, r *http.Request) {
 
 // handleAPIMyTeams returns all teams the current user is a member of
 func (s *Server) handleAPIMyTeams(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromContext(r.Context())
+	user, _ := userFromContext(r.Context())
 
 	teams, err := database.DB.GetTeamsByUser(user.Id)
 	if err != nil {

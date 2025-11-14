@@ -411,7 +411,7 @@ func (d *Database) GetFilesByUserWithTeams(userId int) ([]*FileInfo, error) {
 		file.UnlimitedTime = unlimitedTime == 1
 		file.RequireAuth = requireAuth == 1
 		file.DeletedAt = deletedAt.Int64
-		file.DeletedBy = deletedBy.Int64
+		file.DeletedBy = int(deletedBy.Int64)
 
 		files = append(files, file)
 	}
