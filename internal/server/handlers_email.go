@@ -428,11 +428,47 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
-            padding: 20px;
+        }
+        .header {
+            background: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .header nav a:hover {
+            color: white;
         }
         .container {
             max-width: 800px;
-            margin: 0 auto;
+            margin: 40px auto;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -581,15 +617,6 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         .info-box li {
             margin: 5px 0;
         }
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #2563eb;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
         .success-message {
             background: #d4edda;
             border: 1px solid #c3e6cb;
@@ -611,9 +638,34 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/admin" class="back-link">← Back to Admin</a>
+    <div class="header">
+        <div class="logo">`
 
+	// Add logo if exists
+	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
+		html += `<img src="` + logoURL + `" alt="Logo">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
+        </div>
+        <nav>
+            <a href="/admin">Admin Dashboard</a>
+            <a href="/dashboard">My Files</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/teams">Teams</a>
+            <a href="/admin/files">All Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/email-settings">Email</a>
+            <a href="/admin/settings">Server</a>
+            <a href="/settings">My Account</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
         <h1>Email Settings</h1>
         <p class="subtitle">Configure email provider to send notifications</p>
 

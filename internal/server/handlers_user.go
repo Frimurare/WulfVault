@@ -402,12 +402,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             background: #f5f5f5;
         }
         .header {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;
@@ -451,31 +452,40 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         .stat-card {
             background: white;
             padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-left: 4px solid ` + s.getPrimaryColor() + `;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
         .stat-card h3 {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
         }
         .stat-card .value {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
-            color: ` + s.getPrimaryColor() + `;
+            color: #1a1a2e;
         }
         .stat-card .progress {
             margin-top: 12px;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
             overflow: hidden;
         }
         .stat-card .progress-bar {
             height: 100%;
-            background: ` + s.getPrimaryColor() + `;
+            background: linear-gradient(90deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             transition: width 0.3s;
+            border-radius: 3px;
         }
         .upload-zone {
             background: white;
@@ -680,17 +690,29 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
         <nav>`
 
-	// Add admin link if user is admin
+	// Different navigation for admin vs regular user
 	if user.IsAdmin() {
 		html += `
-            <a href="/admin">Admin Panel</a>`
-	}
-
-	html += `
+            <a href="/admin">Admin Dashboard</a>
+            <a href="/dashboard">My Files</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/teams">Teams</a>
+            <a href="/admin/files">All Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/email-settings">Email</a>
+            <a href="/admin/settings">Server</a>
+            <a href="/settings">My Account</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	} else {
+		html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	}
+
+	html += `
         </nav>
     </div>
 

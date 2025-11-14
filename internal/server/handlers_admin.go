@@ -828,12 +828,13 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 
 	headerCSS := `
         .header {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;
@@ -879,18 +880,18 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 	headerHTML += `
         </div>
         <nav>
-            <a href="/admin">Dashboard</a>
+            <a href="/admin">Admin Dashboard</a>
             <a href="/dashboard">My Files</a>
             <a href="/admin/users">Users</a>
             <a href="/admin/teams">Teams</a>
-            <a href="/admin/files">Files</a>
+            <a href="/admin/files">All Files</a>
             <a href="/admin/trash">Trash</a>
             <a href="/admin/branding">Branding</a>
             <a href="/admin/email-settings">Email</a>
-            <a href="/admin/settings">Settings</a>
+            <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
-            <a href="/logout">Logout</a>
-            <span style="color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 10px;">v` + s.config.Version + `</span>
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span style="color: rgba(255,255,255,0.6); font-size: 12px;">v` + s.config.Version + `</span>
         </nav>
     </div>`
 
@@ -977,12 +978,13 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             background: #f5f5f5;
         }
         .header {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;
@@ -1034,15 +1036,17 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .stat-card h3 {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
         }
         .stat-card .value {
             font-size: 36px;
             font-weight: 700;
-            color: ` + s.getPrimaryColor() + `;
+            color: #1a1a2e;
         }
         .quick-actions {
             display: grid;
@@ -1082,18 +1086,18 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	html += `
         </div>
         <nav>
-            <a href="/admin">Dashboard</a>
+            <a href="/admin">Admin Dashboard</a>
             <a href="/dashboard">My Files</a>
             <a href="/admin/users">Users</a>
             <a href="/admin/teams">Teams</a>
-            <a href="/admin/files">Files</a>
+            <a href="/admin/files">All Files</a>
             <a href="/admin/trash">Trash</a>
             <a href="/admin/branding">Branding</a>
             <a href="/admin/email-settings">Email</a>
-            <a href="/admin/settings">Settings</a>
+            <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
-            <a href="/logout">Logout</a>
-            <span style="color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 10px;">v` + s.config.Version + `</span>
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span style="color: rgba(255,255,255,0.6); font-size: 12px;">v` + s.config.Version + `</span>
         </nav>
     </div>
 

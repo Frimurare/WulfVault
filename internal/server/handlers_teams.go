@@ -1054,17 +1054,37 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             padding: 0 20px;
         }
         .header-user {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            background: #1a1a2e;
             padding: 20px 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header-user nav a {
+        .header-user .logo {
+            display: flex;
+            align-items: center;
+        }
+        .header-user h1 {
             color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header-user nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header-user nav a {
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
-            margin-left: 20px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .header-user nav a:hover {
+            color: white;
         }
         .teams-grid {
             display: grid;
@@ -1120,12 +1140,42 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 </head>
 <body>
     <div class="header-user">
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
+        <div class="logo">`
+
+	// Add logo if exists
+	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
+		html += `<img src="` + logoURL + `" alt="Logo" style="max-height: 50px; max-width: 180px;">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
+        </div>
+        <nav>`
+
+	// Different navigation for admin vs regular user
+	if user.IsAdmin() {
+		html += `
+            <a href="/admin">Admin Dashboard</a>
+            <a href="/dashboard">My Files</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/teams">Teams</a>
+            <a href="/admin/files">All Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/email-settings">Email</a>
+            <a href="/admin/settings">Server</a>
+            <a href="/settings">My Account</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	} else {
+		html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	}
+
+	html += `
         </nav>
     </div>
 

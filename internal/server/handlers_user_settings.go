@@ -75,12 +75,13 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
             background: #f5f5f5;
         }
         .header {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;
@@ -276,17 +277,29 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
         </div>
         <nav>`
 
-	// Add admin link if user is admin
+	// Different navigation for admin vs regular user
 	if user.IsAdmin() {
 		html += `
-            <a href="/admin">Admin Panel</a>`
-	}
-
-	html += `
+            <a href="/admin">Admin Dashboard</a>
+            <a href="/dashboard">My Files</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/teams">Teams</a>
+            <a href="/admin/files">All Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/email-settings">Email</a>
+            <a href="/admin/settings">Server</a>
+            <a href="/settings">My Account</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	} else {
+		html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	}
+
+	html += `
         </nav>
     </div>
 
