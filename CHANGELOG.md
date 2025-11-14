@@ -1,5 +1,39 @@
 # Changelog
 
+## [4.0.1] - 2025-11-14 😂 More One-Liners & Branding Footer
+
+### ✨ Enhancements
+
+**Expanded File Sharing Wisdom:**
+- Increased one-liner collection from 130+ to 180+ hilarious quotes
+- Added 50 more witty observations about email attachment failures
+- More variety means users see different jokes more often
+
+**Branding Improvements:**
+- Added "Powered by WulfVault Version x.x.x" footer on all dashboards
+- Discrete placement at bottom of admin and user dashboards
+- Helps with brand recognition and version awareness
+
+### 📁 Modified Files
+
+**New Content:**
+- `internal/models/jokes.go`: Added 50 more one-liners (lines 149-199)
+
+**Version Updates:**
+- `cmd/server/main.go` (line 25): Updated version from "4.0.0" to "4.0.1"
+- `README.md`: Updated version and added mention of 180+ one-liners
+- `internal/server/handlers_admin.go` (lines 1295-1297): Added footer with version
+- `internal/server/handlers_user.go` (lines 1473-1475): Added footer with version
+
+### 🎯 Why This Patch?
+
+This patch release adds more personality and polish based on user feedback:
+- Users loved the original one-liners and wanted more variety
+- Footer helps users know which version they're running
+- Small touches that make the experience more enjoyable
+
+---
+
 ## [4.0.0] - 2025-11-14 🎨 Professional UI Polish & Statistics Fixes
 
 ### ✨ New Features

@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 3.3.6** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.0.1** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -42,6 +42,7 @@ WulfVault solves this by providing:
 - **Email integration** - Send download links directly via email with customizable templates
 - **File preview & metadata** - View file details, size, upload date, and download statistics
 - **Trash system** - Deleted files kept for configurable retention period (1-365 days) with restore capability
+- **File Sharing Wisdom** - 180+ humorous one-liners on dashboards reminding users why email attachments fail
 
 ### 👥 User Management & Access Control
 - **Role-based access:**

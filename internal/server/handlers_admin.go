@@ -1292,6 +1292,9 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             </div>
         </div>
     </div>
+    <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
+        Powered by WulfVault Version ` + s.config.Version + `
+    </div>
 </body>
 </html>`
 

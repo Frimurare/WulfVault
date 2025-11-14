@@ -1470,6 +1470,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         // Note: loadFileRequests, deleteFileRequest, escapeHtml, and copyToClipboard
         // are defined in dashboard.js and loaded automatically on page load
     </script>
+    <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
+        Powered by WulfVault Version ` + s.config.Version + `
+    </div>
 </body>
 </html>`
 
