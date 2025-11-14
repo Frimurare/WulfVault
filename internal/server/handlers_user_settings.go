@@ -56,6 +56,10 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 			</button>`
 	}
 
+	// Get branding config for logo
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,22 +74,52 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        header {
+        .header {
             background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
+        .header h1 {
             color: white;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .header nav a:hover {
+            color: white;
         }
         .container {
             max-width: 1200px;
-            margin: 30px auto;
+            margin: 40px auto;
             padding: 0 20px;
         }
         .card {
             background: white;
             border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
         .card h2 {
@@ -108,20 +142,6 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
         .setting-info p {
             color: #666;
             font-size: 14px;
-        }
-        nav {
-            display: flex;
-            gap: 20px;
-            margin-top: 15px;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            opacity: 0.9;
-            transition: opacity 0.3s;
-        }
-        nav a:hover {
-            opacity: 1;
         }
         .modal {
             display: none;
@@ -241,20 +261,34 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
     </style>
 </head>
 <body>
-    <header>
-        <h1>` + s.config.CompanyName + `</h1>
-        <nav>
-            <a href="` + (func() string {
-		if user.IsAdmin() {
-			return "/admin"
-		}
-		return "/dashboard"
-	})() + `">Dashboard</a>
+    <div class="header">
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `
+            <img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `
+            <h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
+        </div>
+        <nav>`
+
+	// Add admin link if user is admin
+	if user.IsAdmin() {
+		html += `
+            <a href="/admin">Admin Panel</a>`
+	}
+
+	html += `
+            <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
             <a href="/logout">Logout</a>
         </nav>
-    </header>
+    </div>
 
     <div class="container">
         <div class="card">
