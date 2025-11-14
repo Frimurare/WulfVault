@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
@@ -438,6 +439,36 @@ func (s *Server) handleAPIUnshareFileFromTeam(w http.ResponseWriter, r *http.Req
 func (s *Server) handleUserTeams(w http.ResponseWriter, r *http.Request) {
 	user, _ := userFromContext(r.Context())
 
+	// Check if viewing a specific team's files
+	teamIdStr := r.URL.Query().Get("id")
+	if teamIdStr != "" {
+		teamId, err := strconv.Atoi(teamIdStr)
+		if err != nil {
+			http.Error(w, "Invalid team ID", http.StatusBadRequest)
+			return
+		}
+
+		// Verify user is team member or admin
+		if !user.IsAdmin() {
+			isMember, err := database.DB.IsTeamMember(teamId, user.Id)
+			if err != nil || !isMember {
+				http.Error(w, "Access denied", http.StatusForbidden)
+				return
+			}
+		}
+
+		// Get team info
+		team, err := database.DB.GetTeamByID(teamId)
+		if err != nil {
+			http.Error(w, "Team not found", http.StatusNotFound)
+			return
+		}
+
+		s.renderTeamFiles(w, user, team)
+		return
+	}
+
+	// Show all teams
 	teams, err := database.DB.GetTeamsByUser(user.Id)
 	if err != nil {
 		log.Printf("Error fetching user teams: %v", err)
@@ -1227,6 +1258,301 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             window.location.href = '/teams?id=' + teamId;
         }
     </script>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// renderTeamFiles displays all files shared with a specific team
+func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team *models.Team) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get team files
+	teamFiles, err := database.DB.GetTeamFiles(team.Id)
+	if err != nil {
+		log.Printf("Error fetching team files: %v", err)
+		teamFiles = []*models.TeamFile{}
+	}
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
+    <title>` + team.Name + ` - Files - WulfVault</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header-user {
+            background: #1a1a2e;
+            padding: 20px 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-user .logo {
+            display: flex;
+            align-items: center;
+        }
+        .header-user h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header-user nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header-user nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .header-user nav a:hover {
+            color: white;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .page-header h2 {
+            color: #1a1a2e;
+            font-size: 28px;
+        }
+        .page-header .subtitle {
+            color: #666;
+            font-size: 15px;
+            margin-top: 4px;
+        }
+        .back-btn {
+            background: #e0e0e0;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #d0d0d0;
+        }
+        .files-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 16px;
+            border-top: 1px solid #f0f0f0;
+            color: #333;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .file-name {
+            font-weight: 500;
+            color: ` + s.getPrimaryColor() + `;
+        }
+        .file-icon {
+            margin-right: 8px;
+        }
+        .btn-download {
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            display: inline-block;
+        }
+        .btn-download:hover {
+            opacity: 0.9;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+        .empty-state h3 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 20px;
+        }
+        .empty-state p {
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-user">
+        <div class="logo">`
+
+	// Add logo if exists
+	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
+		html += `<img src="` + logoURL + `" alt="Logo" style="max-height: 50px; max-width: 180px;">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
+        </div>
+        <nav>`
+
+	// Different navigation for admin vs regular user
+	if user.IsAdmin() {
+		html += `
+            <a href="/admin">Admin Dashboard</a>
+            <a href="/dashboard">My Files</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/teams">Teams</a>
+            <a href="/admin/files">All Files</a>
+            <a href="/admin/trash">Trash</a>
+            <a href="/admin/branding">Branding</a>
+            <a href="/admin/email-settings">Email</a>
+            <a href="/admin/settings">Server</a>
+            <a href="/settings">My Account</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	} else {
+		html += `
+            <a href="/dashboard">Dashboard</a>
+            <a href="/teams">Teams</a>
+            <a href="/settings">Settings</a>
+            <a href="/logout" style="margin-left: auto;">Logout</a>`
+	}
+
+	html += `
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h2>📁 ` + team.Name + ` - Shared Files</h2>
+                <p class="subtitle">Files shared with this team</p>
+            </div>
+            <a href="/teams" class="back-btn">← Back to Teams</a>
+        </div>`
+
+	if len(teamFiles) == 0 {
+		html += `
+        <div class="empty-state">
+            <h3>No files shared yet</h3>
+            <p>Files shared with this team will appear here</p>
+        </div>`
+	} else {
+		html += `
+        <div class="files-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Owner</th>
+                        <th>Shared By</th>
+                        <th>Shared Date</th>
+                        <th>Size</th>
+                        <th>Downloads</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>`
+
+		for _, tf := range teamFiles {
+			file, err := database.DB.GetFileByID(tf.FileId)
+			if err != nil {
+				continue
+			}
+
+			// Get file owner info
+			owner, _ := database.DB.GetUserByID(file.UserId)
+			ownerName := "Unknown"
+			if owner != nil {
+				ownerName = owner.Name
+			}
+
+			// Get shared by user info
+			sharedByUser, _ := database.DB.GetUserByID(tf.SharedBy)
+			sharedByName := "Unknown"
+			if sharedByUser != nil {
+				sharedByName = sharedByUser.Name
+			}
+
+			// Format file size
+			var sizeStr string
+			if file.SizeBytes < 1024 {
+				sizeStr = fmt.Sprintf("%d B", file.SizeBytes)
+			} else if file.SizeBytes < 1024*1024 {
+				sizeStr = fmt.Sprintf("%.1f KB", float64(file.SizeBytes)/1024)
+			} else if file.SizeBytes < 1024*1024*1024 {
+				sizeStr = fmt.Sprintf("%.1f MB", float64(file.SizeBytes)/(1024*1024))
+			} else {
+				sizeStr = fmt.Sprintf("%.1f GB", float64(file.SizeBytes)/(1024*1024*1024))
+			}
+
+			// Format shared date
+			sharedTime := time.Unix(tf.SharedAt, 0)
+			sharedDate := sharedTime.Format("2006-01-02 15:04")
+
+			html += fmt.Sprintf(`
+                    <tr>
+                        <td><span class="file-icon">📄</span><span class="file-name">%s</span></td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%d</td>
+                        <td><a href="/d/%s" class="btn-download">Download</a></td>
+                    </tr>`, file.Name, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, file.HotlinkId)
+		}
+
+		html += `
+                </tbody>
+            </table>
+        </div>`
+	}
+
+	html += `
+    </div>
 </body>
 </html>`
 
