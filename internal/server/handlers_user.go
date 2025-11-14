@@ -78,6 +78,7 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 
 	expirationDays, _ := strconv.Atoi(r.FormValue("expiration_days"))
 	downloadsLimit, _ := strconv.Atoi(r.FormValue("downloads_limit"))
+	teamIDStr := r.FormValue("team_id")
 
 	// Get file to verify ownership
 	fileInfo, err := database.DB.GetFileByID(fileID)
@@ -112,6 +113,26 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 	if err := database.DB.UpdateFileSettings(fileID, downloadsLimit, newExpireAt, newExpireAtString, unlimitedDownloads, unlimitedTime); err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to update file: "+err.Error())
 		return
+	}
+
+	// Share to team if team_id is provided
+	if teamIDStr != "" {
+		teamID, err := strconv.Atoi(teamIDStr)
+		if err == nil {
+			// Check if user is team member
+			isMember, err := database.DB.IsTeamMember(teamID, user.Id)
+			if err == nil && isMember {
+				// Share file to team
+				if err := database.DB.ShareFileToTeam(fileID, teamID, user.Id); err != nil {
+					// Log error but don't fail the request (file was already updated)
+					log.Printf("Warning: Failed to share file to team: %v", err)
+				} else {
+					log.Printf("File %s shared to team %d by user %d", fileInfo.Name, teamID, user.Id)
+				}
+			} else {
+				log.Printf("Warning: User %d is not a member of team %d, skipping team share", user.Id, teamID)
+			}
+		}
 	}
 
 	log.Printf("File settings updated: %s by user %d", fileInfo.Name, user.Id)
@@ -1001,6 +1022,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 <input type="number" id="editDownloadsLimit" value="5" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
             </div>
 
+            <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Share with Team (optional):</label>
+                <select id="editTeamSelect" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                    <option value="">-- Don't share with team --</option>
+                </select>
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">Select a team to share this file with team members</p>
+            </div>
+
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button onclick="saveFileEdit()" style="flex: 1; padding: 14px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
                     Save Changes
@@ -1291,8 +1320,35 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             toggleEditTimeLimit();
             toggleEditDownloadLimit();
 
+            // Load user's teams
+            loadUserTeamsForEdit();
+
             // Show modal
             document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function loadUserTeamsForEdit() {
+            fetch('/api/my-teams', {
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('editTeamSelect');
+                // Clear existing options except first one
+                select.innerHTML = '<option value="">-- Don\'t share with team --</option>';
+
+                if (data.success && data.teams && data.teams.length > 0) {
+                    data.teams.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        select.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading teams:', error);
+            });
         }
 
         function closeEditModal() {
@@ -1315,6 +1371,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             const fileId = document.getElementById('editFileId').value;
             const unlimitedTime = document.getElementById('editUnlimitedTime').checked;
             const unlimitedDownloads = document.getElementById('editUnlimitedDownloads').checked;
+            const teamId = document.getElementById('editTeamSelect').value;
 
             if (!fileId || fileId === '') {
                 alert('Error: File ID is missing. Please close and reopen the edit dialog.');
@@ -1335,6 +1392,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             formData.append('file_id', fileId);
             formData.append('expiration_days', expirationDays);
             formData.append('downloads_limit', downloadsLimit);
+            if (teamId) {
+                formData.append('team_id', teamId);
+            }
 
             fetch('/file/edit', {
                 method: 'POST',
