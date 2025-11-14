@@ -2759,11 +2759,45 @@ func (s *Server) handleAdminReboot(w http.ResponseWriter, r *http.Request) {
 		log.Println("🔄 Attempting graceful server restart...")
 
 		// Try systemctl restart first
-		cmd := exec.Command("systemctl", "restart", "sharecare")
+		cmd := exec.Command("systemctl", "restart", "wulfvault")
 		if err := cmd.Run(); err != nil {
 			// If systemctl doesn't work, just exit (process manager will restart)
 			log.Println("systemctl not available, exiting for process manager restart...")
 			os.Exit(0)
 		}
 	}()
+}
+
+// handleAPIUsersList returns all users for team member selection
+func (s *Server) handleAPIUsersList(w http.ResponseWriter, r *http.Request) {
+	users, err := database.DB.GetAllUsers()
+	if err != nil {
+		log.Printf("Error fetching users: %v", err)
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch users")
+		return
+	}
+
+	// Filter out deleted users and format for response
+	type UserInfo struct {
+		ID    int    `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	var userList []UserInfo
+	for _, user := range users {
+		if !user.IsActive {
+			continue
+		}
+		userList = append(userList, UserInfo{
+			ID:    user.Id,
+			Name:  user.Name,
+			Email: user.Email,
+		})
+	}
+
+	s.sendJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"users":   userList,
+	})
 }
