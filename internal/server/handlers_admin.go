@@ -828,13 +828,12 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 
 	headerCSS := `
         .header {
-            background: #1a1a2e;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;
@@ -978,13 +977,12 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             background: #f5f5f5;
         }
         .header {
-            background: #1a1a2e;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;
@@ -1135,41 +1133,41 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 
         <h2 style="margin-top: 40px;">📥 Downloaded Data</h2>
         <div class="stats">
-            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">Today</h3>
-                <div class="value" style="color: white;">` + bytesDownloadedTodayStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <h3>Today</h3>
+                <div class="value">` + bytesDownloadedTodayStr + `</div>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">This Week</h3>
-                <div class="value" style="color: white;">` + bytesDownloadedWeekStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <h3>This Week</h3>
+                <div class="value">` + bytesDownloadedWeekStr + `</div>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">This Month</h3>
-                <div class="value" style="color: white;">` + bytesDownloadedMonthStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <h3>This Month</h3>
+                <div class="value">` + bytesDownloadedMonthStr + `</div>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">This Year</h3>
-                <div class="value" style="color: white;">` + bytesDownloadedYearStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <h3>This Year</h3>
+                <div class="value">` + bytesDownloadedYearStr + `</div>
             </div>
         </div>
 
         <h2 style="margin-top: 40px;">📤 Uploaded Data</h2>
         <div class="stats">
-            <div class="stat-card" style="background: linear-gradient(135deg, #FA8BFF 0%, #2BD2FF 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">Today</h3>
-                <div class="value" style="color: white;">` + bytesUploadedTodayStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <h3>Today</h3>
+                <div class="value">` + bytesUploadedTodayStr + `</div>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #FF6B95 0%, #FFC796 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">This Week</h3>
-                <div class="value" style="color: white;">` + bytesUploadedWeekStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <h3>This Week</h3>
+                <div class="value">` + bytesUploadedWeekStr + `</div>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #A8EDEA 0%, #FED6E3 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">This Month</h3>
-                <div class="value" style="color: white;">` + bytesUploadedMonthStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <h3>This Month</h3>
+                <div class="value">` + bytesUploadedMonthStr + `</div>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #FDBB2D 0%, #3A1C71 100%); color: white;">
-                <h3 style="color: rgba(255,255,255,0.9);">This Year</h3>
-                <div class="value" style="color: white;">` + bytesUploadedYearStr + `</div>
+            <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <h3>This Year</h3>
+                <div class="value">` + bytesUploadedYearStr + `</div>
             </div>
         </div>
 
@@ -1211,56 +1209,56 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 
         <h2 style="margin-top: 40px;">🔐 Security Overview</h2>
         <div class="stats">
-            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; grid-column: span 2;">
-                <h3 style="color: rgba(255,255,255,0.9);">2FA Adoption Rate</h3>
-                <div class="value" style="color: white;">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 14px;">Percentage of Users/Admins with 2FA enabled</p>
+            <div class="stat-card" style="border-left: 4px solid #8b5cf6; grid-column: span 2;">
+                <h3>2FA Adoption Rate</h3>
+                <div class="value">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 14px;">Percentage of Users/Admins with 2FA enabled</p>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; grid-column: span 2;">
-                <h3 style="color: rgba(255,255,255,0.9);">Avg Backup Codes Remaining</h3>
-                <div class="value" style="color: white;">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 14px;">Average per user with 2FA enabled</p>
+            <div class="stat-card" style="border-left: 4px solid #8b5cf6; grid-column: span 2;">
+                <h3>Avg Backup Codes Remaining</h3>
+                <div class="value">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 14px;">Average per user with 2FA enabled</p>
             </div>
         </div>
 
         <h2 style="margin-top: 40px;">📁 File Statistics</h2>
         <div class="stats">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; grid-column: span 2;">
-                <h3 style="color: rgba(255,255,255,0.9);">Largest File</h3>
-                <div class="value" style="color: white; font-size: 24px; word-break: break-word;">` + largestFileName + `</div>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 16px;">` + largestFileSizeStr + `</p>
+            <div class="stat-card" style="border-left: 4px solid #f59e0b; grid-column: span 2;">
+                <h3>Largest File</h3>
+                <div class="value" style="font-size: 24px; word-break: break-word;">` + largestFileName + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 16px;">` + largestFileSizeStr + `</p>
             </div>
-            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; grid-column: span 2;">
-                <h3 style="color: rgba(255,255,255,0.9);">Most Active User</h3>
-                <div class="value" style="color: white; font-size: 24px;">` + mostActiveUser + `</div>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d files uploaded", userFileCount) + `</p>
+            <div class="stat-card" style="border-left: 4px solid #f59e0b; grid-column: span 2;">
+                <h3>Most Active User</h3>
+                <div class="value" style="font-size: 24px;">` + mostActiveUser + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d files uploaded", userFileCount) + `</p>
             </div>
         </div>
 
         <h2 style="margin-top: 40px;">⚡ Trend Data</h2>
         <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #FF5722;">
+            <div class="stat-card" style="border-left: 4px solid #64748b;">
                 <h3>Top File Types</h3>
-                <div class="value" style="color: #FF5722; font-size: 16px; word-break: break-word;">` + fileTypesStr + `</div>
+                <div class="value" style="font-size: 16px; word-break: break-word;">` + fileTypesStr + `</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #FF9800;">
+            <div class="stat-card" style="border-left: 4px solid #64748b;">
                 <h3>Most Active Day</h3>
-                <div class="value" style="color: #FF9800; font-size: 20px;">` + topWeekday + `</div>
+                <div class="value" style="font-size: 20px;">` + topWeekday + `</div>
                 <p style="color: #666; margin-top: 10px; font-size: 14px;">` + fmt.Sprintf("%d downloads", weekdayCount) + `</p>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #FFC107; grid-column: span 2;">
+            <div class="stat-card" style="border-left: 4px solid #64748b; grid-column: span 2;">
                 <h3>Storage Trend (Last 30 Days)</h3>
-                <div class="value" style="color: #FFC107; font-size: 20px;">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
+                <div class="value" style="font-size: 20px;">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
                 <p style="color: #666; margin-top: 10px; font-size: 14px;">` + storagePastStr + ` → ` + storageNowStr + `</p>
             </div>
         </div>
 
         <h2 style="margin-top: 40px;">🎯 Fun Fact</h2>
         <div class="stats">
-            <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; grid-column: span 2;">
-                <h3 style="color: rgba(255,255,255,0.9);">Most Downloaded File</h3>
-                <div class="value" style="color: white; font-size: 24px; word-break: break-word;">` + mostDownloadedFile + `</div>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
+            <div class="stat-card" style="border-left: 4px solid #ec4899; grid-column: span 2;">
+                <h3>Most Downloaded File</h3>
+                <div class="value" style="font-size: 24px; word-break: break-word;">` + mostDownloadedFile + `</div>
+                <p style="color: #666; margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
             </div>
         </div>
     </div>

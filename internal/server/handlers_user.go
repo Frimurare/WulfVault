@@ -402,13 +402,12 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             background: #f5f5f5;
         }
         .header {
-            background: #1a1a2e;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
         }
         .header .logo {
             display: flex;

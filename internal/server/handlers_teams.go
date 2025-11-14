@@ -765,15 +765,16 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
                     <td>%s</td>
                     <td>%s</td>
                     <td class="action-links">
-                        <button onclick="viewMembers(%d, '%s')">Members</button>
-                        <button onclick="editTeam(%d)">Edit</button>
-                        <button onclick="deleteTeam(%d, '%s')">Delete</button>
+                        <button onclick="window.location.href='/teams?id=%d'">📁 Files</button>
+                        <button onclick="viewMembers(%d, '%s')">👥 Members</button>
+                        <button onclick="editTeam(%d)">✏️ Edit</button>
+                        <button onclick="deleteTeam(%d, '%s')">🗑️ Delete</button>
                     </td>
                 </tr>`,
 				team.Name, team.Description, team.MemberCount,
 				storageUsed, storageTotal, storagePercent, storagePercent,
 				team.GetReadableCreatedAt(), statusBadge,
-				team.Id, team.Name, team.Id, team.Id, team.Name)
+				team.Id, team.Id, team.Name, team.Id, team.Id, team.Name)
 		}
 	}
 
@@ -1085,10 +1086,9 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             padding: 0 20px;
         }
         .header-user {
-            background: #1a1a2e;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             padding: 20px 40px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
             color: white;
             display: flex;
             justify-content: space-between;
@@ -1289,10 +1289,9 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             background: #f5f5f5;
         }
         .header-user {
-            background: #1a1a2e;
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             padding: 20px 40px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
             color: white;
             display: flex;
             justify-content: space-between;
