@@ -1329,7 +1329,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
 
         function loadUserTeamsForEdit() {
-            fetch('/api/my-teams', {
+            fetch('/api/teams/my', {
                 credentials: 'same-origin'
             })
             .then(response => response.json())
