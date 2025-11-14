@@ -908,6 +908,9 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	mostDownloadedFile string, downloadCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get joke of the day
+	joke := models.GetJokeOfTheDay()
+
 	// Helper function to format bytes
 	formatBytes := func(bytes int64) string {
 		const unit = 1024
@@ -1067,6 +1070,28 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+        .joke-section {
+            margin: 30px 0;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .joke-title {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .joke-text {
+            color: white;
+            font-size: 17px;
+            line-height: 1.6;
+            font-weight: 500;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -1100,6 +1125,11 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     </div>
 
     <div class="container">
+        <div class="joke-section">
+            <div class="joke-title">💡 File Sharing Wisdom</div>
+            <div class="joke-text">` + joke.Text + `</div>
+        </div>
+
         <h2>Quick Actions</h2>
         <div class="quick-actions">
             <a href="/admin/users/create" class="action-btn">➕ Create User</a>

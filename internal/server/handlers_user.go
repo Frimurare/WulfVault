@@ -359,6 +359,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
 	user := userModel.(*models.User)
 
+	// Get joke of the day
+	joke := models.GetJokeOfTheDay()
+
 	// Get branding config
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 	logoData := brandingConfig["branding_logo"]
@@ -671,6 +674,28 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 grid-template-columns: 1fr;
             }
         }
+        .joke-section {
+            margin: 30px 0;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .joke-title {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .joke-text {
+            color: white;
+            font-size: 17px;
+            line-height: 1.6;
+            font-weight: 500;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -716,6 +741,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
     </div>
 
     <div class="container">
+        <div class="joke-section">
+            <div class="joke-title">💡 File Sharing Wisdom</div>
+            <div class="joke-text">` + joke.Text + `</div>
+        </div>
+
         <div class="stats">
             <div class="stat-card">
                 <h3>Storage Used</h3>

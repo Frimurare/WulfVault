@@ -1,5 +1,99 @@
 # Changelog
 
+## [4.0.0] - 2025-11-14 🎨 Professional UI Polish & Statistics Fixes
+
+### ✨ New Features
+
+**File Sharing Wisdom - Random One-Liners:**
+- Added 130+ humorous one-liner quotes about file sharing and large file problems
+- Displayed prominently in both admin and user dashboards
+- Changes every 5 seconds for variety
+- Adds personality and reminds users why they're using WulfVault instead of email
+
+### 🐛 Bug Fixes
+
+**Dashboard Statistics Fixed:**
+- Fixed admin dashboard statistics that were showing N/A or 0%
+- Fixed SQL queries using incorrect column names:
+  - `GetLargestFile`: Changed `FileName` → `Name`
+  - `GetMostActiveUser`: Changed `CreatedBy` → `UserId`
+  - `GetTopFileTypes`: Changed `FileName` → `Name`
+  - `Get2FAAdoptionRate`: Changed `AccountType` filter → `DeletedAt = 0` filter
+- All dashboard metrics now display correctly:
+  - File statistics (largest file, most downloaded)
+  - Most active users
+  - 2FA adoption rate
+  - Trend data (top file types, weekday activity)
+
+**Navigation Consistency:**
+- Fixed navigation buttons disappearing when admins navigate between pages
+- Implemented consistent conditional navigation across all pages:
+  - Admin navigation: Admin Dashboard, My Files, Users, Teams, All Files, Trash, Branding, Email, Server, My Account
+  - User navigation: Dashboard, Teams, Settings
+- Fixed email settings page having drastically different interface
+- Restored branding colors (gradient) to all navigation headers
+
+**UI/UX Improvements:**
+- Replaced "clownshow" rainbow gradients in admin dashboard with professional design
+- Changed from bright gradient backgrounds to clean white cards with subtle colored border-left accents:
+  - Blue (#3b82f6) for downloads
+  - Green (#10b981) for uploads
+  - Purple (#8b5cf6) for security
+  - Amber (#f59e0b) for files
+  - Slate (#64748b) for trends
+  - Pink (#ec4899) for fun facts
+- Much more professional and enterprise-ready appearance
+
+**Team Files Access:**
+- Added ability for admins to view team files from admin teams page
+- Added "📁 Files" button next to Members/Edit/Delete in admin teams view
+- Team members can now easily view files shared with their teams
+- Created `renderTeamFiles` function with proper file listing table
+
+### 📁 Modified Files
+
+**New Files:**
+- `internal/models/jokes.go`: Contains 130+ file sharing one-liners with `GetJokeOfTheDay()` function
+
+**Backend Changes:**
+- `cmd/server/main.go` (line 25): Updated version from "3.6.0-beta3" to "4.0.0"
+- `internal/database/downloads.go` (lines 510, 531-533, 553-554): Fixed SQL column names in statistics queries
+- `internal/database/users.go` (lines 323-340): Fixed Get2FAAdoptionRate to use correct columns
+- `internal/server/handlers_admin.go` (lines 911-912, 1073-1094, 1128-1131): Added joke display in admin dashboard
+- `internal/server/handlers_user.go` (lines 362-363, 677-698, 744-747): Added joke display in user dashboard
+- `internal/server/handlers_teams.go` (line 768, lines 438-479, 1266-1558): Added team files access for admins and users
+- `internal/server/handlers_email.go` (lines 432-439, 469-479, 640-674): Fixed navigation consistency
+- `internal/server/handlers_user_settings.go` (lines 77-84, 279-299): Fixed navigation consistency
+
+**Design Changes:**
+- All admin dashboard stat cards changed from gradient backgrounds to border-left accent design
+- Navigation headers use branding gradient colors consistently across all pages
+- Joke section uses purple gradient (#667eea → #764ba2) with subtle shadow
+
+### 🔧 Technical Details
+
+**Joke System Architecture:**
+- Based on same pattern as poem system in download pages
+- Uses 5-second intervals for stable display (changes every 5 seconds)
+- Thread-safe random selection using time-seeded rand
+- Consistent styling with purple gradient background
+
+**Database Schema Verification:**
+- Confirmed Users table uses `Userlevel` (0=SuperAdmin, 1=Admin, 2=User) not `AccountType`
+- Confirmed Files table uses `Name` and `UserId` columns
+- All statistics queries now properly reference existing schema columns
+
+### 🎯 Version Significance
+
+This is a major version bump to 4.0.0 because:
+- Significant UI/UX overhaul with new joke system across dashboards
+- Breaking change in professional design direction (removed all rainbow gradients)
+- Complete fix of core dashboard statistics functionality
+- Major navigation system consistency improvements
+- New team files access functionality
+
+---
+
 ## [3.3.7] - 2025-11-13 🔒 Inactivity Timeout Feature
 
 ### ✨ New Feature

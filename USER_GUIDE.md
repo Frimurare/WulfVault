@@ -1,4 +1,4 @@
-# WulfVault User Guide v3.3.0
+# WulfVault User Guide v4.0.0
 
 **Complete Guide for Administrators and Users**
 
@@ -45,6 +45,9 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
 - ✅ **Branding** - Custom logo, colors, company name
 - ✅ **File requests** - Create upload portals for receiving files
 - ✅ **Storage quotas** - Per-user limits with usage tracking
+- ✅ **File Sharing Wisdom** - 130+ humorous one-liners on dashboards
+- ✅ **Team Files Access** - Admins and members can easily view team files
+- ✅ **Professional UI** - Clean, modern design with consistent navigation
 
 ### Who Should Use This Guide?
 
