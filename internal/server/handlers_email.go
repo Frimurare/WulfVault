@@ -720,12 +720,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         <div id="brevo-config" class="provider-config ` + activeConfigClass("brevo", activeTab) + `">
             <form id="brevo-form">
                 <div class="form-group">
-                    <label>Brevo API Key</label>
+                    <label>Brevo API Key (REST API, not SMTP)</label>
                     <input type="password"
                            id="brevo-api-key"
                            placeholder="` + placeholderText(brevoConfigured, "xkeysib-...") + `"
                            autocomplete="off">
-                    <small>Your API key is encrypted and hidden after saving.</small>
+                    <small><strong>Important:</strong> Use an API key (starts with <code>xkeysib-</code>), NOT an SMTP API key (<code>xsmtpsib-</code>). Create at Settings → SMTP & API → API Keys in Brevo dashboard.</small>
                 </div>
 
                 <div class="form-group">
@@ -875,11 +875,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 });
 
                 if (response.ok) {
-                    showSuccess('Brevo settings saved successfully!');
+                    showSuccess('Brevo settings saved successfully! You can now test the connection.');
+                    // Clear the API key field and update placeholder
                     document.getElementById('brevo-api-key').value = '';
                     document.getElementById('brevo-api-key').placeholder = '••••••••••••••••';
                     document.getElementById('test-brevo').disabled = false;
-                    setTimeout(() => location.reload(), 1500);
+                    // Don't reload - it can cause issues with form state
                 } else {
                     const error = await response.json();
                     showError('Error: ' + error.error);
@@ -925,11 +926,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 });
 
                 if (response.ok) {
-                    showSuccess('SMTP settings saved successfully!');
+                    showSuccess('SMTP settings saved successfully! You can now test the connection.');
+                    // Clear the password field and update placeholder
                     document.getElementById('smtp-password').value = '';
                     document.getElementById('smtp-password').placeholder = '••••••••••••••••';
                     document.getElementById('test-smtp').disabled = false;
-                    setTimeout(() => location.reload(), 1500);
+                    // Don't reload - it can cause issues with form state
                 } else {
                     const error = await response.json();
                     showError('Error: ' + error.error);

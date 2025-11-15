@@ -1,5 +1,40 @@
 # Changelog
 
+## [4.0.5] - 2025-11-15 🔧 CRITICAL: Clarify Brevo API Key Type & Fix UI Issues
+
+### 🐛 Critical Fix
+
+**Brevo Email Configuration - API Key Type Confusion:**
+- Fixed major confusion between SMTP API keys (`xsmtpsib-...`) and REST API keys (`xkeysib-...`)
+- Brevo provides TWO types of keys, but WulfVault requires REST API keys, NOT SMTP keys
+- Users were creating SMTP API keys which don't work with our REST API integration
+- Updated UI to clearly specify: "Brevo API Key (REST API, not SMTP)"
+- Added help text explaining the difference and where to create the correct key type
+- Changed placeholder from `xsmtpsib-...` to `xkeysib-...` to show correct format
+
+**UI Improvements:**
+- Removed `location.reload()` after save which could cause race conditions
+- Prevents form state issues and accidental re-submissions
+- Clearer success message: "You can now test the connection" without page reload
+
+### 📁 Modified Files
+
+**Code:**
+- `internal/server/handlers_email.go`:
+  - Updated label: "Brevo API Key (REST API, not SMTP)" (line 723)
+  - Added detailed help text explaining key types (line 728)
+  - Changed placeholder to show correct format `xkeysib-...` (line 726)
+  - Removed `location.reload()` to prevent form issues (lines 883, 934)
+- `cmd/server/main.go`: Version bump to 4.0.5
+
+### 🎯 Impact
+
+This resolves the major source of confusion where users couldn't get Brevo emails working because they were using SMTP API keys instead of REST API keys. All Brevo SMTP keys (`xsmtpsib-...`) will fail with "401 Unauthorized" - users MUST use REST API keys (`xkeysib-...`).
+
+**Critical for:** Anyone setting up or updating Brevo email integration.
+
+---
+
 ## [4.0.4] - 2025-11-15 🔧 Improve Email API Key Handling & Debugging
 
 ### 🛠️ Improvements
