@@ -884,7 +884,12 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         <!-- File Request Section -->
         <div class="file-request-section" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px;">
             <h2 style="margin-bottom: 16px; color: #333;">📥 Request Files from Others</h2>
-            <p style="color: #666; margin-bottom: 20px;">Create a link that allows others to upload files directly to you. Perfect for collecting files from clients or colleagues.</p>
+            <p style="color: #666; margin-bottom: 12px;">Create a link that allows others to upload files directly to you. Perfect for collecting files from clients or colleagues.</p>
+            <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
+                <p style="color: #1976d2; font-size: 13px; margin: 0;">
+                    🔒 <strong>Security:</strong> Upload links automatically expire after 24 hours for your protection.
+                </p>
+            </div>
             <button onclick="showCreateRequestModal()" style="padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
                 ➕ Create Upload Request
             </button>
@@ -907,9 +912,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <textarea id="requestMessage" placeholder="Additional instructions for the uploader..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
                     </div>
 
-                    <div style="margin-bottom: 20px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;">
-                        <p style="color: #856404; font-size: 13px; margin: 0;">
-                            ⏰ <strong>Note:</strong> The upload link will automatically expire after 24 hours for security purposes.
+                    <div style="margin-bottom: 20px; padding: 14px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
+                        <p style="color: #856404; font-size: 13px; margin: 0; line-height: 1.5;">
+                            ⏰ <strong>Security Notice:</strong> Upload links automatically expire after <strong>24 hours</strong> for your protection. Recipients must use the link within this timeframe.
                         </p>
                     </div>
 
