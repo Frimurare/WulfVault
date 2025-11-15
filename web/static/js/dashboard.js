@@ -495,15 +495,56 @@ function loadFileRequests() {
                 return;
             }
 
+            const now = Math.floor(Date.now() / 1000);
             let html = '<div style="margin-top: 20px;">';
+
             data.requests.forEach(req => {
-                const expired = req.is_expired ? ' (EXPIRED)' : '';
-                const active = req.is_active ? '✅' : '❌';
-                html += '<div style="border: 1px solid #e0e0e0; padding: 16px; margin-bottom: 12px; border-radius: 8px;">';
-                html += '<h4 style="margin-bottom: 8px;">' + active + ' ' + escapeHtml(req.title) + expired + '</h4>';
-                if (req.message) {
-                    html += '<p style="color: #666; font-size: 14px; margin-bottom: 8px;">' + escapeHtml(req.message) + '</p>';
+                const expiresAt = req.expires_at;
+                const timeDiff = expiresAt - now;
+
+                let expiryStatus = '';
+                let borderColor = '#e0e0e0';
+                let bgColor = 'white';
+
+                if (req.is_expired) {
+                    // Calculate days until auto-removal
+                    const expiredFor = now - expiresAt;
+                    const fiveDays = 5 * 24 * 60 * 60;
+                    const daysUntilRemoval = Math.max(0, Math.ceil((fiveDays - expiredFor) / (24 * 60 * 60)));
+
+                    expiryStatus = '<span style="color: #f44336; font-weight: 600;">⏰ EXPIRED</span> - ' +
+                                   '<span style="color: #ff9800;">Auto-removal in ' + daysUntilRemoval + ' day' + (daysUntilRemoval !== 1 ? 's' : '') + '</span>';
+                    borderColor = '#f44336';
+                    bgColor = '#fff5f5';
+                } else {
+                    // Calculate hours until expiry
+                    const hoursUntilExpiry = Math.max(0, Math.floor(timeDiff / 3600));
+                    const minutesRemaining = Math.max(0, Math.floor((timeDiff % 3600) / 60));
+
+                    if (hoursUntilExpiry > 0) {
+                        expiryStatus = '<span style="color: #4caf50; font-weight: 500;">✓ Expires in ' + hoursUntilExpiry + ' hour' + (hoursUntilExpiry !== 1 ? 's' : '') + '</span>';
+                    } else if (minutesRemaining > 0) {
+                        expiryStatus = '<span style="color: #ff9800; font-weight: 500;">⚠️ Expires in ' + minutesRemaining + ' minute' + (minutesRemaining !== 1 ? 's' : '') + '</span>';
+                        borderColor = '#ff9800';
+                        bgColor = '#fff8e1';
+                    } else {
+                        expiryStatus = '<span style="color: #f44336; font-weight: 600;">⏰ Expiring soon...</span>';
+                        borderColor = '#f44336';
+                        bgColor = '#fff5f5';
+                    }
                 }
+
+                const active = req.is_active ? '✅' : '❌';
+                html += '<div style="border: 2px solid ' + borderColor + '; background: ' + bgColor + '; padding: 16px; margin-bottom: 12px; border-radius: 8px; transition: all 0.3s;">';
+                html += '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">';
+                html += '<h4 style="margin: 0; flex: 1;">' + active + ' ' + escapeHtml(req.title) + '</h4>';
+                html += '<div style="text-align: right; font-size: 13px;">' + expiryStatus + '</div>';
+                html += '</div>';
+
+                if (req.message) {
+                    html += '<p style="color: #666; font-size: 14px; margin-bottom: 12px;">' + escapeHtml(req.message) + '</p>';
+                }
+
                 html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
                 html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
                 html += '<button onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
@@ -521,6 +562,9 @@ function loadFileRequests() {
                     deleteFileRequest(parseInt(id), title);
                 });
             });
+
+            // Refresh every minute to update countdowns
+            setTimeout(loadFileRequests, 60000);
         });
 }
 

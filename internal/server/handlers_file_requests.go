@@ -202,10 +202,18 @@ func (s *Server) handleFileRequestList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	now := time.Now().Unix()
+	fiveDaysAgo := now - (5 * 24 * 60 * 60)
+
 	var requestList []map[string]interface{}
 	for _, req := range requests {
 		// Skip used requests (single-use links that have been consumed)
 		if req.IsUsed() {
+			continue
+		}
+
+		// Skip requests that have been expired for more than 5 days
+		if req.IsExpired() && req.ExpiresAt < fiveDaysAgo {
 			continue
 		}
 
