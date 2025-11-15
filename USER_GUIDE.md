@@ -915,19 +915,37 @@ From: yourname@gmail.com
 
 **Setup:**
 1. Create account at https://www.brevo.com
-2. Get API key from Brevo dashboard
-3. In WulfVault:
+2. **Get API key from Brevo dashboard:**
+   - Go to **Settings** → **SMTP & API**
+   - Click on **"API Keys"** tab (NOT "SMTP")
+   - Click **"Generate a new API key"**
+   - ⚠️ **IMPORTANT:** Select **"API keys"** - Do NOT create an "SMTP API key"
+   - Give it a name (e.g., "WulfVault")
+   - Copy the key (starts with `xkeysib-...`)
+3. **Verify sender address:**
+   - Go to **Settings** → **Senders & IP**
+   - Add and verify your sender email address
+   - Wait for verification email and confirm
+4. In WulfVault:
+   - Go to **Admin → Email Settings**
    - Select **Brevo Provider**
-   - Enter API Key
-   - Set From Address (must be verified in Brevo)
-   - Set From Name
-4. Test configuration
-5. Save
+   - Enter **API Key** (starts with `xkeysib-...`, NOT `xsmtpsib-...`)
+   - Set From Address (must match verified address in Brevo)
+   - Set From Name (your organization name)
+5. Click **"Test Connection"** to verify
+6. Click **"Save"**
+
+**⚠️ CRITICAL: API Key Type**
+- **CORRECT:** API Key (REST API) - starts with `xkeysib-...`
+- **WRONG:** SMTP API Key - starts with `xsmtpsib-...` ❌
+- WulfVault uses Brevo's REST API, NOT SMTP
+- Using an SMTP key will result in "401 Unauthorized" errors
 
 **Benefits:**
 - Professional email delivery
 - Higher deliverability rates
 - Free tier available (300 emails/day)
+- No email server maintenance required
 
 ### Testing Email Configuration
 
