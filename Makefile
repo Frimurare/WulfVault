@@ -1,20 +1,20 @@
 .PHONY: build run clean test docker-build docker-run
 
 build:
-	go build -o sharecare ./cmd/server
+	go build -o wulfvault ./cmd/server
 
 run:
 	go run ./cmd/server
 
 clean:
-	rm -f sharecare
+	rm -f wulfvault
 	rm -rf data/ uploads/
 
 test:
 	go test ./...
 
 docker-build:
-	docker build -t sharecare:latest .
+	docker build -t wulfvault/wulfvault:latest .
 
 docker-run:
 	docker-compose up -d

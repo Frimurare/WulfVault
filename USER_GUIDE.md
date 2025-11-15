@@ -70,7 +70,7 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
    ```
 
 2. **Default Admin Credentials** (first-time setup only):
-   - Email: `admin@sharecare.local`
+   - Email: `admin@wulfvault.local`
    - Password: `WulfVaultAdmin2024!`
 
 3. **⚠️ CRITICAL SECURITY STEP:**
@@ -133,7 +133,7 @@ When starting WulfVault with `docker run`, use `-e` flags:
 
 ```bash
 docker run -d \
-  --name sharecare \
+  --name wulfvault \
   -p 8080:8080 \
   -v ./data:/data \
   -v ./uploads:/uploads \
@@ -143,16 +143,16 @@ docker run -d \
   -e DEFAULT_QUOTA_MB=10000 \
   -e SESSION_TIMEOUT_HOURS=48 \
   -e TRASH_RETENTION_DAYS=7 \
-  frimurare/sharecare:latest
+  wulfvault/wulfvault:latest
 ```
 
 **Example with all variables:**
 ```bash
 docker run -d \
-  --name sharecare \
+  --name wulfvault \
   -p 3000:3000 \
-  -v /mnt/sharecare-data:/data \
-  -v /mnt/sharecare-uploads:/uploads \
+  -v /mnt/wulfvault-data:/data \
+  -v /mnt/wulfvault-uploads:/uploads \
   -e SERVER_URL=https://files.company.com \
   -e PORT=3000 \
   -e DATA_DIR=/data \
@@ -161,7 +161,7 @@ docker run -d \
   -e DEFAULT_QUOTA_MB=20000 \
   -e SESSION_TIMEOUT_HOURS=24 \
   -e TRASH_RETENTION_DAYS=30 \
-  frimurare/sharecare:latest
+  wulfvault/wulfvault:latest
 ```
 
 #### Method 2: Docker Compose
@@ -171,9 +171,10 @@ Create or edit `docker-compose.yml`:
 ```yaml
 version: '3.8'
 services:
-  sharecare:
-    image: frimurare/sharecare:latest
-    container_name: sharecare
+  wulfvault:
+    build: .
+    image: wulfvault/wulfvault:latest
+    container_name: wulfvault
     ports:
       - "8080:8080"
     volumes:
@@ -210,7 +211,7 @@ docker-compose up -d
 When running the compiled binary directly, use flags:
 
 ```bash
-./sharecare \
+./wulfvault \
   -url=https://files.yourdomain.com \
   -port=8080 \
   -data=./data \
@@ -251,8 +252,9 @@ TRASH_RETENTION_DAYS=5
 ```yaml
 version: '3.8'
 services:
-  sharecare:
-    image: frimurare/sharecare:latest
+  wulfvault:
+    build: .
+    image: wulfvault/wulfvault:latest
     env_file:
       - .env
     ports:
@@ -381,7 +383,7 @@ environment:
 
 **Via Docker logs:**
 ```bash
-docker logs sharecare
+docker logs wulfvault
 
 # Output shows:
 # WulfVault File Sharing System v3.3.0
@@ -391,7 +393,7 @@ docker logs sharecare
 
 **Via environment inspection:**
 ```bash
-docker exec sharecare env | grep -E "SERVER_URL|PORT|MAX_FILE"
+docker exec wulfvault env | grep -E "SERVER_URL|PORT|MAX_FILE"
 ```
 
 ### Troubleshooting Configuration
@@ -401,7 +403,7 @@ docker exec sharecare env | grep -E "SERVER_URL|PORT|MAX_FILE"
 **Solution:**
 1. Check if change requires restart (see table above)
 2. For Docker: `docker-compose down && docker-compose up -d`
-3. Check logs: `docker logs sharecare`
+3. Check logs: `docker logs wulfvault`
 4. Verify no syntax errors in docker-compose.yml
 
 #### Problem: Download links use wrong URL
@@ -588,7 +590,7 @@ Recipient clicks link → Creates account → Downloads file
 
 5. **Access your portal** at any time:
    ```
-   https://your-sharecare-instance/download/dashboard
+   https://your-wulfvault-instance/download/dashboard
    ```
 
 ### Download Account Features
