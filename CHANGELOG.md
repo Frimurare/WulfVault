@@ -1,5 +1,37 @@
 # Changelog
 
+## [4.0.4] - 2025-11-15 🔧 Improve Email API Key Handling & Debugging
+
+### 🛠️ Improvements
+
+**Email Settings - Enhanced Input Handling:**
+- Added automatic whitespace trimming for all email configuration inputs
+- Prevents issues when copy/pasting API keys, emails, or hostnames with accidental spaces
+- Applies trimming on both client-side (JavaScript `.trim()`) and server-side (`strings.TrimSpace()`)
+- Covers: Brevo API keys, SMTP passwords, hostnames, usernames, email addresses, etc.
+
+**Enhanced Debugging for Email Issues:**
+- Added detailed logging showing received API key length and partial contents (first/last 15 chars)
+- Helps diagnose configuration issues when test connections fail
+- Logs now clearly show if API key is being received and saved correctly
+
+### 📁 Modified Files
+
+**Code:**
+- `internal/server/handlers_email.go`:
+  - Added `.trim()` to all JavaScript input value retrievals
+  - Added server-side `strings.TrimSpace()` for all request fields (lines 47-52)
+  - Enhanced logging with API key preview (lines 54-64)
+  - Added `max()` helper function (lines 324-329)
+  - Added `strings` import
+- `cmd/server/main.go`: Version bump to 4.0.4
+
+### 🎯 Impact
+
+Improves robustness of email configuration by handling edge cases with whitespace. Enhanced logging makes it easier to troubleshoot email provider connection issues.
+
+---
+
 ## [4.0.3] - 2025-11-15 🚨 CRITICAL: Fix Team File Download Bug
 
 ### 🐛 Critical Bug Fix

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
@@ -41,6 +42,26 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.sendError(w, http.StatusBadRequest, "Invalid request body")
 		return
+	}
+
+	// Trim whitespace from all inputs (security + UX improvement)
+	req.ApiKey = strings.TrimSpace(req.ApiKey)
+	req.FromEmail = strings.TrimSpace(req.FromEmail)
+	req.FromName = strings.TrimSpace(req.FromName)
+	req.SMTPHost = strings.TrimSpace(req.SMTPHost)
+	req.SMTPUsername = strings.TrimSpace(req.SMTPUsername)
+	req.SMTPPassword = strings.TrimSpace(req.SMTPPassword)
+
+	// Log received API key for debugging
+	if req.Provider == "brevo" {
+		if req.ApiKey != "" {
+			log.Printf("🔑 Received NEW Brevo API key in request: length=%d, starts='%s...', ends='...%s'",
+				len(req.ApiKey),
+				req.ApiKey[:min(15, len(req.ApiKey))],
+				req.ApiKey[max(0, len(req.ApiKey)-15):])
+		} else {
+			log.Printf("⚠️  NO API key in request body (keeping existing)")
+		}
 	}
 
 	// Validate provider
@@ -295,6 +316,13 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 
 func min(a, b int) int {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
 		return a
 	}
 	return b
@@ -829,9 +857,9 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         document.getElementById('brevo-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const apiKey = document.getElementById('brevo-api-key').value;
-            const fromEmail = document.getElementById('brevo-from-email').value;
-            const fromName = document.getElementById('brevo-from-name').value;
+            const apiKey = document.getElementById('brevo-api-key').value.trim();
+            const fromEmail = document.getElementById('brevo-from-email').value.trim();
+            const fromName = document.getElementById('brevo-from-name').value.trim();
 
             try {
                 const response = await fetch('/api/email/configure', {
@@ -871,12 +899,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         document.getElementById('smtp-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const host = document.getElementById('smtp-host').value;
+            const host = document.getElementById('smtp-host').value.trim();
             const port = parseInt(document.getElementById('smtp-port').value);
-            const username = document.getElementById('smtp-username').value;
-            const password = document.getElementById('smtp-password').value;
-            const fromEmail = document.getElementById('smtp-from-email').value;
-            const fromName = document.getElementById('smtp-from-name').value;
+            const username = document.getElementById('smtp-username').value.trim();
+            const password = document.getElementById('smtp-password').value.trim();
+            const fromEmail = document.getElementById('smtp-from-email').value.trim();
+            const fromName = document.getElementById('smtp-from-name').value.trim();
             const useTLS = document.getElementById('smtp-use-tls').checked;
 
             try {
@@ -920,10 +948,10 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         // Test Brevo
         document.getElementById('test-brevo')?.addEventListener('click', async function() {
             const btn = this;
-            const apiKey = document.getElementById('brevo-api-key').value;
+            const apiKey = document.getElementById('brevo-api-key').value.trim();
             const apiKeyPlaceholder = document.getElementById('brevo-api-key').placeholder;
-            const fromEmail = document.getElementById('brevo-from-email').value;
-            const fromName = document.getElementById('brevo-from-name').value;
+            const fromEmail = document.getElementById('brevo-from-email').value.trim();
+            const fromName = document.getElementById('brevo-from-name').value.trim();
 
             btn.disabled = true;
             btn.textContent = 'Testing...';
@@ -986,13 +1014,13 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
         // Test SMTP
         document.getElementById('test-smtp')?.addEventListener('click', async function() {
             const btn = this;
-            const host = document.getElementById('smtp-host').value;
+            const host = document.getElementById('smtp-host').value.trim();
             const port = parseInt(document.getElementById('smtp-port').value) || 587;
-            const username = document.getElementById('smtp-username').value;
-            const password = document.getElementById('smtp-password').value;
+            const username = document.getElementById('smtp-username').value.trim();
+            const password = document.getElementById('smtp-password').value.trim();
             const passwordPlaceholder = document.getElementById('smtp-password').placeholder;
-            const fromEmail = document.getElementById('smtp-from-email').value;
-            const fromName = document.getElementById('smtp-from-name').value;
+            const fromEmail = document.getElementById('smtp-from-email').value.trim();
+            const fromName = document.getElementById('smtp-from-name').value.trim();
             const useTLS = document.getElementById('smtp-use-tls').checked;
 
             btn.disabled = true;
