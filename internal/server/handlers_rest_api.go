@@ -24,21 +24,26 @@ import (
 
 // handleRESTUserRoutes routes user-related requests by method and path
 func (s *Server) handleRESTUserRoutes(w http.ResponseWriter, r *http.Request) {
-	// Extract path after /api/v1/users/
-	path := strings.TrimPrefix(r.URL.Path, "/api/v1/users/")
-	parts := strings.Split(path, "/")
+	// Extract path after /api/v1/users
+	path := strings.TrimPrefix(r.URL.Path, "/api/v1/users")
+	path = strings.TrimPrefix(path, "/")
 
-	if len(parts) == 0 || parts[0] == "" {
+	if path == "" {
+		// Handle /api/v1/users (no trailing slash)
 		if r.Method == "POST" {
 			s.handleAPICreateUser(w, r)
-		} else {
+		} else if r.Method == "GET" {
 			s.handleAPIGetUsers(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 		return
 	}
 
+	parts := strings.Split(path, "/")
+
 	// Check if it's a numeric ID (user operations) or special path
-	userId := parts[0]
+	// userId := parts[0]  // Not currently used, reserved for future path validation
 
 	if len(parts) == 1 {
 		// /api/v1/users/{id}
@@ -77,7 +82,7 @@ func (s *Server) handleRESTFileRoutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileId := parts[0]
+	// fileId := parts[0]  // Not currently used, reserved for future path validation
 
 	if len(parts) == 1 {
 		// /api/v1/files/{id}
@@ -128,7 +133,7 @@ func (s *Server) handleRESTDownloadAccountRoutes(w http.ResponseWriter, r *http.
 		return
 	}
 
-	accountId := parts[0]
+	// accountId := parts[0]  // Not currently used, reserved for future path validation
 
 	if len(parts) == 1 {
 		// /api/v1/download-accounts/{id}
@@ -173,7 +178,7 @@ func (s *Server) handleRESTFileRequestRoutes(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Otherwise it's ID-based
-	requestId := parts[0]
+	// requestId := parts[0]  // Not currently used, reserved for future path validation
 
 	switch r.Method {
 	case "PUT":
@@ -195,7 +200,7 @@ func (s *Server) handleRESTTrashRoutes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileId := parts[0]
+	// fileId := parts[0]  // Not currently used, reserved for future path validation
 
 	if len(parts) == 1 {
 		// /api/v1/trash/{id}
@@ -349,15 +354,15 @@ func (s *Server) handleAPICreateUser(w http.ResponseWriter, r *http.Request) {
 		req.StorageQuotaMB = 10240 // 10GB default
 	}
 	if req.UserLevel == 0 {
-		req.UserLevel = models.UserLevelUser
+		req.UserLevel = int(models.UserLevelUser)
 	}
 
 	user := &models.User{
 		Name:           req.Name,
 		Email:          req.Email,
 		Password:       string(hashedPassword),
-		UserLevel:      req.UserLevel,
-		Permissions:    req.Permissions,
+		UserLevel:      models.UserRank(req.UserLevel),
+		Permissions:    models.UserPermission(req.Permissions),
 		StorageQuotaMB: req.StorageQuotaMB,
 		IsActive:       req.IsActive,
 		CreatedAt:      time.Now().Unix(),
@@ -419,8 +424,8 @@ func (s *Server) handleAPIUpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Update fields
 	user.Name = req.Name
 	user.Email = req.Email
-	user.UserLevel = req.UserLevel
-	user.Permissions = req.Permissions
+	user.UserLevel = models.UserRank(req.UserLevel)
+	user.Permissions = models.UserPermission(req.Permissions)
 	user.StorageQuotaMB = req.StorageQuotaMB
 	user.IsActive = req.IsActive
 
@@ -476,7 +481,7 @@ func (s *Server) handleAPIDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := database.DB.DeleteUser(userId); err != nil {
+	if err := database.DB.DeleteUser(userId, currentUser.Id); err != nil {
 		log.Printf("Error deleting user: %v", err)
 		http.Error(w, "Error deleting user", http.StatusInternalServerError)
 		return
@@ -1163,13 +1168,11 @@ func (s *Server) handleAPICreateFileRequest(w http.ResponseWriter, r *http.Reque
 	user, _ := userFromContext(r.Context())
 
 	var req struct {
-		Title          string `json:"title"`
-		Description    string `json:"description"`
-		Password       string `json:"password,omitempty"`
-		MaxSizeMB      int64  `json:"maxSizeMB"`
-		ExpiresAt      int64  `json:"expiresAt"`
-		MaxUploads     int    `json:"maxUploads"`
-		NotifyOnUpload bool   `json:"notifyOnUpload"`
+		Title            string `json:"title"`
+		Message          string `json:"message"`
+		MaxFileSize      int64  `json:"maxFileSize"`      // in bytes
+		ExpiresAt        int64  `json:"expiresAt"`
+		AllowedFileTypes string `json:"allowedFileTypes"` // comma-separated
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -1183,15 +1186,14 @@ func (s *Server) handleAPICreateFileRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	fileRequest := &models.FileRequest{
-		Title:          req.Title,
-		Description:    req.Description,
-		Password:       req.Password,
-		MaxSizeMB:      req.MaxSizeMB,
-		ExpiresAt:      req.ExpiresAt,
-		MaxUploads:     req.MaxUploads,
-		NotifyOnUpload: req.NotifyOnUpload,
-		UserId:         user.Id,
-		CreatedAt:      time.Now().Unix(),
+		Title:            req.Title,
+		Message:          req.Message,
+		MaxFileSize:      req.MaxFileSize,
+		ExpiresAt:        req.ExpiresAt,
+		AllowedFileTypes: req.AllowedFileTypes,
+		UserId:           user.Id,
+		CreatedAt:        time.Now().Unix(),
+		IsActive:         true,
 	}
 
 	if err := database.DB.CreateFileRequest(fileRequest); err != nil {
@@ -1237,14 +1239,12 @@ func (s *Server) handleAPIUpdateFileRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	var req struct {
-		Title          string `json:"title"`
-		Description    string `json:"description"`
-		Password       string `json:"password,omitempty"`
-		MaxSizeMB      int64  `json:"maxSizeMB"`
-		ExpiresAt      int64  `json:"expiresAt"`
-		MaxUploads     int    `json:"maxUploads"`
-		NotifyOnUpload bool   `json:"notifyOnUpload"`
-		IsActive       bool   `json:"isActive"`
+		Title            string `json:"title"`
+		Message          string `json:"message"`
+		MaxFileSize      int64  `json:"maxFileSize"`
+		ExpiresAt        int64  `json:"expiresAt"`
+		AllowedFileTypes string `json:"allowedFileTypes"`
+		IsActive         bool   `json:"isActive"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -1253,12 +1253,10 @@ func (s *Server) handleAPIUpdateFileRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	fileRequest.Title = req.Title
-	fileRequest.Description = req.Description
-	fileRequest.Password = req.Password
-	fileRequest.MaxSizeMB = req.MaxSizeMB
+	fileRequest.Message = req.Message
+	fileRequest.MaxFileSize = req.MaxFileSize
 	fileRequest.ExpiresAt = req.ExpiresAt
-	fileRequest.MaxUploads = req.MaxUploads
-	fileRequest.NotifyOnUpload = req.NotifyOnUpload
+	fileRequest.AllowedFileTypes = req.AllowedFileTypes
 	fileRequest.IsActive = req.IsActive
 
 	if err := database.DB.UpdateFileRequest(fileRequest); err != nil {
@@ -1335,9 +1333,6 @@ func (s *Server) handleAPIGetFileRequestByToken(w http.ResponseWriter, r *http.R
 		http.Error(w, "File request not found", http.StatusNotFound)
 		return
 	}
-
-	// Don't expose password in response
-	fileRequest.Password = ""
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
