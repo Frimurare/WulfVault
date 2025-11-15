@@ -1,5 +1,160 @@
 # Changelog
 
+## [4.2.3] - 2025-11-15 🔐 Security Communication Enhancement
+
+### ✨ Improvements
+
+**Upload Request Security Messaging:**
+- Added clear security communication about 24-hour link expiration
+- Blue info box in main section: "Security Notice: Upload request links expire after 24 hours for security. Recipients must upload within this timeframe."
+- Yellow warning notice in creation modal: "For security reasons, upload request links automatically expire after 24 hours."
+- Helps users understand the security rationale behind 24-hour expiry
+- Reduces confusion about expired links
+
+### 📁 Modified Files
+
+**Code:**
+- `internal/server/handlers_user.go`:
+  - Lines 888-892: Added blue security notice in file request section
+  - Lines 915-919: Added yellow security notice in creation modal
+- `cmd/server/main.go`: Version bump to 4.2.3
+
+### 🎯 Impact
+
+Users now understand that upload request links expire after 24 hours for security reasons. This reduces support requests and improves security awareness.
+
+---
+
+## [4.2.2] - 2025-11-15 ⏰ Upload Request Expiry Management
+
+### ✨ New Features
+
+**Smart Upload Request Expiry:**
+- **Live countdown timers** - Shows "Expires in 23 hours", "Expires in 5 hours" with real-time updates
+- **Color-coded urgency** - Green (active), orange (urgent < 6 hours), red (expired)
+- **Grace period display** - After expiry: "EXPIRED - Auto-removal in 5 days" countdown
+- **Automatic cleanup** - Expired requests automatically removed after 5 days to keep dashboard clean
+- **Auto-refresh** - Dashboard refreshes every 60 seconds to update countdowns
+
+**Visual Feedback:**
+- Green border: Active requests with plenty of time
+- Orange border: Urgent requests expiring soon (< 6 hours)
+- Red border: Expired requests in grace period
+
+### 📁 Modified Files
+
+**Backend:**
+- `internal/server/handlers_file_requests.go` (lines 205-217): Filter expired requests older than 5 days
+- `cmd/server/main.go`: Version bump to 4.2.2
+
+**Frontend:**
+- `web/static/js/dashboard.js` (lines 498-568): Complete rewrite of loadFileRequests() with:
+  - Hours and minutes countdown calculation
+  - Days until auto-removal for expired requests
+  - Color-coded borders and backgrounds
+  - Auto-refresh timer (60 seconds)
+
+### 🎯 Impact
+
+Users can now see exactly when upload requests expire and when they'll be auto-removed. The dashboard stays clean by automatically removing old expired requests after 5 days.
+
+---
+
+## [4.2.1] - 2025-11-15 🐛 Team Sharing UX Enhancement
+
+### 🐛 Bug Fixes
+
+**Team Dropdown Empty - CRITICAL:**
+- Fixed critical bug where team dropdown was empty during file upload
+- Root cause: JavaScript used `team.Id` and `team.Name` but API returned lowercase `team.id` and `team.name`
+- Fixed case-sensitivity issue in `dashboard.js` (lines 104-105)
+- Team dropdown now correctly displays all available teams
+
+### ✨ Enhanced UX Features
+
+**Multi-Team File Sharing:**
+- **Multi-select checkboxes** - Share files with multiple teams simultaneously during upload
+- **Team management UI** - Add/remove teams from files in edit modal
+- **Smart team badges** - Single team shows name, multiple teams show "X teams" with hover tooltip
+- **Team management controls** - Add/remove buttons in file edit modal
+
+**New API Endpoints:**
+- `GET /api/teams/file-teams` - Get all teams associated with a file
+- Backend supports `team_ids[]` array for multi-team sharing
+
+**Database Functions:**
+- `GetTeamsForFile()` - Reverse lookup to get all teams for a specific file
+- `GetFileTeamNames()` - Batch lookup of team names for multiple file IDs
+
+### 📁 Modified Files
+
+**Backend:**
+- `internal/server/handlers_user.go`:
+  - Lines 369-386: Added error logging for team file fetching with graceful fallback
+  - Lines 863-871: Multi-select team checkboxes in upload form
+  - Lines 997-1016: Smart team badge logic (single name vs "X teams" with tooltip)
+  - Lines 1126-1144: Team management UI in edit modal
+  - Lines 1467-1558: JavaScript functions for team management
+- `internal/server/handlers_files.go`:
+  - Lines 71-94: Multi-team ID parsing from form (supports both array and single value)
+  - Lines 197-216: Loop through team IDs to share file with multiple teams
+- `internal/server/handlers_teams.go` (lines 558-593): New handleAPIFileTeams endpoint
+- `internal/database/teams.go`:
+  - Lines 369-406: GetFileTeamNames() - Batch lookup
+  - Lines 462-494: GetTeamsForFile() - Reverse lookup
+- `internal/server/server.go` (line 121): Added route for `/api/teams/file-teams`
+- `cmd/server/main.go`: Version bump to 4.2.1
+
+**Frontend:**
+- `web/static/js/dashboard.js` (lines 93-122): Fixed case-sensitivity bug and added multi-select support
+
+### 🎯 Impact
+
+Users can now share files with multiple teams simultaneously and manage team access through an intuitive UI. The smart badge system provides clear visual feedback for team sharing status.
+
+---
+
+## [4.2.0] - 2025-11-15 🚀 Team Collaboration Frontend Integration
+
+### ✨ Major New Features
+
+**Complete Team Collaboration UI:**
+- **Dashboard team integration** - Files now display with team badges showing which teams have access
+- **File filtering tabs** - "All Files", "My Files", "Team Files" for easy navigation
+- **Team selector in upload** - Share files with teams directly during upload
+- **Team badges on files** - Visual indicators showing team membership
+- **Backend team sharing** - Full support for team-based file access control
+
+**Frontend Features:**
+- Team dropdown in upload form
+- Team file filtering in dashboard
+- Visual team badges on file listings
+- Integration with existing team management backend
+
+**Backend Support:**
+- `GetFilesByUserWithTeams()` - Combined query for user and team files
+- `GetFileTeamNames()` - Batch lookup of team names for files
+- Team sharing during file upload
+- Permission-based team file access
+
+### 📁 Modified Files
+
+**Backend:**
+- `internal/server/handlers_user.go`: Integrated team data into dashboard rendering
+- `internal/server/handlers_files.go`: Added team sharing during upload
+- `internal/database/files.go`: Enhanced file queries with team support
+- `cmd/server/main.go`: Version bump to 4.2.0
+
+**Frontend:**
+- `web/static/js/dashboard.js`: Added team filtering and display logic
+- Dashboard templates: Added team badges and filtering tabs
+
+### 🎯 Impact
+
+This release brings the team collaboration feature to the frontend, providing a complete user experience for team-based file sharing. Users can now easily share files with teams and view team-shared files through an intuitive interface.
+
+---
+
 ## [4.1.0] - 2025-11-15 🚀 MAJOR: Complete REST API Implementation
 
 ### ✨ Major New Features

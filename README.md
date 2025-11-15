@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 4.1.0** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.2.3** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -50,6 +50,14 @@ WulfVault solves this by providing:
   - **Admin users** - Manage users and view all files across the system
   - **Regular users** - Upload and share files within their storage quota
   - **Download accounts** - Automatically created for authenticated downloads with self-service portal
+- **Team collaboration (v4.2+):**
+  - **Create teams** - Organize users into teams for shared file access
+  - **Multi-team file sharing** - Share files with multiple teams simultaneously
+  - **Team management UI** - Add/remove team members with visual badges
+  - **Team roles** - Owner, Admin, and Member permissions
+  - **Team storage quotas** - Per-team storage limits and usage tracking
+  - **Smart team badges** - Files show team names or count with hover tooltips
+  - **Real-time team sync** - Instant updates when files are shared/unshared
 - **Per-user storage quotas** - Individually configurable storage limits (MB to TB)
 - **User dashboard** - Real-time quota usage, file management, and download statistics
 - **Active/inactive status** - Temporarily disable users without deletion
@@ -128,8 +136,13 @@ WulfVault solves this by providing:
 - **Inbound file collection:**
   - Create upload request links for receiving files from others
   - Customizable upload limits (file size and count)
-  - Expiration dates for upload requests
+  - 24-hour link expiration for security (with clear countdown timers)
   - Password protection for upload portals
+- **Smart expiry management (v4.2.2+):**
+  - **Live countdown timers** - "Expires in 23 hours", "Expires in 5 hours" with color-coded urgency
+  - **Grace period display** - After expiry: "EXPIRED - Auto-removal in 5 days" countdown
+  - **Automatic cleanup** - Expired requests removed after 5 days to keep dashboard clean
+  - **Visual feedback** - Green (active), orange (urgent), red (expired) status indicators
 - **Use cases:**
   - Collect files from customers or contractors
   - Receive large files without email attachments
