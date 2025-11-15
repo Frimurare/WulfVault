@@ -8,6 +8,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/models"
@@ -363,6 +364,45 @@ func (d *Database) CanUserAccessFile(fileId string, userId int) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// GetFileTeamNames returns a map of fileId -> list of team names for batch lookup
+func (d *Database) GetFileTeamNames(fileIds []string) (map[string][]string, error) {
+	if len(fileIds) == 0 {
+		return make(map[string][]string), nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(fileIds))
+	args := make([]interface{}, len(fileIds))
+	for i, id := range fileIds {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := `
+		SELECT tf.FileId, t.Name
+		FROM TeamFiles tf
+		INNER JOIN Teams t ON tf.TeamId = t.Id
+		WHERE tf.FileId IN (` + strings.Join(placeholders, ",") + `)
+		ORDER BY t.Name ASC`
+
+	rows, err := d.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]string)
+	for rows.Next() {
+		var fileId, teamName string
+		if err := rows.Scan(&fileId, &teamName); err != nil {
+			return nil, err
+		}
+		result[fileId] = append(result[fileId], teamName)
+	}
+
+	return result, rows.Err()
 }
 
 // GetFilesByUserWithTeams returns all files the user can access (own files + team files)

@@ -68,6 +68,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	unlimitedDownloads := r.FormValue("unlimited_downloads") == "true"
 	filePassword := r.FormValue("file_password")
 	sendToEmail := r.FormValue("send_to_email")
+	teamIdStr := r.FormValue("team_id")
+	teamId := 0
+	if teamIdStr != "" {
+		teamId, _ = strconv.Atoi(teamIdStr)
+	}
 
 	// Check file size
 	fileSize := header.Size
@@ -167,6 +172,25 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	newStorageUsed := user.StorageUsedMB + fileSizeMB
 	if err := database.DB.UpdateUserStorage(user.Id, newStorageUsed); err != nil {
 		log.Printf("Warning: Could not update user storage: %v", err)
+	}
+
+	// Share file with team if team_id is provided
+	if teamId > 0 {
+		// Verify user is member of the team
+		isMember, err := database.DB.IsTeamMember(teamId, user.Id)
+		if err != nil {
+			log.Printf("Warning: Could not verify team membership: %v", err)
+		} else if !isMember {
+			log.Printf("Warning: User %d is not a member of team %d, skipping team share", user.Id, teamId)
+		} else {
+			// Share file with team
+			err = database.DB.ShareFileToTeam(fileID, teamId, user.Id)
+			if err != nil {
+				log.Printf("Warning: Could not share file to team: %v", err)
+			} else {
+				log.Printf("File %s shared with team %d by user %d", fileID, teamId, user.Id)
+			}
+		}
 	}
 
 	// Generate share and download links

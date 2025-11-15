@@ -366,8 +366,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 	logoData := brandingConfig["branding_logo"]
 
-	// Get user's files
-	files, _ := database.DB.GetFilesByUser(user.Id)
+	// Get user's files (including team files)
+	files, _ := database.DB.GetFilesByUserWithTeams(user.Id)
+
+	// Get team names for all files
+	fileIds := make([]string, len(files))
+	for i, f := range files {
+		fileIds[i] = f.Id
+	}
+	fileTeams, _ := database.DB.GetFileTeamNames(fileIds)
 
 	// Calculate storage
 	storageUsed := user.StorageUsedMB
@@ -844,6 +851,16 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         </p>
                     </div>
 
+                    <div class="form-group">
+                        <label for="teamSelect">👥 Share with team (optional)</label>
+                        <select id="teamSelect" name="team_id" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                            <option value="">-- Don't share with team --</option>
+                        </select>
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">
+                            Share this file with a team immediately after upload
+                        </p>
+                    </div>
+
                     <button type="submit" class="btn btn-primary btn-large" id="uploadButton" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                         <span style="font-size: 24px;">📤</span>
                         <span style="font-size: 18px; font-weight: 700;">Upload File</span>
@@ -914,6 +931,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         <div class="files-section">
             <div class="files-header">
                 <h2>My Files</h2>
+                <div class="file-tabs" style="margin-top: 16px; display: flex; gap: 12px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+                    <button class="file-tab active" onclick="filterFiles('all')" data-filter="all" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid ` + s.getPrimaryColor() + `; color: ` + s.getPrimaryColor() + `;">All Files</button>
+                    <button class="file-tab" onclick="filterFiles('my')" data-filter="my" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">My Files</button>
+                    <button class="file-tab" onclick="filterFiles('team')" data-filter="team" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">Team Files</button>
+                </div>
             </div>`
 
 	if len(files) == 0 {
@@ -963,6 +985,24 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 				passwordBadge = `<span style="background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔐 Password Protected</span>`
 			}
 
+			// Team badges
+			teamBadges := ""
+			isTeamFile := false
+			if teams, ok := fileTeams[f.Id]; ok && len(teams) > 0 {
+				isTeamFile = true
+				for _, teamName := range teams {
+					teamBadges += fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">👥 %s</span>`, template.HTMLEscapeString(teamName))
+				}
+			}
+
+			// Determine file type (my file vs team file)
+			fileType := "my"
+			if isTeamFile && f.UserId != user.Id {
+				fileType = "team"
+			} else if isTeamFile && f.UserId == user.Id {
+				fileType = "both" // Own file shared with team
+			}
+
 			passwordDisplay := ""
 			if f.FilePasswordPlain != "" {
 				passwordDisplay = fmt.Sprintf(`<p style="margin-top: 8px;"><strong>🔐 Password:</strong> <span id="password-%s" style="cursor: pointer; color: #9c27b0; text-decoration: underline;" onclick="togglePasswordVisibility('%s', '%s')">👁️ Show</span></p>`,
@@ -970,9 +1010,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 			}
 
 			html += fmt.Sprintf(`
-                <li class="file-item">
+                <li class="file-item" data-file-type="%s">
                     <div class="file-info">
-                        <h3>📄 %s %s%s</h3>
+                        <h3>📄 %s %s%s%s</h3>
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
                         %s
@@ -1003,7 +1043,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
+                </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.JSEscapeString(f.Name))
@@ -1464,6 +1504,42 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             })
             .catch(error => {
                 alert('Error saving changes: ' + error);
+            });
+        }
+
+        // File filtering function
+        function filterFiles(type) {
+            const fileItems = document.querySelectorAll('.file-item');
+            const tabs = document.querySelectorAll('.file-tab');
+
+            // Update active tab
+            tabs.forEach(tab => {
+                const filter = tab.getAttribute('data-filter');
+                if (filter === type) {
+                    tab.classList.add('active');
+                    tab.style.fontWeight = '600';
+                    tab.style.borderBottomColor = '` + s.getPrimaryColor() + `';
+                    tab.style.color = '` + s.getPrimaryColor() + `';
+                } else {
+                    tab.classList.remove('active');
+                    tab.style.fontWeight = '500';
+                    tab.style.borderBottomColor = 'transparent';
+                    tab.style.color = '#666';
+                }
+            });
+
+            // Filter files
+            fileItems.forEach(item => {
+                const fileType = item.getAttribute('data-file-type');
+                if (type === 'all') {
+                    item.style.display = '';
+                } else if (type === 'my') {
+                    // Show my files and files I shared with teams (both)
+                    item.style.display = (fileType === 'my' || fileType === 'both') ? '' : 'none';
+                } else if (type === 'team') {
+                    // Show team files and my files shared with teams (both)
+                    item.style.display = (fileType === 'team' || fileType === 'both') ? '' : 'none';
+                }
             });
         }
 

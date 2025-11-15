@@ -84,6 +84,32 @@ function showUploadOptions(file) {
 
     uploadZone.style.border = '3px solid #4caf50';
     uploadOptions.style.display = 'block';
+
+    // Load user's teams for the team selector
+    loadUserTeamsForUpload();
+}
+
+// Load user's teams for upload form
+function loadUserTeamsForUpload() {
+    const teamSelect = document.getElementById('teamSelect');
+    if (!teamSelect) return;
+
+    fetch('/api/teams/my', { credentials: 'same-origin' })
+        .then(response => response.json())
+        .then(data => {
+            teamSelect.innerHTML = '<option value="">-- Don\'t share with team --</option>';
+            if (data && data.teams && data.teams.length > 0) {
+                data.teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.Id;
+                    option.textContent = team.Name;
+                    teamSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Failed to load teams:', error);
+        });
 }
 
 // Handle checkbox toggles
