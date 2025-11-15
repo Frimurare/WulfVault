@@ -186,6 +186,20 @@ func (d *Database) UpdateFileSettings(fileId string, downloadsRemaining int, exp
 	return err
 }
 
+// UpdateFilePassword updates a file's password
+func (d *Database) UpdateFilePassword(fileId string, password string) error {
+	// Convert empty password to NULL for database storage
+	var filePassword interface{}
+	if password == "" {
+		filePassword = nil
+	} else {
+		filePassword = password
+	}
+
+	_, err := d.db.Exec("UPDATE Files SET FilePasswordPlain = ? WHERE Id = ?", filePassword, fileId)
+	return err
+}
+
 // DeleteFile soft-deletes a file (moves to trash for 5 days)
 func (d *Database) DeleteFile(fileId string, userId int) error {
 	now := time.Now().Unix()

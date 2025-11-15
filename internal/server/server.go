@@ -136,10 +136,34 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/email/test", s.requireAuth(s.requireAdmin(s.handleEmailTest)))
 	mux.HandleFunc("/api/email/send-splash-link", s.requireAuth(s.handleSendSplashLink))
 
-	// API routes
+	// API routes (legacy)
 	mux.HandleFunc("/api/v1/upload", s.requireAuth(s.handleAPIUpload))
 	mux.HandleFunc("/api/v1/files", s.requireAuth(s.handleAPIFiles))
 	mux.HandleFunc("/api/v1/download/", s.handleAPIDownload)
+
+	// User Management REST API (Admin only)
+	mux.HandleFunc("/api/v1/users", s.requireAdmin(s.handleAPIGetUsers))
+	mux.HandleFunc("/api/v1/users/", s.requireAdmin(s.handleRESTUserRoutes))
+
+	// File Management REST API
+	mux.HandleFunc("/api/v1/files/", s.requireAuth(s.handleRESTFileRoutes))
+
+	// Download Accounts REST API (Admin only)
+	mux.HandleFunc("/api/v1/download-accounts", s.requireAdmin(s.handleAPIGetDownloadAccounts))
+	mux.HandleFunc("/api/v1/download-accounts/", s.requireAdmin(s.handleRESTDownloadAccountRoutes))
+
+	// File Requests REST API
+	mux.HandleFunc("/api/v1/file-requests", s.requireAuth(s.handleAPIGetFileRequests))
+	mux.HandleFunc("/api/v1/file-requests/", s.requireAuth(s.handleRESTFileRequestRoutes))
+
+	// Trash Management REST API (Admin only)
+	mux.HandleFunc("/api/v1/trash", s.requireAdmin(s.handleAPIGetTrash))
+	mux.HandleFunc("/api/v1/trash/", s.requireAdmin(s.handleRESTTrashRoutes))
+
+	// Admin/System REST API
+	mux.HandleFunc("/api/v1/admin/stats", s.requireAdmin(s.handleAPIGetStats))
+	mux.HandleFunc("/api/v1/admin/branding", s.requireAdmin(s.handleRESTBrandingRoutes))
+	mux.HandleFunc("/api/v1/admin/settings", s.requireAdmin(s.handleRESTSettingsRoutes))
 
 	// Static files
 	fs := http.FileServer(http.Dir("web/static"))

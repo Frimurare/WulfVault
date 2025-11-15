@@ -117,6 +117,77 @@ func (d *Database) GetFileRequestsByUser(userId int) ([]*models.FileRequest, err
 	return requests, nil
 }
 
+// GetAllFileRequests retrieves all file requests (Admin only)
+func (d *Database) GetAllFileRequests() ([]*models.FileRequest, error) {
+	rows, err := d.db.Query(`
+		SELECT Id, UserId, RequestToken, Title, Message, CreatedAt, ExpiresAt, IsActive, MaxFileSize, AllowedFileTypes,
+		       COALESCE(UsedByIP, '') as UsedByIP, COALESCE(UsedAt, 0) as UsedAt
+		FROM FileRequests ORDER BY CreatedAt DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var requests []*models.FileRequest
+	for rows.Next() {
+		req := &models.FileRequest{}
+		var isActive int
+		var usedByIP sql.NullString
+		var usedAt sql.NullInt64
+
+		err := rows.Scan(&req.Id, &req.UserId, &req.RequestToken, &req.Title, &req.Message,
+			&req.CreatedAt, &req.ExpiresAt, &isActive, &req.MaxFileSize, &req.AllowedFileTypes,
+			&usedByIP, &usedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		req.IsActive = isActive == 1
+		if usedByIP.Valid {
+			req.UsedByIP = usedByIP.String
+		}
+		if usedAt.Valid {
+			req.UsedAt = usedAt.Int64
+		}
+		requests = append(requests, req)
+	}
+
+	return requests, nil
+}
+
+// GetFileRequestByID retrieves a file request by its ID
+func (d *Database) GetFileRequestByID(id int) (*models.FileRequest, error) {
+	req := &models.FileRequest{}
+	var isActive int
+	var usedByIP sql.NullString
+	var usedAt sql.NullInt64
+
+	err := d.db.QueryRow(`
+		SELECT Id, UserId, RequestToken, Title, Message, CreatedAt, ExpiresAt, IsActive, MaxFileSize, AllowedFileTypes,
+		       COALESCE(UsedByIP, '') as UsedByIP, COALESCE(UsedAt, 0) as UsedAt
+		FROM FileRequests WHERE Id = ?`, id).Scan(
+		&req.Id, &req.UserId, &req.RequestToken, &req.Title, &req.Message,
+		&req.CreatedAt, &req.ExpiresAt, &isActive, &req.MaxFileSize, &req.AllowedFileTypes,
+		&usedByIP, &usedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("file request not found")
+		}
+		return nil, err
+	}
+
+	req.IsActive = isActive == 1
+	if usedByIP.Valid {
+		req.UsedByIP = usedByIP.String
+	}
+	if usedAt.Valid {
+		req.UsedAt = usedAt.Int64
+	}
+	return req, nil
+}
+
 // UpdateFileRequest updates an existing file request
 func (d *Database) UpdateFileRequest(req *models.FileRequest) error {
 	_, err := d.db.Exec(`
