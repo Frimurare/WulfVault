@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 4.0.2** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.1.0** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -365,16 +365,35 @@ Create upload request links for:
 
 ## API
 
-WulfVault provides a REST API for automation and integrations.
+WulfVault provides a **complete REST API** for automation, integrations, and third-party applications.
 
-**Basic endpoints:**
-- `/api/upload` - Upload files programmatically
-- `/api/files` - List user's files
-- `/api/download/:id` - Download file by ID
+**Available APIs:**
+- **User Management** - Create, read, update, delete users; manage storage quotas
+- **File Management** - Upload, download, delete files; manage metadata and passwords
+- **Download Accounts** - Manage download-only user accounts
+- **File Requests** - Create and manage upload request portals
+- **Trash Management** - List, restore, and permanently delete files
+- **Teams** - Manage teams, members, and file sharing
+- **Email** - Configure email settings and send file links
+- **Admin/System** - System statistics, branding, and settings
 
-**Authentication:** API requests require session cookies or token-based auth.
+**Example API calls:**
 
-See full API documentation in [API.md](docs/API.md) (coming soon).
+```bash
+# List all users (admin only)
+curl -b cookies.txt http://localhost:4949/api/v1/users
+
+# Upload a file
+curl -b cookies.txt -F "file=@document.pdf" \
+  http://localhost:4949/api/v1/upload
+
+# Get system statistics
+curl -b cookies.txt http://localhost:4949/api/v1/admin/stats
+```
+
+**Authentication:** API requests use session-based authentication via cookies.
+
+**Full documentation:** See [API.md](docs/API.md) for complete endpoint reference, request/response examples, and code samples in Python, JavaScript, and cURL.
 
 ---
 

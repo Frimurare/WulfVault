@@ -1,5 +1,98 @@
 # Changelog
 
+## [4.1.0] - 2025-11-15 🚀 MAJOR: Complete REST API Implementation
+
+### ✨ Major New Features
+
+**Complete REST API:**
+- Implemented comprehensive REST API covering all major WulfVault functionalities
+- Full CRUD operations for users, files, teams, and system configuration
+- RESTful design with proper HTTP methods (GET, POST, PUT, DELETE)
+- Session-based authentication via cookies
+- Detailed API documentation with examples in Python, JavaScript, and cURL
+
+**API Endpoints Added:**
+- **User Management API** (9 endpoints):
+  - `GET /api/v1/users` - List all users
+  - `GET /api/v1/users/{id}` - Get user details
+  - `POST /api/v1/users` - Create user
+  - `PUT /api/v1/users/{id}` - Update user
+  - `DELETE /api/v1/users/{id}` - Delete user
+  - `GET /api/v1/users/{id}/files` - Get user's files
+  - `GET /api/v1/users/{id}/storage` - Get storage usage
+
+- **File Management API** (6 endpoints):
+  - `GET /api/v1/files/{id}` - Get file details
+  - `PUT /api/v1/files/{id}` - Update file metadata
+  - `DELETE /api/v1/files/{id}` - Delete file
+  - `GET /api/v1/files/{id}/downloads` - Get download history
+  - `POST /api/v1/files/{id}/password` - Set/update file password
+
+- **Download Accounts API** (5 endpoints):
+  - `GET /api/v1/download-accounts` - List accounts
+  - `POST /api/v1/download-accounts` - Create account
+  - `PUT /api/v1/download-accounts/{id}` - Update account
+  - `DELETE /api/v1/download-accounts/{id}` - Delete account
+  - `POST /api/v1/download-accounts/{id}/toggle` - Toggle active status
+
+- **File Requests API** (5 endpoints):
+  - `GET /api/v1/file-requests` - List requests
+  - `POST /api/v1/file-requests` - Create request
+  - `PUT /api/v1/file-requests/{id}` - Update request
+  - `DELETE /api/v1/file-requests/{id}` - Delete request
+  - `GET /api/v1/file-requests/token/{token}` - Get by token (public)
+
+- **Trash Management API** (3 endpoints):
+  - `GET /api/v1/trash` - List deleted files
+  - `POST /api/v1/trash/{id}/restore` - Restore file
+  - `DELETE /api/v1/trash/{id}` - Permanently delete
+
+- **Admin/System API** (5 endpoints):
+  - `GET /api/v1/admin/stats` - System statistics
+  - `GET /api/v1/admin/branding` - Get branding config
+  - `POST /api/v1/admin/branding` - Update branding
+  - `GET /api/v1/admin/settings` - Get settings
+  - `POST /api/v1/admin/settings` - Update settings
+
+**Documentation:**
+- Created comprehensive API documentation (docs/API.md)
+- Added detailed request/response examples
+- Included code samples in Python, JavaScript, and cURL
+- Documented all endpoints with parameters and authorization requirements
+- Updated README.md with API overview and examples
+
+### 📁 Modified Files
+
+**New Files:**
+- `internal/server/handlers_rest_api.go` - Complete REST API implementation
+- `docs/API.md` - Comprehensive REST API documentation
+
+**Modified Files:**
+- `internal/server/server.go` - Registered all new REST API routes
+- `internal/database/file_requests.go` - Added GetAllFileRequests and GetFileRequestByID
+- `internal/database/files.go` - Added UpdateFilePassword
+- `cmd/server/main.go` - Version bump to 4.1.0
+- `README.md` - Updated with REST API information and version
+- `CHANGELOG.md` - Added v4.1.0 release notes
+
+### 🎯 Impact
+
+This release transforms WulfVault from a web-only application into a fully API-enabled platform:
+- **Automation**: Programmatically manage users, files, and system configuration
+- **Integrations**: Build custom integrations with third-party tools
+- **Scripting**: Automate bulk operations via shell scripts or programming languages
+- **Monitoring**: Query system statistics and usage data programmatically
+- **CI/CD**: Integrate WulfVault into deployment pipelines
+
+**Use Cases:**
+- Automated user provisioning from HR systems
+- Programmatic file uploads from monitoring systems
+- Bulk file management and cleanup
+- Custom reporting dashboards
+- Third-party application integrations
+
+---
+
 ## [4.0.5] - 2025-11-15 🔧 CRITICAL: Clarify Brevo API Key Type & Fix UI Issues
 
 ### 🐛 Critical Fix
