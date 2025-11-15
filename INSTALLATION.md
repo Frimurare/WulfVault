@@ -81,17 +81,25 @@ docker compose version
 
 ```bash
 # Create directory
-mkdir -p /opt/sharecare
-cd /opt/sharecare
+mkdir -p /opt/wulfvault
+cd /opt/wulfvault
 
-# Create docker-compose.yml
+# Clone repository
+git clone https://github.com/Frimurare/WulfVault.git
+cd WulfVault
+
+# Build and start with Docker Compose
+docker compose up -d --build
+
+# Or create custom docker-compose.yml for production
 cat > docker-compose.yml << 'EOF'
 version: '3.8'
 
 services:
-  sharecare:
-    image: sharecare/sharecare:latest
-    container_name: sharecare
+  wulfvault:
+    build: .
+    image: wulfvault/wulfvault:latest
+    container_name: wulfvault
     ports:
       - "8080:8080"
     volumes:
@@ -106,11 +114,6 @@ services:
       - DEFAULT_QUOTA_MB=10000
     restart: unless-stopped
 EOF
-
-# Build image (if not using pre-built)
-# git clone https://github.com/Frimurare/WulfVault.git
-# cd WulfVault
-# docker build -t sharecare/sharecare:latest .
 
 # Start service
 docker compose up -d
@@ -130,7 +133,7 @@ apt install nginx certbot python3-certbot-nginx -y
 
 **Configure Nginx:**
 ```bash
-cat > /etc/nginx/sites-available/sharecare << 'EOF'
+cat > /etc/nginx/sites-available/wulfvault << 'EOF'
 server {
     listen 80;
     server_name files.yourdomain.com;
@@ -153,7 +156,7 @@ server {
 }
 EOF
 
-ln -s /etc/nginx/sites-available/sharecare /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/wulfvault /etc/nginx/sites-enabled/
 nginx -t
 systemctl reload nginx
 ```
@@ -183,13 +186,13 @@ certbot --nginx -d files.yourdomain.com
    go mod download
 
    # Build
-   go build -o sharecare ./cmd/server
+   go build -o wulfvault ./cmd/server
    ```
 
 2. **Run**
    ```bash
    # Run setup
-   ./sharecare --setup \
+   ./wulfvault --setup \
      --port 8080 \
      --data ./data \
      --uploads ./uploads \
@@ -202,21 +205,21 @@ certbot --nginx -d files.yourdomain.com
 
    **Linux (systemd):**
    ```bash
-   cat > /etc/systemd/system/sharecare.service << 'EOF'
+   cat > /etc/systemd/system/wulfvault.service << 'EOF'
    [Unit]
    Description=WulfVault File Sharing
    After=network.target
 
    [Service]
    Type=simple
-   User=sharecare
-   WorkingDirectory=/opt/sharecare
-   ExecStart=/opt/sharecare/sharecare
+   User=wulfvault
+   WorkingDirectory=/opt/wulfvault
+   ExecStart=/opt/wulfvault/wulfvault
    Restart=always
 
    Environment="PORT=8080"
-   Environment="DATA_DIR=/opt/sharecare/data"
-   Environment="UPLOADS_DIR=/opt/sharecare/uploads"
+   Environment="DATA_DIR=/opt/wulfvault/data"
+   Environment="UPLOADS_DIR=/opt/wulfvault/uploads"
    Environment="SERVER_URL=http://localhost:8080"
 
    [Install]
@@ -224,8 +227,8 @@ certbot --nginx -d files.yourdomain.com
    EOF
 
    systemctl daemon-reload
-   systemctl enable sharecare
-   systemctl start sharecare
+   systemctl enable wulfvault
+   systemctl start wulfvault
    ```
 
 ---
@@ -279,9 +282,9 @@ Located at `data/config.json`:
 ### Docker
 
 ```bash
-cd /opt/sharecare
-docker compose pull
-docker compose up -d
+cd /opt/wulfvault/WulfVault
+git pull
+docker compose up -d --build
 ```
 
 ### Binary
@@ -292,12 +295,12 @@ cp -r data data.backup
 cp -r uploads uploads.backup
 
 # Download new version
-wget https://github.com/Frimurare/WulfVault/releases/latest/download/sharecare-linux-amd64
-chmod +x sharecare-linux-amd64
-mv sharecare-linux-amd64 sharecare
+wget https://github.com/Frimurare/WulfVault/releases/latest/download/wulfvault-linux-amd64
+chmod +x wulfvault-linux-amd64
+mv wulfvault-linux-amd64 wulfvault
 
 # Restart
-systemctl restart sharecare
+systemctl restart wulfvault
 ```
 
 ---
@@ -318,10 +321,10 @@ chmod -R 755 data uploads
 
 ```bash
 # Stop service
-docker compose down  # or systemctl stop sharecare
+docker compose down  # or systemctl stop wulfvault
 
 # Check for stuck processes
-lsof data/sharecare.db
+lsof data/wulfvault.db
 
 # Restart
 docker compose up -d
@@ -373,7 +376,7 @@ ufw allow 8080/tcp
 docker compose down
 
 # Backup
-tar -czf sharecare-backup-$(date +%Y%m%d).tar.gz data uploads
+tar -czf wulfvault-backup-$(date +%Y%m%d).tar.gz data uploads
 
 # Restart
 docker compose up -d
@@ -386,7 +389,7 @@ docker compose up -d
 docker compose down
 
 # Restore
-tar -xzf sharecare-backup-YYYYMMDD.tar.gz
+tar -xzf wulfvault-backup-YYYYMMDD.tar.gz
 
 # Restart
 docker compose up -d
@@ -405,4 +408,4 @@ docker compose up -d
 
 AGPL-3.0 - See [LICENSE](LICENSE) for details.
 
-Based on [Gokapi](https://github.com/Forceu/Gokapi) by Forceu.
+Inspired by [Gokapi](https://github.com/Forceu/Gokapi) by Forceu.

@@ -4,18 +4,18 @@
 
 ### Start Servern Manuellt
 ```bash
-cd ~/sharecare
-nohup ./sharecare > server.log 2>&1 &
+cd ~/wulfvault
+nohup ./wulfvault > server.log 2>&1 &
 ```
 
 ### Stoppa Servern
 ```bash
-pkill sharecare
+pkill wulfvault
 ```
 
 ### Kolla Status
 ```bash
-pgrep -f sharecare  # Visa PID
+pgrep -f wulfvault  # Visa PID
 curl http://localhost:8080/health  # Kolla version
 ```
 
@@ -25,29 +25,29 @@ curl http://localhost:8080/health  # Kolla version
 
 ### 1. Installera Service-filen
 ```bash
-sudo cp /tmp/sharecare.service /etc/systemd/system/
+sudo cp /tmp/wulfvault.service /etc/systemd/system/
 sudo systemctl daemon-reload
 ```
 
 ### 2. Aktivera Autostart
 ```bash
-sudo systemctl enable sharecare
+sudo systemctl enable wulfvault
 ```
 
 ### 3. Starta Tjänsten
 ```bash
-sudo systemctl start sharecare
+sudo systemctl start wulfvault
 ```
 
 ### 4. Kolla Status
 ```bash
-sudo systemctl status sharecare
-sudo journalctl -u sharecare -f  # Live logs
+sudo systemctl status wulfvault
+sudo journalctl -u wulfvault -f  # Live logs
 ```
 
 ### Starta om Servern
 ```bash
-sudo systemctl restart sharecare
+sudo systemctl restart wulfvault
 ```
 
 **OBS:** När systemd är aktiverad fungerar "Restart Server"-knappen i Admin UI automatiskt!
@@ -56,13 +56,13 @@ sudo systemctl restart sharecare
 
 ## Autostart vid Container Reboot
 
-När systemd service är aktiverad (`systemctl enable sharecare`) startar servern automatiskt när containern bootas om.
+När systemd service är aktiverad (`systemctl enable wulfvault`) startar servern automatiskt när containern bootas om.
 
 ### Testa Autostart
 ```bash
 sudo reboot
 # Efter reboot:
-systemctl status sharecare  # Ska vara "active (running)"
+systemctl status wulfvault  # Ska vara "active (running)"
 ```
 
 ---
@@ -72,11 +72,11 @@ systemctl status sharecare  # Ska vara "active (running)"
 ### Servern startar inte
 ```bash
 # Kolla logs
-sudo journalctl -u sharecare -n 50
+sudo journalctl -u wulfvault -n 50
 
 # Kolla permissions
-ls -l ~/sharecare/sharecare
-ls -ld ~/sharecare/data ~/sharecare/uploads
+ls -l ~/wulfvault/wulfvault
+ls -ld ~/wulfvault/data ~/wulfvault/uploads
 ```
 
 ### Portar upptagna
@@ -88,10 +88,10 @@ sudo kill -9 <PID>
 
 ### Bygg om efter uppdateringar
 ```bash
-cd ~/sharecare
+cd ~/wulfvault
 git pull
-go build -o sharecare cmd/server/main.go
-sudo systemctl restart sharecare
+go build -o wulfvault cmd/server/main.go
+sudo systemctl restart wulfvault
 ```
 
 ---
@@ -101,7 +101,7 @@ sudo systemctl restart sharecare
 ### Kör på annan port (t.ex. 443 för HTTPS)
 ```bash
 # Ändra i systemd service:
-sudo nano /etc/systemd/system/sharecare.service
+sudo nano /etc/systemd/system/wulfvault.service
 
 # Lägg till environment variabel:
 [Service]
@@ -109,7 +109,7 @@ Environment="PORT=443"
 Environment="SERVER_URL=https://yourdomain.com"
 
 sudo systemctl daemon-reload
-sudo systemctl restart sharecare
+sudo systemctl restart wulfvault
 ```
 
 ### Reverse Proxy (Nginx/Caddy)

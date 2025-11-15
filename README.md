@@ -168,7 +168,7 @@ WulfVault solves this by providing:
 1. **Download and start WulfVault** (see installation methods below)
 
 2. **Initial admin credentials:**
-   - **Email:** `admin@sharecare.local`
+   - **Email:** `admin@wulfvault.local`
    - **Password:** `WulfVaultAdmin2024!`
 
    **⚠️ IMPORTANT:** Change the admin password immediately after first login!
@@ -196,23 +196,40 @@ WulfVault solves this by providing:
 ### Docker (Recommended)
 
 ```bash
+# Clone repository first
+git clone https://github.com/Frimurare/WulfVault.git
+cd WulfVault
+
+# Build and run with Docker
+docker build -t wulfvault/wulfvault:latest .
 docker run -d \
-  --name sharecare \
+  --name wulfvault \
   -p 8080:8080 \
   -v ./data:/data \
   -v ./uploads:/uploads \
   -e SERVER_URL=https://files.yourdomain.com \
-  frimurare/sharecare:latest
+  wulfvault/wulfvault:latest
 ```
 
 ### Docker Compose
 
+```bash
+# Clone repository
+git clone https://github.com/Frimurare/WulfVault.git
+cd WulfVault
+
+# Start with Docker Compose (uses docker-compose.yml in repo)
+docker compose up -d --build
+```
+
+Or create custom `docker-compose.yml`:
 ```yaml
 version: '3.8'
 services:
-  sharecare:
-    image: frimurare/sharecare:latest
-    container_name: sharecare
+  wulfvault:
+    build: .
+    image: wulfvault/wulfvault:latest
+    container_name: wulfvault
     ports:
       - "8080:8080"
     volumes:
@@ -223,11 +240,6 @@ services:
       - MAX_FILE_SIZE_MB=5000
       - DEFAULT_QUOTA_MB=10000
     restart: unless-stopped
-```
-
-Save as `docker-compose.yml` and run:
-```bash
-docker-compose up -d
 ```
 
 ### Build from Source
@@ -243,14 +255,14 @@ cd WulfVault
 go mod download
 
 # Build
-go build -o sharecare cmd/server/main.go
+go build -o wulfvault cmd/server/main.go
 
 # Run
-./sharecare
+./wulfvault
 ```
 
 **Default credentials on first run:**
-- Email: `admin@sharecare.local`
+- Email: `admin@wulfvault.local`
 - Password: `WulfVaultAdmin2024!`
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including Proxmox LXC, reverse proxy configuration, and SSL setup.
@@ -402,10 +414,10 @@ The restart button requires a process manager (systemd, supervisor, etc.) to aut
 
 1. **Install systemd service** (requires sudo):
    ```bash
-   sudo cp /tmp/sharecare.service /etc/systemd/system/
+   sudo cp /tmp/wulfvault.service /etc/systemd/system/
    sudo systemctl daemon-reload
-   sudo systemctl enable sharecare
-   sudo systemctl start sharecare
+   sudo systemctl enable wulfvault
+   sudo systemctl start wulfvault
    ```
 
 2. **Uncomment the restart button** in the code:
@@ -413,10 +425,10 @@ The restart button requires a process manager (systemd, supervisor, etc.) to aut
    - Find the section marked `<!-- RESTART SERVER BUTTON - DISABLED`
    - Remove the `<!--` and `-->` comment markers
    - Also uncomment the JavaScript function at the bottom
-   - Rebuild: `go build -o sharecare cmd/server/main.go`
-   - Restart the service: `sudo systemctl restart sharecare`
+   - Rebuild: `go build -o wulfvault cmd/server/main.go`
+   - Restart the service: `sudo systemctl restart wulfvault`
 
-3. **The button will now work!** It will use `systemctl restart sharecare` to gracefully restart the server.
+3. **The button will now work!** It will use `systemctl restart wulfvault` to gracefully restart the server.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment and autostart instructions.
 
@@ -427,7 +439,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment and autostart instruc
 ### Can't login with default credentials
 
 Make sure you're using:
-- Email: `admin@sharecare.local`
+- Email: `admin@wulfvault.local`
 - Password: `WulfVaultAdmin2024!`
 
 If it still doesn't work, check the server logs for initialization errors.
@@ -449,7 +461,7 @@ If it still doesn't work, check the server logs for initialization errors.
 ### More help
 
 - Check [INSTALLATION.md](INSTALLATION.md) for detailed setup
-- Review logs: `docker-compose logs -f sharecare`
+- Review logs: `docker compose logs -f wulfvault`
 - Open issue on GitHub: https://github.com/Frimurare/WulfVault/issues
 
 ---

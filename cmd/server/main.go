@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	Version = "4.0.1"
+	Version = "4.0.2"
 )
 
 var (
@@ -37,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("WulfVault File Sharing System v%s\n", Version)
-	fmt.Println("Based on Gokapi - https://github.com/Forceu/Gokapi")
+	fmt.Println("Inspired by Gokapi - https://github.com/Forceu/Gokapi")
 	fmt.Println("---")
 
 	// Initialize database
