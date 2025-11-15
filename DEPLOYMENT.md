@@ -130,5 +130,5 @@ location / {
 
 ---
 
-**Version:** 3.2-beta2
+**Version:** 4.0.2
 **Support:** https://github.com/Frimurare/WulfVault/issues
