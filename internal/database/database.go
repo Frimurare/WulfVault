@@ -28,8 +28,27 @@ func Initialize(dataDir string) error {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
+	// Migration: Rename old database file if it exists
+	oldDbPath := filepath.Join(dataDir, "sharecare.db")
+	newDbPath := filepath.Join(dataDir, "wulfvault.db")
+
+	if _, err := os.Stat(oldDbPath); err == nil {
+		// Old database exists, check if new one exists too
+		if _, err := os.Stat(newDbPath); err == nil {
+			// Both exist - this is unexpected, log warning
+			log.Printf("Warning: Both sharecare.db and wulfvault.db exist. Using wulfvault.db")
+		} else {
+			// Only old database exists, rename it
+			log.Printf("Migrating database from sharecare.db to wulfvault.db...")
+			if err := os.Rename(oldDbPath, newDbPath); err != nil {
+				return fmt.Errorf("failed to migrate database: %w", err)
+			}
+			log.Printf("Database migration completed successfully")
+		}
+	}
+
 	// Database file path
-	dbPath := filepath.Join(dataDir, "sharecare.db")
+	dbPath := newDbPath
 
 	// Open SQLite database
 	sqliteDb, err := sql.Open("sqlite", dbPath)

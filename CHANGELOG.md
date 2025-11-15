@@ -1,5 +1,66 @@
 # Changelog
 
+## [4.0.2] - 2025-11-15 🔧 Fix Installation Guides & Database Migration
+
+### 🐛 Bug Fixes
+
+**Installation Documentation - CRITICAL:**
+- Fixed Docker installation guides using non-existent `sharecare/sharecare:latest` image
+- Users were getting "repository does not exist" errors when trying to install
+- Updated all installation paths from `/opt/sharecare` to `/opt/wulfvault`
+- Changed binary names from `sharecare` to `wulfvault` throughout all documentation
+- Fixed systemd service names from `sharecare.service` to `wulfvault.service`
+- Updated database troubleshooting references from `sharecare.db` to `wulfvault.db`
+- Fixed default admin credentials from `admin@sharecare.local` to `admin@wulfvault.local`
+- Updated all docker-compose examples to use local build instead of non-existent registry image
+- Installation now works out-of-the-box on fresh Debian 13 and other systems
+
+**Deployment Documentation:**
+- Updated all service paths and commands to use `wulfvault` instead of `sharecare`
+- Fixed systemd service references throughout deployment guide
+- All manual deployment commands now reference correct paths
+
+**README Updates:**
+- Corrected Docker installation to require git clone and local build
+- Updated Docker Compose examples to build from source
+- Fixed default admin email to `admin@wulfvault.local`
+- Updated all troubleshooting references to use correct binary and service names
+
+### ✨ Database Migration
+
+**Automatic Database Rename:**
+- Added automatic migration logic in `internal/database/database.go`
+- Old `sharecare.db` files are automatically renamed to `wulfvault.db` on startup
+- Preserves existing user data seamlessly without manual intervention
+- Handles edge cases (both files exist, only new file exists, etc.)
+- Logs migration progress for transparency
+
+### 📝 Attribution Improvements
+
+- Changed "Based on Gokapi" to "Inspired by Gokapi" in startup message
+- Changed "Based on" to "Inspired by" in INSTALLATION.md footer
+- Aligns with NOTICE.md clarification that WulfVault is architecturally inspired by, not based on, Gokapi
+- More accurately reflects the ~95% new code and complete rewrite nature of the project
+
+### 📁 Modified Files
+
+**Documentation:**
+- `INSTALLATION.md`: Complete rewrite of Docker deployment section with correct image building
+- `DEPLOYMENT.md`: Updated all paths, service names, and commands
+- `README.md`: Fixed installation examples, credentials, and troubleshooting
+
+**Code:**
+- `cmd/server/main.go`: Version bump to 4.0.2 and attribution update (line 25, 40)
+- `internal/database/database.go`: Added automatic database migration logic (lines 31-48)
+
+### 🎯 Why This Release?
+
+Installation guides were completely broken - they referenced non-existent Docker images causing "repository does not exist" errors. Users testing fresh installs on Debian 13 and other systems were unable to deploy WulfVault. This release provides working installation instructions that actually work out of the box, along with automatic database migration to ensure smooth upgrades for existing users.
+
+This was reported by a user who encountered the issue during fresh installation testing and required immediate fixing.
+
+---
+
 ## [4.0.1] - 2025-11-14 😂 More One-Liners & Branding Footer
 
 ### ✨ Enhancements
