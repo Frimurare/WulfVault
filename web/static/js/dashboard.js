@@ -91,24 +91,33 @@ function showUploadOptions(file) {
 
 // Load user's teams for upload form
 function loadUserTeamsForUpload() {
-    const teamSelect = document.getElementById('teamSelect');
-    if (!teamSelect) return;
+    const container = document.getElementById('teamSelectContainer');
+    if (!container) return;
 
     fetch('/api/teams/my', { credentials: 'same-origin' })
         .then(response => response.json())
         .then(data => {
-            teamSelect.innerHTML = '<option value="">-- Don\'t share with team --</option>';
             if (data && data.teams && data.teams.length > 0) {
+                container.innerHTML = '';
                 data.teams.forEach(team => {
-                    const option = document.createElement('option');
-                    option.value = team.Id;
-                    option.textContent = team.Name;
-                    teamSelect.appendChild(option);
+                    const checkbox = document.createElement('div');
+                    checkbox.style.cssText = 'padding: 8px; margin-bottom: 4px; background: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px;';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" id="team_${team.id}" name="team_ids[]" value="${team.id}"
+                               style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="team_${team.id}" style="cursor: pointer; flex: 1; margin: 0;">
+                            👥 ${escapeHtml(team.name)}
+                        </label>
+                    `;
+                    container.appendChild(checkbox);
                 });
+            } else {
+                container.innerHTML = '<div style="color: #999; font-style: italic;">No teams available</div>';
             }
         })
         .catch(error => {
             console.error('Failed to load teams:', error);
+            container.innerHTML = '<div style="color: #f44336;">Failed to load teams</div>';
         });
 }
 

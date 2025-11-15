@@ -68,10 +68,29 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	unlimitedDownloads := r.FormValue("unlimited_downloads") == "true"
 	filePassword := r.FormValue("file_password")
 	sendToEmail := r.FormValue("send_to_email")
-	teamIdStr := r.FormValue("team_id")
-	teamId := 0
-	if teamIdStr != "" {
-		teamId, _ = strconv.Atoi(teamIdStr)
+	// Parse form to get array values
+	if err := r.ParseForm(); err != nil {
+		log.Printf("Warning: Failed to parse form: %v", err)
+	}
+
+	// Get team IDs (support both old single team_id and new multiple team_ids[])
+	var teamIds []int
+	if teamIdStrs := r.Form["team_ids[]"]; len(teamIdStrs) > 0 {
+		// New multi-select format
+		for _, idStr := range teamIdStrs {
+			if id, err := strconv.Atoi(idStr); err == nil && id > 0 {
+				teamIds = append(teamIds, id)
+			} else if err != nil {
+				log.Printf("Warning: Invalid team_id '%s' in array provided by user %d: %v", idStr, user.Id, err)
+			}
+		}
+	} else if teamIdStr := r.FormValue("team_id"); teamIdStr != "" {
+		// Old single-select format (backwards compatibility)
+		if id, err := strconv.Atoi(teamIdStr); err == nil && id > 0 {
+			teamIds = append(teamIds, id)
+		} else {
+			log.Printf("Warning: Invalid team_id '%s' provided by user %d: %v", teamIdStr, user.Id, err)
+		}
 	}
 
 	// Check file size
@@ -174,22 +193,25 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Warning: Could not update user storage: %v", err)
 	}
 
-	// Share file with team if team_id is provided
-	if teamId > 0 {
+	// Share file with teams if team IDs are provided
+	for _, teamId := range teamIds {
 		// Verify user is member of the team
 		isMember, err := database.DB.IsTeamMember(teamId, user.Id)
 		if err != nil {
-			log.Printf("Warning: Could not verify team membership: %v", err)
-		} else if !isMember {
+			log.Printf("Warning: Could not verify team membership for team %d: %v", teamId, err)
+			continue
+		}
+		if !isMember {
 			log.Printf("Warning: User %d is not a member of team %d, skipping team share", user.Id, teamId)
+			continue
+		}
+
+		// Share file with team
+		err = database.DB.ShareFileToTeam(fileID, teamId, user.Id)
+		if err != nil {
+			log.Printf("Warning: Could not share file to team %d: %v", teamId, err)
 		} else {
-			// Share file with team
-			err = database.DB.ShareFileToTeam(fileID, teamId, user.Id)
-			if err != nil {
-				log.Printf("Warning: Could not share file to team: %v", err)
-			} else {
-				log.Printf("File %s shared with team %d by user %d", fileID, teamId, user.Id)
-			}
+			log.Printf("File %s shared with team %d by user %d", fileID, teamId, user.Id)
 		}
 	}
 

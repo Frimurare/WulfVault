@@ -367,14 +367,23 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 	logoData := brandingConfig["branding_logo"]
 
 	// Get user's files (including team files)
-	files, _ := database.DB.GetFilesByUserWithTeams(user.Id)
+	files, err := database.DB.GetFilesByUserWithTeams(user.Id)
+	if err != nil {
+		log.Printf("Warning: Failed to get files with teams for user %d: %v", user.Id, err)
+		// Fallback to user's own files only
+		files, _ = database.DB.GetFilesByUser(user.Id)
+	}
 
 	// Get team names for all files
 	fileIds := make([]string, len(files))
 	for i, f := range files {
 		fileIds[i] = f.Id
 	}
-	fileTeams, _ := database.DB.GetFileTeamNames(fileIds)
+	fileTeams, err := database.DB.GetFileTeamNames(fileIds)
+	if err != nil {
+		log.Printf("Warning: Failed to get team names for files: %v", err)
+		fileTeams = make(map[string][]string) // Empty map as fallback
+	}
 
 	// Calculate storage
 	storageUsed := user.StorageUsedMB
@@ -852,12 +861,12 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                     </div>
 
                     <div class="form-group">
-                        <label for="teamSelect">👥 Share with team (optional)</label>
-                        <select id="teamSelect" name="team_id" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                            <option value="">-- Don't share with team --</option>
-                        </select>
+                        <label>👥 Share with teams (optional)</label>
+                        <div id="teamSelectContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; padding: 12px; max-height: 150px; overflow-y: auto; background: #fafafa;">
+                            <div style="color: #999; font-style: italic;">Loading teams...</div>
+                        </div>
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">
-                            Share this file with a team immediately after upload
+                            Select one or more teams to share this file with immediately after upload
                         </p>
                     </div>
 
@@ -990,8 +999,19 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 			isTeamFile := false
 			if teams, ok := fileTeams[f.Id]; ok && len(teams) > 0 {
 				isTeamFile = true
-				for _, teamName := range teams {
-					teamBadges += fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">👥 %s</span>`, template.HTMLEscapeString(teamName))
+				if len(teams) == 1 {
+					// Single team - show name directly
+					teamBadges = fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">👥 %s</span>`, template.HTMLEscapeString(teams[0]))
+				} else {
+					// Multiple teams - show count with tooltip
+					teamsListHTML := ""
+					for i, teamName := range teams {
+						if i > 0 {
+							teamsListHTML += ", "
+						}
+						teamsListHTML += template.HTMLEscapeString(teamName)
+					}
+					teamBadges = fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; cursor: help;" title="Shared with: %s">👥 %d teams</span>`, teamsListHTML, len(teams))
 				}
 			}
 
@@ -1115,11 +1135,23 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             </div>
 
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Share with Team (optional):</label>
-                <select id="editTeamSelect" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
-                    <option value="">-- Don't share with team --</option>
-                </select>
-                <p style="font-size: 12px; color: #999; margin-top: 4px;">Select a team to share this file with team members</p>
+                <label style="display: block; margin-bottom: 12px; font-weight: 500;">👥 Team Sharing:</label>
+
+                <!-- Current teams -->
+                <div id="editCurrentTeams" style="margin-bottom: 16px;">
+                    <div style="color: #999; font-style: italic; font-size: 14px;">Loading current teams...</div>
+                </div>
+
+                <!-- Add new team -->
+                <div style="background: #f5f5f5; padding: 12px; border-radius: 6px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">Add to team:</label>
+                    <select id="editTeamSelect" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; background: white;">
+                        <option value="">-- Select a team --</option>
+                    </select>
+                    <button onclick="addTeamToFile()" style="margin-top: 8px; padding: 8px 16px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; width: 100%;">
+                        ➕ Add Team
+                    </button>
+                </div>
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
@@ -1412,8 +1444,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             toggleEditTimeLimit();
             toggleEditDownloadLimit();
 
-            // Load user's teams
+            // Load user's teams and current file teams
             loadUserTeamsForEdit();
+            loadCurrentFileTeams(fileId);
 
             // Show modal
             document.getElementById('editModal').style.display = 'flex';
@@ -1426,8 +1459,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             .then(response => response.json())
             .then(data => {
                 const select = document.getElementById('editTeamSelect');
-                // Clear existing options except first one
-                select.innerHTML = '<option value="">-- Don\'t share with team --</option>';
+                select.innerHTML = '<option value="">-- Select a team --</option>';
 
                 if (data.success && data.teams && data.teams.length > 0) {
                     data.teams.forEach(team => {
@@ -1440,6 +1472,97 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             })
             .catch(error => {
                 console.error('Error loading teams:', error);
+            });
+        }
+
+        function loadCurrentFileTeams(fileId) {
+            fetch('/api/teams/file-teams?file_id=' + encodeURIComponent(fileId), {
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('editCurrentTeams');
+                if (data.success && data.teams && data.teams.length > 0) {
+                    container.innerHTML = '<div style="margin-bottom: 8px; font-size: 13px; color: #666; font-weight: 500;">Currently shared with:</div>';
+                    data.teams.forEach(team => {
+                        const teamDiv = document.createElement('div');
+                        teamDiv.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 6px;';
+                        teamDiv.innerHTML = '<span style="display: flex; align-items: center; gap: 6px;">' +
+                            '<span>👥</span>' +
+                            '<span style="font-weight: 500;">' + escapeHtml(team.name) + '</span>' +
+                            '</span>' +
+                            '<button onclick="removeTeamFromFile(\'' + fileId + '\', ' + team.id + ', \'' + escapeHtml(team.name).replace(/'/g, "\\'") + '\')" ' +
+                            'style="padding: 4px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">' +
+                            '✕ Remove' +
+                            '</button>';
+                        container.appendChild(teamDiv);
+                    });
+                } else {
+                    container.innerHTML = '<div style="color: #999; font-style: italic; font-size: 14px;">Not shared with any teams</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading file teams:', error);
+                document.getElementById('editCurrentTeams').innerHTML = '<div style="color: #f44336; font-size: 14px;">Failed to load teams</div>';
+            });
+        }
+
+        function addTeamToFile() {
+            const fileId = document.getElementById('editFileId').value;
+            const select = document.getElementById('editTeamSelect');
+            const teamId = select.value;
+            const teamName = select.options[select.selectedIndex].text;
+
+            if (!teamId) {
+                alert('Please select a team');
+                return;
+            }
+
+            fetch('/api/teams/share-file', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_id: fileId, team_id: parseInt(teamId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadCurrentFileTeams(fileId);
+                    select.value = '';
+                    location.reload(); // Reload to update badges
+                } else {
+                    alert('Failed to add team: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error adding team:', error);
+                alert('Failed to add team');
+            });
+        }
+
+        function removeTeamFromFile(fileId, teamId, teamName) {
+            if (!confirm('Remove file from team "' + teamName + '"?')) {
+                return;
+            }
+
+            fetch('/api/teams/unshare-file', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_id: fileId, team_id: teamId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadCurrentFileTeams(fileId);
+                    location.reload(); // Reload to update badges
+                } else {
+                    alert('Failed to remove team: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error removing team:', error);
+                alert('Failed to remove team');
             });
         }
 

@@ -118,6 +118,7 @@ func (s *Server) Start() error {
 
 	// Teams API routes (require authentication)
 	mux.HandleFunc("/api/teams/my", s.requireAuth(s.handleAPIMyTeams))
+	mux.HandleFunc("/api/teams/file-teams", s.requireAuth(s.handleAPIFileTeams))
 	mux.HandleFunc("/api/teams/members", s.requireAuth(s.handleAPITeamMembers))
 	mux.HandleFunc("/api/teams/files", s.requireAuth(s.handleAPITeamFiles))
 	mux.HandleFunc("/api/teams/add-member", s.requireAuth(s.handleAPITeamAddMember))

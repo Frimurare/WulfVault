@@ -555,6 +555,43 @@ func (s *Server) handleAPIMyTeams(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleAPIFileTeams returns all teams that have access to a specific file
+func (s *Server) handleAPIFileTeams(w http.ResponseWriter, r *http.Request) {
+	user, _ := userFromContext(r.Context())
+	fileId := r.URL.Query().Get("file_id")
+
+	if fileId == "" {
+		http.Error(w, "file_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Verify user can access this file
+	file, err := database.DB.GetFileByID(fileId)
+	if err != nil || file == nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	// Only file owner can see teams
+	if file.UserId != user.Id && !user.IsAdmin() {
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
+
+	teams, err := database.DB.GetTeamsForFile(fileId)
+	if err != nil {
+		log.Printf("Error fetching file teams: %v", err)
+		http.Error(w, "Error fetching teams", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"teams":   teams,
+	})
+}
+
 // renderAdminTeams renders the admin teams management page
 func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 	*models.Team

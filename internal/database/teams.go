@@ -458,3 +458,37 @@ func (d *Database) GetFilesByUserWithTeams(userId int) ([]*FileInfo, error) {
 
 	return files, rows.Err()
 }
+
+// GetTeamsForFile returns all teams that have access to a specific file
+func (d *Database) GetTeamsForFile(fileId string) ([]*models.Team, error) {
+	query := `
+		SELECT t.Id, t.Name, t.Description, t.CreatedBy, t.CreatedAt,
+		       t.StorageQuotaMB, t.StorageUsedMB, t.IsActive
+		FROM Teams t
+		INNER JOIN TeamFiles tf ON t.Id = tf.TeamId
+		WHERE tf.FileId = ?
+		ORDER BY t.Name ASC`
+
+	rows, err := d.db.Query(query, fileId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var teams []*models.Team
+	for rows.Next() {
+		team := &models.Team{}
+		var isActive int
+		err := rows.Scan(
+			&team.Id, &team.Name, &team.Description, &team.CreatedBy,
+			&team.CreatedAt, &team.StorageQuotaMB, &team.StorageUsedMB, &isActive,
+		)
+		if err != nil {
+			return nil, err
+		}
+		team.IsActive = isActive == 1
+		teams = append(teams, team)
+	}
+
+	return teams, rows.Err()
+}
