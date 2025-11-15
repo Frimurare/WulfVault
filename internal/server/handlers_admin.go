@@ -878,6 +878,11 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 
 	headerHTML += `
         </div>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>
             <a href="/admin">Admin Dashboard</a>
             <a href="/dashboard">My Files</a>
@@ -892,9 +897,10 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             <a href="/logout" style="margin-left: auto;">Logout</a>
             <span style="color: rgba(255,255,255,0.6); font-size: 12px;">v` + s.config.Version + `</span>
         </nav>
-    </div>`
+    </div>
+    <div class="mobile-nav-overlay"></div>`
 
-	return `<style>` + headerCSS + `</style>` + headerHTML
+	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
 }
 
 func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
@@ -1295,6 +1301,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
         Powered by WulfVault Version ` + s.config.Version + `
     </div>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 
@@ -1535,6 +1542,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             .catch(err => alert('Error deleting download account'));
         }
     </script>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 
@@ -2051,7 +2059,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             </div>
         </div>
     </div>
-
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 
@@ -2206,6 +2214,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
             </form>
         </div>
     </div>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 
@@ -2486,7 +2495,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
         }
         */
     </script>
-
+    <script src="/static/js/mobile-nav.js"></script>
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
         Powered by WulfVault © Ulf Holmström – AGPL-3.0
     </div>
@@ -2699,6 +2708,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             }
         }
     </script>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 

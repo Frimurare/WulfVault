@@ -274,6 +274,11 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 
 	html += `
         </div>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>`
 
 	// Different navigation for admin vs regular user
@@ -301,6 +306,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 	html += `
         </nav>
     </div>
+    <div class="mobile-nav-overlay"></div>
 
     <div class="container">
         <div class="card">
@@ -613,7 +619,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
             }
         }
     </script>
-
+    <script src="/static/js/mobile-nav.js"></script>
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
         Powered by WulfVault © Ulf Holmström – AGPL-3.0
     </div>

@@ -1095,6 +1095,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             });
         }
     </script>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 
@@ -1109,8 +1110,10 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>My Teams - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1219,6 +1222,11 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 
 	html += `
         </div>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>`
 
 	// Different navigation for admin vs regular user
@@ -1246,6 +1254,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 	html += `
         </nav>
     </div>
+    <div class="mobile-nav-overlay"></div>
 
     <div class="container">
         <h2 style="margin-bottom: 8px;">👥 My Teams</h2>
@@ -1295,6 +1304,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             window.location.href = '/teams?id=' + teamId;
         }
     </script>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 
@@ -1319,6 +1329,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + team.Name + ` - Files - WulfVault</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1473,6 +1484,11 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 
 	html += `
         </div>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>`
 
 	// Different navigation for admin vs regular user
@@ -1500,6 +1516,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 	html += `
         </nav>
     </div>
+    <div class="mobile-nav-overlay"></div>
 
     <div class="container">
         <div class="page-header">
@@ -1589,6 +1606,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 
 	html += `
     </div>
+    <script src="/static/js/mobile-nav.js"></script>
 </body>
 </html>`
 

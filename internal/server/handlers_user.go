@@ -414,6 +414,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Dashboard - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -728,6 +729,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
 	html += `
         </div>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>`
 
 	// Different navigation for admin vs regular user
@@ -755,6 +761,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 	html += `
         </nav>
     </div>
+    <div class="mobile-nav-overlay"></div>
 
     <div class="container">
         <div class="joke-section">
@@ -1674,6 +1681,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         // Note: loadFileRequests, deleteFileRequest, escapeHtml, and copyToClipboard
         // are defined in dashboard.js and loaded automatically on page load
     </script>
+    <script src="/static/js/mobile-nav.js"></script>
     <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
         Powered by WulfVault Version ` + s.config.Version + `
     </div>
