@@ -572,7 +572,7 @@ To complete the full user experience, you can add:
 
 4. **Check database:**
    ```bash
-   sqlite3 data/sharecare.db
+   sqlite3 data/wulfvault.db
    SELECT * FROM Teams;
    SELECT * FROM TeamMembers;
    SELECT * FROM TeamFiles;

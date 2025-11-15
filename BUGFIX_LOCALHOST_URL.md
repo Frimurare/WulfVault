@@ -42,7 +42,7 @@ This code shows that if the `-url` flag is explicitly passed, it **overrides** t
 ### The Bug
 The server was being started with:
 ```bash
-./sharecare -port 8080 -url http://localhost:8080
+./wulfvault -port 8080 -url http://localhost:8080
 ```
 
 This meant that:
@@ -68,7 +68,7 @@ This meant that:
 
 **Process command** (before fix):
 ```bash
-./sharecare -port 8080 -url http://localhost:8080  ❌
+./wulfvault -port 8080 -url http://localhost:8080  ❌
 ```
 
 ## Solution
@@ -78,12 +78,12 @@ Remove the `-url` flag from the server startup command. Let the server read the 
 
 **Before**:
 ```bash
-./sharecare -port 8080 -url http://localhost:8080
+./wulfvault -port 8080 -url http://localhost:8080
 ```
 
 **After**:
 ```bash
-./sharecare -port 8080
+./wulfvault -port 8080
 ```
 
 ### How It Works Now
@@ -104,7 +104,7 @@ Remove the `-url` flag from the server startup command. Let the server read the 
 
 **Process command** (after fix):
 ```bash
-ulf  2060  ./sharecare -port 8080  ✅
+ulf  2060  ./wulfvault -port 8080  ✅
 ```
 
 ## Lessons Learned
@@ -133,21 +133,21 @@ To verify the fix:
 ### Recommended Startup Command
 ```bash
 # Production - use config file for URL
-./sharecare -port 8080
+./wulfvault -port 8080
 
 # Development - override URL for testing
-./sharecare -port 8080 -url http://localhost:8080
+./wulfvault -port 8080 -url http://localhost:8080
 
 # Docker/Production with environment variables
-SERVER_URL=https://sharecare.example.com PORT=443 ./sharecare
+SERVER_URL=https://wulfvault.example.com PORT=443 ./wulfvault
 ```
 
 ### systemd Service File
 If using systemd, ensure the service file does NOT include `-url`:
 ```ini
 [Service]
-ExecStart=/path/to/sharecare -port 8080
-# DO NOT: ExecStart=/path/to/sharecare -port 8080 -url http://localhost:8080
+ExecStart=/path/to/wulfvault -port 8080
+# DO NOT: ExecStart=/path/to/wulfvault -port 8080 -url http://localhost:8080
 ```
 
 ## Related Files
