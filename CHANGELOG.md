@@ -1,5 +1,31 @@
 # Changelog
 
+## [4.0.3] - 2025-11-15 🚨 CRITICAL: Fix Team File Download Bug
+
+### 🐛 Critical Bug Fix
+
+**Team File Downloads Broken - MAJOR:**
+- Fixed critical bug in team file sharing where download links were completely broken
+- Team files showed URL `/d/` without the file hash, causing "File not found" errors
+- Bug was causing users to appear logged out (navbar disappearing) when clicking download
+- Root cause: Used `file.HotlinkId` instead of `file.Id` for download link generation
+- `HotlinkId` is only for image hotlinking, not for file downloads
+- All team file downloads now work correctly with proper file hash in URL
+
+### 📁 Modified Files
+
+**Code:**
+- `internal/server/handlers_teams.go` (line 1544): Fixed download link to use `file.Id` instead of `file.HotlinkId`
+- `cmd/server/main.go` (line 25): Version bump to 4.0.3
+
+### 🎯 Impact
+
+This was a MAJOR bug that completely broke the team file sharing feature. Users could see team files but couldn't download them, getting "File not found" errors. The navbar would disappear, making users think they were logged out. This fix restores full team file sharing functionality.
+
+**Affected users:** Anyone using team file sharing feature in v4.0.2 or the rebrand branch.
+
+---
+
 ## [4.0.2] - 2025-11-15 🔧 Fix Installation Guides & Database Migration
 
 ### 🐛 Bug Fixes

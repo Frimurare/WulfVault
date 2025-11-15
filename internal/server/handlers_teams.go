@@ -1541,7 +1541,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                         <td>%s</td>
                         <td>%d</td>
                         <td><a href="/d/%s" class="btn-download">Download</a></td>
-                    </tr>`, file.Name, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, file.HotlinkId)
+                    </tr>`, file.Name, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, file.Id)
 		}
 
 		html += `
