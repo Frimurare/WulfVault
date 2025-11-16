@@ -2183,7 +2183,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            margin-right: 6px;
+            margin-right: 10px;
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
