@@ -1624,8 +1624,8 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             }
             table td {
                 display: block;
-                text-align: right;
-                padding: 8px 0;
+                text-align: left;
+                padding: 12px 0;
                 border-bottom: 1px solid #eee;
             }
             table td:last-child {
@@ -1633,9 +1633,14 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             }
             table td::before {
                 content: attr(data-label);
-                float: left;
+                display: block;
                 font-weight: 600;
                 color: #666;
+                margin-bottom: 4px;
+                font-size: 13px;
+            }
+            table td:last-child::before {
+                display: none;
             }
             .action-links {
                 display: flex;
@@ -2261,22 +2266,20 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
             td {
                 display: block;
-                text-align: right;
-                padding: 8px 0;
+                text-align: left;
+                padding: 12px 0;
                 border: none !important;
                 position: relative;
-                padding-left: 50%;
+                min-height: 35px;
             }
 
             td::before {
                 content: attr(data-label);
-                position: absolute;
-                left: 0;
-                width: 45%;
-                padding-right: 10px;
-                text-align: left;
+                display: block;
                 font-weight: 600;
                 color: #666;
+                margin-bottom: 4px;
+                font-size: 13px;
             }
 
             td:last-child {

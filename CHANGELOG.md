@@ -1,5 +1,54 @@
 # Changelog
 
+## [4.3.3.7] - 2025-11-16 📱 Mobile table layout fixes (on top of v4.3.3.6)
+
+### ✅ Fixed Mobile Table Layouts
+
+v4.3.3.6 restored working hamburger navigation but lost the table layout improvements. This version adds ONLY the CSS fixes for mobile tables, WITHOUT touching any JavaScript.
+
+**Fixed Tables:**
+1. **Users page (Manage Users):**
+   - Fixed "Actions flyter ihop med edit knappen"
+   - Changed from float layout to block layout
+   - Labels display ABOVE content, not side-by-side
+   - Hidden "Actions" label to prevent clutter
+
+2. **All Files page:**
+   - Fixed "gröt och allt flyter ihop"
+   - Changed from 50% padding-left / 45% width to block layout
+   - Labels display ABOVE content with proper spacing
+   - Clean, readable mobile cards
+
+3. **Teams Shared Files (both admin and user):**
+   - Fixed "gröt och allt flyter ihop"
+   - Changed from 50% padding-left / 45% width to block layout
+   - Labels display ABOVE content with proper spacing
+   - Clean, readable mobile cards
+
+### 🔧 Technical Changes
+
+**CSS Changes (NO JavaScript changes):**
+- `internal/server/handlers_admin.go`:
+  - Users table: float → block layout, hide Actions label
+  - All Files table: side-by-side → stacked layout
+- `internal/server/handlers_teams.go`:
+  - Shared files table: side-by-side → stacked layout
+
+**Modified files:**
+- internal/server/handlers_admin.go (2 table CSS fixes)
+- internal/server/handlers_teams.go (1 table CSS fix)
+- CHANGELOG.md (this entry)
+- cmd/server/main.go (version 4.3.3.6 → 4.3.3.7)
+
+### 📊 Status
+- ✅ Hamburger navigation: Working (from v4.3.3.6)
+- ✅ Users table: Clean layout
+- ✅ All Files table: Clean layout
+- ✅ Teams shared files table: Clean layout
+- ✅ Download users: Working
+- ✅ Regular users: Working
+- ✅ Admin users: Working
+
 ## [4.3.3.6] - 2025-11-16 🔄 RESTORED to v4.3.3.1
 
 ### 🔄 Rollback & Apology
