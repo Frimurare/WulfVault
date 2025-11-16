@@ -163,19 +163,19 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
         .nav-header h1 { font-size: 24px; }
         .nav-header nav {
             display: flex;
-            gap: 20px;
+            gap: 10px;
             align-items: center;
         }
         .nav-header nav a {
-            color: rgba(255,255,255,0.9);
+            color: white;
             text-decoration: none;
-            font-weight: 500;
             padding: 8px 16px;
             border-radius: 5px;
+            background: rgba(255,255,255,0.2);
             transition: background 0.3s;
         }
         .nav-header nav a:hover {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.3);
         }
         .hamburger {
             display: none;

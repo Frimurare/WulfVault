@@ -235,15 +235,16 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
             max-width: 150px;
         }
         .header h1 { font-size: 24px; }
-        .header nav { display: flex; gap: 20px; align-items: center; }
+        .header nav { display: flex; gap: 10px; align-items: center; }
         .header nav a {
             color: white;
             text-decoration: none;
             padding: 8px 16px;
             border-radius: 5px;
+            background: rgba(255,255,255,0.2);
             transition: background 0.3s;
         }
-        .header nav a:hover { background: rgba(255,255,255,0.2); }
+        .header nav a:hover { background: rgba(255,255,255,0.3); }
         .container {
             max-width: 1200px;
             margin: 40px auto;

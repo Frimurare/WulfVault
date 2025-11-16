@@ -1304,16 +1304,18 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
         .header nav {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
         }
         .header nav a {
-            color: rgba(255, 255, 255, 0.9);
+            color: white;
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
         }
         .header nav a:hover {
-            color: white;
+            background: rgba(255, 255, 255, 0.3);
         }
         .header nav span {
             color: rgba(255, 255, 255, 0.6);
@@ -1707,16 +1709,18 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         .header nav {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
         }
         .header nav a {
-            color: rgba(255, 255, 255, 0.9);
+            color: white;
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
         }
         .header nav a:hover {
-            color: white;
+            background: rgba(255, 255, 255, 0.3);
         }
         .header nav span {
             color: rgba(255, 255, 255, 0.6);
