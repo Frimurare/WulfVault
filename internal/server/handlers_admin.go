@@ -997,64 +997,65 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 
 	headerJS := `
     <script>
-    if (!window.adminNavInitialized) {
-        window.adminNavInitialized = true;
-        (function() {
-            'use strict';
-            function initMobileNav() {
-                const header = document.querySelector('.header');
-                if (!header) return;
-                const nav = header.querySelector('nav');
-                if (!nav) return;
-                const hamburger = header.querySelector('.hamburger');
-                if (!hamburger) return;
-                const overlay = document.querySelector('.mobile-nav-overlay');
-                if (!overlay) return;
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            const overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) return;
 
-                function toggleNav() {
-                    const isActive = nav.classList.contains('active');
-                    if (isActive) {
-                        nav.classList.remove('active');
-                        hamburger.classList.remove('active');
-                        overlay.classList.remove('active');
-                        hamburger.setAttribute('aria-expanded', 'false');
-                        document.body.style.overflow = '';
-                    } else {
-                        nav.classList.add('active');
-                        hamburger.classList.add('active');
-                        overlay.classList.add('active');
-                        hamburger.setAttribute('aria-expanded', 'true');
-                        document.body.style.overflow = 'hidden';
-                    }
+            // Skip if already initialized
+            if (hamburger.dataset.navInitialized === 'true') return;
+            hamburger.dataset.navInitialized = 'true';
+
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
                 }
-                hamburger.addEventListener('click', toggleNav);
-                overlay.addEventListener('click', toggleNav);
-                const navLinks = nav.querySelectorAll('a');
-                navLinks.forEach(link => {
-                    link.addEventListener('click', () => {
-                        if (window.innerWidth <= 768) {
-                            toggleNav();
-                        }
-                    });
-                });
-                window.addEventListener('resize', () => {
-                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
                         toggleNav();
                     }
                 });
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape' && nav.classList.contains('active')) {
-                        toggleNav();
-                    }
-                });
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initMobileNav);
-            } else {
-                initMobileNav();
-            }
-        })();
-    }
+            });
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
     </script>`
 
 	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML + headerJS
