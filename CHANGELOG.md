@@ -1,5 +1,90 @@
 # Changelog
 
+## [4.3.2] - 2025-11-16 📱 Complete Mobile Responsive Interface
+
+### ✨ Features
+
+**All Pages Now Fully Mobile Responsive:**
+- Fixed all remaining pages that were showing desktop versions on mobile
+- Complete mobile adaptation across entire admin and user interface
+- Consistent hamburger navigation and mobile UI throughout the application
+
+**Pages Fixed:**
+- ✅ My Files (User Dashboard) - Mobile CSS and responsive layout
+- ✅ Users (Admin) - Mobile card layout for user/download account tables
+- ✅ Teams (Admin) - Mobile card layout with touch-friendly action buttons
+- ✅ All Files (Admin) - Mobile card layout for file management
+- ✅ Trash (Admin) - Mobile card layout for trash management
+- ✅ Email Settings (Admin) - Touch-friendly form inputs and vertical tabs
+- ✅ My Account (Settings) - Mobile forms with proper touch targets
+
+**Mobile UX Improvements:**
+- Tables convert to card layout on mobile with data-label display
+- Action buttons stack vertically and are touch-friendly (48px height)
+- Form inputs optimized for touch (16px font prevents iOS zoom)
+- Responsive container padding (15px on mobile vs 20-40px on desktop)
+- Full-width buttons on mobile for easier tapping
+- Vertical navigation tabs on Email Settings page
+- Modal dialogs scale to 95% width on mobile
+
+### 🔧 Technical Changes
+
+**Added to handlers_user.go:**
+- Mobile navigation CSS (hamburger, overlay, @media queries)
+- Responsive stats grid (single column on mobile)
+- Mobile-friendly file list layout
+
+**Added to handlers_admin.go:**
+- Mobile CSS to renderAdminUsers function (Users page)
+- Mobile CSS to renderAdminFiles function (All Files page)
+- Mobile CSS to renderAdminTrash function (Trash page)
+- Data-label attributes added to all table cells
+- Card-style table layout for mobile devices
+
+**Added to handlers_teams.go:**
+- Mobile CSS to renderAdminTeams function
+- Data-label attributes for team table
+- Touch-friendly action buttons
+- Responsive modal dialogs
+
+**Added to handlers_email.go:**
+- Mobile CSS to renderEmailSettingsPage function
+- Vertical tab navigation on mobile
+- Touch-optimized form inputs (48px min-height)
+- Full-width buttons
+
+**Added to handlers_user_settings.go:**
+- Mobile navigation styles (hamburger, overlay)
+- Complete mobile responsive layout
+- Touch-friendly form elements
+- Responsive QR codes for 2FA
+
+### 📁 Modified Files
+
+- `internal/server/handlers_user.go` - My Files mobile adaptation
+- `internal/server/handlers_admin.go` - Users, All Files, Trash mobile adaptation
+- `internal/server/handlers_teams.go` - Teams mobile adaptation
+- `internal/server/handlers_email.go` - Email Settings mobile adaptation
+- `internal/server/handlers_user_settings.go` - My Account mobile adaptation
+- `cmd/server/main.go` - Version bump to 4.3.2
+
+### 🎯 Impact
+
+**Complete Mobile Experience:**
+- All pages now work seamlessly on iPhone and Android devices
+- Admins can fully manage WulfVault from mobile devices
+- Users can upload, share, and manage files from smartphones
+- No more horizontal scrolling or tiny desktop interfaces on mobile
+- Consistent UI/UX across all pages
+
+**Accessibility:**
+- All touch targets meet WCAG guidelines (minimum 44-48px)
+- Form inputs use 16px font to prevent auto-zoom on iOS
+- High contrast labels and readable mobile typography
+- Proper semantic HTML with data-label attributes
+
+---
+
 ## [4.3.1.2] - 2025-11-16 ✅ Mobile Navigation JavaScript Fix
 
 ### 🐛 Bug Fixes
