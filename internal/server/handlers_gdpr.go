@@ -136,26 +136,90 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            background: #f5f5f5;
             min-height: 100vh;
-            padding: 20px;
+        }
+        .nav-header {
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-header h1 { font-size: 24px; }
+        .nav-header nav {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .nav-header nav a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav-header nav a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 8px;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-6px, 6px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-6px, -6px);
+        }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+        .mobile-nav-overlay.active {
+            display: block;
         }
         .container {
             max-width: 600px;
-            margin: 50px auto;
+            margin: 40px auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-        .header {
+        .page-header {
             background: ` + s.getPrimaryColor() + `;
             color: white;
             padding: 30px;
             text-align: center;
         }
-        .header h1 { font-size: 24px; margin-bottom: 5px; }
-        .header p { opacity: 0.9; font-size: 14px; }
+        .page-header h2 { font-size: 24px; margin-bottom: 5px; }
+        .page-header p { opacity: 0.9; font-size: 14px; }
         .content { padding: 30px; }
         .account-info {
             background: #f8f9fa;
@@ -249,6 +313,58 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
             font-size: 14px;
             border-top: 1px solid #e2e8f0;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .nav-header {
+                padding: 15px 20px;
+                flex-wrap: wrap;
+            }
+            .nav-header h1 {
+                font-size: 18px;
+                order: 1;
+                flex: 1;
+            }
+            .hamburger {
+                display: flex !important;
+                order: 3;
+                margin-left: auto;
+            }
+            .nav-header nav {
+                display: none !important;
+                position: fixed !important;
+                right: -100% !important;
+                top: 0 !important;
+                width: 280px !important;
+                height: 100vh !important;
+                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important;
+                flex-direction: column !important;
+                padding: 80px 20px 20px !important;
+                transition: right 0.3s ease !important;
+                z-index: 1000 !important;
+                gap: 0 !important;
+            }
+            .nav-header nav.active {
+                display: flex !important;
+                right: 0 !important;
+            }
+            .nav-header nav a {
+                width: 100%;
+                padding: 15px 20px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                margin: 0 !important;
+                border-radius: 0 !important;
+            }
+            .container {
+                margin: 20px 15px;
+            }
+            .btn-secondary {
+                margin-left: 0;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+            }
+        }
     </style>
     <script>
         function confirmDelete() {
@@ -262,9 +378,25 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
     </script>
 </head>
 <body>
+    <div class="nav-header">
+        <h1>` + s.config.CompanyName + ` - My Downloads</h1>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <nav>
+            <a href="/download/dashboard">Dashboard</a>
+            <a href="/download/change-password">Change Password</a>
+            <a href="/download/account-settings">Account Settings</a>
+            <a href="/download/logout">Logout</a>
+        </nav>
+    </div>
+    <div class="mobile-nav-overlay"></div>
+
     <div class="container">
-        <div class="header">
-            <h1>Mitt Nedladdningskonto</h1>
+        <div class="page-header">
+            <h2>Mitt Nedladdningskonto</h2>
             <p>` + s.config.CompanyName + `</p>
         </div>
 
@@ -317,6 +449,69 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
             Powered by WulfVault © Ulf Holmström – AGPL-3.0
         </div>
     </div>
+
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.nav-header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            const overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) return;
+
+            function toggleMenu() {
+                const isActive = nav.classList.contains('active');
+                nav.classList.toggle('active');
+                hamburger.classList.toggle('active');
+                overlay.classList.toggle('active');
+                hamburger.setAttribute('aria-expanded', !isActive);
+
+                if (!isActive) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = '';
+                }
+            }
+
+            function closeMenu() {
+                nav.classList.remove('active');
+                hamburger.classList.remove('active');
+                overlay.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            }
+
+            hamburger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleMenu();
+            });
+
+            overlay.addEventListener('click', closeMenu);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    closeMenu();
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                    closeMenu();
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 

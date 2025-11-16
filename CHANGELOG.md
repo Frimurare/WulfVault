@@ -1,5 +1,55 @@
 # Changelog
 
+## [4.3.3.4] - 2025-11-16 ✅ Final mobile fixes: hamburger navigation and layout polish
+
+### 🐛 Bug Fixes
+
+**Admin Pages Hamburger Still Not Working:**
+- **ROOT CAUSE:** Global flag `window.adminNavInitialized` in v4.3.3.3 prevented initialization on subsequent page loads
+- **FIX:** Changed to element-specific flag `hamburger.dataset.navInitialized`
+- Now checks the hamburger element itself instead of global window object
+- Hamburger navigation now works correctly on ALL admin pages: Users, Teams, All Files, Trash, Branding, Email, Server
+
+**Regular User - Shared Files Team View:**
+- Fixed unreadable "ihopklottrat" text where labels overlapped with content
+- **REVERTED:** Side-by-side layout (padding-left: 50%, width: 45%)
+- **NEW:** Labels display ABOVE content (block layout with margin-bottom: 4px)
+- Clean, readable mobile card layout for shared team files
+
+**Download User - Account Settings Page:**
+- Fixed completely missing hamburger navigation
+- Added full navigation header with hamburger menu
+- Added mobile CSS responsive styles
+- Added JavaScript for hamburger toggle functionality
+- Page now matches design of other download user pages
+- Users can navigate back to Dashboard, Change Password, etc.
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_admin.go`:
+  - Changed from `window.adminNavInitialized` to `hamburger.dataset.navInitialized`
+  - Element-specific initialization check prevents cross-page conflicts
+  - Users and All Files table layouts: block layout for labels
+- `internal/server/handlers_teams.go`:
+  - Shared files table: changed from float to block layout
+  - Labels display above content instead of side-by-side
+- `internal/server/handlers_gdpr.go`:
+  - **COMPLETE REDESIGN** of Account Settings page
+  - Added navigation header with company name and hamburger
+  - Added mobile responsive CSS (@media max-width: 768px)
+  - Added hamburger toggle JavaScript
+  - Changed from centered container design to standard page layout
+- `cmd/server/main.go`:
+  - Updated version from 4.3.3.3 to 4.3.3.4
+
+### 📊 Impact
+- ALL admin pages now have working hamburger navigation
+- Team shared files are readable on mobile
+- Download users have consistent navigation across all pages
+- Complete mobile experience across all user types
+- System fully functional on mobile devices
+
 ## [4.3.3.3] - 2025-11-16 🚨 CRITICAL: Fix broken hamburger navigation across all admin pages
 
 ### 🐛 Critical Fixes
