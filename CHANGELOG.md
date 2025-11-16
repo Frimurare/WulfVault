@@ -1,5 +1,44 @@
 # Changelog
 
+## [4.3.1] - 2025-11-15 🔧 Mobile Navigation CSS Fix
+
+### 🐛 Bug Fixes
+
+**CSS Specificity Issue Fixed:**
+- Fixed hamburger menu not appearing on iPhone/mobile devices
+- Added `!important` flags to critical mobile navigation CSS properties
+- Inline styles were overriding responsive CSS due to cascade order
+- Hamburger menu now properly displays and functions on all mobile devices
+
+**Technical Details:**
+- Problem: Inline `<style>` tags came AFTER external CSS, causing `display: flex` to override `display: none` on mobile
+- Solution: Added `!important` to `.header nav`, `.header nav.active`, and `.hamburger` mobile styles
+- This ensures responsive CSS always takes precedence over inline page styles
+
+### 📁 Modified Files
+
+**CSS:**
+- `web/static/css/style.css`:
+  - Added !important to `.header nav { display: none !important; }`
+  - Added !important to `.header nav.active { display: flex !important; }`
+  - Added !important to `.hamburger { display: flex !important; }`
+  - Added !important to all mobile navigation positioning and styling properties
+
+**Version:**
+- `cmd/server/main.go`: Version bump to 4.3.1
+
+### 🎯 Impact
+
+Mobile navigation now works correctly on:
+- ✅ iPhone (all models)
+- ✅ Android devices
+- ✅ Tablets in portrait mode
+- ✅ All mobile browsers (Safari, Chrome, Firefox)
+
+The hamburger menu is now visible and functional, allowing users to access all navigation options including logout on mobile devices.
+
+---
+
 ## [4.3.0] - 2025-11-15 📱 Complete Mobile Responsive Interface
 
 ### ✨ New Features

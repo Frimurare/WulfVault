@@ -198,32 +198,32 @@ body {
 
     /* Show Hamburger Menu */
     .hamburger {
-        display: flex;
+        display: flex !important;
         order: 3;
     }
 
     /* Hide Desktop Navigation */
     .header nav {
-        display: none;
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 280px;
-        height: 100vh;
-        background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 80px 30px 30px;
+        display: none !important;
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
+        width: 280px !important;
+        height: 100vh !important;
+        background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 80px 30px 30px !important;
         gap: 0 !important;
-        transition: right 0.3s ease;
-        z-index: 1000;
-        overflow-y: auto;
-        box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        transition: right 0.3s ease !important;
+        z-index: 1000 !important;
+        overflow-y: auto !important;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
     }
 
     .header nav.active {
-        display: flex;
-        right: 0;
+        display: flex !important;
+        right: 0 !important;
     }
 
     .header nav a {
