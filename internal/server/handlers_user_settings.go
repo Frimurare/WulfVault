@@ -331,7 +331,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
                 right: -100%;
                 width: 280px;
                 height: 100vh;
-                background: white;
+                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
                 flex-direction: column;
                 align-items: flex-start;
                 padding: 80px 20px 20px;

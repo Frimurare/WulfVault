@@ -754,32 +754,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">`
-
-	// Add logo if exists
-	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
-		html += `<img src="` + logoURL + `" alt="Logo">`
-	} else {
-		html += `<h1>` + s.config.CompanyName + `</h1>`
-	}
-
-	html += `
-        </div>
-        <nav>
-            <a href="/admin">Admin Dashboard</a>
-            <a href="/dashboard">My Files</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/teams">Teams</a>
-            <a href="/admin/files">All Files</a>
-            <a href="/admin/trash">Trash</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/admin/email-settings">Email</a>
-            <a href="/admin/settings">Server</a>
-            <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
-        </nav>
-    </div>
+    ` + s.getAdminHeaderHTML("") + `
 
     <div class="container">
         <div class="settings-card">

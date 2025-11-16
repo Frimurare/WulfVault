@@ -2180,10 +2180,10 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         .hamburger span {
             width: 25px;
             height: 3px;
-            background: #333;
+            background: white;
             margin: 3px 0;
             transition: 0.3s;
-            border-radius: 3px;
+            border-radius: 2px;
         }
         .hamburger.active span:nth-child(1) {
             transform: rotate(-45deg) translate(-5px, 6px);
@@ -2293,10 +2293,12 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
             /* Stack action buttons vertically on mobile */
             td:last-child .btn {
-                display: block;
-                width: 100%;
-                margin: 8px 0;
+                display: inline-block;
+                width: auto;
+                min-width: 100px;
+                margin: 4px 4px;
                 text-align: center;
+                padding: 10px 16px;
             }
 
             .file-name {

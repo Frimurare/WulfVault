@@ -1696,6 +1696,150 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         .empty-state p {
             font-size: 15px;
         }
+
+        /* Mobile Navigation Styles */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 8px;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+        .mobile-nav-overlay.active {
+            display: block;
+        }
+
+        @media screen and (max-width: 768px) {
+            .header-user {
+                padding: 15px 20px !important;
+                flex-wrap: wrap;
+            }
+            .header-user h1 {
+                font-size: 18px !important;
+            }
+            .header-user .logo img {
+                max-height: 40px !important;
+                max-width: 120px !important;
+            }
+            .hamburger {
+                display: flex !important;
+                order: 3;
+            }
+            .header-user nav {
+                display: none !important;
+                position: fixed !important;
+                top: 0 !important;
+                right: -100% !important;
+                width: 280px !important;
+                height: 100vh !important;
+                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 80px 30px 30px !important;
+                gap: 0 !important;
+                transition: right 0.3s ease !important;
+                z-index: 1000 !important;
+                overflow-y: auto !important;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
+            }
+            .header-user nav.active {
+                display: flex !important;
+                right: 0 !important;
+            }
+            .header-user nav a {
+                width: 100%;
+                padding: 15px 20px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                font-size: 16px !important;
+                margin: 0 !important;
+            }
+            .header-user nav a:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            .container {
+                padding: 0 15px !important;
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 15px;
+            }
+            .back-btn {
+                width: 100%;
+                text-align: center;
+            }
+            table thead {
+                display: none;
+            }
+            table, table tbody, table tr {
+                display: block;
+                width: 100%;
+            }
+            table tr {
+                margin-bottom: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 15px;
+                background: white;
+            }
+            table td {
+                display: block;
+                text-align: right;
+                padding: 8px 0;
+                border: none;
+                position: relative;
+                padding-left: 50%;
+            }
+            table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-right: 10px;
+                text-align: left;
+                font-weight: 600;
+                color: #666;
+            }
+            table td:last-child {
+                padding-left: 0;
+                text-align: center;
+                padding-top: 15px;
+                margin-top: 10px;
+                border-top: 1px solid #e0e0e0;
+            }
+            table td:last-child::before {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1815,13 +1959,13 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 
 			html += fmt.Sprintf(`
                     <tr>
-                        <td><span class="file-icon">📄</span><span class="file-name">%s</span></td>
-                        <td>%s</td>
-                        <td>%s</td>
-                        <td>%s</td>
-                        <td>%s</td>
-                        <td>%d</td>
-                        <td><a href="/d/%s" class="btn-download">Download</a></td>
+                        <td data-label="File Name"><span class="file-icon">📄</span><span class="file-name">%s</span></td>
+                        <td data-label="Owner">%s</td>
+                        <td data-label="Shared By">%s</td>
+                        <td data-label="Shared Date">%s</td>
+                        <td data-label="Size">%s</td>
+                        <td data-label="Downloads">%d</td>
+                        <td data-label="Action"><a href="/d/%s" class="btn-download">Download</a></td>
                     </tr>`, file.Name, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, file.Id)
 		}
 
@@ -1837,7 +1981,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     (function() {
         'use strict';
         function initMobileNav() {
-            const header = document.querySelector('.header');
+            const header = document.querySelector('.header-user');
             if (!header) return;
             const nav = header.querySelector('nav');
             if (!nav) return;

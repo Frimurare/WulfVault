@@ -1,5 +1,71 @@
 # Changelog
 
+## [4.3.3] - 2025-11-16 🔧 Mobile Polish and Bug Fixes
+
+### 🐛 Bug Fixes
+
+**All Files Page:**
+- Fixed overly wide action buttons on mobile (changed from 100% width to auto width with min-width: 100px)
+- Buttons now display inline with proper spacing instead of full-width blocks
+- Improved mobile layout for better usability
+
+**Email Settings Page:**
+- Fixed missing hamburger menu navigation
+- Replaced custom header with standardized `getAdminHeaderHTML` for consistency
+- Removed duplicate navigation links
+- Now uses same mobile-responsive header as all other pages
+
+**My Account/Settings Page:**
+- Fixed hamburger menu turning white and becoming invisible
+- Changed mobile navigation background from white to gradient (matching header colors)
+- Hamburger icon now properly visible against gradient background
+- Consistent styling with other pages
+
+**Teams Page (User View):**
+- Fixed missing hamburger menu on team files view
+- Added complete mobile CSS styling for responsive layout
+- Fixed JavaScript selector (changed from `.header` to `.header-user`)
+- Added data-label attributes to table cells for mobile card layout
+- Tables now properly display as cards on mobile devices
+
+**All Files Page (Admin):**
+- Fixed hamburger icon color (changed from dark gray to white)
+- Now properly visible against gradient header background
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_admin.go`:
+  - Fixed All Files button widths for mobile
+  - Fixed hamburger span color to white
+- `internal/server/handlers_email.go`:
+  - Replaced custom header with `getAdminHeaderHTML`
+- `internal/server/handlers_user_settings.go`:
+  - Changed mobile nav background from white to gradient
+- `internal/server/handlers_teams.go`:
+  - Added complete mobile CSS for team files page
+  - Fixed JavaScript header selector
+  - Added data-label attributes to table cells
+- `cmd/server/main.go`:
+  - Version bump to 4.3.3
+
+### 🎯 Impact
+
+**Mobile Experience Improvements:**
+- All pages now have consistent, working hamburger navigation
+- No more invisible or broken navigation elements
+- Action buttons properly sized for mobile interaction
+- Professional, polished mobile interface throughout
+
+**User Feedback Addressed:**
+- ✅ All Files buttons no longer overly wide
+- ✅ Email Settings has proper hamburger navigation
+- ✅ My Account hamburger menu visible and functional
+- ✅ Teams page fully mobile responsive for users
+- ✅ Consistent UI/UX across all pages
+
+---
+
 ## [4.3.2] - 2025-11-16 📱 Complete Mobile Responsive Interface
 
 ### ✨ Features
