@@ -1,4 +1,4 @@
-# WulfVault User Guide v4.3.4
+# WulfVault User Guide v4.5.2 Gold
 
 **Complete Guide for Administrators and Users**
 
@@ -17,10 +17,11 @@
 9. [File Management](#file-management)
 10. [Branding & Customization](#branding--customization)
 11. [Email Configuration](#email-configuration)
-12. [Security Features](#security-features)
-13. [File Request Portals](#file-request-portals)
-14. [Troubleshooting](#troubleshooting)
-15. [Best Practices](#best-practices)
+12. [Audit Logs & Compliance](#audit-logs--compliance)
+13. [Security Features](#security-features)
+14. [File Request Portals](#file-request-portals)
+15. [Troubleshooting](#troubleshooting)
+16. [Best Practices](#best-practices)
 
 ---
 
@@ -40,6 +41,7 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
 - ✅ **Large file support** - Up to 5GB+ per file (configurable)
 - ✅ **Multi-user system** - Admins, users, and download accounts
 - ✅ **Download tracking** - Know exactly who downloaded what and when
+- ✅ **Audit logging** - Comprehensive audit trail for compliance (GDPR, SOC 2)
 - ✅ **Two-Factor Authentication** - TOTP-based security
 - ✅ **Email integration** - SMTP or Brevo for sending links
 - ✅ **Branding** - Custom logo, colors, company name
@@ -976,6 +978,190 @@ From: yourname@gmail.com
 - Custom logo (if uploaded)
 - Professional formatting
 - Secure links with proper expiration
+
+---
+
+## Audit Logs & Compliance
+
+### Overview
+
+WulfVault includes enterprise-grade audit logging to help organizations meet compliance requirements (GDPR, SOC 2, HIPAA, etc.) and maintain accountability for all system operations.
+
+### What is Logged?
+
+**User Management:**
+- User creation, updates, deletion
+- Account activation/deactivation
+- Role changes and permission updates
+- Quota modifications
+
+**Authentication:**
+- Login attempts (successful and failed)
+- Logout events
+- 2FA enable/disable operations
+- Password changes
+- Password reset requests and completions
+
+**File Operations:**
+- File uploads (who, when, file details)
+- File deletions (soft delete to trash)
+- File restorations from trash
+- Permanent deletions
+- File downloads (tracked separately per download)
+- File sharing operations
+
+**Team Management:**
+- Team creation, updates, deletion
+- Member additions and removals
+- Role changes within teams
+- File sharing to/from teams
+
+**System Configuration:**
+- Settings changes (server URL, quotas, retention periods)
+- Branding updates (logo, colors, company name)
+- Email configuration changes
+- Audit log settings modifications
+
+**Download Accounts:**
+- Creation, updates, deletion
+- Activation/deactivation
+
+**File Requests:**
+- Portal creation and deletion
+- File uploads through request portals
+
+### Accessing Audit Logs
+
+**For Administrators:**
+
+1. **Navigate to Server Settings:**
+   - Login as admin
+   - Click **Server** in navigation
+   - Scroll down to **Audit Logs** section
+   - Click **📊 View Audit Logs**
+
+2. **Alternative route:**
+   - Direct URL: `/admin/audit-logs`
+
+### Filtering and Searching
+
+**Filter Options:**
+- **User:** See all actions by a specific user
+- **Action Type:** Filter by operation (login, file upload, etc.)
+- **Entity Type:** Filter by what was affected (User, File, Team, Settings)
+- **Date Range:** View logs within specific time period
+- **Search:** Free-text search across all log fields
+
+**Example Queries:**
+- "Who deleted this file?" → Filter by Entity Type: File, Action: FILE_DELETED
+- "All failed logins this week" → Filter by Action: LOGIN_FAILED, Date Range: Last 7 days
+- "What did user@example.com do?" → Filter by User
+
+### Exporting Audit Logs
+
+**For Compliance Reports:**
+
+1. Apply desired filters (optional)
+2. Click **Export to CSV** button
+3. Download file: `audit_logs_YYYY-MM-DD_HH-MM-SS.csv`
+
+**CSV Includes:**
+- Log ID
+- Timestamp (human-readable)
+- User ID and Email
+- Action performed
+- Entity type and ID
+- Detailed context (JSON)
+- IP address (if IP logging enabled)
+- User agent (browser/client info)
+- Success/failure status
+- Error messages (if failed)
+
+**Use Cases:**
+- Compliance audits (SOC 2, ISO 27001)
+- Security investigations
+- User activity reports
+- Forensic analysis
+- External audit tool integration
+
+### Configuring Audit Log Settings
+
+**Retention Policy:**
+
+1. Go to **Server** → **Server Settings**
+2. Find **Audit Log Retention (Days)** field
+3. Set how many days to keep logs (default: 90)
+4. Range: 1-3650 days (1 day to 10 years)
+5. Click **Save Settings**
+
+**Size Limit:**
+
+1. In same **Server Settings** page
+2. Find **Audit Log Max Size (MB)** field
+3. Set maximum database size (default: 100 MB)
+4. Range: 10-10000 MB
+5. Click **Save Settings**
+
+**How Cleanup Works:**
+- Runs automatically every 24 hours
+- Deletes logs older than retention period
+- If size limit exceeded, deletes oldest logs first
+- Maintains both time AND size limits
+- Cleanup logged as AUDIT_LOG_CLEANUP action
+
+**Recommended Settings by Organization Size:**
+
+**Small Organizations (< 50 users):**
+- Retention: 90 days
+- Max Size: 100 MB
+- Expected usage: Minimal impact
+
+**Medium Organizations (50-500 users):**
+- Retention: 180 days (6 months)
+- Max Size: 500 MB
+- Expected usage: Moderate log volume
+
+**Large Organizations (500+ users):**
+- Retention: 365 days (1 year)
+- Max Size: 2000 MB (2 GB)
+- Expected usage: High log volume
+
+**Compliance Requirements:**
+- **GDPR:** Typically 90-180 days
+- **SOC 2:** Typically 365 days
+- **HIPAA:** Typically 2555 days (7 years)
+- **ISO 27001:** Typically 365-730 days
+
+### Audit Log Security
+
+**Protection Measures:**
+- Logs are write-only (cannot be modified)
+- Deletion only via automatic cleanup
+- Admin access required to view logs
+- Timestamped with server time
+- IP logging optional (for privacy)
+
+**Data Retention Compliance:**
+- Automatic cleanup prevents indefinite retention
+- Configurable to meet regulatory requirements
+- Export before cleanup for long-term archival
+
+### Troubleshooting Audit Logs
+
+**Logs not appearing:**
+- Check if actions are actually being performed
+- Verify database migration completed (check server startup logs)
+- Confirm admin access to `/admin/audit-logs`
+
+**Export not working:**
+- Check browser pop-up blocker
+- Verify sufficient disk space
+- Try smaller date range if large dataset
+
+**Cleanup not running:**
+- Check server logs for cleanup scheduler
+- Verify retention days and max size are set
+- Confirm server has been running for 24+ hours
 
 ---
 
