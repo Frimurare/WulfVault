@@ -19,13 +19,15 @@ type Config struct {
 	Port                string `json:"port"`
 	DataDir             string `json:"dataDir"`
 	UploadsDir          string `json:"uploadsDir"`
-	MaxFileSizeMB       int    `json:"maxFileSizeMB"`
-	MaxUploadSizeMB     int    `json:"maxUploadSizeMB"`
-	DefaultQuotaMB      int64  `json:"defaultQuotaMB"`
-	SessionTimeoutHours int    `json:"sessionTimeoutHours"`
-	TrashRetentionDays  int    `json:"trashRetentionDays"`
-	SaveIP              bool   `json:"saveIp"`
-	Version             string `json:"-"` // Runtime version, not persisted
+	MaxFileSizeMB           int    `json:"maxFileSizeMB"`
+	MaxUploadSizeMB         int    `json:"maxUploadSizeMB"`
+	DefaultQuotaMB          int64  `json:"defaultQuotaMB"`
+	SessionTimeoutHours     int    `json:"sessionTimeoutHours"`
+	TrashRetentionDays      int    `json:"trashRetentionDays"`
+	AuditLogRetentionDays   int    `json:"auditLogRetentionDays"`   // Days to keep audit logs (default: 90)
+	AuditLogMaxSizeMB       int    `json:"auditLogMaxSizeMB"`       // Auto-cleanup if log exceeds this size (default: 100MB)
+	SaveIP                  bool   `json:"saveIp"`
+	Version                 string `json:"-"` // Runtime version, not persisted
 	models.Branding     `json:"branding"`
 }
 
@@ -49,17 +51,19 @@ func LoadOrCreate(dataDir string) (*Config, error) {
 
 	// Create default config
 	cfg := &Config{
-		ServerURL:           "http://localhost:8080",
-		Port:                "8080",
-		DataDir:             dataDir,
-		UploadsDir:          "./uploads",
-		MaxFileSizeMB:       2000,
-		MaxUploadSizeMB:     2000,
-		DefaultQuotaMB:      5000,
-		SessionTimeoutHours: 24,
-		TrashRetentionDays:  5,
-		SaveIP:              false,
-		Branding:            models.DefaultBranding(),
+		ServerURL:             "http://localhost:8080",
+		Port:                  "8080",
+		DataDir:               dataDir,
+		UploadsDir:            "./uploads",
+		MaxFileSizeMB:         2000,
+		MaxUploadSizeMB:       2000,
+		DefaultQuotaMB:        5000,
+		SessionTimeoutHours:   24,
+		TrashRetentionDays:    5,
+		AuditLogRetentionDays: 90,  // Keep audit logs for 90 days by default
+		AuditLogMaxSizeMB:     100, // Auto-cleanup if log exceeds 100MB
+		SaveIP:                false,
+		Branding:              models.DefaultBranding(),
 	}
 
 	// Save config

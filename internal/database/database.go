@@ -208,6 +208,17 @@ func (d *Database) runMigrations() error {
 		log.Printf("Migration error for soft delete columns: %v", err)
 	}
 
+	// Migration 8: Create audit_logs table for comprehensive audit logging
+	row = d.db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='audit_logs'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Creating audit_logs table")
+		if err := d.InitAuditLogTable(); err != nil {
+			log.Printf("Migration error for audit_logs table: %v", err)
+		} else {
+			log.Printf("Migration completed: audit_logs table created")
+		}
+	}
+
 	return nil
 }
 

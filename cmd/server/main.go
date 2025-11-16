@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	Version = "4.5 Gold"
+	Version = "4.5.1 Gold"
 )
 
 var (
@@ -118,6 +118,10 @@ func main() {
 
 	// Start file expiration cleanup scheduler (runs every 6 hours)
 	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)
+
+	// Start audit log cleanup scheduler (runs every 24 hours)
+	// Deletes logs older than AuditLogRetentionDays and maintains max size
+	cleanup.StartAuditLogCleanupScheduler(cfg.AuditLogRetentionDays, cfg.AuditLogMaxSizeMB)
 
 	// Cleanup expired file requests periodically (runs every 24 hours)
 	// File requests expire after 24 hours, then show "expired" message for 10 days, then are deleted

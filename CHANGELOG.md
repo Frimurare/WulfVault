@@ -1,54 +1,78 @@
 # Changelog
 
-## [4.5 Gold] - 2025-11-16 🏆 Official Release - Streamlined Navigation & Complete Feature Set
+## [4.5.1 Gold] - 2025-11-16 🏆 Official Release - Complete Audit System & Streamlined Navigation
 
 ### 🎯 Release Highlights
 
-WulfVault 4.5 Gold represents the official stable release combining all features from the 4.5-beta-2 audit logging system with critical navigation consistency fixes.
+WulfVault 4.5.1 Gold is the official stable release featuring a complete audit logging system integrated with navigation consistency fixes. This release provides enterprise-grade audit capabilities with configurable retention policies and automatic cleanup.
 
 ### ✨ What's New
+
+**Complete Audit Logging System:**
+- 📊 Comprehensive audit trail for all operations (login, file uploads, deletions, user management, settings changes)
+- 📥 CSV export functionality for compliance and reporting
+- 🔧 Configurable retention policy (default: 90 days)
+- 💾 Automatic size-based cleanup (default: 100MB max)
+- 🔄 Automated cleanup scheduler runs daily
+- 🎯 Full admin UI at `/admin/audit-logs` with filtering and search
+- 📈 Real-time audit statistics and insights
+
+**Configuration Settings (in config.json):**
+- `auditLogRetentionDays`: How many days to keep logs (default: 90)
+- `auditLogMaxSizeMB`: Maximum database size (default: 100MB)
 
 **Streamlined Navigation Consistency:**
 - Fixed inconsistent header/navigation on Teams page for regular users
 - Teams page now uses same `.header` class as Dashboard and Settings
-- Logo now displays consistently across all user-facing pages
+- Logo displays consistently across all user-facing pages
 - Version badge now visible in Teams navigation
+- "Audit Logs" link added to admin navigation
 - Unified look and feel throughout the entire application
-
-**Complete Audit Logging System (from 4.5-beta-2):**
-- Comprehensive audit trail for all user and admin operations
-- CSV export functionality for compliance and reporting
-- Automatic log cleanup scheduler
-- Integration across authentication, file operations, and team management
 
 ### 🔧 Technical Changes
 
+**New Files Added:**
+- `internal/database/audit_logs.go` - Complete audit log database layer with 40+ action constants
+- `internal/server/audit_logger.go` - Audit logging middleware and helpers
+- `internal/server/handlers_audit_log.go` - Admin UI for viewing/exporting logs
+
 **Modified Files:**
-- `internal/server/handlers_teams.go`:
-  - Changed all `.header-user` references to `.header` for consistency
-  - Updated CSS to match Dashboard and Settings pages
-  - Added version badge to navigation for both admin and regular users
-  - Updated mobile responsive styles to use `.header` class
-  - Fixed JavaScript selectors to target `.header` instead of `.header-user`
-- `cmd/server/main.go`:
-  - Updated version from "4.3.4" to "4.5 Gold"
+- `internal/config/config.go` - Added AuditLogRetentionDays and AuditLogMaxSizeMB fields
+- `internal/cleanup/cleanup.go` - Added audit log cleanup functions
+- `internal/database/database.go` - Added Migration 8 for audit_logs table
+- `internal/server/server.go` - Added audit log routes (/admin/audit-logs, APIs)
+- `internal/server/handlers_admin.go` - Added "Audit Logs" to admin navigation
+- `internal/server/handlers_teams.go` - Fixed navigation consistency (`.header-user` → `.header`)
+- `cmd/server/main.go` - Added audit log cleanup scheduler, version → 4.5.1 Gold
+
+### 📊 Audit Log Features
+
+**Tracked Actions:**
+User Management • Authentication • File Operations • Team Management • Settings Changes • Download Accounts • File Requests • System Events
+
+**Admin UI at /admin/audit-logs:**
+- Filter by user, action type, entity type, date range
+- Search across all log fields
+- CSV export for compliance reporting
+- Statistics: total logs, top actions, recent activity, failed actions, database size
 
 ### 📊 User Experience Improvements
 
-**Before (Inconsistent):**
-- Dashboard: Logo visible, standard header
-- Settings: Logo visible, standard header
-- Teams: Different header style, logo handling inconsistent
+**Before:**
+- No audit logging system ❌
+- Navigation inconsistent between pages ❌
+- No compliance reporting ❌
 
-**After (Streamlined):**
-- Dashboard: Logo visible, standard header ✅
-- Settings: Logo visible, standard header ✅
-- Teams: Logo visible, standard header ✅
-- **100% consistent navigation experience**
+**After:**
+- Complete audit trail ✅
+- Consistent navigation ✅
+- CSV export for compliance ✅
+- Automated cleanup ✅
+- Enterprise-grade capabilities ✅
 
 ### 🎉 This is the Release!
 
-Version 4.5 Gold marks the official stable release of WulfVault with complete audit logging capabilities and a polished, consistent user interface. All navigation elements are now streamlined and professional across the entire application.
+Version 4.5.1 Gold marks the official stable release of WulfVault with enterprise-grade audit logging capabilities, streamlined navigation, and comprehensive compliance reporting. Perfect for organizations requiring audit trails and GDPR/SOC 2 compliance.
 
 ---
 
