@@ -599,10 +599,6 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 }) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	// Get branding config
-	brandingConfig, _ := database.DB.GetBrandingConfig()
-	logoData := brandingConfig["branding_logo"]
-
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1660,6 +1656,10 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 // renderTeamFiles displays all files shared with a specific team
 func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team *models.Team) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
 
 	// Get team files
 	teamFiles, err := database.DB.GetTeamFiles(team.Id)
