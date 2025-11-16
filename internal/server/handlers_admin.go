@@ -997,67 +997,64 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 
 	headerJS := `
     <script>
-    (function() {
-        'use strict';
+    if (!window.adminNavInitialized) {
+        window.adminNavInitialized = true;
+        (function() {
+            'use strict';
+            function initMobileNav() {
+                const header = document.querySelector('.header');
+                if (!header) return;
+                const nav = header.querySelector('nav');
+                if (!nav) return;
+                const hamburger = header.querySelector('.hamburger');
+                if (!hamburger) return;
+                const overlay = document.querySelector('.mobile-nav-overlay');
+                if (!overlay) return;
 
-        function initAdminMobileNav() {
-            const header = document.querySelector('.header');
-            if (!header) return;
-
-            const nav = header.querySelector('nav');
-            const hamburger = header.querySelector('.hamburger');
-            const overlay = document.querySelector('.mobile-nav-overlay');
-
-            if (!nav || !hamburger || !overlay) return;
-
-            function toggleMenu() {
-                const isActive = nav.classList.contains('active');
-                nav.classList.toggle('active');
-                hamburger.classList.toggle('active');
-                overlay.classList.toggle('active');
-                hamburger.setAttribute('aria-expanded', !isActive);
-
-                if (!isActive) {
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = '';
+                function toggleNav() {
+                    const isActive = nav.classList.contains('active');
+                    if (isActive) {
+                        nav.classList.remove('active');
+                        hamburger.classList.remove('active');
+                        overlay.classList.remove('active');
+                        hamburger.setAttribute('aria-expanded', 'false');
+                        document.body.style.overflow = '';
+                    } else {
+                        nav.classList.add('active');
+                        hamburger.classList.add('active');
+                        overlay.classList.add('active');
+                        hamburger.setAttribute('aria-expanded', 'true');
+                        document.body.style.overflow = 'hidden';
+                    }
                 }
+                hamburger.addEventListener('click', toggleNav);
+                overlay.addEventListener('click', toggleNav);
+                const navLinks = nav.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (window.innerWidth <= 768) {
+                            toggleNav();
+                        }
+                    });
+                });
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                });
             }
-
-            function closeMenu() {
-                nav.classList.remove('active');
-                hamburger.classList.remove('active');
-                overlay.classList.remove('active');
-                hamburger.setAttribute('aria-expanded', 'false');
-                document.body.style.overflow = '';
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initMobileNav);
+            } else {
+                initMobileNav();
             }
-
-            hamburger.addEventListener('click', function(e) {
-                e.stopPropagation();
-                toggleMenu();
-            });
-
-            overlay.addEventListener('click', closeMenu);
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && nav.classList.contains('active')) {
-                    closeMenu();
-                }
-            });
-
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768 && nav.classList.contains('active')) {
-                    closeMenu();
-                }
-            });
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initAdminMobileNav);
-        } else {
-            initAdminMobileNav();
-        }
-    })();
+        })();
+    }
     </script>`
 
 	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML + headerJS
@@ -1690,8 +1687,8 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             }
             table td {
                 display: block;
-                text-align: right;
-                padding: 8px 0;
+                text-align: left;
+                padding: 12px 0;
                 border-bottom: 1px solid #eee;
             }
             table td:last-child {
@@ -1699,9 +1696,14 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             }
             table td::before {
                 content: attr(data-label);
-                float: left;
+                display: block;
                 font-weight: 600;
                 color: #666;
+                margin-bottom: 4px;
+                font-size: 13px;
+            }
+            table td:last-child::before {
+                display: none;
             }
             .action-links {
                 display: flex;
@@ -2327,27 +2329,20 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
             td {
                 display: block;
-                text-align: right;
-                padding: 8px 0;
+                text-align: left;
+                padding: 12px 0;
                 border: none !important;
                 position: relative;
-                padding-left: 42%;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
+                min-height: 35px;
             }
 
             td::before {
                 content: attr(data-label);
-                position: absolute;
-                left: 0;
-                width: 40%;
-                padding-right: 8px;
-                text-align: left;
+                display: block;
                 font-weight: 600;
                 color: #666;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                margin-bottom: 4px;
+                font-size: 13px;
             }
 
             td:last-child {

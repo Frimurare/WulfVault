@@ -882,6 +882,68 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
     </div>
 
     <script>
+        // Mobile Navigation
+        (function() {
+            'use strict';
+            function initMobileNav() {
+                const header = document.querySelector('.header');
+                if (!header) return;
+
+                const nav = header.querySelector('nav');
+                const hamburger = header.querySelector('.hamburger');
+                const overlay = document.querySelector('.mobile-nav-overlay');
+
+                if (!nav || !hamburger || !overlay) return;
+
+                function toggleMenu() {
+                    const isActive = nav.classList.contains('active');
+                    nav.classList.toggle('active');
+                    hamburger.classList.toggle('active');
+                    overlay.classList.toggle('active');
+                    hamburger.setAttribute('aria-expanded', !isActive);
+
+                    if (!isActive) {
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        document.body.style.overflow = '';
+                    }
+                }
+
+                function closeMenu() {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                }
+
+                hamburger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleMenu();
+                });
+
+                overlay.addEventListener('click', closeMenu);
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && nav.classList.contains('active')) {
+                        closeMenu();
+                    }
+                });
+
+                window.addEventListener('resize', function() {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        closeMenu();
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initMobileNav);
+            } else {
+                initMobileNav();
+            }
+        })();
+
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
