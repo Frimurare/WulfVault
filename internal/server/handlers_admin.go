@@ -2175,19 +2175,40 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         .badge-expired { background: #ffebee; color: #c62828; }
         .badge-auth { background: #e3f2fd; color: #1976d2; }
         .btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             border: none;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            margin-right: 4px;
+            margin-right: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .btn-primary { background: ` + s.getPrimaryColor() + `; color: white; }
-        .btn-secondary { background: #e0e0e0; color: #333; }
-        .btn:hover { opacity: 0.8; }
+        .btn-primary {
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            color: white;
+            border: 2px solid ` + s.getPrimaryColor() + `;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            border: 2px solid #6c757d;
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #4e555b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
         .file-name {
             max-width: 300px;
             overflow: hidden;
@@ -2317,14 +2338,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                 display: none;
             }
 
-            /* Stack action buttons vertically on mobile */
+            /* Stack action buttons horizontally on mobile with better spacing */
             td:last-child .btn {
                 display: inline-block;
                 width: auto;
-                min-width: 100px;
-                margin: 4px 4px;
+                min-width: 45px;
+                margin: 4px 2px;
                 text-align: center;
-                padding: 10px 16px;
+                padding: 10px 14px;
+                font-size: 16px;
             }
 
             .file-name {
