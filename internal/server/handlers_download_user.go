@@ -282,11 +282,140 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
             color: white;
         }
         .btn-primary:hover { opacity: 0.9; }
+
+        /* Mobile Navigation Styles */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 8px;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+        .mobile-nav-overlay.active {
+            display: block;
+        }
+
+        @media screen and (max-width: 768px) {
+            .header {
+                padding: 15px 20px !important;
+                flex-wrap: wrap;
+            }
+            .header h1 {
+                font-size: 18px !important;
+            }
+            .hamburger {
+                display: flex !important;
+            }
+            .header nav {
+                display: none !important;
+                position: fixed !important;
+                top: 0 !important;
+                right: -100% !important;
+                width: 280px !important;
+                height: 100vh !important;
+                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 80px 30px 30px !important;
+                gap: 0 !important;
+                transition: right 0.3s ease !important;
+                z-index: 1000 !important;
+                overflow-y: auto !important;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
+            }
+            .header nav.active {
+                display: flex !important;
+                right: 0 !important;
+            }
+            .header nav a {
+                width: 100%;
+                padding: 15px 20px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                font-size: 16px !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+            }
+            .header nav a:hover {
+                background: rgba(255, 255, 255, 0.1) !important;
+            }
+            .container {
+                padding: 0 15px !important;
+            }
+            .info-grid {
+                grid-template-columns: 1fr !important;
+            }
+            table thead {
+                display: none;
+            }
+            table, table tbody, table tr {
+                display: block;
+                width: 100%;
+            }
+            table tr {
+                margin-bottom: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 15px;
+                background: white;
+            }
+            table td {
+                display: block;
+                text-align: right;
+                padding: 8px 0;
+                border: none;
+                position: relative;
+                padding-left: 50%;
+            }
+            table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-right: 10px;
+                text-align: left;
+                font-weight: 600;
+                color: #666;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>` + s.config.CompanyName + ` - My Downloads</h1>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>
             <a href="/download/dashboard">Dashboard</a>
             <a href="/download/change-password">Change Password</a>
@@ -294,6 +423,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
             <a href="/download/logout">Logout</a>
         </nav>
     </div>
+    <div class="mobile-nav-overlay"></div>
 
     <div class="container">
         <div class="account-info">
@@ -341,9 +471,9 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
 			sizeStr := fmt.Sprintf("%.2f MB", float64(log.FileSize)/(1024*1024))
 			html += fmt.Sprintf(`
                 <tr>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%s</td>
+                    <td data-label="File Name">%s</td>
+                    <td data-label="Downloaded At">%s</td>
+                    <td data-label="Size">%s</td>
                 </tr>`, log.FileName, log.GetReadableDownloadDate(), sizeStr)
 		}
 	}
@@ -356,6 +486,71 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
         Powered by WulfVault © Ulf Holmström – AGPL-3.0
     </div>
+
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 

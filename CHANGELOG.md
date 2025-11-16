@@ -1,5 +1,72 @@
 # Changelog
 
+## [4.3.3.1] - 2025-11-16 🎨 Final Mobile Navigation Fixes
+
+### 🐛 Bug Fixes
+
+**Email Settings Page:**
+- Fixed hamburger navigation displaying in middle of screen instead of sliding from right
+- Removed conflicting @media query that was overriding getAdminHeaderHTML mobile styles
+- Navigation now properly slides in from right side
+- Hamburger menu fully functional
+
+**My Account & Settings Pages:**
+- Fixed navigation text color being unreadable (dark text on gradient background)
+- Changed nav link color to rgba(255, 255, 255, 0.9) for proper contrast
+- Changed hover background to rgba(255, 255, 255, 0.1)
+- Border color updated to rgba(255, 255, 255, 0.1) for consistency
+
+**Teams List Page (User View):**
+- Fixed desktop variant showing instead of mobile layout
+- Added complete mobile CSS with hamburger menu
+- Fixed JavaScript selector from `.header` to `.header-user`
+- Teams grid now displays single column on mobile
+- Hamburger navigation fully functional
+
+**Download User Dashboard:**
+- Added complete mobile navigation (hamburger menu + mobile CSS)
+- Added mobile JavaScript for navigation toggle
+- Added data-label attributes to download history table
+- Tables now display as cards on mobile with proper labels
+- Info grid displays single column on mobile
+- Full mobile responsive layout
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_email.go`:
+  - Removed conflicting @media query for .header
+  - Now uses getAdminHeaderHTML mobile styles
+- `internal/server/handlers_user_settings.go`:
+  - Fixed nav link colors for visibility
+- `internal/server/handlers_teams.go`:
+  - Added mobile CSS to renderUserTeams
+  - Fixed JavaScript header selector
+- `internal/server/handlers_download_user.go`:
+  - Added hamburger button HTML
+  - Added complete mobile CSS
+  - Added mobile JavaScript
+  - Added data-label attributes
+- `cmd/server/main.go`:
+  - Version bump to 4.3.3.1
+
+### 🎯 Impact
+
+**Complete Mobile Coverage:**
+- All user types now have fully functional mobile interfaces
+- Download users can now use WulfVault on mobile devices
+- Consistent hamburger navigation across all pages
+- No more broken or half-working mobile views
+- Professional mobile experience throughout
+
+**User Feedback Addressed:**
+- ✅ Email Settings hamburger navigation fixed
+- ✅ My Account text color readable
+- ✅ Teams page fully mobile responsive
+- ✅ Download user mobile interface added
+
+---
+
 ## [4.3.3] - 2025-11-16 🔧 Mobile Polish and Bug Fixes
 
 ### 🐛 Bug Fixes

@@ -670,21 +670,6 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
-            .header {
-                padding: 15px 20px;
-                flex-direction: column;
-                gap: 15px;
-            }
-            .header nav {
-                width: 100%;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 10px;
-            }
-            .header nav a {
-                font-size: 14px;
-                padding: 8px 12px;
-            }
             .container {
                 margin: 20px auto;
                 padding: 0 15px;
