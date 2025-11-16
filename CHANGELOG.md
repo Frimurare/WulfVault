@@ -1,5 +1,37 @@
 # Changelog
 
+## [4.5.3 Gold] - 2025-11-16 🐛 Bugfix - Audit Log API Endpoint
+
+### 🎯 Critical Bugfix
+
+Fixed "Error loading logs" issue caused by API endpoint mismatch.
+
+### 🔧 What Was Fixed
+
+**API Endpoint Mismatch:**
+- Frontend JavaScript called `/api/v1/admin/audit-logs`
+- Backend was registered as `/api/admin/audit-logs` (missing "v1")
+- Result: "Error loading logs" message when accessing Audit Logs page
+
+**Fix Applied:**
+- Updated server.go routing to use `/api/v1/admin/audit-logs`
+- Updated export endpoint to `/api/v1/admin/audit-logs/export`
+- Now matches REST API convention used elsewhere in the system
+
+### 📝 Technical Changes
+
+**Modified Files:**
+- `internal/server/server.go`:
+  - Changed `/api/admin/audit-logs` → `/api/v1/admin/audit-logs`
+  - Changed `/api/admin/audit-logs/export` → `/api/v1/admin/audit-logs/export`
+- `cmd/server/main.go`: Version 4.5.2 → 4.5.3 Gold
+
+### ✅ Status
+
+Audit Logs now load correctly! No more "Error loading logs" message.
+
+---
+
 ## [4.5.2 Gold] - 2025-11-16 ⚙️ Configuration UI & Documentation - Audit Log Settings
 
 ### 🎯 Release Highlights
