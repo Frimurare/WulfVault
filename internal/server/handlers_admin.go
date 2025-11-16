@@ -876,31 +876,23 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
         .header nav {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
         }
         .header nav a {
-            color: rgba(255, 255, 255, 0.9);
+            color: white;
             text-decoration: none;
-            font-weight: 500;
             padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            position: relative;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
         }
         .header nav a:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .header nav a:active {
-            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.3);
         }
         .header nav span {
             color: rgba(255, 255, 255, 0.6);
             font-size: 11px;
             font-weight: 400;
-            margin-left: 8px;
         }
 
         /* Mobile Navigation Styles */
@@ -1144,34 +1136,23 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         .header nav {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
         }
         .header nav a {
-            color: rgba(255, 255, 255, 0.9);
+            color: white;
             text-decoration: none;
-            font-weight: 500;
             padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-            position: relative;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
         }
         .header nav a:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .header nav a:active {
-            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.3);
         }
         .header nav span {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-            font-weight: 500;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 400;
         }
         .container {
             max-width: 1400px;
