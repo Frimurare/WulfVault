@@ -1,5 +1,53 @@
 # Changelog
 
+## [4.3.3.5] - 2025-11-16 🎯 FINAL FIX: Remove all duplicate hamburger JavaScript
+
+### 🐛 Root Cause Analysis
+
+**Why hamburger navigation broke on admin pages:**
+The problem was NOT in getAdminHeaderHTML's JavaScript. The problem was that EVERY admin page (Users, Teams, All Files, Trash, Branding, Email, Server) had DUPLICATE JavaScript blocks that conflicted with getAdminHeaderHTML's JavaScript. When both scripts tried to initialize the same hamburger, they interfered with each other.
+
+### ✅ Solution
+
+**Removed ALL duplicate JavaScript from admin pages:**
+- renderAdminUsers: Removed duplicate initMobileNav script
+- renderAdminFiles (All Files): Removed duplicate initMobileNav script
+- renderAdminBranding: Removed duplicate initMobileNav script
+- renderAdminSettings (Server): Removed duplicate initMobileNav script
+- renderAdminTrash: Removed duplicate initMobileNav script
+- renderAdminTeams: Removed duplicate initMobileNav script (uses getAdminHeaderHTML)
+
+**Kept JavaScript ONLY where needed:**
+- getAdminHeaderHTML: JavaScript REMAINS (used by all admin pages)
+- renderUserTeams: JavaScript REMAINS (user-facing page, own header)
+- renderTeamFiles: JavaScript REMAINS (user-facing shared files, own header)
+- handlers_email.go: JavaScript REMAINS (separate implementation)
+- handlers_gdpr.go: JavaScript REMAINS (download user account settings)
+- handlers_download_user.go: JavaScript REMAINS (download user pages)
+- handlers_user_settings.go: JavaScript REMAINS (user settings, own header)
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_admin.go`:
+  - Used Python script to remove ALL duplicate initMobileNav scripts
+  - Kept ONLY the one in getAdminHeaderHTML (line ~1002)
+  - Removed 4+ duplicate script blocks from individual render functions
+- `internal/server/handlers_teams.go`:
+  - Removed duplicate from renderAdminTeams (uses getAdminHeaderHTML)
+  - KEPT JavaScript in renderUserTeams (user-facing, needs own script)
+  - KEPT JavaScript in renderTeamFiles (shared files, needs own script)
+- `cmd/server/main.go`:
+  - Updated version from 4.3.3.4 to 4.3.3.5
+
+### 📊 Impact
+- **FINALLY WORKS:** Hamburger navigation now works on ALL admin pages
+- No more JavaScript conflicts or duplicate event listeners
+- Clean separation: admin pages use getAdminHeaderHTML's script, user pages use their own
+- Download users: fully functional ✅
+- Regular users: fully functional ✅
+- Admin users: NOW FULLY FUNCTIONAL ✅
+
 ## [4.3.3.4] - 2025-11-16 ✅ Final mobile fixes: hamburger navigation and layout polish
 
 ### 🐛 Bug Fixes
