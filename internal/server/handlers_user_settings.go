@@ -258,6 +258,185 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
             word-break: break-all;
             margin: 10px 0;
         }
+
+        /* Hamburger menu styles */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            z-index: 1001;
+            transition: transform 0.3s ease;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(8px, 8px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
+        /* Mobile navigation overlay */
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .mobile-nav-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .header .logo img {
+                max-height: 40px;
+                max-width: 150px;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .header nav {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 280px;
+                height: 100vh;
+                background: white;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 80px 20px 20px;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                z-index: 1000;
+                transition: right 0.3s ease;
+                overflow-y: auto;
+            }
+
+            .header nav.active {
+                right: 0;
+            }
+
+            .header nav a {
+                color: #333;
+                padding: 15px 20px;
+                width: 100%;
+                border-bottom: 1px solid #eee;
+                margin: 0;
+            }
+
+            .header nav a:hover {
+                background: #f5f5f5;
+                color: #333;
+            }
+
+            .container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 8px;
+            }
+
+            .card h2 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .setting-item h3 {
+                font-size: 16px;
+            }
+
+            .setting-item p {
+                font-size: 13px;
+            }
+
+            .setting-item > div {
+                width: 100%;
+            }
+
+            .setting-item button {
+                width: 100%;
+                margin: 5px 0 !important;
+                padding: 12px 20px !important;
+                font-size: 14px !important;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .modal-content h3 {
+                font-size: 18px;
+            }
+
+            .form-group input {
+                padding: 14px;
+                font-size: 16px;
+                min-height: 48px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 14px 24px;
+                font-size: 16px;
+                min-height: 48px;
+                margin: 5px 0 !important;
+            }
+
+            .qr-code img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            .backup-codes {
+                font-size: 12px;
+            }
+
+            .close-btn {
+                font-size: 28px;
+                padding: 5px;
+            }
+        }
     </style>
 </head>
 <body>

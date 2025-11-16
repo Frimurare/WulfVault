@@ -748,6 +748,77 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             background: ` + s.getPrimaryColor() + `;
             transition: width 0.3s;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 0 15px !important;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 15px;
+            }
+            .actions h2 {
+                font-size: 20px;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+            table {
+                border: 0;
+                display: block;
+                overflow-x: auto;
+            }
+            table thead {
+                display: none;
+            }
+            table tbody {
+                display: block;
+            }
+            table tr {
+                display: block;
+                margin-bottom: 20px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 15px;
+                background: white;
+            }
+            table td {
+                display: block;
+                text-align: right;
+                padding: 8px 0;
+                border-bottom: 1px solid #eee;
+            }
+            table td:last-child {
+                border-bottom: none;
+            }
+            table td::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: 600;
+                color: #666;
+            }
+            .action-links {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .action-links button {
+                margin: 0 !important;
+                padding: 8px 12px;
+                background: #f0f0f0;
+                border-radius: 4px;
+                text-align: center;
+                display: block;
+                width: 100%;
+            }
+            .modal-content {
+                max-width: 95%;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -792,18 +863,18 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 
 			html += fmt.Sprintf(`
                 <tr>
-                    <td><strong>%s</strong></td>
-                    <td>%s</td>
-                    <td>%d members</td>
-                    <td>
+                    <td data-label="Team Name"><strong>%s</strong></td>
+                    <td data-label="Description">%s</td>
+                    <td data-label="Members">%d members</td>
+                    <td data-label="Storage">
                         %s / %s (%d%%)
                         <div class="storage-bar">
                             <div class="storage-bar-fill" style="width: %d%%"></div>
                         </div>
                     </td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td class="action-links">
+                    <td data-label="Created">%s</td>
+                    <td data-label="Status">%s</td>
+                    <td data-label="Actions" class="action-links">
                         <button onclick="window.location.href='/teams?id=%d'">📁 Files</button>
                         <button onclick="viewMembers(%d, '%s')">👥 Members</button>
                         <button onclick="editTeam(%d)">✏️ Edit</button>

@@ -667,6 +667,90 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             margin-bottom: 20px;
             display: none;
         }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            .header nav {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+            .header nav a {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+            .settings-card {
+                padding: 20px 15px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .tab-buttons {
+                flex-direction: column;
+                gap: 0;
+            }
+            .tab-btn {
+                width: 100%;
+                text-align: left;
+                padding: 15px;
+                border-bottom: 1px solid #e0e0e0;
+                border-left: 3px solid transparent;
+            }
+            .tab-btn.active {
+                border-bottom-color: #e0e0e0;
+                border-left-color: #2563eb;
+                background: #f8fafc;
+            }
+            .form-group input[type="text"],
+            .form-group input[type="email"],
+            .form-group input[type="password"],
+            .form-group input[type="number"] {
+                padding: 14px;
+                font-size: 16px;
+                min-height: 48px;
+            }
+            .checkbox-group {
+                padding: 10px 0;
+            }
+            .checkbox-group input[type="checkbox"] {
+                width: 24px;
+                height: 24px;
+            }
+            .checkbox-group label {
+                font-size: 16px;
+            }
+            .status-indicator {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                padding: 14px 24px;
+                font-size: 16px;
+                min-height: 48px;
+            }
+            .info-box {
+                padding: 12px;
+            }
+            .info-box h3 {
+                font-size: 16px;
+            }
+            .info-box ul {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>

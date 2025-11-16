@@ -1585,6 +1585,72 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             margin: 30px 0 16px 0;
             color: #333;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 0 15px !important;
+            }
+            .actions {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 15px;
+            }
+            .actions h2 {
+                font-size: 20px;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+            table {
+                border: 0;
+                display: block;
+                overflow-x: auto;
+            }
+            table thead {
+                display: none;
+            }
+            table tbody {
+                display: block;
+            }
+            table tr {
+                display: block;
+                margin-bottom: 20px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 15px;
+                background: white;
+            }
+            table td {
+                display: block;
+                text-align: right;
+                padding: 8px 0;
+                border-bottom: 1px solid #eee;
+            }
+            table td:last-child {
+                border-bottom: none;
+            }
+            table td::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: 600;
+                color: #666;
+            }
+            .action-links {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .action-links a {
+                margin: 0 !important;
+                padding: 8px 12px;
+                background: #f0f0f0;
+                border-radius: 4px;
+                text-align: center;
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1623,13 +1689,13 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 
 		html += fmt.Sprintf(`
                 <tr>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%d GB</td>
-                    <td>%d MB</td>
-                    <td>%s</td>
-                    <td class="action-links">
+                    <td data-label="Name">%s</td>
+                    <td data-label="Email">%s</td>
+                    <td data-label="Level">%s</td>
+                    <td data-label="Quota">%d GB</td>
+                    <td data-label="Used">%d MB</td>
+                    <td data-label="Status">%s</td>
+                    <td data-label="Actions" class="action-links">
                         <a href="/admin/users/edit?id=%d">Edit</a>
                         <a href="#" onclick="deleteUser(%d); return false;">Delete</a>
                     </td>
@@ -1673,13 +1739,13 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 
 		html += fmt.Sprintf(`
                 <tr>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td><span class="badge badge-download">Download Account</span></td>
-                    <td>%d</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td class="action-links">
+                    <td data-label="Name">%s</td>
+                    <td data-label="Email">%s</td>
+                    <td data-label="Level"><span class="badge badge-download">Download Account</span></td>
+                    <td data-label="Downloads">%d</td>
+                    <td data-label="Last Used">%s</td>
+                    <td data-label="Status">%s</td>
+                    <td data-label="Actions" class="action-links">
                         <a href="/admin/download-accounts/edit?id=%d">Edit</a>
                         <a href="#" onclick="toggleDownloadAccount(%d, %t); return false;">%s</a>
                         <a href="#" onclick="deleteDownloadAccount(%d); return false;">Delete</a>
@@ -2100,6 +2166,143 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        /* Mobile Navigation Styles */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 8px;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #333;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 3px;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .mobile-nav-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+                padding: 0 12px;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                gap: 16px;
+                padding: 16px;
+            }
+
+            .stat-item {
+                width: 100%;
+                padding: 12px;
+                background: #f9f9f9;
+                border-radius: 8px;
+            }
+
+            /* Card-based table layout for mobile */
+            table {
+                border-radius: 0;
+                box-shadow: none;
+                background: transparent;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody {
+                display: block;
+            }
+
+            tr {
+                display: block;
+                background: white;
+                border-radius: 12px;
+                margin-bottom: 16px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 16px;
+            }
+
+            tr:hover {
+                background: white;
+            }
+
+            td {
+                display: block;
+                text-align: right;
+                padding: 8px 0;
+                border: none !important;
+                position: relative;
+                padding-left: 50%;
+            }
+
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-right: 10px;
+                text-align: left;
+                font-weight: 600;
+                color: #666;
+            }
+
+            td:last-child {
+                padding-top: 16px;
+                margin-top: 12px;
+                border-top: 1px solid #e0e0e0 !important;
+                text-align: left;
+                padding-left: 0;
+            }
+
+            td:last-child::before {
+                display: none;
+            }
+
+            /* Stack action buttons vertically on mobile */
+            td:last-child .btn {
+                display: block;
+                width: 100%;
+                margin: 8px 0;
+                text-align: center;
+            }
+
+            .file-name {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2180,15 +2383,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
 		html += fmt.Sprintf(`
                 <tr>
-                    <td>
+                    <td data-label="File Name">
                         <div class="file-name" title="%s">📄 %s%s</div>
                     </td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%d</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>
+                    <td data-label="User">%s</td>
+                    <td data-label="Size">%s</td>
+                    <td data-label="Downloads">%d</td>
+                    <td data-label="Expiration">%s</td>
+                    <td data-label="Status">%s</td>
+                    <td data-label="Actions">
                         <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history">
                             📊
                         </button>
@@ -3014,6 +3217,71 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
         .btn-restore { background: #4caf50; color: white; }
         .btn-delete { background: #f44336; color: white; }
         .btn:hover { opacity: 0.8; }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                margin: 20px auto !important;
+                padding: 0 10px !important;
+            }
+            .info-box {
+                padding: 12px !important;
+                font-size: 14px !important;
+            }
+            /* Hide table headers on mobile */
+            table thead {
+                display: none;
+            }
+            /* Make table, tbody, tr, td block elements */
+            table, table tbody, table tr, table td {
+                display: block;
+                width: 100%;
+            }
+            /* Style each row as a card */
+            table tr {
+                margin-bottom: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 15px;
+                background: white;
+            }
+            table tr:hover {
+                background: white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            }
+            /* Style table cells with labels */
+            table td {
+                padding: 8px 0 !important;
+                border: none !important;
+                position: relative;
+                padding-left: 50% !important;
+                text-align: right;
+            }
+            table td:before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-right: 10px;
+                font-weight: 600;
+                color: #666;
+                text-align: left;
+            }
+            /* Make action buttons stack vertically */
+            table td:last-child {
+                text-align: center;
+                padding-left: 0 !important;
+            }
+            table td:last-child:before {
+                display: none;
+            }
+            .btn {
+                display: block;
+                width: 100%;
+                margin: 5px 0 !important;
+                padding: 10px 12px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -3079,13 +3347,13 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 
 		html += fmt.Sprintf(`
                 <tr>
-                    <td>📄 %s</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%d days</td>
-                    <td>
+                    <td data-label="File Name">📄 %s</td>
+                    <td data-label="Owner">%s</td>
+                    <td data-label="Size">%s</td>
+                    <td data-label="Deleted At">%s</td>
+                    <td data-label="Deleted By">%s</td>
+                    <td data-label="Days Left">%d days</td>
+                    <td data-label="Actions">
                         <button class="btn btn-restore" onclick="restoreFile('%s')">
                             ♻️ Restore
                         </button>
