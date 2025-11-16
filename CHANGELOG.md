@@ -1,5 +1,52 @@
 # Changelog
 
+## [4.3.3.3] - 2025-11-16 🚨 CRITICAL: Fix broken hamburger navigation across all admin pages
+
+### 🐛 Critical Fixes
+
+**Hamburger Navigation Completely Broken (ALL Admin Pages):**
+- **ROOT CAUSE:** Removing JavaScript from getAdminHeaderHTML in v4.3.3.2 broke navigation on ALL pages
+- **FIX:** Re-added JavaScript to getAdminHeaderHTML with global flag `window.adminNavInitialized`
+- Global flag prevents conflicts when pages have their own JavaScript
+- ALL admin pages now have working hamburger navigation again
+- Affects: Users, Teams, All Files, Trash, Branding, Server Settings, Email Settings
+
+**Users Page Table Layout:**
+- Fixed "Actions" label appearing inside Edit button
+- Changed from float layout to block layout (label above content)
+- Labels now display above data instead of side-by-side
+- Hidden "Actions" label for action column to prevent clutter
+- Much cleaner mobile card layout
+
+**All Files Page Table Layout:**
+- Fixed unreadable mess where headers and text were flowing together
+- **REVERTED** the 42%/40% padding approach that made it worse
+- **NEW APPROACH:** Labels display above content (block layout)
+- No more overlap or collision between labels and data
+- Clean, readable mobile card layout
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_admin.go`:
+  - Re-added JavaScript to getAdminHeaderHTML with `window.adminNavInitialized` flag
+  - Fixed Users table: changed from float to block layout, hide Actions label
+  - Fixed All Files table: changed from side-by-side to stacked layout
+  - Labels now `display: block` above content with `margin-bottom: 4px`
+- `internal/server/handlers_email.go`:
+  - Kept dedicated hamburger JavaScript (still works with global flag)
+- `cmd/server/main.go`:
+  - Updated version from 4.3.3.2 to 4.3.3.3
+
+### 📊 Impact
+- **CRITICAL:** Restored hamburger navigation functionality across ALL admin pages
+- Fixed major UX regression from v4.3.3.2
+- Mobile table layouts now clean and readable
+- System is now usable again on mobile devices
+
+### 🙏 Note
+Tack för tålamodet och för den detaljerade feedbacken. v4.3.3.2 introducerade kritiska buggar genom att ta bort JavaScript från getAdminHeaderHTML. v4.3.3.3 åtgärdar alla dessa problem och systemet fungerar nu som det ska.
+
 ## [4.3.3.2] - 2025-11-16 🐛 Mobile UX Polish & Critical Fixes
 
 ### 🐛 Bug Fixes
