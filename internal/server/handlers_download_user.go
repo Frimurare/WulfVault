@@ -226,6 +226,14 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
             align-items: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        .header .logo {
+            display: flex;
+            align-items: center;
+        }
+        .header .logo img {
+            max-height: 40px;
+            max-width: 150px;
+        }
         .header h1 { font-size: 24px; }
         .header nav { display: flex; gap: 20px; align-items: center; }
         .header nav a {
@@ -611,6 +619,14 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+        }
+        .header .logo img {
+            max-height: 40px;
+            max-width: 150px;
         }
         .header h1 { font-size: 24px; }
         .header nav {

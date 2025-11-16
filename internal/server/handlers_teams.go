@@ -1317,8 +1317,8 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
         }
         .header nav span {
             color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 400;
         }
         .teams-grid {
             display: grid;
@@ -1720,8 +1720,8 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         }
         .header nav span {
             color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 400;
         }
         .container {
             max-width: 1400px;
