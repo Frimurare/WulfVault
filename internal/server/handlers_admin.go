@@ -872,6 +872,15 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
         .header nav a:active {
             transform: translateY(0);
         }
+        .header nav span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
         /* Mobile Navigation Styles */
         .hamburger {
@@ -998,7 +1007,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
             <a href="/logout" style="margin-left: auto;">Logout</a>
-            <span style="color: rgba(255,255,255,0.6); font-size: 12px;">v` + s.config.Version + `</span>
+            <span>v` + s.config.Version + `</span>
         </nav>
     </div>
     <div class="mobile-nav-overlay"></div>`
@@ -1133,6 +1142,15 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         }
         .header nav a:active {
             transform: translateY(0);
+        }
+        .header nav span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .container {
             max-width: 1400px;
@@ -1269,7 +1287,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
             <a href="/logout" style="margin-left: auto;">Logout</a>
-            <span style="color: rgba(255,255,255,0.6); font-size: 12px;">v` + s.config.Version + `</span>
+            <span>v` + s.config.Version + `</span>
         </nav>
     </div>
     <div class="mobile-nav-overlay"></div>

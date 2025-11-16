@@ -452,10 +452,28 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
         }
         .header nav a:hover {
             color: white;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .header nav a:active {
+            transform: translateY(0);
+        }
+        .header nav span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .container {
             max-width: 1200px;
@@ -865,13 +883,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>`
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>`
 	} else {
 		html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>`
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>`
 	}
 
 	html += `
