@@ -115,6 +115,9 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
 	mux.HandleFunc("/admin/teams", s.requireAdmin(s.handleAdminTeams))
 	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
+	mux.HandleFunc("/admin/audit-logs", s.requireAdmin(s.handleAdminAuditLogs))
+	mux.HandleFunc("/api/admin/audit-logs", s.requireAdmin(s.handleAPIGetAuditLogs))
+	mux.HandleFunc("/api/admin/audit-logs/export", s.requireAdmin(s.handleAPIExportAuditLogs))
 
 	// Teams API routes (require authentication)
 	mux.HandleFunc("/api/teams/my", s.requireAuth(s.handleAPIMyTeams))
