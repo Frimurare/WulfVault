@@ -979,6 +979,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Admin Dashboard - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1114,6 +1115,11 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 
 	html += `
         </div>
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
         <nav>
             <a href="/admin">Admin Dashboard</a>
             <a href="/dashboard">My Files</a>
@@ -1129,6 +1135,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <span style="color: rgba(255,255,255,0.6); font-size: 12px;">v` + s.config.Version + `</span>
         </nav>
     </div>
+    <div class="mobile-nav-overlay"></div>
 
     <div class="container">
         <div class="joke-section">
@@ -1315,8 +1322,10 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Manage Users - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1727,8 +1736,10 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>All Files - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2076,8 +2087,10 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Branding Settings - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2256,8 +2269,10 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Settings - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -2512,8 +2527,10 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Trash - ` + s.config.CompanyName + `</title>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
