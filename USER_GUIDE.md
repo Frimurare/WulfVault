@@ -800,14 +800,20 @@ Click on any file to see:
 - **Retention Period:** Files kept for configured days (default: 5 days, configurable 1-365)
 - **Automatic Cleanup:** Items older than retention period are permanently deleted
 - **Manual Actions:**
-  - **Restore:** Bring file back (restores to original uploader)
-  - **Permanent Delete:** Delete immediately (cannot be undone, bypasses retention period)
+  - **♻️ Restore:** Bring file back with a single click (restores to original uploader with full metadata)
+  - **🗑️ Delete Forever:** Permanently delete immediately (cannot be undone, bypasses retention period)
+- **Enhanced UI (v4.3+):**
+  - Modern gradient-styled action buttons with emoji indicators
+  - Visual color coding: Green for restore, Red for permanent delete
+  - Hover effects and smooth transitions for better user experience
+  - Fully responsive mobile layout with stacked buttons
 
 **View Trash:**
-- See deleted files
-- Who deleted them
-- When deleted
+- See deleted files with complete metadata
+- Who deleted them (user or system)
+- When deleted (precise timestamp)
 - Days remaining before permanent deletion
+- Original owner and file size information
 
 ---
 

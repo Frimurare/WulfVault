@@ -3209,19 +3209,38 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             background: #f9f9f9;
         }
         .btn {
-            padding: 6px 12px;
+            padding: 10px 20px;
             border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            margin-right: 4px;
+            margin-right: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .btn-restore { background: #4caf50; color: white; }
-        .btn-delete { background: #f44336; color: white; }
-        .btn:hover { opacity: 0.8; }
+        .btn-restore {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            border: 2px solid #45a049;
+        }
+        .btn-restore:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+        .btn-delete {
+            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+            color: white;
+            border: 2px solid #da190b;
+        }
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #da190b 0%, #c41408 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+        }
 
         /* Mobile Responsive Styles */
         @media screen and (max-width: 768px) {
@@ -3284,7 +3303,8 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
                 display: block;
                 width: 100%;
                 margin: 5px 0 !important;
-                padding: 10px 12px !important;
+                padding: 12px 16px !important;
+                font-size: 15px !important;
             }
         }
     </style>

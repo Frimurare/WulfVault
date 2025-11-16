@@ -41,7 +41,12 @@ WulfVault solves this by providing:
 - **Upload request portals** - Create shareable links for others to upload files to you
 - **Email integration** - Send download links directly via email with customizable templates
 - **File preview & metadata** - View file details, size, upload date, and download statistics
-- **Trash system** - Deleted files kept for configurable retention period (1-365 days) with restore capability
+- **Trash system with enhanced UI (v4.3+):**
+  - Deleted files kept for configurable retention period (1-365 days) with restore capability
+  - Modern gradient-styled action buttons: ♻️ Restore (green) and 🗑️ Delete Forever (red)
+  - One-click restore or permanent deletion with visual feedback and hover effects
+  - Complete audit trail: see who deleted files, when, and days remaining before auto-deletion
+  - Fully responsive mobile layout with optimized touch targets
 - **File Sharing Wisdom** - 180+ humorous one-liners on dashboards reminding users why email attachments fail
 
 ### 👥 User Management & Access Control
@@ -156,11 +161,13 @@ WulfVault solves this by providing:
   - User growth analytics
   - Quick access to all management functions
 - **File management:**
-  - View all files across all users
-  - Search and filter capabilities
-  - Delete files with trash safety net
-  - Restore accidentally deleted files
-  - Permanent deletion from trash
+  - View all files across all users with complete metadata
+  - Advanced search and filter capabilities
+  - Delete files with trash safety net (configurable retention period)
+  - One-click restore for accidentally deleted files with full metadata preservation
+  - Permanent deletion from trash with confirmation dialogs
+  - Detailed trash view: who deleted, when, days remaining, original owner
+  - Modern, responsive UI with gradient buttons and emoji indicators
 - **User administration:**
   - Create, edit, and delete users
   - Manage download accounts
@@ -367,12 +374,21 @@ Create upload request links for:
 
 1. **Login** to admin panel at `http://your-server/admin`
 2. **Create users:**
-   - Set email, password, user level
+   - Set email, password, user level (Super Admin, Admin, or Regular User)
    - Assign storage quota (e.g., 5GB, 50GB, or custom)
-   - Set active/inactive status
+   - Set active/inactive status with toggle
+   - Organize users into teams for shared file access
 3. **Monitor usage** in dashboard
+   - Real-time system statistics (files, downloads, storage, users)
+   - User growth analytics (new users last 30 days)
+   - Storage usage per user with quota visualization
 4. **View all files** and download history across system
-5. **Manage trash** and restore accidentally deleted files
+   - Complete download audit trail with email, timestamp, IP (if enabled)
+   - Export download reports in CSV format for compliance
+5. **Manage trash** with enhanced UI and restore accidentally deleted files
+   - Modern gradient-styled buttons: ♻️ Restore (green) and 🗑️ Delete Forever (red)
+   - Complete audit trail: who deleted, when, days remaining
+   - One-click restore or permanent deletion with confirmation dialogs
 
 ---
 
