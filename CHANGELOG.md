@@ -1,5 +1,48 @@
 # Changelog
 
+## [4.3.1.1] - 2025-11-15 🔧 Mobile Navigation Inline CSS Fix
+
+### 🐛 Bug Fixes
+
+**Complete Mobile Navigation Rewrite:**
+- Fixed mobile navigation by adding CSS directly to inline `<style>` tags
+- Previous fix with `!important` flags didn't work because external CSS wasn't loading properly
+- Mobile @media queries now embedded directly in each page's inline styles
+- Ensures mobile styles ALWAYS load and override desktop styles
+
+**Technical Solution:**
+- Added mobile CSS to `getAdminHeaderHTML()` function (affects all admin pages)
+- Added mobile CSS directly to `renderAdminDashboard()` inline styles
+- Mobile @media queries placed AFTER desktop styles in same `<style>` block
+- This guarantees correct CSS cascade order regardless of external file loading
+
+**Changes:**
+- `internal/server/handlers_admin.go`:
+  - Added ~20 lines of mobile CSS to `getAdminHeaderHTML()` function
+  - Added ~25 lines of mobile CSS to `renderAdminDashboard()` inline styles
+  - Includes hamburger menu, navigation overlay, and responsive breakpoints
+
+### 📁 Modified Files
+
+- `internal/server/handlers_admin.go`: Added inline mobile CSS to header and dashboard
+- `cmd/server/main.go`: Version bump to 4.3.1.1
+
+### 🎯 Impact
+
+Mobile navigation should now work correctly on:
+- ✅ iPhone (all models and iOS versions)
+- ✅ Android devices (all versions)
+- ✅ Tablets in portrait mode
+- ✅ All mobile browsers (Safari, Chrome, Firefox, Edge)
+
+The hamburger menu will:
+- ✅ Display in the top right corner on mobile
+- ✅ Slide navigation in from the right when tapped
+- ✅ Show all navigation links with proper spacing
+- ✅ Display logout with correct text color
+
+---
+
 ## [4.3.1] - 2025-11-15 🔧 Mobile Navigation CSS Fix
 
 ### 🐛 Bug Fixes

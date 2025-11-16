@@ -862,6 +862,100 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
         }
         .header nav a:hover {
             color: white;
+        }
+
+        /* Mobile Navigation Styles */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            padding: 8px;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 3px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+        .mobile-nav-overlay.active {
+            display: block;
+        }
+
+        @media screen and (max-width: 768px) {
+            .header {
+                padding: 15px 20px !important;
+                flex-wrap: wrap;
+            }
+            .header .logo h1 {
+                font-size: 18px !important;
+            }
+            .header .logo img {
+                max-height: 40px !important;
+                max-width: 120px !important;
+            }
+            .hamburger {
+                display: flex !important;
+                order: 3;
+            }
+            .header nav {
+                display: none !important;
+                position: fixed !important;
+                top: 0 !important;
+                right: -100% !important;
+                width: 280px !important;
+                height: 100vh !important;
+                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 80px 30px 30px !important;
+                gap: 0 !important;
+                transition: right 0.3s ease !important;
+                z-index: 1000 !important;
+                overflow-y: auto !important;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
+            }
+            .header nav.active {
+                display: flex !important;
+                right: 0 !important;
+            }
+            .header nav a {
+                width: 100%;
+                padding: 15px 20px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                font-size: 16px !important;
+                margin: 0 !important;
+            }
+            .header nav a:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            .header nav span {
+                padding: 15px 20px !important;
+                margin: 0 !important;
+            }
         }`
 
 	headerHTML := `
@@ -1098,6 +1192,31 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             line-height: 1.6;
             font-weight: 500;
             font-style: italic;
+        }
+
+        /* Mobile Responsive Styles */
+        .hamburger { display: none; flex-direction: column; cursor: pointer; padding: 8px; background: none; border: none; z-index: 1001; }
+        .hamburger span { width: 25px; height: 3px; background: white; margin: 3px 0; transition: 0.3s; border-radius: 2px; }
+        .hamburger.active span:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+        .mobile-nav-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 999; }
+        .mobile-nav-overlay.active { display: block; }
+
+        @media screen and (max-width: 768px) {
+            .header { padding: 15px 20px !important; flex-wrap: wrap; }
+            .header .logo h1 { font-size: 18px !important; }
+            .header .logo img { max-height: 40px !important; max-width: 120px !important; }
+            .hamburger { display: flex !important; order: 3; }
+            .header nav { display: none !important; position: fixed !important; top: 0 !important; right: -100% !important; width: 280px !important; height: 100vh !important; background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important; flex-direction: column !important; align-items: flex-start !important; padding: 80px 30px 30px !important; gap: 0 !important; transition: right 0.3s ease !important; z-index: 1000 !important; overflow-y: auto !important; box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important; }
+            .header nav.active { display: flex !important; right: 0 !important; }
+            .header nav a, .header nav span { width: 100%; padding: 15px 20px !important; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 16px !important; margin: 0 !important; }
+            .header nav a:hover { background: rgba(255, 255, 255, 0.1); }
+            .container { padding: 0 15px !important; margin: 20px auto !important; }
+            .stats { grid-template-columns: 1fr !important; gap: 15px !important; }
+            .stat-card { padding: 20px !important; }
+            .stat-card .value { font-size: 28px !important; }
+            .quick-actions { grid-template-columns: 1fr !important; }
         }
     </style>
 </head>
