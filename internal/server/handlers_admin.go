@@ -2164,6 +2164,10 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         tr:hover {
             background: #f9f9f9;
         }
+        td:last-child {
+            white-space: nowrap;
+            min-width: 200px;
+        }
         .badge {
             padding: 4px 12px;
             border-radius: 12px;
