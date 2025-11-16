@@ -725,6 +725,22 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	auditLogRetentionDays := r.FormValue("audit_log_retention_days")
+	if auditLogRetentionDays != "" {
+		database.DB.SetConfigValue("audit_log_retention_days", auditLogRetentionDays)
+		if days, err := strconv.Atoi(auditLogRetentionDays); err == nil {
+			s.config.AuditLogRetentionDays = days
+		}
+	}
+
+	auditLogMaxSizeMB := r.FormValue("audit_log_max_size_mb")
+	if auditLogMaxSizeMB != "" {
+		database.DB.SetConfigValue("audit_log_max_size_mb", auditLogMaxSizeMB)
+		if sizeMB, err := strconv.Atoi(auditLogMaxSizeMB); err == nil {
+			s.config.AuditLogMaxSizeMB = sizeMB
+		}
+	}
+
 	s.renderAdminSettings(w, "Settings updated successfully!")
 }
 
@@ -1002,7 +1018,6 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             <a href="/admin/branding">Branding</a>
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Server</a>
-            <a href="/admin/audit-logs">Audit Logs</a>
             <a href="/settings">My Account</a>
             <a href="/logout" style="margin-left: auto;">Logout</a>
             <span>v` + s.config.Version + `</span>
@@ -1283,7 +1298,6 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <a href="/admin/branding">Branding</a>
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Server</a>
-            <a href="/admin/audit-logs">Audit Logs</a>
             <a href="/settings">My Account</a>
             <a href="/logout" style="margin-left: auto;">Logout</a>
             <span>v` + s.config.Version + `</span>
@@ -2946,6 +2960,22 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 			trashRetentionDays = "5"
 		}
 	}
+	auditLogRetentionDays, _ := database.DB.GetConfigValue("audit_log_retention_days")
+	if auditLogRetentionDays == "" {
+		if s.config.AuditLogRetentionDays > 0 {
+			auditLogRetentionDays = fmt.Sprintf("%d", s.config.AuditLogRetentionDays)
+		} else {
+			auditLogRetentionDays = "90"
+		}
+	}
+	auditLogMaxSizeMB, _ := database.DB.GetConfigValue("audit_log_max_size_mb")
+	if auditLogMaxSizeMB == "" {
+		if s.config.AuditLogMaxSizeMB > 0 {
+			auditLogMaxSizeMB = fmt.Sprintf("%d", s.config.AuditLogMaxSizeMB)
+		} else {
+			auditLogMaxSizeMB = "100"
+		}
+	}
 	port, _ := database.DB.GetConfigValue("port")
 	if port == "" {
 		port = s.config.Port
@@ -3108,9 +3138,35 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                     <p class="help-text">Number of days to keep deleted files in trash before permanent deletion</p>
                 </div>
 
+                <div class="form-group">
+                    <label for="audit_log_retention_days">Audit Log Retention (Days)</label>
+                    <input type="number" id="audit_log_retention_days" name="audit_log_retention_days" value="` + auditLogRetentionDays + `" min="1" max="3650" required>
+                    <p class="help-text">Number of days to keep audit logs before automatic cleanup (default: 90 days)</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="audit_log_max_size_mb">Audit Log Max Size (MB)</label>
+                    <input type="number" id="audit_log_max_size_mb" name="audit_log_max_size_mb" value="` + auditLogMaxSizeMB + `" min="10" max="10000" required>
+                    <p class="help-text">Maximum database size for audit logs before automatic cleanup of oldest entries (default: 100 MB)</p>
+                </div>
+
                 <button type="submit" class="btn btn-primary">Save Settings</button>
                 <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">Cancel</a>
             </form>
+        </div>
+
+        <!-- Audit Logs Section -->
+        <div class="card" style="margin-top: 30px; border: 2px solid #3f51b5;">
+            <h2 style="color: #3f51b5;">📋 Audit Logs</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                View comprehensive audit trail of all system operations including logins, file operations, user management, and settings changes.
+            </p>
+            <a href="/admin/audit-logs" class="btn btn-primary">
+                📊 View Audit Logs
+            </a>
+            <p style="color: #999; font-size: 12px; margin-top: 15px;">
+                Logs are automatically cleaned up based on retention period (` + auditLogRetentionDays + ` days) and size limit (` + auditLogMaxSizeMB + ` MB) configured above.
+            </p>
         </div>
 
         <!-- RESTART SERVER BUTTON - DISABLED UNTIL SYSTEMD IS INSTALLED

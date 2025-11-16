@@ -1,8 +1,8 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 4.3.4** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.5.2 Gold** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
-WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, comprehensive audit trails with email tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
+WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
@@ -79,6 +79,38 @@ WulfVault solves this by providing:
 - **Real-time statistics** - Dashboard shows total files, downloads, and storage usage
 - **Download count limits** - Automatically expire files after reaching download threshold
 - **Email notifications** - Optional notifications when files are downloaded (configurable)
+
+### 📋 Enterprise Audit Logging
+- **Comprehensive audit trail:**
+  - All user actions logged (logins, file operations, settings changes)
+  - Detailed tracking of authentication events (2FA, password changes, failed logins)
+  - Complete file lifecycle logging (upload, download, delete, restore, permanent deletion)
+  - Team management operations (member changes, role updates, file sharing)
+  - System configuration changes (settings, branding, quotas, audit policy)
+- **Compliance-ready:**
+  - Meets GDPR, SOC 2, HIPAA, and ISO 27001 audit requirements
+  - Configurable retention periods (1 day to 10 years)
+  - Automatic cleanup based on time and size limits
+  - Immutable write-only log entries
+- **Advanced filtering and search:**
+  - Filter by user, action type, entity type, date range
+  - Full-text search across all log fields
+  - Pagination for large datasets (50 logs per page)
+  - Real-time statistics (total logs, recent activity, failed actions)
+- **Export capabilities:**
+  - CSV export for external audit tools
+  - Timestamped export files
+  - Complete log data including IP addresses, user agents, detailed context
+  - Filterable exports for targeted reporting
+- **Configurable retention:**
+  - Set retention period: 90 days (default) up to 10 years
+  - Size-based cleanup: 100 MB (default) up to 10 GB
+  - Automated daily cleanup scheduler
+  - Settings accessible via Server Settings page
+- **Admin access:**
+  - Accessible via Server → Audit Logs
+  - Direct URL: `/admin/audit-logs`
+  - Admin-only access with secure authentication
 
 ### 🔐 Security & Authentication
 - **Two-Factor Authentication (2FA):**

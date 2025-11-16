@@ -1,5 +1,108 @@
 # Changelog
 
+## [4.5.2 Gold] - 2025-11-16 ⚙️ Configuration UI & Documentation - Audit Log Settings
+
+### 🎯 Release Highlights
+
+WulfVault 4.5.2 Gold adds the missing piece: a user-friendly graphical interface for configuring audit log settings directly from the Server Settings page. No more manual config.json editing! Plus comprehensive documentation updates.
+
+### ✨ What's New
+
+**Graphical Configuration UI for Audit Logs:**
+- 🎛️ Configure audit log retention period directly in Server Settings page
+- 💾 Set maximum database size limit via web interface
+- 🔄 Settings saved to database with instant apply
+- 📊 View current retention and size limits in Audit Logs section
+- ✅ No more manual config.json editing required!
+
+**Improved Navigation:**
+- 🗂️ Moved Audit Logs under Server Settings (instead of separate top-level button)
+- 📋 New dedicated Audit Logs card with link to viewer
+- 🔗 Shows current retention and size settings dynamically
+- 📱 Better mobile navigation with fewer top-level items
+
+**Complete Documentation:**
+- 📖 USER_GUIDE.md updated with comprehensive Audit Logs section
+- 📝 Detailed instructions for accessing, filtering, exporting logs
+- ⚙️ Configuration guide with recommended settings by organization size
+- 🔒 Security and compliance information (GDPR, SOC 2, HIPAA, ISO 27001)
+- 📚 README.md updated with enterprise audit logging features
+- 💡 Troubleshooting tips and best practices
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_admin.go`:
+  - Added audit log retention and max size fields to renderAdminSettings
+  - Added new Audit Logs card with dynamic current settings display
+  - Removed standalone "Audit Logs" link from main navigation
+  - Implemented save functionality for audit_log_retention_days
+  - Implemented save functionality for audit_log_max_size_mb
+- `USER_GUIDE.md`:
+  - Version updated to 4.5.2 Gold
+  - Added complete "Audit Logs & Compliance" section (180+ lines)
+  - Documented all audit features, filtering, exporting, configuration
+  - Added compliance requirements table (GDPR, SOC 2, HIPAA, ISO 27001)
+- `README.md`:
+  - Version updated to 4.5.2 Gold
+  - Added "📋 Enterprise Audit Logging" feature section
+  - Updated description with audit logging mention
+- `cmd/server/main.go`:
+  - Version updated from 4.5.1 Gold to 4.5.2 Gold
+
+### 🎨 UI/UX Improvements
+
+**Server Settings Page:**
+```
+System Settings
+├── Server URL
+├── Server Port
+├── Max File Size (MB)
+├── Default User Quota (MB)
+├── Trash Retention Period (Days)
+├── Audit Log Retention (Days)      ← NEW!
+└── Audit Log Max Size (MB)         ← NEW!
+
+Audit Logs                           ← NEW SECTION!
+├── Description
+├── 📊 View Audit Logs button
+└── Current retention and size info
+```
+
+**Navigation Improvement:**
+- Before: Admin Dashboard | My Files | Users | Teams | All Files | Trash | Branding | Email | Server | **Audit Logs** | My Account | Logout
+- After: Admin Dashboard | My Files | Users | Teams | All Files | Trash | Branding | Email | **Server** | My Account | Logout
+- **Result:** Cleaner navigation, audit logs accessible via Server → Audit Logs
+
+### 📊 Configuration Examples
+
+**Small Organization (<50 users):**
+- Retention: 90 days
+- Max Size: 100 MB
+
+**Medium Organization (50-500 users):**
+- Retention: 180 days
+- Max Size: 500 MB
+
+**Large Organization (500+ users):**
+- Retention: 365 days
+- Max Size: 2000 MB
+
+**HIPAA Compliance:**
+- Retention: 2555 days (7 years)
+- Max Size: 5000+ MB
+
+### 🎉 Perfect for Production!
+
+Version 4.5.2 Gold completes the audit logging feature with:
+- ✅ Full graphical configuration (no config file editing)
+- ✅ Complete documentation (USER_GUIDE + README)
+- ✅ Streamlined navigation
+- ✅ Production-ready with all enterprise features
+- ✅ Compliance-ready documentation
+
+---
+
 ## [4.5.1 Gold] - 2025-11-16 🏆 Official Release - Complete Audit System & Streamlined Navigation
 
 ### 🎯 Release Highlights
