@@ -310,10 +310,13 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
         @media (max-width: 768px) {
             .header {
                 padding: 15px 20px;
+                flex-wrap: wrap;
             }
 
             .header h1 {
                 font-size: 18px;
+                order: 1;
+                flex: 1;
             }
 
             .header .logo img {
@@ -323,6 +326,8 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 
             .hamburger {
                 display: flex;
+                order: 3;
+                margin-left: auto;
             }
 
             .header nav {

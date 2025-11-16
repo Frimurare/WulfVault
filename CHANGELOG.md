@@ -1,5 +1,68 @@
 # Changelog
 
+## [4.3.3.2] - 2025-11-16 🐛 Mobile UX Polish & Critical Fixes
+
+### 🐛 Bug Fixes
+
+**Download User Change Password Page:**
+- Added missing mobile CSS and hamburger navigation
+- Added viewport meta tag for proper mobile rendering
+- Navigation now slides in from right side with full functionality
+- Form layout now responsive on mobile devices
+
+**Hamburger Menu Position Consistency:**
+- Fixed hamburger menus appearing on LEFT instead of RIGHT across all pages
+- Added `margin-left: auto` and `order: 3` to all hamburger buttons
+- Standardized positioning across admin, user, and download user pages
+- Consistent right-side positioning for all user types
+
+**All Files Table Data Overlap (Mobile):**
+- Fixed data-label and content collision on mobile
+- Reduced label width from 45% to 40%
+- Reduced data padding-left from 50% to 42% (giving 58% space for content)
+- Added word-wrap and overflow-wrap to data cells
+- Added text-overflow ellipsis to labels for long text
+- Table cards now display properly without text collision
+
+**Email Settings Hamburger Freeze (CRITICAL):**
+- Fixed hamburger button completely locking/freezing on Email Settings page
+- Added missing JavaScript to getAdminHeaderHTML function
+- All admin pages using getAdminHeaderHTML now have functional mobile navigation
+- JavaScript wrapped in IIFE to prevent conflicts with page-specific scripts
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_download_user.go`:
+  - Added complete mobile CSS to renderDownloadChangePasswordPage
+  - Added hamburger button, overlay, and navigation
+  - Added mobile JavaScript for menu toggle functionality
+  - Fixed renderDownloadDashboard hamburger positioning (added order: 3, margin-left: auto)
+- `internal/server/handlers_user_settings.go`:
+  - Added flex-wrap to .header for mobile
+  - Added order: 1 and flex: 1 to .header h1
+  - Added order: 3 and margin-left: auto to .hamburger
+- `internal/server/handlers_admin.go`:
+  - Added margin-left: auto to .hamburger in getAdminHeaderHTML
+  - Reduced table data-label width from 45% to 40%
+  - Reduced table data padding-left from 50% to 42%
+  - Added word-wrap and overflow-wrap to table cells
+  - Added text-overflow ellipsis to labels
+  - **CRITICAL:** Added JavaScript to getAdminHeaderHTML for hamburger functionality
+- `internal/server/handlers_teams.go`:
+  - Added margin-left: auto to .hamburger in both renderUserTeams and admin teams (2 instances)
+- `internal/server/handlers_user.go`:
+  - Added margin-left: auto to .hamburger for consistent positioning
+- `cmd/server/main.go`:
+  - Updated version from 4.3.3.1 to 4.3.3.2
+
+### 📊 Impact
+- Resolved all reported mobile UX issues from user feedback
+- Fixed critical navigation freeze bug on Email Settings
+- Standardized hamburger positioning across entire application
+- Improved mobile table readability with proper spacing
+- Complete mobile responsive coverage for download user flows
+
 ## [4.3.3.1] - 2025-11-16 🎨 Final Mobile Navigation Fixes
 
 ### 🐛 Bug Fixes

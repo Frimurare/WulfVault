@@ -920,6 +920,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             .hamburger {
                 display: flex !important;
                 order: 3;
+                margin-left: auto;
             }
             .header nav {
                 display: none !important;
@@ -994,7 +995,72 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
     </div>
     <div class="mobile-nav-overlay"></div>`
 
-	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
+	headerJS := `
+    <script>
+    (function() {
+        'use strict';
+
+        function initAdminMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+
+            const nav = header.querySelector('nav');
+            const hamburger = header.querySelector('.hamburger');
+            const overlay = document.querySelector('.mobile-nav-overlay');
+
+            if (!nav || !hamburger || !overlay) return;
+
+            function toggleMenu() {
+                const isActive = nav.classList.contains('active');
+                nav.classList.toggle('active');
+                hamburger.classList.toggle('active');
+                overlay.classList.toggle('active');
+                hamburger.setAttribute('aria-expanded', !isActive);
+
+                if (!isActive) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = '';
+                }
+            }
+
+            function closeMenu() {
+                nav.classList.remove('active');
+                hamburger.classList.remove('active');
+                overlay.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            }
+
+            hamburger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleMenu();
+            });
+
+            overlay.addEventListener('click', closeMenu);
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    closeMenu();
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                    closeMenu();
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAdminMobileNav);
+        } else {
+            initAdminMobileNav();
+        }
+    })();
+    </script>`
+
+	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML + headerJS
 }
 
 func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
@@ -2265,18 +2331,23 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                 padding: 8px 0;
                 border: none !important;
                 position: relative;
-                padding-left: 50%;
+                padding-left: 42%;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
             }
 
             td::before {
                 content: attr(data-label);
                 position: absolute;
                 left: 0;
-                width: 45%;
-                padding-right: 10px;
+                width: 40%;
+                padding-right: 8px;
                 text-align: left;
                 font-weight: 600;
                 color: #666;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             td:last-child {

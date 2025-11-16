@@ -770,6 +770,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             .hamburger {
                 display: flex !important;
                 order: 3;
+                margin-left: auto;
             }
             .header nav {
                 display: none !important;

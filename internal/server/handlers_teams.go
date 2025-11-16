@@ -1414,6 +1414,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             .hamburger {
                 display: flex !important;
                 order: 3;
+                margin-left: auto;
             }
             .header-user nav {
                 display: none !important;
@@ -1849,6 +1850,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             .hamburger {
                 display: flex !important;
                 order: 3;
+                margin-left: auto;
             }
             .header-user nav {
                 display: none !important;
