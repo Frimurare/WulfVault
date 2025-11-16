@@ -10,10 +10,10 @@ WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev sqlite-dev
 
 # Copy go mod files
-COPY go.mod go.sum* ./
+COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download || go mod tidy
+RUN go mod download
 
 # Copy source code
 COPY . .
