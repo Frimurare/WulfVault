@@ -1275,37 +1275,46 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             margin: 40px auto;
             padding: 0 20px;
         }
-        .header-user {
+        .header {
             background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            padding: 20px 40px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            color: white;
+            padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header-user .logo {
+        .header .logo {
             display: flex;
             align-items: center;
+            gap: 12px;
         }
-        .header-user h1 {
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
+        .header h1 {
             color: white;
             font-size: 24px;
             font-weight: 600;
         }
-        .header-user nav {
+        .header nav {
             display: flex;
             align-items: center;
             gap: 20px;
         }
-        .header-user nav a {
+        .header nav a {
             color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s;
         }
-        .header-user nav a:hover {
+        .header nav a:hover {
             color: white;
+        }
+        .header nav span {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            font-weight: 500;
         }
         .teams-grid {
             display: grid;
@@ -1400,14 +1409,14 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
         }
 
         @media screen and (max-width: 768px) {
-            .header-user {
+            .header {
                 padding: 15px 20px !important;
                 flex-wrap: wrap;
             }
-            .header-user h1 {
+            .header .logo h1 {
                 font-size: 18px !important;
             }
-            .header-user .logo img {
+            .header .logo img {
                 max-height: 40px !important;
                 max-width: 120px !important;
             }
@@ -1415,7 +1424,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
                 display: flex !important;
                 order: 3;
             }
-            .header-user nav {
+            .header nav {
                 display: none !important;
                 position: fixed !important;
                 top: 0 !important;
@@ -1432,19 +1441,23 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
                 overflow-y: auto !important;
                 box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
             }
-            .header-user nav.active {
+            .header nav.active {
                 display: flex !important;
                 right: 0 !important;
             }
-            .header-user nav a {
+            .header nav a {
                 width: 100%;
                 padding: 15px 20px !important;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 font-size: 16px !important;
                 margin: 0 !important;
             }
-            .header-user nav a:hover {
+            .header nav a:hover {
                 background: rgba(255, 255, 255, 0.1);
+            }
+            .header nav span {
+                padding: 15px 20px !important;
+                margin: 0 !important;
             }
             .container {
                 padding: 0 15px !important;
@@ -1456,7 +1469,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
     </style>
 </head>
 <body>
-    <div class="header-user">
+    <div class="header">
         <div class="logo">`
 
 	// Add logo if exists
@@ -1488,13 +1501,15 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>`
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>`
 	} else {
 		html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>`
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>`
 	}
 
 	html += `
@@ -1554,7 +1569,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
     (function() {
         'use strict';
         function initMobileNav() {
-            const header = document.querySelector('.header-user');
+            const header = document.querySelector('.header');
             if (!header) return;
             const nav = header.querySelector('nav');
             if (!nav) return;
@@ -1659,37 +1674,46 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
         }
-        .header-user {
+        .header {
             background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            padding: 20px 40px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            color: white;
+            padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .header-user .logo {
+        .header .logo {
             display: flex;
             align-items: center;
+            gap: 12px;
         }
-        .header-user h1 {
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
+        .header h1 {
             color: white;
             font-size: 24px;
             font-weight: 600;
         }
-        .header-user nav {
+        .header nav {
             display: flex;
             align-items: center;
             gap: 20px;
         }
-        .header-user nav a {
+        .header nav a {
             color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s;
         }
-        .header-user nav a:hover {
+        .header nav a:hover {
             color: white;
+        }
+        .header nav span {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            font-weight: 500;
         }
         .container {
             max-width: 1400px;
@@ -1835,14 +1859,14 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         }
 
         @media screen and (max-width: 768px) {
-            .header-user {
+            .header {
                 padding: 15px 20px !important;
                 flex-wrap: wrap;
             }
-            .header-user h1 {
+            .header .logo h1 {
                 font-size: 18px !important;
             }
-            .header-user .logo img {
+            .header .logo img {
                 max-height: 40px !important;
                 max-width: 120px !important;
             }
@@ -1850,7 +1874,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                 display: flex !important;
                 order: 3;
             }
-            .header-user nav {
+            .header nav {
                 display: none !important;
                 position: fixed !important;
                 top: 0 !important;
@@ -1867,19 +1891,23 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                 overflow-y: auto !important;
                 box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
             }
-            .header-user nav.active {
+            .header nav.active {
                 display: flex !important;
                 right: 0 !important;
             }
-            .header-user nav a {
+            .header nav a {
                 width: 100%;
                 padding: 15px 20px !important;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                 font-size: 16px !important;
                 margin: 0 !important;
             }
-            .header-user nav a:hover {
+            .header nav a:hover {
                 background: rgba(255, 255, 255, 0.1);
+            }
+            .header nav span {
+                padding: 15px 20px !important;
+                margin: 0 !important;
             }
             .container {
                 padding: 0 15px !important;
@@ -1937,7 +1965,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     </style>
 </head>
 <body>
-    <div class="header-user">
+    <div class="header">
         <div class="logo">`
 
 	// Add logo if exists
@@ -1969,13 +1997,15 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             <a href="/admin/email-settings">Email</a>
             <a href="/admin/settings">Server</a>
             <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>`
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>`
 	} else {
 		html += `
             <a href="/dashboard">Dashboard</a>
             <a href="/teams">Teams</a>
             <a href="/settings">Settings</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>`
+            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>`
 	}
 
 	html += `
@@ -2075,7 +2105,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     (function() {
         'use strict';
         function initMobileNav() {
-            const header = document.querySelector('.header-user');
+            const header = document.querySelector('.header');
             if (!header) return;
             const nav = header.querySelector('nav');
             if (!nav) return;
