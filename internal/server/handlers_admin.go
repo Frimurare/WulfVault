@@ -676,9 +676,15 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		s.config.ServerURL = serverURL
 	}
 
-	// Handle port change
+	// Handle port change - ONLY if port actually changed
 	port := r.FormValue("port")
-	if port != "" {
+	currentPort, _ := database.DB.GetConfigValue("port")
+	if currentPort == "" {
+		currentPort = s.config.Port
+	}
+
+	portChanged := false
+	if port != "" && port != currentPort {
 		// Validate port number
 		portNum, err := strconv.Atoi(port)
 		if err != nil || portNum < 1 || portNum > 65535 {
@@ -701,10 +707,7 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 
 		// Store in database for reference
 		database.DB.SetConfigValue("port", port)
-
-		// Show success with restart warning
-		s.renderAdminSettings(w, fmt.Sprintf("Port changed to %s. ⚠️ RESTART REQUIRED: Stop and start the server for changes to take effect.", port))
-		return
+		portChanged = true
 	}
 
 	maxFileSizeMB := r.FormValue("max_file_size_mb")
@@ -741,7 +744,12 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.renderAdminSettings(w, "Settings updated successfully!")
+	// Show appropriate success message
+	if portChanged {
+		s.renderAdminSettings(w, fmt.Sprintf("Port changed to %s. ⚠️ RESTART REQUIRED: Stop and start the server for changes to take effect.", port))
+	} else {
+		s.renderAdminSettings(w, "Settings updated successfully!")
+	}
 }
 
 // handleAdminTrash lists all deleted files (trash)

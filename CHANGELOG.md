@@ -1,5 +1,82 @@
 # Changelog
 
+## [4.5.4 Gold] - 2025-11-16 🔧 Double Bugfix - Navigation & Settings Save
+
+### 🎯 Critical Bugfixes
+
+Fixed two annoying bugs reported by user testing:
+
+### 🐛 Bug #1: Teams Navigation Inconsistency (Again!)
+
+**Problem:**
+- When regular users navigated to Teams page, header/navigation looked different
+- Logo sizing and positioning inconsistent compared to Dashboard and Settings
+- Visual "jump" when switching between pages
+
+**Root Cause:**
+- Teams page had inline styles `style="max-height: 50px; max-width: 180px;"` on logo img tag
+- Dashboard and Settings pages used only CSS (no inline styles)
+- Inline styles override CSS, causing visual inconsistency
+
+**Fix Applied:**
+- Removed inline styles from Teams page logo
+- Changed alt text from "Logo" to company name (consistent with other pages)
+- Now all pages (Dashboard, Settings, Teams) use identical logo markup
+
+### 🐛 Bug #2: Audit Log Settings Not Saving
+
+**Problem:**
+- Changing "Audit Log Retention (Days)" from 90 to 60 → value jumped back to 90
+- Changing "Audit Log Max Size (MB)" → value reverted to default
+- Error message showed: "Port changed to 8080. ⚠️ RESTART REQUIRED..."
+- Users couldn't configure audit log settings at all!
+
+**Root Cause:**
+- Port change logic had early `return` statement (line 707)
+- When user changed audit settings, port field was also submitted (same form)
+- Port logic detected port field, showed restart message, and returned early
+- Code never reached audit log save logic (lines 728-742)
+
+**Fix Applied:**
+- Added check: Only trigger port warning if port ACTUALLY changed
+- Compare new port value with current port value before showing warning
+- Use `portChanged` flag to control success message
+- Audit log settings now save correctly every time
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `internal/server/handlers_teams.go`:
+  - Removed inline styles from 2 logo img tags
+  - Changed alt="Logo" to alt=companyName for consistency
+- `internal/server/handlers_admin.go`:
+  - Added port change detection (compare with current port)
+  - Use `portChanged` flag instead of early return
+  - Show restart warning ONLY when port actually changes
+  - Audit log settings now save correctly
+- `cmd/server/main.go`: Version 4.5.3 → 4.5.4 Gold
+- `README.md`: Version 4.5.4 Gold
+- `USER_GUIDE.md`: Version 4.5.4 Gold
+
+### ✅ Verified Fixed
+
+**Navigation:**
+- ✅ Dashboard → Teams → Settings: Consistent header across all pages
+- ✅ Logo displays identically on all pages
+- ✅ No visual "jump" when navigating
+
+**Settings:**
+- ✅ Audit Log Retention Days: Saves correctly (tested 90→60)
+- ✅ Audit Log Max Size MB: Saves correctly (tested 100→200)
+- ✅ Port warning only shows when port actually changes
+- ✅ Settings success message shows for other changes
+
+### 🎉 User Experience Restored
+
+Both reported bugs are now fixed! Navigation is consistent and settings save properly.
+
+---
+
 ## [4.5.3 Gold] - 2025-11-16 🐛 Bugfix - Audit Log API Endpoint
 
 ### 🎯 Critical Bugfix

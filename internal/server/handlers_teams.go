@@ -1474,7 +1474,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 
 	// Add logo if exists
 	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
-		html += `<img src="` + logoURL + `" alt="Logo" style="max-height: 50px; max-width: 180px;">`
+		html += `<img src="` + logoURL + `" alt="` + s.config.CompanyName + `">`
 	} else {
 		html += `<h1>` + s.config.CompanyName + `</h1>`
 	}
@@ -1970,7 +1970,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 
 	// Add logo if exists
 	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
-		html += `<img src="` + logoURL + `" alt="Logo" style="max-height: 50px; max-width: 180px;">`
+		html += `<img src="` + logoURL + `" alt="` + s.config.CompanyName + `">`
 	} else {
 		html += `<h1>` + s.config.CompanyName + `</h1>`
 	}
