@@ -599,6 +599,10 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 }) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1256,6 +1260,10 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams []*models.TeamWithMembers) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1473,8 +1481,8 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
         <div class="logo">`
 
 	// Add logo if exists
-	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
-		html += `<img src="` + logoURL + `" alt="` + s.config.CompanyName + `">`
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
 	} else {
 		html += `<h1>` + s.config.CompanyName + `</h1>`
 	}
@@ -1969,8 +1977,8 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         <div class="logo">`
 
 	// Add logo if exists
-	if logoURL, err := database.DB.GetConfigValue("logo_url"); err == nil && logoURL != "" {
-		html += `<img src="` + logoURL + `" alt="` + s.config.CompanyName + `">`
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
 	} else {
 		html += `<h1>` + s.config.CompanyName + `</h1>`
 	}

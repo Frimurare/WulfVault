@@ -200,6 +200,10 @@ func (s *Server) handleDownloadAccountDeleteSelf(w http.ResponseWriter, r *http.
 func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.DownloadAccount, downloadLogs []*models.DownloadLog) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -414,7 +418,16 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
 </head>
 <body>
     <div class="header">
-        <h1>` + s.config.CompanyName + ` - My Downloads</h1>
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + ` - My Downloads</h1>`
+	}
+
+	html += `
+        </div>
         <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
             <span></span>
             <span></span>
@@ -564,6 +577,10 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
 // renderDownloadChangePasswordPage renders the password change page
 func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account *models.DownloadAccount, message string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
 
 	messageHTML := ""
 	if message != "" {
@@ -756,7 +773,16 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
 </head>
 <body>
     <div class="header">
-        <h1>Change Password</h1>
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + ` - Change Password</h1>`
+	}
+
+	html += `
+        </div>
         <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
             <span></span>
             <span></span>

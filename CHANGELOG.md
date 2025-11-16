@@ -1,5 +1,74 @@
 # Changelog
 
+## [4.5.5 Gold] - 2025-11-16 🖼️ Bugfix - Teams Logo Display
+
+### 🎯 Critical Bugfix
+
+Fixed custom branded logo not displaying on Teams page for regular users.
+
+### 🐛 The Problem
+
+**User Experience - Regular Users:**
+- Dashboard: Custom logo displays correctly ✅
+- Teams: Logo disappears, company text shows instead ❌ (UGLY!)
+- Settings: Custom logo displays correctly ✅
+
+**User Experience - Download Users:**
+- Dashboard: NO logo at all, just text ❌ (UGLY!)
+- Change Password: NO logo at all, just text ❌ (UGLY!)
+- Account Settings: NO logo at all, just text ❌ (UGLY!)
+
+**Technical Issue:**
+- Teams page used `GetConfigValue("logo_url")` to fetch logo
+- Dashboard/Settings pages used `GetBrandingConfig()` with `branding_logo` key
+- Download user pages had NO logo display code at all!
+- These are DIFFERENT database fields!
+- `logo_url` is not populated, causing logo to not display
+
+### ✅ The Fix
+
+**Changed Teams page to use same method as Dashboard/Settings:**
+- Added `GetBrandingConfig()` call in both `renderUserTeams` and `renderAdminTeams`
+- Extract `logoData` from `brandingConfig["branding_logo"]`
+- Use `logoData` instead of `logoURL` for logo display
+- Now all pages (Dashboard, Settings, Teams) use identical logo fetching method
+
+**Added logo support to Download User pages:**
+- Added `GetBrandingConfig()` call in `renderDownloadDashboard`
+- Added `GetBrandingConfig()` call in `renderDownloadChangePasswordPage`
+- Added `<div class="logo">` wrapper with logo display logic
+- Shows custom logo if uploaded, otherwise shows company name
+- Download users now see branded logo on all their pages!
+
+**Modified Files:**
+- `internal/server/handlers_teams.go`:
+  - Added branding config fetch in `renderUserTeams()` (line 1259-1261)
+  - Added branding config fetch in `renderAdminTeams()` (line 601-603)
+  - Changed logo check from `logoURL` to `logoData` (2 locations)
+  - Now uses same branding system as Dashboard/Settings
+- `internal/server/handlers_download_user.go`:
+  - Added branding config fetch in `renderDownloadDashboard()` (line 202-204)
+  - Added branding config fetch in `renderDownloadChangePasswordPage()` (line 571-573)
+  - Replaced plain `<h1>` with `<div class="logo">` + logo display (2 locations)
+  - Download users now see branded logo everywhere
+- `cmd/server/main.go`: Version 4.5.4 → 4.5.5 Gold
+- `README.md`: Version 4.5.5 Gold
+- `USER_GUIDE.md`: Version 4.5.5 Gold
+
+### 🎨 Result
+
+**Now all pages show consistent branding:**
+- ✅ Dashboard: Custom branded logo
+- ✅ Teams: Custom branded logo (FIXED!)
+- ✅ Settings: Custom branded logo
+- ✅ No more ugly text fallback on Teams page
+
+### 🎉 Status
+
+Teams page now displays custom logo correctly for all users! No more visual inconsistency.
+
+---
+
 ## [4.5.4 Gold] - 2025-11-16 🔧 Double Bugfix - Navigation & Settings Save
 
 ### 🎯 Critical Bugfixes
