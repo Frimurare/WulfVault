@@ -858,10 +858,19 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
         }
         .header nav a:hover {
             color: white;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .header nav a:active {
+            transform: translateY(0);
         }
 
         /* Mobile Navigation Styles */
@@ -1111,10 +1120,19 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
         }
         .header nav a:hover {
             color: white;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .header nav a:active {
+            transform: translateY(0);
         }
         .container {
             max-width: 1400px;
@@ -3220,6 +3238,8 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             margin-right: 8px;
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 150px;
+            text-align: center;
         }
         .btn-restore {
             background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
