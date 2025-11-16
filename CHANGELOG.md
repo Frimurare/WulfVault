@@ -1,6 +1,28 @@
 # Changelog
 
-## [4.3.3.5] - 2025-11-16 🎯 FINAL FIX: Remove all duplicate hamburger JavaScript
+## [4.3.3.6] - 2025-11-16 🔄 RESTORED to v4.3.3.1
+
+### 🔄 Rollback & Apology
+
+After multiple failed attempts (v4.3.3.2-4.3.3.5) to centralize/optimize JavaScript that only made things worse and cost time/money, I've restored the admin handler files to v4.3.3.1 (f4a95bb) - the last known working version.
+
+**Restored files:**
+- internal/server/handlers_admin.go (from v4.3.3.1)
+- internal/server/handlers_teams.go (from v4.3.3.1)
+
+**What v4.3.3.1 has that works:**
+- Each admin page has its own complete initMobileNav JavaScript
+- No "smart" centralization that causes conflicts
+- Proven, working code from before I broke it
+
+**Status:**
+- Download users: Working ✅
+- Regular users: Working ✅
+- Admin users: SHOULD NOW WORK AGAIN ✅
+
+I sincerely apologize for the wasted time and cost. Sometimes the simplest solution is to restore to what worked.
+
+## [4.3.3.5] - 2025-11-16 ❌ FAILED: Removed too much JavaScript
 
 ### 🐛 Root Cause Analysis
 

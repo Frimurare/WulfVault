@@ -920,7 +920,6 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             .hamburger {
                 display: flex !important;
                 order: 3;
-                margin-left: auto;
             }
             .header nav {
                 display: none !important;
@@ -995,70 +994,7 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
     </div>
     <div class="mobile-nav-overlay"></div>`
 
-	headerJS := `
-    <script>
-    (function() {
-        'use strict';
-        function initMobileNav() {
-            const header = document.querySelector('.header');
-            if (!header) return;
-            const nav = header.querySelector('nav');
-            if (!nav) return;
-            const hamburger = header.querySelector('.hamburger');
-            if (!hamburger) return;
-            const overlay = document.querySelector('.mobile-nav-overlay');
-            if (!overlay) return;
-
-            // Skip if already initialized
-            if (hamburger.dataset.navInitialized === 'true') return;
-            hamburger.dataset.navInitialized = 'true';
-
-            function toggleNav() {
-                const isActive = nav.classList.contains('active');
-                if (isActive) {
-                    nav.classList.remove('active');
-                    hamburger.classList.remove('active');
-                    overlay.classList.remove('active');
-                    hamburger.setAttribute('aria-expanded', 'false');
-                    document.body.style.overflow = '';
-                } else {
-                    nav.classList.add('active');
-                    hamburger.classList.add('active');
-                    overlay.classList.add('active');
-                    hamburger.setAttribute('aria-expanded', 'true');
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-            hamburger.addEventListener('click', toggleNav);
-            overlay.addEventListener('click', toggleNav);
-            const navLinks = nav.querySelectorAll('a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        toggleNav();
-                    }
-                });
-            });
-            window.addEventListener('resize', () => {
-                if (window.innerWidth > 768 && nav.classList.contains('active')) {
-                    toggleNav();
-                }
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && nav.classList.contains('active')) {
-                    toggleNav();
-                }
-            });
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMobileNav);
-        } else {
-            initMobileNav();
-        }
-    })();
-    </script>`
-
-	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML + headerJS
+	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
 }
 
 func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
@@ -1491,6 +1427,84 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
         Powered by WulfVault Version ` + s.config.Version + `
     </div>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -1610,8 +1624,8 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             }
             table td {
                 display: block;
-                text-align: left;
-                padding: 12px 0;
+                text-align: right;
+                padding: 8px 0;
                 border-bottom: 1px solid #eee;
             }
             table td:last-child {
@@ -1619,14 +1633,9 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             }
             table td::before {
                 content: attr(data-label);
-                display: block;
+                float: left;
                 font-weight: 600;
                 color: #666;
-                margin-bottom: 4px;
-                font-size: 13px;
-            }
-            table td:last-child::before {
-                display: none;
             }
             .action-links {
                 display: flex;
@@ -1803,6 +1812,84 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             .then(() => window.location.reload())
             .catch(err => alert('Error deleting download account'));
         }
+    </script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
     </script>
 </body>
 </html>`
@@ -2174,20 +2261,22 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
             td {
                 display: block;
-                text-align: left;
-                padding: 12px 0;
+                text-align: right;
+                padding: 8px 0;
                 border: none !important;
                 position: relative;
-                min-height: 35px;
+                padding-left: 50%;
             }
 
             td::before {
                 content: attr(data-label);
-                display: block;
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-right: 10px;
+                text-align: left;
                 font-weight: 600;
                 color: #666;
-                margin-bottom: 4px;
-                font-size: 13px;
             }
 
             td:last-child {
@@ -2459,6 +2548,84 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             </div>
         </div>
     </div>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -2615,6 +2782,84 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
             </form>
         </div>
     </div>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -3176,6 +3421,84 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
                 alert('Delete failed: ' + error.message);
             }
         }
+    </script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
     </script>
 </body>
 </html>`

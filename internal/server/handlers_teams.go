@@ -1168,6 +1168,84 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             });
         }
     </script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -1336,7 +1414,6 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             .hamburger {
                 display: flex !important;
                 order: 3;
-                margin-left: auto;
             }
             .header-user nav {
                 display: none !important;
@@ -1772,7 +1849,6 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             .hamburger {
                 display: flex !important;
                 order: 3;
-                margin-left: auto;
             }
             .header-user nav {
                 display: none !important;
@@ -1833,19 +1909,21 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             }
             table td {
                 display: block;
-                text-align: left;
-                padding: 12px 0;
+                text-align: right;
+                padding: 8px 0;
                 border: none;
                 position: relative;
-                min-height: 35px;
+                padding-left: 50%;
             }
             table td::before {
                 content: attr(data-label);
-                display: block;
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-right: 10px;
+                text-align: left;
                 font-weight: 600;
                 color: #666;
-                margin-bottom: 4px;
-                font-size: 13px;
             }
             table td:last-child {
                 padding-left: 0;
