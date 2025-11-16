@@ -1,4 +1,4 @@
-# WulfVault User Guide v4.0.0
+# WulfVault User Guide v4.3.4
 
 **Complete Guide for Administrators and Users**
 
@@ -386,7 +386,7 @@ environment:
 docker logs wulfvault
 
 # Output shows:
-# WulfVault File Sharing System v3.3.0
+# WulfVault File Sharing System v4.3.4
 # Server starting on :8080
 # Server URL: https://files.yourdomain.com
 ```
@@ -1426,7 +1426,7 @@ Recipients can:
 
 ---
 
-**WulfVault v3.3.0**
+**WulfVault v4.3.4**
 **Copyright © 2025 Ulf Holmström (Frimurare)**
 **Licensed under AGPL-3.0**
 
