@@ -873,13 +873,10 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
             transform: translateY(0);
         }
         .header nav span {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-            font-weight: 500;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 400;
+            margin-left: 8px;
         }
 
         /* Mobile Navigation Styles */
@@ -1298,17 +1295,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
             <div class="joke-text">` + joke.Text + `</div>
         </div>
 
-        <h2>Quick Actions</h2>
-        <div class="quick-actions">
-            <a href="/admin/users/create" class="action-btn">➕ Create User</a>
-            <a href="/admin/users" class="action-btn">👥 Manage Users</a>
-            <a href="/admin/files" class="action-btn">📁 View All Files</a>
-            <a href="/admin/trash" class="action-btn">🗑️ View Trash</a>
-            <a href="/admin/branding" class="action-btn">🎨 Customize Branding</a>
-            <a href="/admin/settings" class="action-btn">⚙️ System Settings</a>
-        </div>
-
-        <h2 style="margin-top: 40px;">Dashboard Overview</h2>
+        <h2>Dashboard Overview</h2>
 
         <div class="stats">
             <div class="stat-card">

@@ -467,13 +467,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             transform: translateY(0);
         }
         .header nav span {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-            font-weight: 500;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 400;
+            margin-left: 8px;
         }
         .container {
             max-width: 1200px;
