@@ -1427,7 +1427,84 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
         Powered by WulfVault Version ` + s.config.Version + `
     </div>
-    <script src="/static/js/mobile-nav.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -1670,7 +1747,84 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             .catch(err => alert('Error deleting download account'));
         }
     </script>
-    <script src="/static/js/mobile-nav.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -2189,7 +2343,84 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             </div>
         </div>
     </div>
-    <script src="/static/js/mobile-nav.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -2346,7 +2577,84 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
             </form>
         </div>
     </div>
-    <script src="/static/js/mobile-nav.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 
@@ -2844,7 +3152,84 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             }
         }
     </script>
-    <script src="/static/js/mobile-nav.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        function initMobileNav() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            const nav = header.querySelector('nav');
+            if (!nav) return;
+            const hamburger = header.querySelector('.hamburger');
+            if (!hamburger) return;
+            let overlay = document.querySelector('.mobile-nav-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'mobile-nav-overlay';
+                document.body.appendChild(overlay);
+            }
+            function toggleNav() {
+                const isActive = nav.classList.contains('active');
+                if (isActive) {
+                    nav.classList.remove('active');
+                    hamburger.classList.remove('active');
+                    overlay.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', 'false');
+                    document.body.style.overflow = '';
+                } else {
+                    nav.classList.add('active');
+                    hamburger.classList.add('active');
+                    overlay.classList.add('active');
+                    hamburger.setAttribute('aria-expanded', 'true');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            hamburger.addEventListener('click', toggleNav);
+            overlay.addEventListener('click', toggleNav);
+            const navLinks = nav.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleNav();
+                    }
+                });
+            });
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
+                        toggleNav();
+                    }
+                }, 250);
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && nav.classList.contains('active')) {
+                    toggleNav();
+                }
+            });
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (headerTexts[index]) {
+                            cell.setAttribute('data-label', headerTexts[index]);
+                        }
+                    });
+                });
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileNav);
+        } else {
+            initMobileNav();
+        }
+    })();
+    </script>
 </body>
 </html>`
 

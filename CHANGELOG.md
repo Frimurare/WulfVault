@@ -1,5 +1,67 @@
 # Changelog
 
+## [4.3.1.2] - 2025-11-16 ✅ Mobile Navigation JavaScript Fix
+
+### 🐛 Bug Fixes
+
+**Hamburger Menu Now Fully Functional:**
+- Fixed hamburger menu click handler not working on mobile devices
+- Replaced external JavaScript file with inline JavaScript embedded directly in HTML
+- Previous attempts failed because external `/static/js/mobile-nav.js` wasn't executing
+- Hamburger menu now opens/closes navigation properly when tapped
+
+**Technical Solution:**
+- Removed all references to external `<script src="/static/js/mobile-nav.js"></script>`
+- Embedded complete JavaScript directly in inline `<script>` tags in each page
+- JavaScript now guaranteed to execute because it's inline in the HTML
+- Uses same pattern that fixed the CSS issue in v4.3.1.1
+
+**JavaScript Functionality:**
+- Toggle navigation on hamburger button click
+- Close navigation when clicking overlay
+- Close navigation when clicking any nav link on mobile
+- Close navigation when pressing Escape key
+- Prevent body scrolling when mobile menu is open
+- Automatically close menu when resizing to desktop width
+- Add `data-label` attributes to table cells for mobile card layout
+
+**Changes:**
+- `internal/server/handlers_admin.go`: Replaced 6 external script tags with inline JavaScript
+- `internal/server/handlers_user.go`: Replaced external script with inline JavaScript
+- `internal/server/handlers_teams.go`: Replaced 3 external script tags with inline JavaScript
+- `internal/server/handlers_user_settings.go`: Replaced external script with inline JavaScript
+
+### 📁 Modified Files
+
+- `internal/server/handlers_admin.go`: All admin pages now use inline mobile JavaScript
+- `internal/server/handlers_user.go`: User dashboard uses inline mobile JavaScript
+- `internal/server/handlers_teams.go`: Team pages use inline mobile JavaScript
+- `internal/server/handlers_user_settings.go`: Settings page uses inline mobile JavaScript
+- `cmd/server/main.go`: Version bump to 4.3.1.2
+
+### 🎯 Impact
+
+Mobile navigation is now FULLY FUNCTIONAL:
+- ✅ Hamburger button visible on mobile (fixed in v4.3.1.1)
+- ✅ Hamburger button clickable and responsive (fixed in v4.3.1.2)
+- ✅ Navigation slides in from right when tapped
+- ✅ Dark overlay appears behind navigation
+- ✅ Clicking overlay closes navigation
+- ✅ Clicking nav links closes navigation
+- ✅ ESC key closes navigation
+- ✅ Body scroll prevented when menu open
+- ✅ Tables display as cards on mobile with proper labels
+
+**Complete Mobile Responsive Experience:**
+- Admin can now manage users on-the-go from iPhone/Android
+- Admin can view dashboard stats on mobile devices
+- Admin can manage teams from mobile
+- Admin can clean up trash from mobile
+- Users can share files and copy links from mobile
+- All interfaces fully optimized for touch screens
+
+---
+
 ## [4.3.1.1] - 2025-11-15 🔧 Mobile Navigation Inline CSS Fix
 
 ### 🐛 Bug Fixes
