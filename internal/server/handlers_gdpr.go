@@ -120,6 +120,10 @@ func (s *Server) getDownloadAccountFromSession(r *http.Request) (*models.Downloa
 func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *models.DownloadAccount, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
 	errorHTML := ""
 	if errorMsg != "" {
 		errorHTML = `<div style="background: #fee; border: 1px solid #c33; color: #c33; padding: 15px; border-radius: 5px; margin-bottom: 20px;">` + errorMsg + `</div>`
@@ -147,6 +151,14 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-header .logo {
+            display: flex;
+            align-items: center;
+        }
+        .nav-header .logo img {
+            max-height: 40px;
+            max-width: 150px;
         }
         .nav-header h1 { font-size: 24px; }
         .nav-header nav {
@@ -379,7 +391,16 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
 </head>
 <body>
     <div class="nav-header">
-        <h1>` + s.config.CompanyName + ` - My Downloads</h1>
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + ` - My Downloads</h1>`
+	}
+
+	html += `
+        </div>
         <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
             <span></span>
             <span></span>
