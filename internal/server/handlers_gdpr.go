@@ -6,9 +6,11 @@
 package server
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
@@ -621,4 +623,471 @@ func (s *Server) renderAccountDeletionSuccess(w http.ResponseWriter) {
 </html>`
 
 	w.Write([]byte(html))
+}
+
+// handleUserDataExport exports all user data as JSON (GDPR Article 15 - Right of Access)
+func (s *Server) handleUserDataExport(w http.ResponseWriter, r *http.Request) {
+	user := s.getUserFromContext(r)
+	if user == nil {
+		s.sendError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	// Collect all user data
+	userData := make(map[string]interface{})
+
+	// User profile
+	userData["user"] = map[string]interface{}{
+		"id":          user.Id,
+		"name":        user.Name,
+		"email":       user.Email,
+		"role":        user.Role,
+		"created_at":  user.CreatedAt,
+		"is_active":   user.IsActive,
+		"quota_bytes": user.QuotaBytes,
+		"used_bytes":  user.UsedBytes,
+	}
+
+	// Get user's files
+	files, err := database.DB.GetUserFiles(user.Id)
+	if err == nil {
+		filesList := make([]map[string]interface{}, 0)
+		for _, file := range files {
+			fileData := map[string]interface{}{
+				"id":           file.Id,
+				"filename":     file.Filename,
+				"size":         file.Size,
+				"mime_type":    file.MimeType,
+				"uploaded_at":  file.UploadedAt,
+				"share_count":  file.ShareCount,
+			}
+			filesList = append(filesList, fileData)
+		}
+		userData["files"] = filesList
+	}
+
+	// Get user's audit logs
+	auditLogs, err := database.DB.GetUserAuditLogs(user.Id, 1000) // Last 1000 logs
+	if err == nil {
+		logsList := make([]map[string]interface{}, 0)
+		for _, log := range auditLogs {
+			logData := map[string]interface{}{
+				"action":     log.Action,
+				"timestamp":  log.Timestamp,
+				"ip_address": log.IPAddress,
+				"details":    log.Details,
+			}
+			logsList = append(logsList, logData)
+		}
+		userData["audit_logs"] = logsList
+	}
+
+	// Export metadata
+	userData["export_metadata"] = map[string]interface{}{
+		"export_date": strconv.FormatInt(currentTimestamp(), 10),
+		"export_type": "GDPR Article 15 - Right of Access",
+		"format":      "JSON",
+	}
+
+	// Set headers for JSON download
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=wulfvault-user-data-export-"+strconv.Itoa(user.Id)+".json")
+
+	// Encode and send JSON
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(userData); err != nil {
+		log.Printf("Failed to encode user data export: %v", err)
+		s.sendError(w, http.StatusInternalServerError, "Failed to export data")
+		return
+	}
+
+	log.Printf("User data exported: UserID=%d, Email=%s", user.Id, user.Email)
+}
+
+// handleUserAccountSettings shows account settings page with deletion option
+func (s *Server) handleUserAccountSettings(w http.ResponseWriter, r *http.Request) {
+	user := s.getUserFromContext(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	s.renderUserAccountSettings(w, user, "")
+}
+
+// handleUserAccountDelete handles GDPR-compliant account deletion for system users
+func (s *Server) handleUserAccountDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	user := s.getUserFromContext(r)
+	if user == nil {
+		s.sendError(w, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	// Verify confirmation
+	confirmation := r.FormValue("confirmation")
+	if confirmation != "DELETE" {
+		// Re-render page with error
+		s.renderUserAccountSettings(w, user, "You must type DELETE to confirm")
+		return
+	}
+
+	// Store email before anonymization for confirmation email
+	userEmail := user.Email
+	userName := user.Name
+
+	// Soft delete the user (GDPR-compliant deletion)
+	err := database.DB.SoftDeleteUser(user.Id, "self")
+	if err != nil {
+		log.Printf("Failed to soft delete user: %v", err)
+		s.sendError(w, http.StatusInternalServerError, "Failed to delete account")
+		return
+	}
+
+	log.Printf("User account soft-deleted (GDPR): ID=%d, Email=%s", user.Id, userEmail)
+
+	// Send confirmation email
+	go func() {
+		err := email.SendAccountDeletionConfirmation(userEmail, userName)
+		if err != nil {
+			log.Printf("Failed to send deletion confirmation email: %v", err)
+		} else {
+			log.Printf("Account deletion confirmation sent to: %s", userEmail)
+		}
+	}()
+
+	// Clear session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	})
+
+	// Show success page
+	s.renderAccountDeletionSuccess(w)
+}
+
+// renderUserAccountSettings renders the account settings page with deletion option
+func (s *Server) renderUserAccountSettings(w http.ResponseWriter, user *models.User, errorMsg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Get branding config
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
+	errorHTML := ""
+	if errorMsg != "" {
+		errorHTML = `<div style="background: #fee; border: 1px solid #c33; color: #c33; padding: 15px; border-radius: 5px; margin-bottom: 20px;">` + errorMsg + `</div>`
+	}
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
+    <title>Account Settings - ` + s.config.CompanyName + `</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .nav-header {
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-header .logo {
+            display: flex;
+            align-items: center;
+        }
+        .nav-header .logo img {
+            max-height: 40px;
+            max-width: 150px;
+        }
+        .nav-header h1 { font-size: 24px; }
+        .nav-header nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .nav-header nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.2);
+            transition: background 0.3s;
+        }
+        .nav-header nav a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .page-header {
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .page-header h2 { font-size: 24px; margin-bottom: 5px; }
+        .page-header p { opacity: 0.9; font-size: 14px; }
+        .content { padding: 30px; }
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .account-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .account-info p {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .account-info strong { color: #333; }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+            margin-left: 10px;
+        }
+        .btn-secondary:hover { background: #cbd5e0; }
+        .danger-zone {
+            background: #fff5f5;
+            border: 2px solid #feb2b2;
+            border-radius: 8px;
+            padding: 25px;
+        }
+        .danger-zone h3 {
+            color: #c53030;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .danger-zone p {
+            color: #742a2a;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .danger-zone ul {
+            margin-left: 20px;
+            margin-bottom: 20px;
+            color: #742a2a;
+        }
+        .danger-zone li { margin: 8px 0; }
+        .confirmation-box {
+            background: white;
+            border: 2px solid #feb2b2;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .confirmation-box label {
+            display: block;
+            font-weight: bold;
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+        .confirmation-box input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: monospace;
+        }
+        .confirmation-box small {
+            display: block;
+            margin-top: 8px;
+            color: #718096;
+        }
+        .btn-danger {
+            background: #c53030;
+            color: white;
+        }
+        .btn-danger:hover { background: #9b2c2c; transform: translateY(-2px); }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                margin: 20px 15px;
+            }
+            .btn-secondary {
+                margin-left: 0;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+            }
+        }
+    </style>
+    <script>
+        function confirmDelete() {
+            const input = document.getElementById('confirmInput').value;
+            if (input !== 'DELETE') {
+                alert('You must type DELETE exactly as shown to confirm.');
+                return false;
+            }
+            return confirm('Are you absolutely sure? This cannot be undone. Your account and all files will be permanently deleted.');
+        }
+    </script>
+</head>
+<body>
+    <div class="nav-header">
+        <div class="logo">`
+
+	if logoData != "" {
+		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		html += `<h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	html += `
+        </div>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/settings">Settings</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Account Settings</h2>
+            <p>` + s.config.CompanyName + `</p>
+        </div>
+
+        <div class="content">
+            ` + errorHTML + `
+
+            <div class="section">
+                <h3>Account Information</h3>
+                <div class="account-info">
+                    <p><strong>Name:</strong> <span>` + user.Name + `</span></p>
+                    <p><strong>Email:</strong> <span>` + user.Email + `</span></p>
+                    <p><strong>Role:</strong> <span>` + user.Role + `</span></p>
+                    <p><strong>Account Created:</strong> <span>` + formatTimestamp(user.CreatedAt) + `</span></p>
+                    <p><strong>Storage Used:</strong> <span>` + formatBytes(user.UsedBytes) + ` / ` + formatBytes(user.QuotaBytes) + `</span></p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Data Privacy & Export</h3>
+                <p>Under GDPR, you have the right to access and export all your personal data.</p>
+                <a href="/api/v1/user/export-data" class="btn btn-primary" download>Export My Data (JSON)</a>
+                <p style="margin-top: 10px; font-size: 14px; color: #718096;">
+                    This will download a JSON file containing your profile, files list, and activity logs.
+                </p>
+            </div>
+
+            <div class="section danger-zone">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Delete My Account (GDPR)
+                </h3>
+
+                <p><strong>WARNING!</strong> By deleting your account:</p>
+                <ul>
+                    <li>Your personal information will be anonymized and removed from our system</li>
+                    <li>All your files will be permanently deleted</li>
+                    <li>All your share links will be disabled</li>
+                    <li>This action cannot be undone</li>
+                    <li>You will receive a confirmation email</li>
+                </ul>
+
+                <form method="POST" action="/settings/delete-account" onsubmit="return confirmDelete()">
+                    <div class="confirmation-box">
+                        <label for="confirmInput">Type DELETE to confirm:</label>
+                        <input type="text" id="confirmInput" name="confirmation" autocomplete="off" required>
+                        <small>This action is irreversible. Type exactly: DELETE</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger">Delete My Account Permanently</button>
+                    <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+
+        <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
+            Powered by WulfVault © Ulf Holmström – AGPL-3.0
+        </div>
+    </div>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// Helper functions for formatting
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return strconv.FormatInt(bytes, 10) + " B"
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return strconv.FormatFloat(float64(bytes)/float64(div), 'f', 1, 64) + " " + "KMGTPE"[exp:exp+1] + "B"
+}
+
+func formatTimestamp(timestamp int64) string {
+	if timestamp == 0 {
+		return "N/A"
+	}
+	t := time.Unix(timestamp, 0)
+	return t.Format("2006-01-02 15:04:05")
+}
+
+func currentTimestamp() int64 {
+	return time.Now().Unix()
 }

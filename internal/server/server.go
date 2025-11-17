@@ -82,7 +82,12 @@ func (s *Server) Start() error {
 	// User routes (require authentication)
 	mux.HandleFunc("/dashboard", s.requireAuth(s.handleUserDashboard))
 	mux.HandleFunc("/settings", s.requireAuth(s.handleUserSettings))
+	mux.HandleFunc("/settings/delete-account", s.requireAuth(s.handleUserAccountDelete))
+	mux.HandleFunc("/settings/account", s.requireAuth(s.handleUserAccountSettings))
 	mux.HandleFunc("/change-password", s.requireAuth(s.handleChangePassword))
+
+	// GDPR API routes (require authentication)
+	mux.HandleFunc("/api/v1/user/export-data", s.requireAuth(s.handleUserDataExport))
 	mux.HandleFunc("/upload", s.requireAuth(s.handleUpload))
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
