@@ -8,6 +8,7 @@ package server
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -178,7 +179,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err == nil {
 		// Try to get user from session before deleting it
-		if user, err := auth.GetUserFromSession(cookie.Value); err == nil && user != nil {
+		if user, err := auth.GetUserBySession(cookie.Value); err == nil && user != nil {
 			userEmail = user.Email
 			userID = int64(user.Id)
 		}
