@@ -1,0 +1,306 @@
+<!-- Cookie Consent Banner for WulfVault -->
+<!-- Include this snippet before the closing </body> tag on all public pages -->
+
+<style>
+#cookie-consent-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    color: white;
+    padding: 20px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: none;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+#cookie-consent-banner.show {
+    display: block;
+}
+
+.cookie-consent-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.cookie-consent-content {
+    flex: 1;
+}
+
+.cookie-consent-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.cookie-consent-content p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: 0.9;
+}
+
+.cookie-consent-content a {
+    color: #63b3ed;
+    text-decoration: underline;
+}
+
+.cookie-consent-content a:hover {
+    color: #90cdf4;
+}
+
+.cookie-consent-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cookie-consent-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.cookie-consent-btn-accept {
+    background: #48bb78;
+    color: white;
+}
+
+.cookie-consent-btn-accept:hover {
+    background: #38a169;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.cookie-consent-btn-decline {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.cookie-consent-btn-decline:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.5);
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 768px) {
+    .cookie-consent-container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .cookie-consent-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .cookie-consent-btn {
+        width: 100%;
+    }
+
+    #cookie-consent-banner {
+        padding: 15px;
+    }
+
+    .cookie-consent-content h3 {
+        font-size: 16px;
+    }
+
+    .cookie-consent-content p {
+        font-size: 13px;
+    }
+}
+</style>
+
+<div id="cookie-consent-banner">
+    <div class="cookie-consent-container">
+        <div class="cookie-consent-content">
+            <h3>🍪 This site uses cookies</h3>
+            <p>
+                We use only essential cookies to provide authentication and security.
+                No tracking, analytics, or advertising cookies are used.
+                <a href="/gdpr-compliance/COOKIE_POLICY_TEMPLATE.md" target="_blank">Learn more</a> |
+                <a href="/gdpr-compliance/PRIVACY_POLICY_TEMPLATE.md" target="_blank">Privacy Policy</a>
+            </p>
+        </div>
+        <div class="cookie-consent-actions">
+            <button class="cookie-consent-btn cookie-consent-btn-accept" onclick="acceptCookies()">
+                Accept Essential Cookies
+            </button>
+            <button class="cookie-consent-btn cookie-consent-btn-decline" onclick="declineCookies()">
+                Decline (Site Won't Work)
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // Cookie utility functions
+    function setCookie(name, value, days) {
+        const date = new Date();
+        date.setTime(date.setTime() + (days * 24 * 60 * 60 * 1000));
+        const expires = "expires=" + date.toUTCString();
+        document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
+    }
+
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i];
+            while (cookie.charAt(0) === ' ') {
+                cookie = cookie.substring(1);
+            }
+            if (cookie.indexOf(nameEQ) === 0) {
+                return cookie.substring(nameEQ.length);
+            }
+        }
+        return null;
+    }
+
+    // Accept cookies
+    window.acceptCookies = function() {
+        setCookie('cookie_consent', 'accepted', 365);
+        hideBanner();
+        console.log('Cookie consent: Accepted');
+    };
+
+    // Decline cookies
+    window.declineCookies = function() {
+        alert('Essential cookies are required for this site to function. Without them, you will not be able to log in or use the service.');
+        // Still set consent cookie to avoid showing banner again
+        setCookie('cookie_consent', 'declined', 365);
+        hideBanner();
+        console.log('Cookie consent: Declined (but site will not work without essential cookies)');
+    };
+
+    // Hide banner
+    function hideBanner() {
+        const banner = document.getElementById('cookie-consent-banner');
+        if (banner) {
+            banner.style.animation = 'slideDown 0.3s ease-in';
+            setTimeout(function() {
+                banner.classList.remove('show');
+            }, 300);
+        }
+    }
+
+    // Show banner if consent not given
+    function checkCookieConsent() {
+        const consent = getCookie('cookie_consent');
+        if (!consent) {
+            // User has not accepted or declined cookies yet
+            const banner = document.getElementById('cookie-consent-banner');
+            if (banner) {
+                banner.classList.add('show');
+            }
+        }
+    }
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkCookieConsent);
+    } else {
+        checkCookieConsent();
+    }
+
+    // Add slide down animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideDown {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(100%);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+})();
+</script>
+
+<!--
+IMPLEMENTATION INSTRUCTIONS:
+
+1. **For Static HTML Pages:**
+   Add this snippet before the closing </body> tag:
+   ```html
+   <!-- Cookie Consent Banner -->
+   <?php include('gdpr-compliance/COOKIE_CONSENT_BANNER.html'); ?>
+   </body>
+   ```
+
+2. **For Go Templates:**
+   Add to your base template (e.g., base.html or layout.html):
+   ```html
+   {{ template "cookie-consent-banner" . }}
+   </body>
+   ```
+
+   Then create a cookie-consent-banner template:
+   ```go
+   {{define "cookie-consent-banner"}}
+   <!-- Paste the cookie consent banner HTML here -->
+   {{end}}
+   ```
+
+3. **For Inline Inclusion:**
+   Simply copy-paste the entire content of this file before </body> in each page.
+
+4. **Customize Links:**
+   Update these links to point to your actual Privacy Policy and Cookie Policy pages:
+   - /gdpr-compliance/COOKIE_POLICY_TEMPLATE.md
+   - /gdpr-compliance/PRIVACY_POLICY_TEMPLATE.md
+
+5. **Test the Banner:**
+   - Clear browser cookies
+   - Reload the page
+   - Banner should appear at the bottom
+   - Click "Accept" to hide it
+   - Refresh page - banner should not reappear
+   - Check browser cookies - should see "cookie_consent=accepted"
+
+6. **Optional: Server-Side Implementation:**
+   For better control, you can implement cookie consent checking server-side:
+   ```go
+   func checkCookieConsent(r *http.Request) bool {
+       cookie, err := r.Cookie("cookie_consent")
+       if err != nil || cookie.Value != "accepted" {
+           return false
+       }
+       return true
+   }
+   ```
+
+NOTES:
+- This banner is GDPR-compliant for essential cookies only
+- Essential cookies (authentication) do NOT require prior consent under GDPR
+- The banner is informational but provides transparency as required
+- If you add analytics or tracking cookies, you MUST obtain explicit consent BEFORE setting them
+- Store the consent cookie for 365 days (1 year) as recommended
+- Cookie consent is stored in 'cookie_consent' cookie with values 'accepted' or 'declined'
+-->
