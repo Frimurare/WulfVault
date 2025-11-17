@@ -1487,11 +1487,46 @@ func (s *Server) handleAPIRestoreFile(w http.ResponseWriter, r *http.Request) {
 
 	fileId := remainingPath[:slashIdx]
 
+	// Get file info before restore for audit log
+	deletedFiles, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		log.Printf("Error getting deleted files: %v", err)
+		http.Error(w, "Error getting file info", http.StatusInternalServerError)
+		return
+	}
+
+	var fileInfo *database.FileInfo
+	for _, f := range deletedFiles {
+		if f.Id == fileId {
+			fileInfo = f
+			break
+		}
+	}
+
+	if fileInfo == nil {
+		http.Error(w, "File not found in trash", http.StatusNotFound)
+		return
+	}
+
 	if err := database.DB.RestoreFile(fileId); err != nil {
 		log.Printf("Error restoring file: %v", err)
 		http.Error(w, "Error restoring file", http.StatusInternalServerError)
 		return
 	}
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "FILE_RESTORED",
+		EntityType: "File",
+		EntityID:   fileId,
+		Details:    fmt.Sprintf("{\"filename\":\"%s\",\"size\":\"%s\"}", fileInfo.Name, fileInfo.Size),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -1514,11 +1549,47 @@ func (s *Server) handleAPIPermanentDeleteFile(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Get file info before deletion for audit log
+	deletedFiles, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		log.Printf("Error getting deleted files: %v", err)
+		http.Error(w, "Error getting file info", http.StatusInternalServerError)
+		return
+	}
+
+	var fileInfo *database.FileInfo
+	for _, f := range deletedFiles {
+		if f.Id == fileId {
+			fileInfo = f
+			break
+		}
+	}
+
+	if fileInfo == nil {
+		http.Error(w, "File not found in trash", http.StatusNotFound)
+		return
+	}
+
+	// Permanently delete file
 	if err := database.DB.PermanentDeleteFile(fileId); err != nil {
 		log.Printf("Error permanently deleting file: %v", err)
 		http.Error(w, "Error deleting file", http.StatusInternalServerError)
 		return
 	}
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "FILE_PERMANENTLY_DELETED",
+		EntityType: "File",
+		EntityID:   fileId,
+		Details:    fmt.Sprintf("{\"filename\":\"%s\",\"size\":\"%s\"}", fileInfo.Name, fileInfo.Size),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
