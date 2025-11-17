@@ -189,6 +189,20 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log the action
+	admin, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(admin.Id),
+		UserEmail:  admin.Email,
+		Action:     "USER_CREATED",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", newUser.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"quota_mb\":%d}", newUser.Email, newUser.Name, newUser.UserLevel, newUser.StorageQuotaMB),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
+
 	// Send welcome email if requested
 	if sendWelcomeEmail {
 		// Create password reset token
@@ -280,6 +294,20 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log the action
+	admin, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(admin.Id),
+		UserEmail:  admin.Email,
+		Action:     "USER_UPDATED",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", existingUser.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"is_active\":%t}", existingUser.Email, existingUser.Name, existingUser.UserLevel, existingUser.IsActive),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
+
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
 
@@ -303,11 +331,31 @@ func (s *Server) handleAdminUserDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get user info before deletion for audit log
+	userToDelete, err := database.DB.GetUserByID(userID)
+	if err != nil {
+		s.sendError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
 	// Delete user (this will also soft-delete all their files to trash)
 	if err := database.DB.DeleteUser(userID, admin.Id); err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to delete user")
 		return
 	}
+
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(admin.Id),
+		UserEmail:  admin.Email,
+		Action:     "USER_DELETED",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", userID),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", userToDelete.Email, userToDelete.Name, userToDelete.UserLevel),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
 
 	s.sendJSON(w, http.StatusOK, map[string]string{"message": "User deleted, files moved to trash"})
 }
@@ -398,6 +446,21 @@ func (s *Server) handleAdminCreateDownloadAccount(w http.ResponseWriter, r *http
 	}
 
 	log.Printf("Admin created download account: %s", email)
+
+	// Log the action
+	admin, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(admin.Id),
+		UserEmail:  admin.Email,
+		Action:     "DOWNLOAD_ACCOUNT_CREATED",
+		EntityType: "DownloadAccount",
+		EntityID:   fmt.Sprintf("%d", account.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"admin_created\":true}", account.Email, account.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
+
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }
 
