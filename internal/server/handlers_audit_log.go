@@ -429,6 +429,73 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
             text-decoration: underline;
         }
 
+        .details-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .details-modal-content {
+            background-color: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 800px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .details-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .details-modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .details-close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+        }
+
+        .details-close:hover {
+            color: #000;
+        }
+
+        .details-json {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #333;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -580,6 +647,17 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
         </div>
     </div>
 
+    <!-- Details Modal -->
+    <div id="detailsModal" class="details-modal">
+        <div class="details-modal-content">
+            <div class="details-modal-header">
+                <h3>📋 Audit Log Details</h3>
+                <button class="details-close" onclick="closeDetailsModal()">&times;</button>
+            </div>
+            <div class="details-json" id="detailsJson"></div>
+        </div>
+    </div>
+
     <script>
         let currentOffset = 0;
         let limit = 20;
@@ -602,7 +680,31 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
         }
 
         function showDetails(details) {
-            alert(details);
+            const modal = document.getElementById('detailsModal');
+            const jsonDiv = document.getElementById('detailsJson');
+
+            // Try to parse and pretty-print JSON
+            try {
+                const parsed = JSON.parse(details);
+                jsonDiv.textContent = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                // If not valid JSON, just show as-is
+                jsonDiv.textContent = details;
+            }
+
+            modal.style.display = 'block';
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('detailsModal');
+            if (event.target === modal) {
+                closeDetailsModal();
+            }
         }
 
         async function loadLogs() {
@@ -661,7 +763,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
                     '<td>' + log.user_email + '</td>' +
                     '<td><span class="badge ' + badgeClass + '">' + log.action + '</span></td>' +
                     '<td>' + log.entity_type + (log.entity_id ? ' #' + log.entity_id : '') + '</td>' +
-                    '<td class="details-cell" onclick="showDetails(\'' + log.details.replace(/'/g, "\\'") + '\')">' + log.details + '</td>' +
+                    '<td class="details-cell" title="' + log.details.replace(/"/g, '&quot;') + '" onclick="showDetails(\'' + log.details.replace(/'/g, "\\'") + '\')">' + log.details + '</td>' +
                     '<td>' + log.ip_address + '</td>' +
                     '<td>' + statusBadge + '</td>' +
                     '</tr>';
