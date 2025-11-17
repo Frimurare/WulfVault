@@ -1,7 +1,7 @@
 # WulfVault Development Notes
 
-**Last Updated:** 2025-11-17  
-**Current Version:** 4.5.13 Gold  
+**Last Updated:** 2025-11-17
+**Current Version:** 4.6.0 Champagne  
 **Developer:** Ulf Holmström (Frimurare)  
 **Contact:** ulf@manvarg.se
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 🎯 Current Status (v4.5.13 Gold)
+## 🎯 Current Status (v4.6.0 Champagne - GDPR Compliance)
 
 ### Latest Release Features
 **Enterprise User Management with Pagination & Filtering**
