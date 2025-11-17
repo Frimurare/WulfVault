@@ -1,5 +1,174 @@
 # Changelog
 
+## [4.5.8 Gold] - 2025-11-17 🚨 CRITICAL - Audit Logging Actually Broken!
+
+### 🎯 CRITICAL Security & Compliance Bug
+
+The real problem discovered: **Audit logging was NEVER working for login/logout events!**
+
+Version 4.5.7 increased the pagination limit thinking logs weren't showing. But the actual issue was much worse - the system wasn't logging login/logout events AT ALL.
+
+### 🐛 The REAL Problem
+
+**What We Thought in 4.5.7:**
+- "Audit logs stop at ID 19 because pagination only shows 50 entries"
+- Solution: Increase limit to 200 ❌ WRONG!
+
+**The Actual Problem:**
+- Login/logout events were NEVER being logged to audit_logs table
+- Last log entry ID 19 from 2025-11-16 19:28:30 was the last time ANYTHING got logged
+- System appeared to work but was completely missing critical security events
+- **SEVERE compliance violation** - no login tracking = can't detect unauthorized access!
+
+**Technical Root Cause:**
+- `handleLogin()` function had NO audit logging code
+- `handleLogout()` function had NO audit logging code
+- `auth.CreateSession()` did not log anything
+- AuditLogger helper class existed but was never used
+- Someone added audit log infrastructure but forgot to wire it up!
+
+### 🔒 Security Impact
+
+**Before This Fix:**
+- ❌ No record of who logged in
+- ❌ No record of failed login attempts (brute force undetectable!)
+- ❌ No record of logouts
+- ❌ No IP tracking for sessions
+- ❌ Cannot detect suspicious login patterns
+- ❌ Cannot prove compliance with security policies
+- ❌ Cannot investigate security incidents
+
+**After This Fix:**
+- ✅ Every login attempt logged (success AND failure)
+- ✅ Every logout logged
+- ✅ IP addresses tracked
+- ✅ User agents tracked
+- ✅ Timestamps accurate
+- ✅ Can detect brute force attempts
+- ✅ Full audit trail for compliance
+
+### ✅ The Fix
+
+**Added Missing Audit Logging:**
+
+1. **Login Failed Events:**
+```go
+// When authentication fails
+database.DB.LogAction(&database.AuditLogEntry{
+    UserID:     0,
+    UserEmail:  email,
+    Action:     "LOGIN_FAILED",
+    EntityType: "Session",
+    Details:    "invalid_credentials",
+    IPAddress:  getClientIP(r),
+    UserAgent:  r.UserAgent(),
+    Success:    false,
+})
+```
+
+2. **Login Success Events (Regular Users):**
+```go
+// After session created successfully
+database.DB.LogAction(&database.AuditLogEntry{
+    UserID:     int64(user.Id),
+    UserEmail:  user.Email,
+    Action:     "LOGIN_SUCCESS",
+    EntityType: "Session",
+    EntityID:   sessionID,
+    IPAddress:  getClientIP(r),
+    UserAgent:  r.UserAgent(),
+    Success:    true,
+})
+```
+
+3. **Download Account Login:**
+```go
+database.DB.LogAction(&database.AuditLogEntry{
+    UserID:     int64(downloadAccount.Id),
+    UserEmail:  downloadAccount.Email,
+    Action:     "DOWNLOAD_ACCOUNT_LOGIN_SUCCESS",
+    EntityType: "DownloadSession",
+    Details:    "account_type:download",
+    IPAddress:  getClientIP(r),
+    UserAgent:  r.UserAgent(),
+    Success:    true,
+})
+```
+
+4. **Logout Events:**
+```go
+// Get user info BEFORE deleting session
+user, _ := auth.GetUserFromSession(cookie.Value)
+
+database.DB.LogAction(&database.AuditLogEntry{
+    UserID:     int64(user.Id),
+    UserEmail:  user.Email,
+    Action:     "LOGOUT",
+    EntityType: "Session",
+    EntityID:   cookie.Value,
+    IPAddress:  getClientIP(r),
+    UserAgent:  r.UserAgent(),
+    Success:    true,
+})
+```
+
+**Modified Files:**
+- `internal/server/handlers_auth.go`:
+  - Line 42-54: Added LOGIN_FAILED logging
+  - Line 93-105: Added LOGIN_SUCCESS logging for regular users
+  - Line 140-152: Added DOWNLOAD_ACCOUNT_LOGIN_SUCCESS logging
+  - Line 171-216: Rewrote handleLogout to capture user info before session deletion and log LOGOUT event
+
+### 🎯 Result
+
+**Before:**
+```
+Audit Logs Table:
+ID 1-19: Various old events from before audit system was "completed"
+ID 20+: NOTHING (despite hundreds of logins/logouts since)
+```
+
+**After:**
+```
+Audit Logs Table:
+ID 1-19: Old events
+ID 20: LOGIN_SUCCESS - ulf@example.com
+ID 21: LOGOUT - ulf@example.com
+ID 22: LOGIN_FAILED - wrong@email.com
+ID 23: LOGIN_SUCCESS - ulf@example.com
+... (every login/logout now tracked!)
+```
+
+### 🔍 How to Verify
+
+1. Log out completely
+2. Log back in
+3. Check audit logs - you should NOW see:
+   - New LOGIN_SUCCESS entry with your email
+   - IP address captured
+   - Browser user agent captured
+   - Timestamp accurate
+
+4. Try wrong password
+5. Check audit logs - you should see:
+   - LOGIN_FAILED entry with attempted email
+   - Success: false
+   - Error message recorded
+
+### ⚠️ Important Note
+
+**Version 4.5.7's "fix" was a misdiagnosis!**
+- Increasing pagination limit didn't solve anything
+- It just showed more of the (non-existent) logs
+- Real issue was NO NEW LOGS being created
+- This version (4.5.8) actually fixes the root cause
+
+**Both fixes are needed:**
+- 4.5.7: Shows more logs per page (helpful for usability)
+- 4.5.8: Actually creates the logs! (critical for security)
+
+---
+
 ## [4.5.7 Gold] - 2025-11-17 🔧 Critical Bugfixes - Audit Logs & Mobile UX
 
 ### 🎯 Critical Bugfixes
