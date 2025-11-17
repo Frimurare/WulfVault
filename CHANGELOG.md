@@ -1,5 +1,81 @@
 # Changelog
 
+## [4.5.12 Gold] - 2025-11-17 🐛 CRITICAL: Admin UI Audit Logging Missing
+
+### 🎯 Critical Bugfix
+
+**Problem:**
+Users reported that USER_CREATED, USER_DELETED, and DOWNLOAD_ACCOUNT_CREATED were **NOT being logged** even though the code existed.
+
+**Root Cause:**
+WulfVault has **TWO different endpoint sets** for user management:
+1. ✅ **REST API** (`/api/v1/users`) - Already had audit logging (v4.5.9)
+2. ❌ **Admin UI Forms** (`/admin/users/create`, etc.) - **COMPLETELY MISSING audit logging!**
+
+The Admin Dashboard UI uses form-based endpoints that had ZERO audit logging. This is what users actually use!
+
+**What Was NOT Being Logged:**
+- ❌ Creating users via Admin Dashboard → `/admin/users/create`
+- ❌ Updating users via Admin Dashboard → `/admin/users/edit`
+- ❌ Deleting users via Admin Dashboard → `/admin/users/delete`
+- ❌ Creating download accounts via Admin Dashboard → `/admin/download-accounts/create`
+
+### ✅ Fixed Audit Logs
+
+**User Management (Admin UI):**
+- ✅ **USER_CREATED** - Now logs when creating user via Admin Dashboard
+  - Details: `{"email":"user@example.com","name":"User Name","user_level":1,"quota_mb":5000}`
+- ✅ **USER_UPDATED** - Now logs when editing user via Admin Dashboard
+  - Details: `{"email":"user@example.com","name":"Updated Name","user_level":2,"is_active":true}`
+- ✅ **USER_DELETED** - Now logs when deleting user via Admin Dashboard
+  - Details: `{"email":"user@example.com","name":"User Name","user_level":1}`
+  - Fetches user info BEFORE deletion for complete audit trail
+
+**Download Accounts (Admin UI):**
+- ✅ **DOWNLOAD_ACCOUNT_CREATED** - Now logs when creating download account via Admin Dashboard
+  - Details: `{"email":"download@example.com","name":"Download User","admin_created":true}`
+
+### 🔧 Technical Changes
+
+**Files Modified:**
+
+1. **handlers_admin.go** - Added audit logging to Admin UI endpoints
+   - `handleAdminUserCreate()` - Added USER_CREATED logging (line 192-204)
+   - `handleAdminUserEdit()` - Added USER_UPDATED logging (line 297-309)
+   - `handleAdminUserDelete()` - Added USER_DELETED logging (line 333-344)
+     - Fetches user info before deletion with `GetUserByID()`
+   - `handleAdminCreateDownloadAccount()` - Added DOWNLOAD_ACCOUNT_CREATED logging (line 450-462)
+
+### 📋 Testing
+
+**To verify the fix works:**
+1. Rebuild server: `go build -o wulfvault ./cmd/server`
+2. Restart server
+3. Go to **Admin Dashboard**
+4. Click **"+ Create User"** → Fill form → Save
+5. ✅ Check Audit Logs → You should see **USER_CREATED**
+6. Click **✏️ Edit** on a user → Change something → Save
+7. ✅ Check Audit Logs → You should see **USER_UPDATED**
+8. Click **🗑️ Delete** on a user → Confirm
+9. ✅ Check Audit Logs → You should see **USER_DELETED**
+
+### 🎯 User Report
+
+This release addresses:
+- "create download account verkar vara problematiskt, samma om jag skapar vanliga accounts eller tar bort dem verkar det inte loggas alls? Jag gjorde det två gånger."
+
+**Why it wasn't logging:**
+- User was using Admin Dashboard UI (normal usage)
+- Admin Dashboard uses different endpoints than REST API
+- Only REST API had audit logging implemented
+- Admin UI endpoints had ZERO logging code
+
+**Now BOTH work:**
+- ✅ REST API endpoints (for programmatic access)
+- ✅ Admin UI form endpoints (for normal admin usage)
+
+---
+
 ## [4.5.11 Gold] - 2025-11-17 ✨ Details Modal, Tooltip & Missing Audit Logs
 
 ### 🎯 Major Improvements
