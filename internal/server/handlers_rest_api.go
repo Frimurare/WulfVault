@@ -374,6 +374,21 @@ func (s *Server) handleAPICreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log the action
+	currentUser, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(currentUser.Id),
+		UserEmail:  currentUser.Email,
+		Action:     "USER_CREATED",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", user.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", user.Email, user.Name, user.UserLevel),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	// Remove sensitive data
 	user.Password = ""
 
@@ -445,6 +460,21 @@ func (s *Server) handleAPIUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log the action
+	currentUser, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(currentUser.Id),
+		UserEmail:  currentUser.Email,
+		Action:     "USER_UPDATED",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", user.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", user.Email, user.Name, user.UserLevel),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	// Remove sensitive data
 	user.Password = ""
 	user.TOTPSecret = ""
@@ -481,11 +511,32 @@ func (s *Server) handleAPIDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get user details before deletion for audit log
+	deletedUser, err := database.DB.GetUserByID(userId)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
 	if err := database.DB.DeleteUser(userId, currentUser.Id); err != nil {
 		log.Printf("Error deleting user: %v", err)
 		http.Error(w, "Error deleting user", http.StatusInternalServerError)
 		return
 	}
+
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(currentUser.Id),
+		UserEmail:  currentUser.Email,
+		Action:     "USER_DELETED",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", userId),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\"}", deletedUser.Email, deletedUser.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -964,6 +1015,21 @@ func (s *Server) handleAPICreateDownloadAccount(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "DOWNLOAD_ACCOUNT_CREATED",
+		EntityType: "DownloadAccount",
+		EntityID:   fmt.Sprintf("%d", account.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"admin_created\":true}", account.Email, account.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	account.Password = ""
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1049,11 +1115,33 @@ func (s *Server) handleAPIDeleteDownloadAccount(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Get account details before deletion for audit log
+	account, err := database.DB.GetDownloadAccountByID(accountId)
+	if err != nil {
+		http.Error(w, "Account not found", http.StatusNotFound)
+		return
+	}
+
 	if err := database.DB.DeleteDownloadAccount(accountId); err != nil {
 		log.Printf("Error deleting download account: %v", err)
 		http.Error(w, "Error deleting account", http.StatusInternalServerError)
 		return
 	}
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "DOWNLOAD_ACCOUNT_DELETED",
+		EntityType: "DownloadAccount",
+		EntityID:   fmt.Sprintf("%d", accountId),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"admin_deleted\":true}", account.Email, account.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -1170,7 +1258,7 @@ func (s *Server) handleAPICreateFileRequest(w http.ResponseWriter, r *http.Reque
 	var req struct {
 		Title            string `json:"title"`
 		Message          string `json:"message"`
-		MaxFileSize      int64  `json:"maxFileSize"`      // in bytes
+		MaxFileSize      int64  `json:"maxFileSize"` // in bytes
 		ExpiresAt        int64  `json:"expiresAt"`
 		AllowedFileTypes string `json:"allowedFileTypes"` // comma-separated
 	}
@@ -1479,13 +1567,13 @@ func (s *Server) handleAPIGetStats(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"stats": map[string]interface{}{
-			"userCount":        len(users),
-			"activeUserCount":  activeUsers,
-			"fileCount":        len(files),
-			"deletedFileCount": len(deletedFiles),
-			"teamCount":        len(teams),
+			"userCount":         len(users),
+			"activeUserCount":   activeUsers,
+			"fileCount":         len(files),
+			"deletedFileCount":  len(deletedFiles),
+			"teamCount":         len(teams),
 			"totalStorageBytes": totalStorage,
-			"totalDownloads":   totalDownloads,
+			"totalDownloads":    totalDownloads,
 		},
 	})
 }
@@ -1507,7 +1595,7 @@ func (s *Server) handleAPIGetBranding(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
+		"success":  true,
 		"branding": config,
 	})
 }
@@ -1573,11 +1661,11 @@ func (s *Server) handleAPIGetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings := map[string]interface{}{
-		"serverUrl":        s.config.ServerURL,
-		"port":             s.config.Port,
-		"companyName":      s.config.CompanyName,
-		"maxUploadSizeMB":  s.config.MaxUploadSizeMB,
-		"defaultQuotaMB":   10240,
+		"serverUrl":          s.config.ServerURL,
+		"port":               s.config.Port,
+		"companyName":        s.config.CompanyName,
+		"maxUploadSizeMB":    s.config.MaxUploadSizeMB,
+		"defaultQuotaMB":     10240,
 		"trashRetentionDays": 30,
 	}
 
