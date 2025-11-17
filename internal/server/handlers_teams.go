@@ -91,6 +91,20 @@ func (s *Server) handleAPITeamCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "TEAM_CREATED",
+		EntityType: "Team",
+		EntityID:   fmt.Sprintf("%d", team.Id),
+		Details:    fmt.Sprintf("{\"name\":\"%s\",\"storage_quota_mb\":%d}", team.Name, team.StorageQuotaMB),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -133,6 +147,21 @@ func (s *Server) handleAPITeamUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "TEAM_UPDATED",
+		EntityType: "Team",
+		EntityID:   fmt.Sprintf("%d", team.Id),
+		Details:    fmt.Sprintf("{\"name\":\"%s\",\"storage_quota_mb\":%d}", team.Name, team.StorageQuotaMB),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -156,11 +185,33 @@ func (s *Server) handleAPITeamDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get team details before deletion for audit log
+	team, err := database.DB.GetTeamByID(req.TeamId)
+	if err != nil {
+		http.Error(w, "Team not found", http.StatusNotFound)
+		return
+	}
+
 	if err := database.DB.DeleteTeam(req.TeamId); err != nil {
 		log.Printf("Error deleting team: %v", err)
 		http.Error(w, "Error deleting team", http.StatusInternalServerError)
 		return
 	}
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "TEAM_DELETED",
+		EntityType: "Team",
+		EntityID:   fmt.Sprintf("%d", req.TeamId),
+		Details:    fmt.Sprintf("{\"name\":\"%s\"}", team.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -265,6 +316,20 @@ func (s *Server) handleAPITeamAddMember(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "TEAM_MEMBER_ADDED",
+		EntityType: "TeamMember",
+		EntityID:   fmt.Sprintf("%d", req.TeamId),
+		Details:    fmt.Sprintf("{\"team_id\":%d,\"user_id\":%d,\"user_email\":\"%s\",\"role\":%d}", req.TeamId, req.UserId, targetUser.Email, req.Role),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	// Send invitation email
 	team, _ := database.DB.GetTeamByID(req.TeamId)
 	if team != nil {
@@ -320,11 +385,32 @@ func (s *Server) handleAPITeamRemoveMember(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Get user details for audit log
+	removedUser, err := database.DB.GetUserByID(req.UserId)
+	removedUserEmail := "unknown"
+	if err == nil {
+		removedUserEmail = removedUser.Email
+	}
+
 	if err := database.DB.RemoveTeamMember(req.TeamId, req.UserId); err != nil {
 		log.Printf("Error removing team member: %v", err)
 		http.Error(w, "Error removing member", http.StatusInternalServerError)
 		return
 	}
+
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "TEAM_MEMBER_REMOVED",
+		EntityType: "TeamMember",
+		EntityID:   fmt.Sprintf("%d", req.TeamId),
+		Details:    fmt.Sprintf("{\"team_id\":%d,\"user_id\":%d,\"user_email\":\"%s\"}", req.TeamId, req.UserId, removedUserEmail),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

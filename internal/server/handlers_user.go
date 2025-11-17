@@ -233,6 +233,20 @@ func (s *Server) handleFileDelete(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("File deleted: %s by user %d", fileInfo.Name, user.Id)
 
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "FILE_DELETED",
+		EntityType: "File",
+		EntityID:   fileID,
+		Details:    fmt.Sprintf("{\"file_name\":\"%s\",\"size\":%d}", fileInfo.Name, fileInfo.SizeBytes),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	s.sendJSON(w, http.StatusOK, map[string]string{
 		"message": "File deleted successfully",
 	})

@@ -215,6 +215,22 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Email provider configured: %s", req.Provider)
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "EMAIL_SETTINGS_UPDATED",
+		EntityType: "Settings",
+		EntityID:   "email",
+		Details:    fmt.Sprintf("{\"provider\":\"%s\",\"from_email\":\"%s\"}", req.Provider, req.FromEmail),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	s.sendJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
 

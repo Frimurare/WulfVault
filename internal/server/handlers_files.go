@@ -221,6 +221,20 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("File uploaded: %s (%s) by user %d", header.Filename, database.FormatFileSize(fileSize), user.Id)
 
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "FILE_UPLOADED",
+		EntityType: "File",
+		EntityID:   fileID,
+		Details:    fmt.Sprintf("{\"file_name\":\"%s\",\"size\":%d,\"requires_auth\":%v}", header.Filename, fileSize, requireAuth),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	// Send email with download link if recipient email is provided
 	if sendToEmail != "" && strings.TrimSpace(sendToEmail) != "" {
 		go func() {
@@ -532,6 +546,20 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		}
 		isNewAccount = true
 		log.Printf("Download account created: %s (%s)", email, name)
+
+		// Log the action
+		database.DB.LogAction(&database.AuditLogEntry{
+			UserID:     0, // No user logged in, this is self-registration
+			UserEmail:  email,
+			Action:     "DOWNLOAD_ACCOUNT_CREATED",
+			EntityType: "DownloadAccount",
+			EntityID:   fmt.Sprintf("%d", account.Id),
+			Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"self_registration\":true}", email, name),
+			IPAddress:  getClientIP(r),
+			UserAgent:  r.UserAgent(),
+			Success:    true,
+			ErrorMsg:   "",
+		})
 	} else {
 		// Verify password
 		if !checkDownloadPassword(password, account.Password) {
@@ -651,6 +679,29 @@ func (s *Server) performDownload(w http.ResponseWriter, r *http.Request, fileInf
 	w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.SizeBytes, 10))
 
 	log.Printf("File downloaded: %s (%s) by %s", fileInfo.Name, fileInfo.Size, getDownloaderInfo(account, r.RemoteAddr))
+
+	// Log the action
+	var userID int64
+	var userEmail string
+	if account != nil {
+		userID = int64(account.Id)
+		userEmail = account.Email
+	} else {
+		userID = 0
+		userEmail = "anonymous"
+	}
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     userID,
+		UserEmail:  userEmail,
+		Action:     "FILE_DOWNLOADED",
+		EntityType: "File",
+		EntityID:   fileInfo.Id,
+		Details:    fmt.Sprintf("{\"file_name\":\"%s\",\"size\":%d,\"authenticated\":%v}", fileInfo.Name, fileInfo.SizeBytes, account != nil),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
 
 	http.ServeFile(w, r, filePath)
 }
