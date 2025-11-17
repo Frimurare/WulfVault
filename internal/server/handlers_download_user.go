@@ -183,6 +183,20 @@ func (s *Server) handleDownloadAccountDeleteSelf(w http.ResponseWriter, r *http.
 
 	log.Printf("Download account soft deleted (GDPR): ID=%d, Email=%s", account.Id, account.Email)
 
+	// Log the action
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(account.Id),
+		UserEmail:  account.Email,
+		Action:     "DOWNLOAD_ACCOUNT_DELETED",
+		EntityType: "DownloadAccount",
+		EntityID:   fmt.Sprintf("%d", account.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"soft_delete\":true,\"self_deleted\":true}", account.Email, account.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	// Clear session
 	http.SetCookie(w, &http.Cookie{
 		Name:     "download_session",

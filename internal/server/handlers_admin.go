@@ -482,6 +482,22 @@ func (s *Server) handleAdminDeleteDownloadAccount(w http.ResponseWriter, r *http
 	}
 
 	log.Printf("Admin soft deleted download account: ID=%d, Email=%s", accountID, account.Email)
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "DOWNLOAD_ACCOUNT_DELETED",
+		EntityType: "DownloadAccount",
+		EntityID:   fmt.Sprintf("%d", accountID),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"soft_delete\":true,\"admin_deleted\":true}", account.Email, account.Name),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	s.sendJSON(w, http.StatusOK, map[string]string{"message": "Account deleted"})
 }
 
@@ -646,6 +662,21 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 	// Reload config
 	s.loadBrandingConfig()
 
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "BRANDING_UPDATED",
+		EntityType: "Settings",
+		EntityID:   "branding",
+		Details:    fmt.Sprintf("{\"company_name\":\"%s\",\"has_logo\":%v}", companyName, logoData != ""),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
 	s.renderAdminBranding(w, "Branding settings updated successfully!")
 }
 
@@ -743,6 +774,21 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 			s.config.AuditLogMaxSizeMB = sizeMB
 		}
 	}
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "SETTINGS_UPDATED",
+		EntityType: "Settings",
+		EntityID:   "general",
+		Details:    fmt.Sprintf("{\"server_url\":\"%s\",\"port_changed\":%v}", serverURL, portChanged),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
 
 	// Show appropriate success message
 	if portChanged {

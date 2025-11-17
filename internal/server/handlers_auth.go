@@ -8,6 +8,7 @@ package server
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -39,6 +40,19 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// Try to authenticate as any account type (User or DownloadAccount)
 	authResult, err := auth.AuthenticateAnyAccount(email, password)
 	if err != nil {
+		// Log failed login attempt
+		database.DB.LogAction(&database.AuditLogEntry{
+			UserID:     0,
+			UserEmail:  email,
+			Action:     "LOGIN_FAILED",
+			EntityType: "Session",
+			EntityID:   "",
+			Details:    fmt.Sprintf("{\"email\":\"%s\",\"success\":false,\"reason\":\"invalid_credentials\"}", email),
+			IPAddress:  getClientIP(r),
+			UserAgent:  r.UserAgent(),
+			Success:    false,
+			ErrorMsg:   "Invalid credentials",
+		})
 		s.renderLoginPage(w, r, "Invalid credentials")
 		return
 	}
@@ -77,6 +91,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Log successful login
+		database.DB.LogAction(&database.AuditLogEntry{
+			UserID:     int64(user.Id),
+			UserEmail:  user.Email,
+			Action:     "LOGIN_SUCCESS",
+			EntityType: "Session",
+			EntityID:   sessionID,
+			Details:    fmt.Sprintf("{\"email\":\"%s\",\"success\":true}", user.Email),
+			IPAddress:  getClientIP(r),
+			UserAgent:  r.UserAgent(),
+			Success:    true,
+			ErrorMsg:   "",
+		})
+
 		// Set cookie
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session",
@@ -110,6 +138,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Log successful download account login
+		database.DB.LogAction(&database.AuditLogEntry{
+			UserID:     int64(downloadAccount.Id),
+			UserEmail:  downloadAccount.Email,
+			Action:     "DOWNLOAD_ACCOUNT_LOGIN_SUCCESS",
+			EntityType: "DownloadSession",
+			EntityID:   fmt.Sprintf("%d", downloadAccount.Id),
+			Details:    fmt.Sprintf("{\"email\":\"%s\",\"success\":true,\"account_type\":\"download\"}", downloadAccount.Email),
+			IPAddress:  getClientIP(r),
+			UserAgent:  r.UserAgent(),
+			Success:    true,
+			ErrorMsg:   "",
+		})
+
 		// Set download account session cookie
 		http.SetCookie(w, &http.Cookie{
 			Name:     "download_session",
@@ -129,11 +171,37 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 // handleLogout handles user logout
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	// Try to get user info before deleting session for audit log
+	var userEmail string
+	var userID int64
+
 	// Get session cookie
 	cookie, err := r.Cookie("session")
 	if err == nil {
+		// Try to get user from session before deleting it
+		if user, err := auth.GetUserBySession(cookie.Value); err == nil && user != nil {
+			userEmail = user.Email
+			userID = int64(user.Id)
+		}
+
 		// Delete session from database
 		auth.DeleteSession(cookie.Value)
+
+		// Log logout
+		if userEmail != "" {
+			database.DB.LogAction(&database.AuditLogEntry{
+				UserID:     userID,
+				UserEmail:  userEmail,
+				Action:     "LOGOUT",
+				EntityType: "Session",
+				EntityID:   cookie.Value,
+				Details:    fmt.Sprintf("{\"email\":\"%s\"}", userEmail),
+				IPAddress:  getClientIP(r),
+				UserAgent:  r.UserAgent(),
+				Success:    true,
+				ErrorMsg:   "",
+			})
+		}
 	}
 
 	// Clear cookie

@@ -54,9 +54,9 @@ func (s *Server) handleAPIGetAuditLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Pagination
-	limit := 50
+	limit := 200
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 500 {
 			limit = l
 		}
 	}
@@ -522,6 +522,15 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
                     <input type="date" id="end_date">
                 </div>
                 <div class="filter-group">
+                    <label for="items_per_page">Items Per Page</label>
+                    <select id="items_per_page" onchange="updateLimit()">
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                    </select>
+                </div>
+                <div class="filter-group">
                     <label for="search">Search (Email/Details)</label>
                     <input type="text" id="search" placeholder="Search...">
                 </div>
@@ -573,7 +582,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
 
     <script>
         let currentOffset = 0;
-        const limit = 50;
+        let limit = 20;
         let totalCount = 0;
 
         function formatTimestamp(timestamp) {
@@ -666,6 +675,12 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
             document.getElementById('prev-btn').disabled = currentOffset === 0;
             document.getElementById('next-btn').disabled = currentOffset + limit >= totalCount;
             document.getElementById('pagination-info').textContent = 'Page ' + (Math.floor(currentOffset / limit) + 1) + ' of ' + Math.ceil(totalCount / limit);
+        }
+
+        function updateLimit() {
+            limit = parseInt(document.getElementById('items_per_page').value);
+            currentOffset = 0;
+            loadLogs();
         }
 
         function prevPage() {
