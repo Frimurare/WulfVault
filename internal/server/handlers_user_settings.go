@@ -546,6 +546,34 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
                 </div>
             </div>
         </div>
+
+        <div class="card">
+            <h2>GDPR & Privacy</h2>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>Export My Data</h3>
+                    <p>Download all your personal data in JSON format (GDPR Article 15 - Right of Access)</p>
+                </div>
+                <div>
+                    <a href="/api/v1/user/export-data" download style="background: ` + s.getPrimaryColor() + `; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block;">
+                        Download My Data (JSON)
+                    </a>
+                </div>
+            </div>
+
+            <div class="setting-item" style="border-color: #f44336;">
+                <div class="setting-info">
+                    <h3 style="color: #f44336;">Delete My Account</h3>
+                    <p>Permanently delete your account and all associated data (GDPR Article 17 - Right to Erasure)</p>
+                </div>
+                <div>
+                    <a href="/settings/account" style="background: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-block;">
+                        Manage Account Deletion
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Change Password Modal -->

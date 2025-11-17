@@ -1,7 +1,7 @@
 # WulfVault GDPR Compliance - Executive Summary
 
 **Assessment Date:** 2025-11-17  
-**Version:** 4.5.13 Gold  
+**Version:** 4.6.0 Champagne  
 **Overall Grade: A- (94%)**
 
 ---
