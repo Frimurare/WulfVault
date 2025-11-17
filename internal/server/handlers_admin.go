@@ -859,6 +859,20 @@ func (s *Server) handleAdminPermanentDelete(w http.ResponseWriter, r *http.Reque
 
 	log.Printf("File permanently deleted by admin: %s (ID: %s)", fileInfo.Name, fileID)
 
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "FILE_PERMANENTLY_DELETED",
+		EntityType: "File",
+		EntityID:   fileID,
+		Details:    fmt.Sprintf("{\"filename\":\"%s\",\"size\":\"%s\"}", fileInfo.Name, fileInfo.Size),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
+
 	s.sendJSON(w, http.StatusOK, map[string]string{
 		"message": "File permanently deleted",
 	})
@@ -877,12 +891,46 @@ func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Get file info before restore for audit log
+	deletedFiles, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to get file info")
+		return
+	}
+
+	var fileInfo *database.FileInfo
+	for _, f := range deletedFiles {
+		if f.Id == fileID {
+			fileInfo = f
+			break
+		}
+	}
+
+	if fileInfo == nil {
+		s.sendError(w, http.StatusNotFound, "File not found in trash")
+		return
+	}
+
 	if err := database.DB.RestoreFile(fileID); err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to restore file")
 		return
 	}
 
 	log.Printf("File restored from trash by admin: %s", fileID)
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "FILE_RESTORED",
+		EntityType: "File",
+		EntityID:   fileID,
+		Details:    fmt.Sprintf("{\"filename\":\"%s\",\"size\":\"%s\"}", fileInfo.Name, fileInfo.Size),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
 
 	s.sendJSON(w, http.StatusOK, map[string]string{
 		"message": "File restored successfully",

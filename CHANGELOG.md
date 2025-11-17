@@ -1,5 +1,67 @@
 # Changelog
 
+## [4.5.11 Gold] - 2025-11-17 ✨ Details Modal, Tooltip & Missing Audit Logs
+
+### 🎯 Major Improvements
+
+**Audit Log Details Viewer:**
+- ✅ **Modal popup** for viewing complete Details JSON (click on Details cell)
+- ✅ **Hover tooltip** shows full details without clicking
+- ✅ Pretty-printed JSON in modal for better readability
+- ✅ Click outside modal or ✕ to close
+- ❌ **FIXED:** Details text was truncated with "..." - now fully visible!
+
+**Critical Bugfix - Missing Audit Logs:**
+- 🐛 **FIXED:** FILE_PERMANENTLY_DELETED was NOT logged when deleting files from trash "forever"
+- 🐛 **FIXED:** FILE_RESTORED was NOT logged when restoring files from trash
+- ✅ Both operations now properly logged in **both** REST API and Admin endpoints
+
+### 📊 New Audit Actions
+
+**File Trash Operations:**
+- ✅ **FILE_PERMANENTLY_DELETED** - Permanent delete from trash (includes filename, size)
+- ✅ **FILE_RESTORED** - Restore file from trash to active files (includes filename, size)
+
+### 🔧 Technical Changes
+
+**Files Modified:**
+
+1. **handlers_audit_log.go** - Details viewer
+   - Added modal HTML and CSS for details popup
+   - Added `showDetails()` function with JSON pretty-print
+   - Added `closeDetailsModal()` function
+   - Added title attribute for hover tooltip
+   - Fixed Details column overflow with modal click handler
+
+2. **handlers_rest_api.go** - Trash operations logging
+   - Added FILE_PERMANENTLY_DELETED logging in `handleAPIPermanentDeleteFile()` (line 1545-1557)
+   - Added FILE_RESTORED logging in `handleAPIRestoreFile()` (line 1517-1529)
+   - Both fetch file info before operation for complete audit details
+
+3. **handlers_admin.go** - Admin trash operations logging
+   - Added FILE_PERMANENTLY_DELETED logging in `handleAdminPermanentDelete()` (line 862-874)
+   - Added FILE_RESTORED logging in `handleAdminRestoreFile()` (line 921-933)
+
+### 📋 Usage
+
+**Viewing Full Details:**
+1. **Hover method:** Move mouse over Details cell to see tooltip with full JSON
+2. **Modal method:** Click on Details cell to open modal with formatted JSON
+3. Modal shows pretty-printed JSON for easy reading
+
+**Testing New Audit Logs:**
+- Go to Admin → Trash
+- Click "Restore" on a deleted file → **FILE_RESTORED** logged
+- Click "Delete Forever" on a file → **FILE_PERMANENTLY_DELETED** logged
+
+### 🎯 User Request
+
+This release addresses:
+1. "Texten får inte plats jämt, t.ex {"server_url":"http://wulfvault.dyndns.org","port_... sedan är den klippt"
+2. "Jag har nu deletat filer från forever... men det syns inte [i loggen]"
+
+---
+
 ## [4.5.10 Gold] - 2025-11-17 🔧 Pagination Controls & Audit Settings Bugfix
 
 ### 🎯 Key Improvements
