@@ -30,3 +30,4 @@ dev:
 	go run ./cmd/server --setup
 
 .DEFAULT_GOAL := build
+

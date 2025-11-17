@@ -47,3 +47,4 @@ The GNU Affero General Public License (AGPL-3.0) is specifically designed to pre
 This ensures that WulfVault remains free and open-source, even when used to provide commercial services.
 
 See [LICENSE](LICENSE) for the full license text.
+

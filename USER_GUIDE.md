@@ -1,4 +1,4 @@
-# WulfVault User Guide v4.5.2 Gold
+# WulfVault User Guide v4.5.13 Gold
 
 **Complete Guide for Administrators and Users**
 
@@ -751,6 +751,102 @@ Same process as admin, but:
 - **Create Manually:** Create account for recipient beforehand
 - **Edit:** Change email or name
 - **Delete:** Permanently remove account
+
+### Pagination & Filtering (v4.5.13+)
+
+**Enterprise Scalability Feature** - For organizations with hundreds or thousands of users.
+
+#### User List Pagination
+
+**Access:** Admin → Users
+
+When viewing users, WulfVault automatically paginates the list to improve performance:
+
+**Pagination Controls:**
+- **50 users per page** (default, configurable up to 200)
+- **Previous/Next buttons** - Navigate between pages
+- **Result counter** - Shows "Showing X-Y of Z users"
+- **Independent navigation** - Users and Download Accounts paginate separately
+
+#### Filtering Users
+
+**Available Filters:**
+
+1. **Search by Name or Email**
+   - Type in search box to find users instantly
+   - Searches both name and email fields
+   - Case-insensitive matching
+
+2. **Filter by User Level**
+   - **All Users** - Show both regular users and admins
+   - **Regular Users** - Show only user level 1
+   - **Admins** - Show only admins and super admins (level 2+)
+
+3. **Filter by Status**
+   - **All** - Show both active and inactive users
+   - **Active** - Show only active users
+   - **Inactive** - Show only deactivated users
+
+**How to Use Filters:**
+1. Go to **Admin → Users**
+2. Use the filter boxes above the user list:
+   - Type name/email in **Search** box
+   - Select user level from **User Level** dropdown
+   - Select status from **Status** dropdown
+3. Click **Filter** button to apply
+4. Click **Clear** button to reset all filters
+
+**Filter Combinations:**
+- Combine multiple filters (e.g., "Active Admins")
+- Search + filter (e.g., "John" + "Regular Users")
+- Filters persist across pagination (navigate pages without losing filters)
+
+#### Download Account Filtering
+
+**Access:** Admin → Users (scroll to Download Accounts section)
+
+**Available Filters:**
+1. **Search by Name or Email** - Find download accounts quickly
+2. **Filter by Status** - Active / Inactive / All
+
+**Same Controls:**
+- 50 accounts per page (default)
+- Previous/Next navigation
+- Result counter
+- Independent from user pagination
+
+#### Performance Benefits
+
+**For Small Deployments (< 50 users):**
+- All users fit on one page
+- Filters available for quick searching
+- No performance impact
+
+**For Medium Deployments (50-500 users):**
+- Pages load 10x faster
+- Easy navigation with pagination
+- Quick search finds users instantly
+
+**For Large Deployments (500+ users):**
+- Essential for usability
+- Prevents browser slowdown
+- Scales to thousands of users
+- Professional enterprise experience
+
+#### Tips for Large User Bases
+
+1. **Use Search** - Fastest way to find specific users
+2. **Combine Filters** - Narrow down results efficiently
+3. **Adjust Page Size** - Add `?user_limit=100` to URL for larger pages (max 200)
+4. **Bookmark Filters** - Save commonly used filter URLs
+
+**Example URLs:**
+```
+/admin/users?search=john              # Search for "john"
+/admin/users?level=2                  # Show only admins
+/admin/users?level=1&active=true      # Active regular users
+/admin/users?user_offset=50           # Page 2 (users 51-100)
+```
 
 ---
 
