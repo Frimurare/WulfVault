@@ -13,6 +13,16 @@ import (
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
+// DownloadAccountFilter for querying download accounts with pagination and filtering
+type DownloadAccountFilter struct {
+	SearchTerm  string // Search in name and email
+	IsActive    *bool  // Filter by active status (nil = all)
+	SortBy      string // Sort field: "name", "email", "lastused", "downloads", "created"
+	SortOrder   string // Sort order: "asc", "desc"
+	Limit       int
+	Offset      int
+}
+
 // CreateDownloadAccount creates a new download account
 func (d *Database) CreateDownloadAccount(account *models.DownloadAccount) error {
 	if account.CreatedAt == 0 {
@@ -163,6 +173,118 @@ func (d *Database) GetAllDownloadAccounts() ([]*models.DownloadAccount, error) {
 	}
 
 	return accounts, nil
+}
+
+// GetDownloadAccounts returns download accounts with pagination, filtering, and sorting
+func (d *Database) GetDownloadAccounts(filter *DownloadAccountFilter) ([]*models.DownloadAccount, error) {
+	query := `SELECT Id, Name, Email, Password, CreatedAt, LastUsed, DownloadCount, IsActive,
+	          COALESCE(DeletedAt, 0), COALESCE(DeletedBy, ''), COALESCE(OriginalEmail, '')
+	          FROM DownloadAccounts
+	          WHERE (DeletedAt = 0 OR DeletedAt IS NULL)`
+	args := []interface{}{}
+
+	// Apply filters
+	if filter.SearchTerm != "" {
+		query += " AND (Name LIKE ? OR Email LIKE ?)"
+		searchPattern := "%" + filter.SearchTerm + "%"
+		args = append(args, searchPattern, searchPattern)
+	}
+
+	if filter.IsActive != nil {
+		activeVal := 0
+		if *filter.IsActive {
+			activeVal = 1
+		}
+		query += " AND IsActive = ?"
+		args = append(args, activeVal)
+	}
+
+	// Apply sorting
+	sortBy := "LastUsed DESC" // Default sort
+	if filter.SortBy != "" {
+		sortOrder := "ASC"
+		if filter.SortOrder == "desc" {
+			sortOrder = "DESC"
+		}
+		switch filter.SortBy {
+		case "name":
+			sortBy = "Name " + sortOrder
+		case "email":
+			sortBy = "Email " + sortOrder
+		case "lastused":
+			sortBy = "LastUsed " + sortOrder
+		case "downloads":
+			sortBy = "DownloadCount " + sortOrder
+		case "created":
+			sortBy = "CreatedAt " + sortOrder
+		}
+	}
+	query += " ORDER BY " + sortBy
+
+	// Apply pagination
+	if filter.Limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, filter.Limit)
+	}
+
+	if filter.Offset > 0 {
+		query += " OFFSET ?"
+		args = append(args, filter.Offset)
+	}
+
+	rows, err := d.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var accounts []*models.DownloadAccount
+	for rows.Next() {
+		account := &models.DownloadAccount{}
+		var isActive int
+		var deletedAt int64
+		var deletedBy, originalEmail string
+
+		err := rows.Scan(&account.Id, &account.Name, &account.Email, &account.Password, &account.CreatedAt,
+			&account.LastUsed, &account.DownloadCount, &isActive,
+			&deletedAt, &deletedBy, &originalEmail)
+		if err != nil {
+			return nil, err
+		}
+
+		account.IsActive = isActive == 1
+		account.DeletedAt = deletedAt
+		account.DeletedBy = deletedBy
+		account.OriginalEmail = originalEmail
+		accounts = append(accounts, account)
+	}
+
+	return accounts, rows.Err()
+}
+
+// GetDownloadAccountCount returns total count of download accounts matching filter
+func (d *Database) GetDownloadAccountCount(filter *DownloadAccountFilter) (int, error) {
+	query := `SELECT COUNT(*) FROM DownloadAccounts WHERE (DeletedAt = 0 OR DeletedAt IS NULL)`
+	args := []interface{}{}
+
+	if filter.SearchTerm != "" {
+		query += " AND (Name LIKE ? OR Email LIKE ?)"
+		searchPattern := "%" + filter.SearchTerm + "%"
+		args = append(args, searchPattern, searchPattern)
+	}
+
+	if filter.IsActive != nil {
+		activeVal := 0
+		if *filter.IsActive {
+			activeVal = 1
+		}
+		query += " AND IsActive = ?"
+		args = append(args, activeVal)
+	}
+
+	var count int
+	err := d.db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 // CreateDownloadLog creates a new download log entry

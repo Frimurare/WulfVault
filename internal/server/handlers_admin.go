@@ -90,21 +90,105 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		mostDownloadedFile, downloadCount)
 }
 
-// handleAdminUsers lists all users and download accounts
+// handleAdminUsers lists all users and download accounts with pagination
 func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := database.DB.GetAllUsers()
+	// Parse user filter parameters
+	userFilter := &database.UserFilter{}
+
+	userFilter.SearchTerm = r.URL.Query().Get("search")
+
+	if levelStr := r.URL.Query().Get("level"); levelStr != "" {
+		if level, err := strconv.Atoi(levelStr); err == nil {
+			userFilter.UserLevel = level
+		}
+	}
+
+	if activeStr := r.URL.Query().Get("active"); activeStr != "" {
+		if active, err := strconv.ParseBool(activeStr); err == nil {
+			userFilter.IsActive = &active
+		}
+	}
+
+	userFilter.SortBy = r.URL.Query().Get("sort_by")
+	userFilter.SortOrder = r.URL.Query().Get("sort_order")
+
+	// Pagination for users
+	userLimit := 50
+	if limitStr := r.URL.Query().Get("user_limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 200 {
+			userLimit = l
+		}
+	}
+	userFilter.Limit = userLimit
+
+	userOffset := 0
+	if offsetStr := r.URL.Query().Get("user_offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			userOffset = o
+		}
+	}
+	userFilter.Offset = userOffset
+
+	// Get users with pagination
+	users, err := database.DB.GetUsers(userFilter)
 	if err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to fetch users")
 		return
 	}
 
-	downloadAccounts, err := database.DB.GetAllDownloadAccounts()
+	// Get total user count
+	userCount, err := database.DB.GetUserCount(userFilter)
+	if err != nil {
+		log.Printf("Warning: Failed to get user count: %v", err)
+		userCount = 0
+	}
+
+	// Parse download account filter parameters
+	downloadFilter := &database.DownloadAccountFilter{}
+
+	downloadFilter.SearchTerm = r.URL.Query().Get("dl_search")
+
+	if dlActiveStr := r.URL.Query().Get("dl_active"); dlActiveStr != "" {
+		if active, err := strconv.ParseBool(dlActiveStr); err == nil {
+			downloadFilter.IsActive = &active
+		}
+	}
+
+	downloadFilter.SortBy = r.URL.Query().Get("dl_sort_by")
+	downloadFilter.SortOrder = r.URL.Query().Get("dl_sort_order")
+
+	// Pagination for download accounts
+	dlLimit := 50
+	if limitStr := r.URL.Query().Get("dl_limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 200 {
+			dlLimit = l
+		}
+	}
+	downloadFilter.Limit = dlLimit
+
+	dlOffset := 0
+	if offsetStr := r.URL.Query().Get("dl_offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			dlOffset = o
+		}
+	}
+	downloadFilter.Offset = dlOffset
+
+	// Get download accounts with pagination
+	downloadAccounts, err := database.DB.GetDownloadAccounts(downloadFilter)
 	if err != nil {
 		log.Printf("Warning: Failed to fetch download accounts: %v", err)
 		downloadAccounts = []*models.DownloadAccount{}
 	}
 
-	s.renderAdminUsers(w, users, downloadAccounts)
+	// Get total download account count
+	downloadCount, err := database.DB.GetDownloadAccountCount(downloadFilter)
+	if err != nil {
+		log.Printf("Warning: Failed to get download account count: %v", err)
+		downloadCount = 0
+	}
+
+	s.renderAdminUsers(w, users, downloadAccounts, userFilter, userCount, downloadFilter, downloadCount)
 }
 
 // handleAdminUserCreate creates a new user
@@ -1696,7 +1780,8 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, downloadAccounts []*models.DownloadAccount) {
+func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, downloadAccounts []*models.DownloadAccount,
+	userFilter *database.UserFilter, userCount int, dlFilter *database.DownloadAccountFilter, dlCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
@@ -1770,6 +1855,103 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             margin: 30px 0 16px 0;
             color: #333;
         }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .filters-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .filter-group input:focus, .filter-group select:focus {
+            outline: none;
+            border-color: ` + s.getPrimaryColor() + `;
+        }
+        .filter-btn {
+            padding: 10px 20px;
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .filter-btn:hover {
+            opacity: 0.9;
+        }
+        .clear-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .clear-btn:hover {
+            background: #e0e0e0;
+        }
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 12px;
+        }
+        .pagination-controls button {
+            padding: 8px 16px;
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .pagination-controls button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination-controls button:not(:disabled):hover {
+            opacity: 0.9;
+        }
 
         /* Mobile Responsive Styles */
         @media screen and (max-width: 768px) {
@@ -1840,6 +2022,20 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
                 text-align: center;
                 display: block;
             }
+            .filters-row {
+                flex-direction: column;
+            }
+            .filter-group {
+                width: 100%;
+                min-width: unset;
+            }
+            .pagination {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .pagination-info {
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -1849,6 +2045,61 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
         <div class="actions">
             <h2>Manage Users</h2>
             <a href="/admin/users/create" class="btn">+ Create User</a>
+        </div>
+
+        <!-- User Filters -->
+        <div class="filters">
+            <form method="GET" action="/admin/users">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label for="search">Search</label>
+                        <input type="text" id="search" name="search" placeholder="Search name or email..." value="` + userFilter.SearchTerm + `">
+                    </div>
+                    <div class="filter-group">
+                        <label for="level">User Level</label>
+                        <select id="level" name="level">
+                            <option value="0"` + func() string {
+		if userFilter.UserLevel == 0 {
+			return " selected"
+		}
+		return ""
+	}() + `>All Users</option>
+                            <option value="1"` + func() string {
+		if userFilter.UserLevel == 1 {
+			return " selected"
+		}
+		return ""
+	}() + `>Regular Users</option>
+                            <option value="2"` + func() string {
+		if userFilter.UserLevel == 2 {
+			return " selected"
+		}
+		return ""
+	}() + `>Admins</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="active">Status</label>
+                        <select id="active" name="active">
+                            <option value="">All</option>
+                            <option value="true"` + func() string {
+		if userFilter.IsActive != nil && *userFilter.IsActive {
+			return " selected"
+		}
+		return ""
+	}() + `>Active</option>
+                            <option value="false"` + func() string {
+		if userFilter.IsActive != nil && !*userFilter.IsActive {
+			return " selected"
+		}
+		return ""
+	}() + `>Inactive</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="filter-btn">Filter</button>
+                    <button type="button" class="clear-btn" onclick="window.location.href='/admin/users'">Clear</button>
+                </div>
+            </form>
         </div>
 
         <table>
@@ -1897,10 +2148,81 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             </tbody>
         </table>
 
+        <!-- User Pagination -->`
+
+	// Calculate pagination info for users
+	userStart := userFilter.Offset + 1
+	userEnd := userFilter.Offset + len(users)
+	hasPrevUser := userFilter.Offset > 0
+	hasNextUser := userFilter.Offset+userFilter.Limit < userCount
+
+	html += `
+        <div class="pagination">
+            <div class="pagination-info">
+                Showing ` + fmt.Sprintf("%d-%d", userStart, userEnd) + ` of ` + fmt.Sprintf("%d", userCount) + ` users
+            </div>
+            <div class="pagination-controls">
+                <button onclick="changePage(-1, 'user')" ` + func() string {
+		if !hasPrevUser {
+			return "disabled"
+		}
+		return ""
+	}() + `>Previous</button>
+                <button onclick="changePage(1, 'user')" ` + func() string {
+		if !hasNextUser {
+			return "disabled"
+		}
+		return ""
+	}() + `>Next</button>
+            </div>
+        </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; margin-bottom: 16px;">
-            <h3>Download Accounts (` + fmt.Sprintf("%d", len(downloadAccounts)) + `)</h3>
+            <h3>Download Accounts (` + fmt.Sprintf("%d", dlCount) + `)</h3>
             <a href="/admin/download-accounts/create" class="btn">+ Create Download Account</a>
         </div>
+
+        <!-- Download Account Filters -->
+        <div class="filters">
+            <form method="GET" action="/admin/users">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label for="dl_search">Search</label>
+                        <input type="text" id="dl_search" name="dl_search" placeholder="Search name or email..." value="` + dlFilter.SearchTerm + `">
+                    </div>
+                    <div class="filter-group">
+                        <label for="dl_active">Status</label>
+                        <select id="dl_active" name="dl_active">
+                            <option value="">All</option>
+                            <option value="true"` + func() string {
+		if dlFilter.IsActive != nil && *dlFilter.IsActive {
+			return " selected"
+		}
+		return ""
+	}() + `>Active</option>
+                            <option value="false"` + func() string {
+		if dlFilter.IsActive != nil && !*dlFilter.IsActive {
+			return " selected"
+		}
+		return ""
+	}() + `>Inactive</option>
+                        </select>
+                    </div>
+                    <!-- Preserve user filters -->
+                    <input type="hidden" name="search" value="` + userFilter.SearchTerm + `">
+                    <input type="hidden" name="level" value="` + fmt.Sprintf("%d", userFilter.UserLevel) + `">` + func() string {
+		if userFilter.IsActive != nil {
+			return `<input type="hidden" name="active" value="` + fmt.Sprintf("%t", *userFilter.IsActive) + `">`
+		}
+		return ""
+	}() + `
+                    <input type="hidden" name="user_offset" value="` + fmt.Sprintf("%d", userFilter.Offset) + `">
+                    <button type="submit" class="filter-btn">Filter</button>
+                    <button type="button" class="clear-btn" onclick="clearDownloadFilters()">Clear</button>
+                </div>
+            </form>
+        </div>
+
         <table>
             <thead>
                 <tr>
@@ -1954,9 +2276,69 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 	html += `
             </tbody>
         </table>
+
+        <!-- Download Account Pagination -->`
+
+	// Calculate pagination info for download accounts
+	dlStart := dlFilter.Offset + 1
+	dlEnd := dlFilter.Offset + len(downloadAccounts)
+	hasPrevDL := dlFilter.Offset > 0
+	hasNextDL := dlFilter.Offset+dlFilter.Limit < dlCount
+
+	html += `
+        <div class="pagination">
+            <div class="pagination-info">
+                Showing ` + fmt.Sprintf("%d-%d", dlStart, dlEnd) + ` of ` + fmt.Sprintf("%d", dlCount) + ` download accounts
+            </div>
+            <div class="pagination-controls">
+                <button onclick="changePage(-1, 'dl')" ` + func() string {
+		if !hasPrevDL {
+			return "disabled"
+		}
+		return ""
+	}() + `>Previous</button>
+                <button onclick="changePage(1, 'dl')" ` + func() string {
+		if !hasNextDL {
+			return "disabled"
+		}
+		return ""
+	}() + `>Next</button>
+            </div>
+        </div>
     </div>
 
     <script>
+        function changePage(direction, type) {
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+
+            if (type === 'user') {
+                const currentOffset = parseInt(params.get('user_offset') || '0');
+                const limit = parseInt(params.get('user_limit') || '50');
+                const newOffset = Math.max(0, currentOffset + (direction * limit));
+                params.set('user_offset', newOffset);
+            } else if (type === 'dl') {
+                const currentOffset = parseInt(params.get('dl_offset') || '0');
+                const limit = parseInt(params.get('dl_limit') || '50');
+                const newOffset = Math.max(0, currentOffset + (direction * limit));
+                params.set('dl_offset', newOffset);
+            }
+
+            window.location.href = '/admin/users?' + params.toString();
+        }
+
+        function clearDownloadFilters() {
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+
+            // Remove download filter params
+            params.delete('dl_search');
+            params.delete('dl_active');
+            params.delete('dl_offset');
+
+            window.location.href = '/admin/users?' + params.toString();
+        }
+
         async function deleteUser(id) {
             if (!confirm('Are you sure you want to delete this user?\n\nIf you choose yes, the account will be deleted and all the user\'s uploaded files will be available in the trash for 5 days if not deleted manually.')) return;
 

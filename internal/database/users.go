@@ -14,6 +14,17 @@ import (
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
+// UserFilter for querying users with pagination and filtering
+type UserFilter struct {
+	SearchTerm  string // Search in name and email
+	UserLevel   int    // Filter by user level (0 = all, 1 = regular, 2 = admin)
+	IsActive    *bool  // Filter by active status (nil = all)
+	SortBy      string // Sort field: "name", "email", "level", "lastonline", "created", "quota", "used"
+	SortOrder   string // Sort order: "asc", "desc"
+	Limit       int
+	Offset      int
+}
+
 // CreateUser inserts a new user into the database
 func (d *Database) CreateUser(user *models.User) error {
 	if user.CreatedAt == 0 {
@@ -158,6 +169,127 @@ func (d *Database) GetAllUsers() ([]*models.User, error) {
 	}
 
 	return users, nil
+}
+
+// GetUsers returns users with pagination, filtering, and sorting
+func (d *Database) GetUsers(filter *UserFilter) ([]*models.User, error) {
+	query := `SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
+	          StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive
+	          FROM Users WHERE 1=1`
+	args := []interface{}{}
+
+	// Apply filters
+	if filter.SearchTerm != "" {
+		query += " AND (Name LIKE ? OR Email LIKE ?)"
+		searchPattern := "%" + filter.SearchTerm + "%"
+		args = append(args, searchPattern, searchPattern)
+	}
+
+	if filter.UserLevel > 0 {
+		query += " AND Userlevel = ?"
+		args = append(args, filter.UserLevel)
+	}
+
+	if filter.IsActive != nil {
+		activeVal := 0
+		if *filter.IsActive {
+			activeVal = 1
+		}
+		query += " AND IsActive = ?"
+		args = append(args, activeVal)
+	}
+
+	// Apply sorting
+	sortBy := "Userlevel ASC, LastOnline DESC, Name ASC" // Default sort
+	if filter.SortBy != "" {
+		sortOrder := "ASC"
+		if filter.SortOrder == "desc" {
+			sortOrder = "DESC"
+		}
+		switch filter.SortBy {
+		case "name":
+			sortBy = "Name " + sortOrder
+		case "email":
+			sortBy = "Email " + sortOrder
+		case "level":
+			sortBy = "Userlevel " + sortOrder
+		case "lastonline":
+			sortBy = "LastOnline " + sortOrder
+		case "created":
+			sortBy = "CreatedAt " + sortOrder
+		case "quota":
+			sortBy = "StorageQuotaMB " + sortOrder
+		case "used":
+			sortBy = "StorageUsedMB " + sortOrder
+		}
+	}
+	query += " ORDER BY " + sortBy
+
+	// Apply pagination
+	if filter.Limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, filter.Limit)
+	}
+
+	if filter.Offset > 0 {
+		query += " OFFSET ?"
+		args = append(args, filter.Offset)
+	}
+
+	rows, err := d.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		var resetPw, isActive int
+
+		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions,
+			&user.UserLevel, &user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
+			&user.CreatedAt, &isActive)
+		if err != nil {
+			return nil, err
+		}
+
+		user.ResetPassword = resetPw == 1
+		user.IsActive = isActive == 1
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}
+
+// GetUserCount returns total count of users matching filter
+func (d *Database) GetUserCount(filter *UserFilter) (int, error) {
+	query := "SELECT COUNT(*) FROM Users WHERE 1=1"
+	args := []interface{}{}
+
+	if filter.SearchTerm != "" {
+		query += " AND (Name LIKE ? OR Email LIKE ?)"
+		searchPattern := "%" + filter.SearchTerm + "%"
+		args = append(args, searchPattern, searchPattern)
+	}
+
+	if filter.UserLevel > 0 {
+		query += " AND Userlevel = ?"
+		args = append(args, filter.UserLevel)
+	}
+
+	if filter.IsActive != nil {
+		activeVal := 0
+		if *filter.IsActive {
+			activeVal = 1
+		}
+		query += " AND IsActive = ?"
+		args = append(args, activeVal)
+	}
+
+	var count int
+	err := d.db.QueryRow(query, args...).Scan(&count)
+	return count, err
 }
 
 // UpdateUser updates an existing user
