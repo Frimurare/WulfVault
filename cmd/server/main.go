@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	Version = "4.5.9 Gold"
+	Version = "4.5.10 Gold"
 )
 
 var (
@@ -114,6 +114,25 @@ func main() {
 	}
 	if cfg.TrashRetentionDays <= 0 {
 		cfg.TrashRetentionDays = 5 // default fallback
+	}
+
+	// Load audit log retention settings from database if available
+	if auditRetentionStr, err := database.DB.GetConfigValue("audit_log_retention_days"); err == nil && auditRetentionStr != "" {
+		if days, parseErr := strconv.Atoi(auditRetentionStr); parseErr == nil && days > 0 {
+			cfg.AuditLogRetentionDays = days
+		}
+	}
+	if cfg.AuditLogRetentionDays <= 0 {
+		cfg.AuditLogRetentionDays = 90 // default fallback
+	}
+
+	if auditMaxSizeStr, err := database.DB.GetConfigValue("audit_log_max_size_mb"); err == nil && auditMaxSizeStr != "" {
+		if sizeMB, parseErr := strconv.Atoi(auditMaxSizeStr); parseErr == nil && sizeMB > 0 {
+			cfg.AuditLogMaxSizeMB = sizeMB
+		}
+	}
+	if cfg.AuditLogMaxSizeMB <= 0 {
+		cfg.AuditLogMaxSizeMB = 100 // default fallback
 	}
 
 	// Start file expiration cleanup scheduler (runs every 6 hours)

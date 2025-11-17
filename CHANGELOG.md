@@ -1,5 +1,57 @@
 # Changelog
 
+## [4.5.10 Gold] - 2025-11-17 🔧 Pagination Controls & Audit Settings Bugfix
+
+### 🎯 Key Improvements
+
+**Audit Log Pagination:**
+- ✅ Added **Items Per Page** dropdown selector (20, 50, 100, 200)
+- ✅ Default changed from 200 to 20 items per page for better UX
+- ✅ Pagination info shows "Page X of Y" and "Showing X-Y of Z entries"
+- ✅ Previous/Next buttons work correctly with dynamic page sizes
+
+**Critical Bugfix - Audit Log Retention Settings:**
+- 🐛 **FIXED:** Audit log retention settings (days & max size) were not persisted after server restart
+- ✅ Server now reads retention settings from database at startup
+- ✅ Admin panel changes to retention settings now survive restarts
+- ✅ Consistent behavior with trash retention settings
+
+### 🔧 Technical Changes
+
+**Files Modified:**
+
+1. **handlers_audit_log.go** - Pagination enhancements
+   - Added "Items Per Page" dropdown filter control
+   - Changed `const limit = 200` to `let limit = 20`
+   - Added `updateLimit()` JavaScript function
+   - Pagination updates when page size changes
+
+2. **cmd/server/main.go** - Load audit retention from database
+   - Added database override for `AuditLogRetentionDays` (lines 119-127)
+   - Added database override for `AuditLogMaxSizeMB` (lines 129-136)
+   - Settings from admin panel now persist after server restart
+
+### 📋 Usage
+
+**Changing Items Per Page:**
+1. Go to Audit Logs page
+2. In the Filters section, select "Items Per Page"
+3. Choose: 20, 50, 100, or 200
+4. Page automatically refreshes with new page size
+
+**Audit Retention Settings Now Work:**
+- Admin changes to retention days and max size MB are saved to database
+- These settings are loaded from database at server startup
+- Overrides default values from config.json
+
+### 🎯 User Request
+
+This release addresses two user requests:
+1. "Det vore bra att kunna välja 'show max 20 on side, 50 on side, 100 on side osv...'"
+2. "Jag har ställt om log till att sparas 60 dagar och 10MB i loggfile, men detta står [...] retention: 90 days, max size: 100MB"
+
+---
+
 ## [4.5.9 Gold] - 2025-11-17 ✅ COMPLETE Audit Logging Implementation
 
 ### 🎯 Full Audit Trail - No More False Marketing!
