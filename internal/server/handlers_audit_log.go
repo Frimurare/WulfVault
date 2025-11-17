@@ -54,9 +54,9 @@ func (s *Server) handleAPIGetAuditLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Pagination
-	limit := 50
+	limit := 200
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 500 {
 			limit = l
 		}
 	}
@@ -573,7 +573,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
 
     <script>
         let currentOffset = 0;
-        const limit = 50;
+        const limit = 200;
         let totalCount = 0;
 
         function formatTimestamp(timestamp) {

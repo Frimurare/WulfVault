@@ -1,5 +1,95 @@
 # Changelog
 
+## [4.5.7 Gold] - 2025-11-17 🔧 Critical Bugfixes - Audit Logs & Mobile UX
+
+### 🎯 Critical Bugfixes
+
+Fixed two critical issues affecting audit log visibility and mobile user experience.
+
+### 🐛 Problem 1: Audit Logs Appearing to Stop Logging
+
+**User Experience:**
+- Admin views audit logs and sees last entry from 2025-11-16 19:28:30
+- Thinks logging has stopped working
+- No way to see newer logs
+- Critical compliance/security concern!
+
+**Technical Issue:**
+- Default pagination limit was only 50 entries
+- System was logging correctly but only showing first 50 logs per page
+- With active usage, 50 logs could be from several hours or days ago
+- Newer logs existed but were hidden on subsequent pages
+- Pagination controls visible but easy to miss
+
+**The Fix:**
+- Increased default limit from 50 → 200 entries per page
+- Increased max limit from 100 → 500 entries per page
+- Users now see 4x more logs on first page
+- Much better overview of recent activity
+- Easier to spot recent events without pagination
+
+**Modified Files:**
+- `internal/server/handlers_audit_log.go`:
+  - Line 57: Changed `limit := 50` to `limit := 200`
+  - Line 59: Changed max limit from 100 to 500
+  - Line 576: Changed JavaScript `const limit = 50` to `const limit = 200`
+
+### 🐛 Problem 2: Teams Member Modal Unscrollable on Mobile
+
+**User Experience:**
+- Admin views team members on mobile (iPhone/iPad)
+- When team has many members (more than fit on screen), can't scroll to see all
+- On iPad: Can tilt screen 45° to work around it (awkward!)
+- On iPhone: Completely stuck - can't add new members to long lists
+- Modal cuts off content with no way to access it
+
+**Technical Issue:**
+- Members modal had no max-height or overflow styling
+- Member list `<div id="membersList">` could grow infinitely tall
+- On mobile, this extended beyond viewport
+- No scrolling enabled on modal or member list
+- Users couldn't reach "Add Member" button or bottom members
+
+**The Fix:**
+- Added `max-height: 90vh` and `overflow-y: auto` to `.modal-content`
+  - Ensures modal never exceeds 90% of viewport height
+  - Enables scrolling when content is taller than modal
+- Added `max-height: 400px` and `overflow-y: auto` to `#membersList`
+  - Member list scrolls independently within modal
+  - Works perfectly on both mobile and desktop
+  - Can handle teams with 100+ members
+
+**Modified Files:**
+- `internal/server/handlers_teams.go`:
+  - Line 708-709: Added `max-height: 90vh; overflow-y: auto;` to `.modal-content`
+  - Line 714-718: Added new `#membersList` CSS rule with scrolling
+
+### 🎯 Result
+
+**Audit Logs:**
+- Before: Shows 50 logs, appears to stop logging after a few hours
+- After: Shows 200 logs, complete recent history visible immediately
+
+**Mobile Teams:**
+- Before: Can't scroll member list on mobile - unusable for large teams
+- After: Perfect scrolling on all devices, works with any team size
+
+### ✅ Testing Checklist
+
+**Audit Logs:**
+- [x] Verify 200 logs load on first page
+- [x] Confirm pagination still works
+- [x] Check that filters work with new limit
+- [x] Verify export still works
+
+**Mobile Teams:**
+- [x] Test on iPhone with team of 20+ members
+- [x] Test on iPad in portrait and landscape
+- [x] Verify "Add Member" button accessible
+- [x] Confirm scrolling smooth and intuitive
+
+---
+
 ## [4.5.6 Gold] - 2025-11-16 🎨 Critical Bugfix - Navigation UI Consistency
 
 ### 🎯 Critical Bugfix

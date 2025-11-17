@@ -705,9 +705,16 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             border-radius: 12px;
             max-width: 500px;
             width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-content h2 {
             margin-bottom: 20px;
+        }
+        #membersList {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 20px 0;
         }
         .form-group {
             margin-bottom: 16px;
