@@ -245,7 +245,7 @@ Review local data protection laws:
 ## 📞 Support and Resources
 
 ### WulfVault GDPR Support
-- **Documentation:** See `GDPR_COMPLIANCE_REPORT.md` in repository root
+- **Documentation:** See `GDPR_COMPLIANCE_SUMMARY.md` in repository root
 - **Issues:** Report at https://github.com/Frimurare/WulfVault/issues
 - **Code:** Review `internal/server/handlers_gdpr.go` for GDPR implementation
 
