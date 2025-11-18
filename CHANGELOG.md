@@ -1,5 +1,225 @@
 # Changelog
 
+## [4.7.0-beta.3 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - UI Display Complete
+
+### 🎯 Beta 3 - UI Implementation
+
+**What's New in Beta 3:**
+Beta 3 completes the user interface implementation for displaying file comments/descriptions across all parts of the application.
+
+### ✨ UI Features Implemented
+
+**Dashboard File List (User & Admin):**
+- ✅ **User Dashboard**: Comments displayed in styled boxes below file metadata
+  - Visual: Light gray background with colored left border
+  - Icon: 💬 "Note" label
+  - Auto-hidden when no comment exists
+- ✅ **Admin File List**: Comments shown as expanded table rows
+  - Spans all columns for better readability
+  - Styled with colored left border matching theme
+  - Only appears when file has a comment
+
+**Download Pages:**
+- ✅ **Splash Page**: Comments in dedicated "Note from sender" section
+  - Positioned between file details and download button
+  - Styled box with theme colors for prominence
+  - Left-aligned text for better readability
+- ✅ **Password Protected Pages**: Comments shown in file info box
+  - Integrated with other file metadata
+  - Separated with subtle border-top
+- ✅ **Auth Required Pages**: Comments displayed in file details
+  - Consistent styling across all auth flows
+  - Proper HTML escaping for security
+
+### 🔧 Technical Implementation
+
+**Code Changes:**
+- ✅ Added `html/template` import to both handler files for security
+- ✅ `internal/server/handlers_user.go`: Dashboard comment display
+- ✅ `internal/server/handlers_admin.go`: Admin list comment display
+- ✅ `internal/server/handlers_files.go`: All download page variants
+- ✅ Proper HTML escaping using `template.HTMLEscapeString()` throughout
+- ✅ Version bump to 4.7.0-beta.3
+
+**Design Considerations:**
+- Theme color integration via `s.getPrimaryColor()` and `s.getSecondaryColor()`
+- Responsive styling that works on all screen sizes
+- Consistent visual language across all pages
+- Security: All user input properly escaped before display
+
+### 📊 Beta Progress Summary
+
+**Beta 1 (Database & Models):**
+- ✅ Database migration: Added Comment column
+- ✅ Updated FileInfo struct and all database operations
+- ✅ Added Comment field to File and FileApiOutput models
+
+**Beta 2 (Database Queries):**
+- ✅ Updated GetFilesByUser to SELECT Comment
+- ✅ Updated GetAllFiles to SELECT Comment
+- ✅ Fixed scanFiles helper with sql.NullString handling
+
+**Beta 3 (UI Display) - THIS RELEASE:**
+- ✅ Dashboard file list (user & admin)
+- ✅ Download splash pages
+- ✅ Password-protected download pages
+- ✅ Auth-required download pages
+
+### 🚀 What's Still To Come
+
+**Remaining for Final Release:**
+- ⏳ Email templates (include comments in file sharing emails)
+- ⏳ File request creation form (add message/description field)
+- ⏳ File request upload portal (display request message)
+- ⏳ Move Audit Logs to Server dropdown nav
+- ⏳ End-to-end testing
+- ⏳ Final release as v4.7.0 Galadriel
+
+### 📝 Upgrade Notes
+
+**For Beta Testers:**
+- Build successful with no compilation errors
+- All UI changes are additive - no breaking changes
+- Comments auto-hide when empty - no visual clutter
+- Database compatible with Beta 1 & 2
+
+---
+
+## [4.7.0-beta.2 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - Database Queries
+
+### 🎯 Beta 2 - Database Query Implementation
+
+**What's New in Beta 2:**
+Beta 2 completes the database layer by updating all file retrieval queries to include the new Comment column.
+
+### ✨ Database Features Implemented
+
+**Query Updates:**
+- ✅ `GetFilesByUser()`: Now includes Comment in SELECT and Scan
+- ✅ `GetAllFiles()`: Now includes Comment in SELECT and Scan
+- ✅ `scanFiles()` helper: Properly handles Comment with sql.NullString
+
+**NULL Handling:**
+- ✅ Uses `sql.NullString` for Comment field to handle NULL database values
+- ✅ Converts NULL to empty string in Go struct
+- ✅ Safe handling prevents nil pointer errors
+
+### 🔧 Technical Implementation
+
+**Files Modified:**
+- ✅ `internal/database/files.go`: Updated SELECT queries to include Comment column
+- ✅ All database query functions now retrieve Comment field
+- ✅ Proper NULL checking in scanFiles helper function
+
+### 📊 Beta Progress Summary
+
+**Beta 1 (Database & Models):**
+- ✅ Database migration: Added Comment column to Files table
+- ✅ Updated SaveFile to INSERT Comment
+- ✅ Updated GetFileByID to SELECT Comment
+- ✅ Updated FileInfo struct with Comment field
+- ✅ Updated File and FileApiOutput models
+
+**Beta 2 (Database Queries) - THIS RELEASE:**
+- ✅ Updated GetFilesByUser query
+- ✅ Updated GetAllFiles query
+- ✅ Fixed scanFiles helper with NULL handling
+
+### 🚀 What's Next
+
+**Beta 3 (UI Display):**
+- Display comments on user dashboard
+- Display comments on admin file list
+- Display comments on download splash pages
+- Display comments on password/auth pages
+
+**Later Betas:**
+- Email templates integration
+- File request comments
+
+---
+
+## [4.7.0-beta.1 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - Initial Implementation
+
+### 🎯 Major New Feature - File Comments/Descriptions
+
+**Problem:**
+Users had no way to add notes, descriptions, or instructions when sharing files. Recipients couldn't see context about what the file contains, how to use it, or any special instructions (like password hints).
+
+**Solution:**
+Implementing comprehensive file comments/descriptions feature across upload forms, file metadata, download pages, and email notifications.
+
+### ✨ New Features - Beta 1
+
+**Upload Form:**
+- ✅ Added textarea field for file description/note (max 1000 characters)
+- ✅ Optional field with helpful placeholder text
+- ✅ Shows usage hint: "This message will be shown to recipients on the download page and included in email notifications"
+
+**Database Schema:**
+- ✅ Migration 9: Added `Comment TEXT DEFAULT ''` column to Files table
+- ✅ Supports NULL and empty string values
+- ✅ Backward compatible with existing databases
+
+**Data Models:**
+- ✅ Updated `FileInfo` struct with `Comment` field
+- ✅ Updated `File` model with `Comment` field (JSON + Redis tags)
+- ✅ Updated `FileApiOutput` with `Comment` field
+- ✅ SaveFile() now stores comment in database
+- ✅ GetFileByID() retrieves comment with proper NULL handling
+
+**API Integration:**
+- ✅ Upload endpoint extracts `file_comment` from form data
+- ✅ Comment stored in FileInfo when saving file
+- ✅ Proper handling of empty strings vs NULL
+
+### 🔧 Technical Implementation
+
+**Files Modified:**
+- ✅ `cmd/server/main.go`: Version bump to 4.7.0-beta.1
+- ✅ `internal/models/FileList.go`: Added Comment fields
+- ✅ `internal/database/database.go`: Added Migration 9
+- ✅ `internal/database/files.go`: Updated FileInfo, SaveFile, GetFileByID
+- ✅ `internal/server/handlers_user.go`: Added textarea to upload form
+- ✅ `internal/server/handlers_files.go`: Extract and save comment from upload
+
+**Security:**
+- ✅ Max length validation (1000 characters client-side)
+- ✅ Textarea supports multiline input
+- ✅ Database column stores as TEXT (unlimited length)
+- ✅ Will add HTML escaping in display phase
+
+### 🚀 Planned for Future Betas
+
+**Beta 2 - Database Completion:**
+- Update GetFilesByUser query
+- Update GetAllFiles query
+- Update other file queries
+
+**Beta 3 - UI Display:**
+- Display on user dashboard
+- Display on admin file list
+- Display on download pages
+
+**Beta 4 - Email & Requests:**
+- Include in email templates
+- File request comments
+- Upload portal display
+
+### 📝 Upgrade Notes
+
+**Database Migration:**
+- Automatic migration on startup
+- Adds Comment column if not exists
+- Safe for production (non-destructive)
+
+**API Compatibility:**
+- Upload API accepts new optional `file_comment` parameter
+- Backward compatible - parameter is optional
+- Existing uploads continue to work without comment
+
+---
+
 ## [4.6.5 Champagne] - 2025-11-18 🧹 Major Navigation Refactoring & Code Cleanup
 
 ### 🎯 Major Enhancement - Code Quality & Performance

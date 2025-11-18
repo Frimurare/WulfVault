@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -2508,6 +2509,17 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 			f.Id, f.Name,
 			downloadURL,
 			f.Id)
+
+		// Add comment row if comment exists
+		if f.Comment != "" {
+			html += fmt.Sprintf(`
+                <tr style="background: #f9f9f9;">
+                    <td colspan="7" style="padding: 12px 16px; border-left: 3px solid %s;">
+                        <strong>💬 Note:</strong> %s
+                    </td>
+                </tr>`,
+				s.getPrimaryColor(), template.HTMLEscapeString(f.Comment))
+		}
 	}
 
 	html += `

@@ -1001,12 +1001,19 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 					f.Id, f.Id, template.JSEscapeString(f.FilePasswordPlain))
 			}
 
+			commentDisplay := ""
+			if f.Comment != "" {
+				commentDisplay = fmt.Sprintf(`<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid %s; border-radius: 4px; color: #555;"><strong>💬 Note:</strong> %s</p>`,
+					s.getPrimaryColor(), template.HTMLEscapeString(f.Comment))
+			}
+
 			html += fmt.Sprintf(`
                 <li class="file-item" data-file-type="%s">
                     <div class="file-info">
                         <h3>📄 %s %s%s%s</h3>
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
+                        %s
                         %s
                         <div class="link-display">
                             <h4>🌐 Splash Page (Recommended - Shows branding)</h4>
@@ -1035,7 +1042,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
+                </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay, commentDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.JSEscapeString(f.Name))

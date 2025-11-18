@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -951,6 +952,11 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
 		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
 	}
 
+	// Add comment if present
+	if fileInfo.Comment != "" {
+		html += `<p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
+	}
+
 	html += `
         </div>
 
@@ -1124,6 +1130,11 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
 
 	if fileInfo.ExpireAtString != "" {
 		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
+	}
+
+	// Add comment if present
+	if fileInfo.Comment != "" {
+		html += `<p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
 	}
 
 	html += `
@@ -1377,6 +1388,15 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 
 	html += `
         </div>`
+
+	// Add comment/note if present
+	if fileInfo.Comment != "" {
+		html += `
+        <div style="margin: 25px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid ` + primaryColor + `; border-radius: 8px; text-align: left;">
+            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">💬 Note from sender</h3>
+            <p style="color: #555; font-size: 15px; line-height: 1.6;">` + template.HTMLEscapeString(fileInfo.Comment) + `</p>
+        </div>`
+	}
 
 	if fileInfo.RequireAuth {
 		html += `<div class="badge">🔒 Authentication Required</div>`
