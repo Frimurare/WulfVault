@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.7.2 Galadriel] - 2025-11-18 🐺 Favicon & Email Polish
+## [4.7.2 Galadriel] - 2025-11-18 🐺 Favicon, Email Polish & Bug Fixes
 
 ### 🎯 Visual Improvements
 
@@ -14,6 +14,13 @@
 - Clean file info table with all download details
 - Prominent "VIEW IN DASHBOARD" button
 - Dark mode compatible design
+
+### 🐛 Bug Fixes
+
+**Team File Sharing:**
+- Fixed bug where files could only be added to one team
+- Fixed bug where removing files from teams didn't work
+- Root cause: JSON field name mismatch between frontend (snake_case) and backend (camelCase)
 
 ---
 
