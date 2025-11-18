@@ -113,53 +113,129 @@ func (s *Server) handleFileRequestCreate(w http.ResponseWriter, r *http.Request)
 	if recipientEmail != "" && strings.TrimSpace(recipientEmail) != "" {
 		go func() {
 			expireTime := time.Unix(fileRequest.ExpiresAt, 0).Format("2006-01-02 15:04")
-			subject := "You've been invited to upload a file"
+			subject := "Action Required: Please upload your file"
+
+			// Get branding for company name
+			brandingConfig, _ := database.DB.GetBrandingConfig()
+			companyName := brandingConfig["branding_company_name"]
+			if companyName == "" {
+				companyName = s.config.CompanyName
+			}
 
 			htmlBody := fmt.Sprintf(`
-				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-					<h2 style="color: #333;">File Upload Request</h2>
-					<p>You've received a file upload request:</p>
-					<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-						<h3 style="margin-top: 0; color: #2563eb;">%s</h3>
-						%s
-					</div>
-					<div style="margin: 30px 0;">
-						<a href="%s" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Upload File</a>
-					</div>
-					<p style="color: #666; font-size: 14px;">
-						<strong>Expires:</strong> %s<br>
-						<strong>Link:</strong> <a href="%s">%s</a>
-					</p>
-					<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-					<p style="color: #999; font-size: 12px;">This link will expire in 24 hours.</p>
-				</div>
-			`, html.EscapeString(title),
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif;">
+	<table width="100%%" cellpadding="0" cellspacing="0" style="background-color: #f0f0f0; padding: 20px 0;">
+		<tr>
+			<td align="center">
+				<table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+					<!-- Header -->
+					<tr>
+						<td style="background-color: #1e3a5f; padding: 30px; text-align: center;">
+							<h1 style="color: #ffffff; margin: 0; font-size: 24px;">%s</h1>
+							<p style="color: #a0c4e8; margin: 10px 0 0 0; font-size: 14px;">Secure File Transfer</p>
+						</td>
+					</tr>
+
+					<!-- Main Content -->
+					<tr>
+						<td style="padding: 40px 30px;">
+							<!-- What is this -->
+							<div style="background-color: #e8f4fd; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 25px;">
+								<p style="margin: 0; color: #1e3a5f; font-size: 16px;">
+									<strong>What is this?</strong><br>
+									Someone needs you to upload a file to them securely. Click the green button below to upload your file.
+								</p>
+							</div>
+
+							<!-- Request Title -->
+							<h2 style="color: #1e3a5f; margin: 0 0 15px 0; font-size: 20px;">📋 %s</h2>
+							%s
+
+							<!-- BIG GREEN UPLOAD BUTTON -->
+							<table width="100%%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+								<tr>
+									<td align="center">
+										<a href="%s" style="display: inline-block; background-color: #16a34a; color: #ffffff; padding: 20px 50px; text-decoration: none; border-radius: 8px; font-size: 20px; font-weight: bold; border: 3px solid #15803d; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); text-transform: uppercase; letter-spacing: 1px;">
+											⬆️ UPLOAD FILE HERE
+										</a>
+									</td>
+								</tr>
+							</table>
+
+							<!-- Expiration Warning -->
+							<div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+								<p style="margin: 0; color: #92400e; font-size: 16px; font-weight: bold;">
+									⏰ IMPORTANT: This link expires
+								</p>
+								<p style="margin: 10px 0 0 0; color: #78350f; font-size: 18px; font-weight: bold;">
+									%s
+								</p>
+							</div>
+
+							<!-- Backup Link -->
+							<div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin-top: 20px;">
+								<p style="margin: 0 0 8px 0; color: #374151; font-size: 12px;">
+									<strong>If the button doesn't work, copy this link:</strong>
+								</p>
+								<p style="margin: 0; word-break: break-all; font-size: 11px;">
+									<a href="%s" style="color: #2563eb;">%s</a>
+								</p>
+							</div>
+						</td>
+					</tr>
+
+					<!-- Footer -->
+					<tr>
+						<td style="background-color: #1e3a5f; padding: 20px; text-align: center;">
+							<p style="margin: 0; color: #a0c4e8; font-size: 12px;">
+								This is an automated message from %s
+							</p>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+			`, companyName,
+				html.EscapeString(title),
 				func() string {
 					if message != "" {
-						return fmt.Sprintf("<p>%s</p>", html.EscapeString(message))
+						return fmt.Sprintf(`<p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 15px 0;">%s</p>`, html.EscapeString(message))
 					}
 					return ""
 				}(),
-				uploadURL, expireTime, uploadURL, uploadURL)
+				uploadURL, expireTime, uploadURL, uploadURL, companyName)
 
-			textBody := fmt.Sprintf(`File Upload Request
+			textBody := fmt.Sprintf(`ACTION REQUIRED: Please Upload Your File
+============================================
 
-Title: %s
+WHAT IS THIS?
+Someone needs you to upload a file to them securely.
+
+REQUEST: %s
+%s
+UPLOAD YOUR FILE HERE:
 %s
 
-Upload your file here: %s
+⚠️ IMPORTANT: This link expires on %s
 
-This link expires: %s
-
-This link will expire in 24 hours.`,
+---
+This is an automated message from %s`,
 				title,
 				func() string {
 					if message != "" {
-						return fmt.Sprintf("\nMessage: %s\n", message)
+						return fmt.Sprintf("\nMESSAGE: %s\n", message)
 					}
 					return ""
 				}(),
-				uploadURL, expireTime)
+				uploadURL, expireTime, companyName)
 
 			provider, err := email.GetActiveProvider(database.DB)
 			if err != nil {
@@ -495,6 +571,26 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 	}()
 
 	shareLink := s.getPublicURL() + "/s/" + fileID
+
+	// Audit log for file request upload
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     database.ActionFileRequestUploaded,
+		EntityType: database.EntityFileRequest,
+		EntityID:   fmt.Sprintf("%d", fileRequest.Id),
+		Details: database.CreateAuditDetails(map[string]interface{}{
+			"request_title": fileRequest.Title,
+			"file_id":       fileID,
+			"file_name":     header.Filename,
+			"file_size":     fileSize,
+			"uploader_ip":   clientIP,
+			"has_comment":   comment != "",
+		}),
+		IPAddress: clientIP,
+		UserAgent: r.UserAgent(),
+		Success:   true,
+	})
 
 	log.Printf("File uploaded via request %s: %s (%s) for user %d - link now consumed by IP %s",
 		fileRequest.Title, header.Filename, database.FormatFileSize(fileSize), user.Id, clientIP)
