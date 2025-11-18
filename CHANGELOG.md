@@ -1,5 +1,107 @@
 # Changelog
 
+## [4.7.0-rc.1 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - Release Candidate 1
+
+### 🎯 Release Candidate 1 - Feature Complete
+
+**What's New in RC1:**
+Release Candidate 1 completes all planned features for the file comments/descriptions system. This RC is feature-complete and ready for final testing before the 4.7.0 Galadriel stable release.
+
+### ✨ New Features in RC1
+
+**Comment Editing:**
+- ✅ **Edit File Modal**: Added comment/note textarea to edit existing files
+  - 1000 character limit with counter
+  - Pre-populates with existing comment
+  - Updates via new `UpdateFileComment()` database function
+  - Integrated with existing file settings update flow
+
+**Improved UX - Comment Positioning:**
+- ✅ **Prominent Placement**: Comments now displayed ABOVE file details
+  - Dashboard: Comment appears right after filename, before size/downloads
+  - Splash pages: Comment shown as emphasized section before technical details
+  - Email templates: File description highlighted before custom message
+  - Rationale: Comments are important file descriptions that deserve prominence
+
+**Email Integration:**
+- ✅ **HTML Email Template**: Styled comment box with theme colors
+  - Blue-tinted background with left border accent
+  - Labeled as "💬 File Description"
+  - Displayed before sender's custom message
+- ✅ **Text Email Template**: Plain text "File Description:" section
+  - Proper formatting for email clients without HTML support
+
+**Navigation Improvement:**
+- ✅ **Audit Logs**: Moved to Server dropdown in admin navigation
+  - Accessible from: Server > Audit Logs
+  - Consistent with other server management features
+  - Replaces separate button on settings page
+  - Improves admin workflow efficiency
+
+### 🔧 Technical Implementation
+
+**New Database Functions:**
+- `UpdateFileComment(fileId, comment)`: Updates file comment with NULL handling
+
+**Modified Files:**
+- `cmd/server/main.go`: Version bump to 4.7.0-rc.1
+- `internal/database/files.go`: Added UpdateFileComment function
+- `internal/server/handlers_user.go`:
+  - Edit modal with comment textarea
+  - JavaScript to handle comment editing
+  - Email templates with comment display
+  - Comment positioning updates
+- `internal/server/handlers_files.go`: Comment positioning in all splash pages
+- `internal/server/header.go`: Audit Logs added to Server dropdown
+
+**Security:**
+- All comment fields properly escaped with `template.HTMLEscapeString()`
+- NULL handling prevents database errors
+- Validation: 1000 character maximum
+
+### 📊 Complete Feature Summary (All Betas + RC1)
+
+**Database Layer (Beta 1):**
+- ✅ Database migration with Comment column
+- ✅ FileInfo struct updated
+- ✅ File upload includes comment field
+
+**Query Layer (Beta 2):**
+- ✅ All SELECT queries include Comment
+- ✅ Proper sql.NullString handling throughout
+- ✅ GetFilesByUserWithTeams fixed for dashboard display
+
+**UI Display (Beta 3):**
+- ✅ Dashboard file lists (user & admin)
+- ✅ Download splash pages (all variants)
+- ✅ Password-protected pages
+- ✅ Auth-required pages
+
+**Editing & Polish (RC1 - THIS RELEASE):**
+- ✅ Edit existing file comments
+- ✅ Improved comment positioning (above details)
+- ✅ Email template integration
+- ✅ Navigation improvement (Audit Logs)
+
+### 🚀 Next Steps
+
+**Before Stable Release:**
+- ⏳ Final comprehensive testing
+- ⏳ Mobile interface verification
+- ⏳ User acceptance testing
+- ⏳ Final release as v4.7.0 Galadriel (stable)
+
+### 📝 Upgrade Notes
+
+**For RC Testers:**
+- Feature complete - all planned functionality implemented
+- Backward compatible with Beta 1, 2, and 3
+- No breaking changes
+- Database schema unchanged from Beta 1
+- Ready for production testing
+
+---
+
 ## [4.7.0-beta.3 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - UI Display Complete
 
 ### 🎯 Beta 3 - UI Implementation
