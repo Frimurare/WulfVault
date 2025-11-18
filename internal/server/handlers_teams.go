@@ -428,8 +428,8 @@ func (s *Server) handleAPIShareFileToTeam(w http.ResponseWriter, r *http.Request
 	user, _ := userFromContext(r.Context())
 
 	var req struct {
-		FileId string `json:"fileId"`
-		TeamId int    `json:"teamId"`
+		FileId string `json:"file_id"`
+		TeamId int    `json:"team_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -479,8 +479,8 @@ func (s *Server) handleAPIUnshareFileFromTeam(w http.ResponseWriter, r *http.Req
 	user, _ := userFromContext(r.Context())
 
 	var req struct {
-		FileId string `json:"fileId"`
-		TeamId int    `json:"teamId"`
+		FileId string `json:"file_id"`
+		TeamId int    `json:"team_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
