@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.7.2 Galadriel] - 2025-11-18 🐺 Favicon & Email Polish
+
+### 🎯 Visual Improvements
+
+**Wolf Favicon:**
+- Added wolf emoji (🐺) as favicon in browser tabs
+- SVG-based for crisp rendering at all sizes
+
+**Download Notification Email:**
+- Redesigned with same professional table-based layout as other emails
+- Green "Good news!" header for positive notification
+- Clean file info table with all download details
+- Prominent "VIEW IN DASHBOARD" button
+- Dark mode compatible design
+
+---
+
 ## [4.7.1 Galadriel] - 2025-11-18 📧 Email Improvements & Audit Logging
 
 ### 🎯 Improved Email Templates & Audit Logging

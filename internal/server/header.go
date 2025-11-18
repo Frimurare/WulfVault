@@ -364,5 +364,9 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
         });
     </script>`
 
-	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
+	// Wolf emoji favicon as SVG data URI
+	faviconSVG := `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐺</text></svg>">`
+
+	return faviconSVG + `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
 }
+
