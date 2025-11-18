@@ -1,5 +1,92 @@
 # Changelog
 
+## [4.6.5 Champagne] - 2025-11-18 🧹 Major Navigation Refactoring & Code Cleanup
+
+### 🎯 Major Enhancement - Code Quality & Performance
+
+**Problem:**
+Navigation system had 1,000+ lines of duplicated CSS/HTML across 8+ handler files and 14 duplicate hamburger menu scripts causing mobile navigation failures and maintenance issues.
+
+**Solution:**
+Created unified header system (`header.go`) as single source of truth, eliminating all duplication and fixing mobile navigation issues.
+
+### ✨ Code Quality Improvements
+
+**Unified Header System:**
+- ✅ **NEW: `internal/server/header.go` (368 lines)** - Centralized header rendering system
+- ✅ **Removed 1,500+ lines** of duplicate code across handler files
+- ✅ **Single source of truth** for all header HTML, CSS, and JavaScript
+- ✅ **Two rendering modes**: `getHeaderHTML(user, forAdmin)` and `getAdminHeaderHTML()`
+- ✅ **Consistent navigation** across all pages (admin, user, teams, settings, etc.)
+
+**Duplicate Code Elimination:**
+- ✅ Removed 14 duplicate hamburger menu scripts causing event listener conflicts
+- ✅ handlers_admin.go: Removed 283 lines of duplicate header code
+- ✅ handlers_user.go: Removed ~440 lines of inline header
+- ✅ handlers_user_settings.go: Removed ~310 lines of inline header
+- ✅ handlers_teams.go: Cleaned up 2 duplicate headers
+- ✅ handlers_download_user.go: Cleaned up 2 duplicate headers + unused variables
+- ✅ handlers_audit_log.go: Replaced inline header with unified system
+- ✅ handlers_email.go: Removed old hamburger script
+- ✅ handlers_gdpr.go: Removed old hamburger script
+
+**Performance Improvements:**
+- ✅ **Faster page loads** - Reduced code duplication
+- ✅ **Cleaner event handling** - Single JavaScript initialization per page
+- ✅ **Better maintainability** - One place to update navigation
+
+### 🔧 Mobile Navigation Enhancements
+
+**Responsive Design Improvements:**
+- ✅ **Optimized for narrower screens** with improved responsive CSS
+- ✅ **Fixed dropdown menu behavior** in mobile view:
+  - Desktop: Hover-based dropdowns (Files, Server menus)
+  - Mobile: Always-visible sub-items with proper click handling
+- ✅ **Enhanced touch interaction** with `pointer-events` CSS
+- ✅ **Fixed z-index layering** for clickable menu items
+- ✅ **Visual improvements**: Better hamburger animation and overlay
+
+**Dropdown Menu Structure:**
+- ✅ **Files dropdown**: All Files, Trash
+- ✅ **Server dropdown**: Server Settings, Branding, Email
+
+### 🐛 Bug Fixes
+
+**Navigation Fixes:**
+- ✅ Fixed hamburger menu not working on Server Settings page (removed conflicting `/static/js/mobile-nav.js`)
+- ✅ Fixed dropdown menu items not being clickable in mobile view
+- ✅ Fixed multiple event listeners causing navigation failures
+- ✅ Preserved dashboard-specific CSS while removing duplicate header CSS
+
+**Code Fixes:**
+- ✅ Fixed unused `logoData` variables in handlers_download_user.go (compilation errors)
+- ✅ Fixed conflicting JavaScript event listeners from duplicate scripts
+
+### 📊 Technical Metrics
+
+**Code Quality:**
+- Lines removed: ~1,500+ (duplicate code elimination)
+- Lines added: ~400 (unified header system)
+- **Net reduction: ~1,100 lines**
+- Files with inline headers: **0** (down from 8+)
+- Duplicate hamburger scripts: **0** (down from 14)
+
+**Files Modified:**
+- `cmd/server/main.go` - Version bump to 4.6.5
+- `README.md` - Version update
+- `USER_GUIDE.md` - Version update
+- `internal/server/header.go` - NEW unified header system
+- 8 handler files - Replaced inline headers with unified system
+
+### 🚀 Upgrade Notes
+
+**No Breaking Changes:**
+- Drop-in replacement for v4.6.0-4.6.4
+- All changes are internal refactoring
+- Full backward compatibility maintained
+
+---
+
 ## [4.6.0 Champagne] - 2025-11-17 🎉 GDPR Compliance & Full Data Privacy
 
 ### 🎯 Major Enhancement - GDPR Compliance Implementation
