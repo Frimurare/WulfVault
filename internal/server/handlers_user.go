@@ -1018,9 +1018,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 <li class="file-item" data-file-type="%s">
                     <div class="file-info">
                         <h3>📄 %s %s%s%s</h3>
+                        %s
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
-                        %s
                         %s
                         <div class="link-display">
                             <h4>🌐 Splash Page (Recommended - Shows branding)</h4>
@@ -1049,7 +1049,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay, commentDisplay,
+                </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.Id, template.JSEscapeString(f.Name))

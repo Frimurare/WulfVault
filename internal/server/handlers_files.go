@@ -940,8 +940,14 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
         </div>
 
         <div class="file-info">
-            <h2>🔒 ` + fileInfo.Name + `</h2>
-            <p><strong>Size:</strong> ` + fileInfo.Size + `</p>
+            <h2>🔒 ` + fileInfo.Name + `</h2>`
+
+	// Add comment if present (moved to top as it's important)
+	if fileInfo.Comment != "" {
+		html += `<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid ` + s.getPrimaryColor() + `; border-radius: 4px; color: #555;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
+	}
+
+	html += `<p><strong>Size:</strong> ` + fileInfo.Size + `</p>
             <p><strong>Downloads:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
 
 	if !fileInfo.UnlimitedDownloads {
@@ -950,11 +956,6 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
 
 	if fileInfo.ExpireAtString != "" {
 		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
-	}
-
-	// Add comment if present
-	if fileInfo.Comment != "" {
-		html += `<p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
 	}
 
 	html += `
@@ -1120,8 +1121,14 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
         </div>
 
         <div class="file-info">
-            <h2>📁 ` + fileInfo.Name + `</h2>
-            <p><strong>Size:</strong> ` + fileInfo.Size + `</p>
+            <h2>📁 ` + fileInfo.Name + `</h2>`
+
+	// Add comment if present (moved to top as it's important)
+	if fileInfo.Comment != "" {
+		html += `<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid ` + s.getPrimaryColor() + `; border-radius: 4px; color: #555;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
+	}
+
+	html += `<p><strong>Size:</strong> ` + fileInfo.Size + `</p>
             <p><strong>Downloads:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
 
 	if !fileInfo.UnlimitedDownloads {
@@ -1130,11 +1137,6 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
 
 	if fileInfo.ExpireAtString != "" {
 		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
-	}
-
-	// Add comment if present
-	if fileInfo.Comment != "" {
-		html += `<p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
 	}
 
 	html += `
@@ -1358,8 +1360,18 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 
         <div class="file-info">
             <h2>` + fileInfo.Name + `</h2>
-        </div>
+        </div>`
 
+	// Add comment/note if present (moved to top as it's important)
+	if fileInfo.Comment != "" {
+		html += `
+        <div style="margin: 25px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid ` + primaryColor + `; border-radius: 8px; text-align: left;">
+            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">💬 Note from sender</h3>
+            <p style="color: #555; font-size: 15px; line-height: 1.6;">` + template.HTMLEscapeString(fileInfo.Comment) + `</p>
+        </div>`
+	}
+
+	html += `
         <div class="file-details">
             <div class="detail-item">
                 <h3>File Size</h3>
@@ -1388,15 +1400,6 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 
 	html += `
         </div>`
-
-	// Add comment/note if present
-	if fileInfo.Comment != "" {
-		html += `
-        <div style="margin: 25px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid ` + primaryColor + `; border-radius: 8px; text-align: left;">
-            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">💬 Note from sender</h3>
-            <p style="color: #555; font-size: 15px; line-height: 1.6;">` + template.HTMLEscapeString(fileInfo.Comment) + `</p>
-        </div>`
-	}
 
 	if fileInfo.RequireAuth {
 		html += `<div class="badge">🔒 Authentication Required</div>`
