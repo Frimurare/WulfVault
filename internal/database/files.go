@@ -130,7 +130,7 @@ func (d *Database) GetFilesByUser(userId int) ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files WHERE UserId = ? AND DeletedAt = 0 ORDER BY UploadDate DESC`, userId)
 	if err != nil {
@@ -146,7 +146,7 @@ func (d *Database) GetAllFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files WHERE DeletedAt = 0 ORDER BY UploadDate DESC`)
 	if err != nil {
@@ -376,13 +376,13 @@ func scanFiles(rows *sql.Rows) ([]*FileInfo, error) {
 	for rows.Next() {
 		file := &FileInfo{}
 		var unlimitedDownloads, unlimitedTime, requireAuth int
-		var filePassword sql.NullString
+		var filePassword, comment sql.NullString
 
 		err := rows.Scan(
 			&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash, &filePassword,
 			&file.HotlinkId, &file.ContentType, &file.AwsBucket, &file.ExpireAtString,
 			&file.ExpireAt, &file.PendingDeletion, &file.SizeBytes, &file.UploadDate,
-			&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
+			&file.DownloadsRemaining, &file.DownloadCount, &file.UserId, &comment,
 			&unlimitedDownloads, &unlimitedTime, &requireAuth, &file.DeletedAt, &file.DeletedBy,
 		)
 		if err != nil {
@@ -392,6 +392,11 @@ func scanFiles(rows *sql.Rows) ([]*FileInfo, error) {
 		// Handle NULL password
 		if filePassword.Valid {
 			file.FilePasswordPlain = filePassword.String
+		}
+
+		// Handle NULL comment
+		if comment.Valid {
+			file.Comment = comment.String
 		}
 
 		file.UnlimitedDownloads = unlimitedDownloads == 1
