@@ -3039,20 +3039,6 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
             </form>
         </div>
 
-        <!-- Audit Logs Section -->
-        <div class="card" style="margin-top: 30px; border: 2px solid #3f51b5;">
-            <h2 style="color: #3f51b5;">📋 Audit Logs</h2>
-            <p style="color: #666; margin-bottom: 20px;">
-                View comprehensive audit trail of all system operations including logins, file operations, user management, and settings changes.
-            </p>
-            <a href="/admin/audit-logs" class="btn btn-primary">
-                📊 View Audit Logs
-            </a>
-            <p style="color: #999; font-size: 12px; margin-top: 15px;">
-                Logs are automatically cleaned up based on retention period (` + auditLogRetentionDays + ` days) and size limit (` + auditLogMaxSizeMB + ` MB) configured above.
-            </p>
-        </div>
-
         <!-- RESTART SERVER BUTTON - DISABLED UNTIL SYSTEMD IS INSTALLED
              To enable: Uncomment this section after installing systemd service
              See README.md section "Server Restart Feature" for details

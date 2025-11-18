@@ -312,42 +312,59 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get branding config for email styling
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	primaryColor := brandingConfig["branding_primary_color"]
+	if primaryColor == "" {
+		primaryColor = "#2563eb"
+	}
+	companyName := brandingConfig["branding_company_name"]
+	if companyName == "" {
+		companyName = s.config.CompanyName
+	}
+
 	// Construct email content
-	subject := fmt.Sprintf("%s has shared a file with you", user.Name)
+	subject := fmt.Sprintf("%s has shared a file with you via %s", user.Name, companyName)
 
 	htmlBody := fmt.Sprintf(`
 		<html>
-		<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-			<h2 style="color: #333;">You've received a file</h2>
-			<p><strong>%s</strong> has shared the following file with you:</p>
-			<div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-				<h3 style="margin: 0 0 10px 0; color: #2563eb;">%s</h3>
-				<p style="color: #666; margin: 0;">Size: %.2f MB</p>
+		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc;">
+			<div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+				<div style="text-align: center; margin-bottom: 25px;">
+					<h1 style="color: %s; font-size: 24px; margin: 0;">%s</h1>
+				</div>
+				<h2 style="color: #1e293b; font-size: 20px; margin-bottom: 15px;">📁 File Shared With You</h2>
+				<p style="color: #64748b; font-size: 15px;"><strong style="color: #334155;">%s</strong> has shared a file with you:</p>
+				<div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid %s;">
+					<h3 style="margin: 0 0 8px 0; color: %s; font-size: 16px;">📄 %s</h3>
+					<p style="color: #64748b; margin: 0; font-size: 14px;">Size: %.2f MB</p>
+				</div>
+				%s
+				%s
+				<div style="text-align: center; margin: 25px 0;">
+					<a href="%s" style="display: inline-block; background: %s; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">⬇️ Download File</a>
+				</div>
+				<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0;">
+				<p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+					Sent via %s • Secure file sharing
+				</p>
 			</div>
-			%s
-			%s
-			<p>
-				<a href="%s" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">Download File</a>
-			</p>
-			<p style="color: #999; font-size: 12px; margin-top: 30px;">
-				This link was sent from %s
-			</p>
 		</body>
 		</html>
-	`, user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
+	`, primaryColor, companyName, user.Name, primaryColor, primaryColor, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
 		func() string {
 			if fileInfo.Comment != "" {
-				return fmt.Sprintf(`<div style="background: #f0f9ff; border-left: 4px solid #2563eb; padding: 15px; margin: 15px 0; border-radius: 4px;"><p style="margin: 0; color: #1e40af;"><strong>💬 File Description:</strong></p><p style="margin: 8px 0 0 0; color: #334155;">%s</p></div>`, template.HTMLEscapeString(fileInfo.Comment))
+				return fmt.Sprintf(`<div style="background: #f0f9ff; border-left: 4px solid %s; padding: 15px; margin: 15px 0; border-radius: 8px;"><p style="margin: 0 0 8px 0; color: %s; font-weight: 600; font-size: 14px;">💬 File Description:</p><p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.5;">%s</p></div>`, primaryColor, primaryColor, template.HTMLEscapeString(fileInfo.Comment))
 			}
 			return ""
 		}(),
 		func() string {
 			if request.Message != "" {
-				return fmt.Sprintf(`<p style="color: #666;"><em>Message from sender:</em><br>%s</p>`, request.Message)
+				return fmt.Sprintf(`<div style="background: #fefce8; border-left: 4px solid #eab308; padding: 15px; margin: 15px 0; border-radius: 8px;"><p style="margin: 0 0 8px 0; color: #a16207; font-weight: 600; font-size: 14px;">💬 Message from sender:</p><p style="margin: 0; color: #713f12; font-size: 14px; line-height: 1.5;">%s</p></div>`, template.HTMLEscapeString(request.Message))
 			}
 			return ""
 		}(),
-		fileURL, s.config.CompanyName)
+		fileURL, primaryColor, companyName)
 
 	textBody := fmt.Sprintf(
 		"%s has shared a file with you\n\nFile: %s\nSize: %.2f MB\n\n%s%sDownload: %s\n\nThis link was sent from %s",

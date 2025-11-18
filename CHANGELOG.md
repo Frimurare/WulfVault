@@ -1,5 +1,46 @@
 # Changelog
 
+## [4.7.0 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - Stable Release
+
+### 🎉 Stable Release - File Comments Feature Complete
+
+**v4.7.0 Galadriel** introduces file comments/descriptions - a powerful way to add context and notes to your shared files.
+
+### ✨ New Features
+
+**File Comments/Descriptions:**
+- Add descriptions to files during upload
+- Edit comments on existing files via the Edit modal
+- Comments displayed prominently above file details on all pages
+- Integrated with email notifications - recipients see file descriptions
+- Consistent styling with theme colors across all interfaces
+
+**Improved Email Templates:**
+- Professional HTML email design with branding colors
+- Company logo and name prominently displayed
+- Styled file description and sender message sections
+- Responsive design for all email clients
+
+**Navigation Enhancement:**
+- Audit Logs moved to Server dropdown menu
+- Cleaner admin navigation structure
+
+### 🔧 Technical Highlights
+
+- Database schema extended with Comment column
+- UpdateFileComment() function for editing comments
+- Proper HTML escaping for security throughout
+- NULL handling with sql.NullString
+- Theme color integration via branding configuration
+
+### 📝 Upgrade Notes
+
+- Backward compatible - no breaking changes
+- Database automatically migrates on first run
+- All existing files will have empty comments (can be added via Edit)
+
+---
+
 ## [4.7.0-rc.1 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - Release Candidate 1
 
 ### 🎯 Release Candidate 1 - Feature Complete
