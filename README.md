@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 4.6.5 Champagne** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.7.2 Galadriel** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -41,6 +41,11 @@ WulfVault solves this by providing:
 - **Upload request portals** - Create shareable links for others to upload files to you
 - **Email integration** - Send download links directly via email with customizable templates
 - **File preview & metadata** - View file details, size, upload date, and download statistics
+- **File comments/descriptions (v4.7+):**
+  - Add notes and context to shared files
+  - Comments visible in file details and admin views
+  - Searchable in admin file management
+  - Perfect for adding context like "Q3 Financial Report - Final Version"
 - **Trash system with enhanced UI (v4.3+):**
   - Deleted files kept for configurable retention period (1-365 days) with restore capability
   - Modern gradient-styled action buttons: ♻️ Restore (green) and 🗑️ Delete Forever (red)
@@ -87,6 +92,8 @@ WulfVault solves this by providing:
   - Complete file lifecycle logging (upload, download, delete, restore, permanent deletion)
   - Team management operations (member changes, role updates, file sharing)
   - System configuration changes (settings, branding, quotas, audit policy)
+  - Email sends logged with recipient and file details (v4.7+)
+  - File request uploads logged with uploader IP and file info (v4.7+)
 - **Compliance-ready:**
   - Meets GDPR, SOC 2, HIPAA, and ISO 27001 audit requirements
   - Configurable retention periods (1 day to 10 years)
@@ -164,6 +171,12 @@ WulfVault solves this by providing:
   - File sharing notifications with download links
   - Custom branding in all email communications
   - Professional HTML email templates
+- **Redesigned email templates (v4.7+):**
+  - Professional table-based layout for all email clients (including Outlook dark mode)
+  - Large, prominent action buttons with clear CTAs
+  - "What is this?" explanations for non-technical recipients
+  - Clear expiration warnings with date/time
+  - Upload request, download/share, and download notification emails
 - **Email tracking:**
   - Log all sent emails with timestamps
   - Track email delivery status
