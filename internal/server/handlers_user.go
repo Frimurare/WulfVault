@@ -327,61 +327,135 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 	subject := fmt.Sprintf("%s has shared a file with you via %s", user.Name, companyName)
 
 	htmlBody := fmt.Sprintf(`
-		<html>
-		<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc;">
-			<div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-				<div style="text-align: center; margin-bottom: 25px;">
-					<h1 style="color: %s; font-size: 24px; margin: 0;">%s</h1>
-				</div>
-				<h2 style="color: #1e293b; font-size: 20px; margin-bottom: 15px;">📁 File Shared With You</h2>
-				<p style="color: #64748b; font-size: 15px;"><strong style="color: #334155;">%s</strong> has shared a file with you:</p>
-				<div style="background: #f1f5f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid %s;">
-					<h3 style="margin: 0 0 8px 0; color: %s; font-size: 16px;">📄 %s</h3>
-					<p style="color: #64748b; margin: 0; font-size: 14px;">Size: %.2f MB</p>
-				</div>
-				%s
-				%s
-				<div style="text-align: center; margin: 30px 0;">
-					<a href="%s" style="display: inline-block; background: %s; color: white; padding: 20px 60px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 1px;">⬇️ DOWNLOAD FILE</a>
-				</div>
-				<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0;">
-				<p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
-					Sent via %s • Secure file sharing
-				</p>
-			</div>
-		</body>
-		</html>
-	`, primaryColor, companyName, user.Name, primaryColor, primaryColor, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif;">
+	<table width="100%%" cellpadding="0" cellspacing="0" style="background-color: #f0f0f0; padding: 20px 0;">
+		<tr>
+			<td align="center">
+				<table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+					<!-- Header -->
+					<tr>
+						<td style="background-color: #1e3a5f; padding: 30px; text-align: center;">
+							<h1 style="color: #ffffff; margin: 0; font-size: 24px;">%s</h1>
+							<p style="color: #a0c4e8; margin: 10px 0 0 0; font-size: 14px;">Secure File Transfer</p>
+						</td>
+					</tr>
+
+					<!-- Main Content -->
+					<tr>
+						<td style="padding: 40px 30px;">
+							<!-- What is this -->
+							<div style="background-color: #e8f4fd; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 25px;">
+								<p style="margin: 0; color: #1e3a5f; font-size: 16px;">
+									<strong>What is this?</strong><br>
+									<strong>%s</strong> has sent you a file. Click the blue button below to download it.
+								</p>
+							</div>
+
+							<!-- File Info Box -->
+							<div style="background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+								<h3 style="margin: 0 0 10px 0; color: #1e3a5f; font-size: 18px;">📄 %s</h3>
+								<p style="margin: 0; color: #64748b; font-size: 14px;">Size: %.2f MB</p>
+							</div>
+
+							%s
+							%s
+
+							<!-- BIG BLUE DOWNLOAD BUTTON -->
+							<table width="100%%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+								<tr>
+									<td align="center">
+										<a href="%s" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 20px 50px; text-decoration: none; border-radius: 8px; font-size: 20px; font-weight: bold; border: 3px solid #1d4ed8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); text-transform: uppercase; letter-spacing: 1px;">
+											⬇️ DOWNLOAD FILE
+										</a>
+									</td>
+								</tr>
+							</table>
+
+							<!-- Backup Link -->
+							<div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin-top: 20px;">
+								<p style="margin: 0 0 8px 0; color: #374151; font-size: 12px;">
+									<strong>If the button doesn't work, copy this link:</strong>
+								</p>
+								<p style="margin: 0; word-break: break-all; font-size: 11px;">
+									<a href="%s" style="color: #2563eb;">%s</a>
+								</p>
+							</div>
+						</td>
+					</tr>
+
+					<!-- Footer -->
+					<tr>
+						<td style="background-color: #1e3a5f; padding: 20px; text-align: center;">
+							<p style="margin: 0; color: #a0c4e8; font-size: 12px;">
+								This is an automated message from %s
+							</p>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
+	`, companyName, user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
 		func() string {
 			if fileInfo.Comment != "" {
-				return fmt.Sprintf(`<div style="background: #f0f9ff; border-left: 4px solid %s; padding: 15px; margin: 15px 0; border-radius: 8px;"><p style="margin: 0 0 8px 0; color: %s; font-weight: 600; font-size: 14px;">💬 File Description:</p><p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.5;">%s</p></div>`, primaryColor, primaryColor, template.HTMLEscapeString(fileInfo.Comment))
+				return fmt.Sprintf(`
+							<!-- File Description -->
+							<div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 15px; border-radius: 0 8px 8px 0;">
+								<p style="margin: 0 0 8px 0; color: #1d4ed8; font-weight: 600; font-size: 14px;">📝 File Description:</p>
+								<p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.5;">%s</p>
+							</div>`, template.HTMLEscapeString(fileInfo.Comment))
 			}
 			return ""
 		}(),
 		func() string {
 			if request.Message != "" {
-				return fmt.Sprintf(`<div style="background: #fefce8; border-left: 4px solid #eab308; padding: 15px; margin: 15px 0; border-radius: 8px;"><p style="margin: 0 0 8px 0; color: #a16207; font-weight: 600; font-size: 14px;">💬 Message from sender:</p><p style="margin: 0; color: #713f12; font-size: 14px; line-height: 1.5;">%s</p></div>`, template.HTMLEscapeString(request.Message))
+				return fmt.Sprintf(`
+							<!-- Message from sender -->
+							<div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 15px; border-radius: 0 8px 8px 0;">
+								<p style="margin: 0 0 8px 0; color: #92400e; font-weight: 600; font-size: 14px;">💬 Message from %s:</p>
+								<p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.5;">%s</p>
+							</div>`, user.Name, template.HTMLEscapeString(request.Message))
 			}
 			return ""
 		}(),
-		fileURL, primaryColor, companyName)
+		fileURL, fileURL, fileURL, companyName)
 
 	textBody := fmt.Sprintf(
-		"%s has shared a file with you\n\nFile: %s\nSize: %.2f MB\n\n%s%sDownload: %s\n\nThis link was sent from %s",
+		`FILE SHARED WITH YOU
+====================
+
+WHAT IS THIS?
+%s has sent you a file. Use the link below to download it.
+
+FILE: %s
+SIZE: %.2f MB
+
+%s%sDOWNLOAD YOUR FILE:
+%s
+
+---
+This is an automated message from %s`,
 		user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
 		func() string {
 			if fileInfo.Comment != "" {
-				return fmt.Sprintf("File Description: %s\n\n", fileInfo.Comment)
+				return fmt.Sprintf("FILE DESCRIPTION:\n%s\n\n", fileInfo.Comment)
 			}
 			return ""
 		}(),
 		func() string {
 			if request.Message != "" {
-				return fmt.Sprintf("Message: %s\n\n", request.Message)
+				return fmt.Sprintf("MESSAGE FROM %s:\n%s\n\n", user.Name, request.Message)
 			}
 			return ""
 		}(),
-		fileURL, s.config.CompanyName,
+		fileURL, companyName,
 	)
 
 	// Send email
@@ -396,6 +470,24 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Warning: Failed to log email send: %v", err)
 		// Don't fail the request if logging fails
 	}
+
+	// Audit log for email sent
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     database.ActionEmailSent,
+		EntityType: database.EntityFile,
+		EntityID:   fileInfo.Id,
+		Details: database.CreateAuditDetails(map[string]interface{}{
+			"recipient":  request.Recipient,
+			"file_name":  fileInfo.Name,
+			"file_size":  fileInfo.SizeBytes,
+			"has_message": request.Message != "",
+		}),
+		IPAddress: r.RemoteAddr,
+		UserAgent: r.UserAgent(),
+		Success:   true,
+	})
 
 	log.Printf("File link emailed: %s to %s by user %d", fileInfo.Name, request.Recipient, user.Id)
 
