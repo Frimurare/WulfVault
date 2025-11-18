@@ -46,8 +46,9 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		defer s.markTransferInactive(sessionCookie.Value)
 	}
 
-	// Parse multipart form (max 10GB)
-	err = r.ParseMultipartForm(10 << 30)
+	// Parse multipart form (32MB max memory buffer, rest spills to disk)
+	// This prevents loading entire large files into RAM
+	err = r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		s.sendError(w, http.StatusBadRequest, "Failed to parse form: "+err.Error())
 		return

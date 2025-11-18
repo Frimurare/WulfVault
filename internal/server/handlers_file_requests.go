@@ -375,8 +375,9 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Parse multipart form
-	err = r.ParseMultipartForm(fileRequest.MaxFileSize)
+	// Parse multipart form (32MB max memory buffer, rest spills to disk)
+	// This prevents loading entire large files into RAM
+	err = r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		s.sendError(w, http.StatusBadRequest, "Failed to parse form: "+err.Error())
 		return

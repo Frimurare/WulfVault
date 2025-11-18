@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 )
 
 const (
-	Version = "4.6.0 Champagne"
+	Version = "4.6.1 Champagne"
 )
 
 var (
@@ -34,6 +35,17 @@ var (
 )
 
 func main() {
+	// Setup panic recovery to catch crashes and log them
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("❌ PANIC RECOVERED: %v", r)
+			log.Printf("Stack trace:\n%s", debug.Stack())
+			log.Println("Application crashed but panic was recovered. Check logs for details.")
+			// Exit with error code so systemd knows it failed
+			os.Exit(1)
+		}
+	}()
+
 	flag.Parse()
 
 	fmt.Printf("WulfVault File Sharing System v%s\n", Version)
@@ -60,7 +72,7 @@ func main() {
 	}
 
 	// Cleanup expired sessions periodically
-	go func() {
+	safeGo("session-cleanup", func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
@@ -68,7 +80,7 @@ func main() {
 				log.Printf("Error cleaning up sessions: %v", err)
 			}
 		}
-	}()
+	})
 
 	// Load or create configuration
 	cfg, err := config.LoadOrCreate(*dataDir)
@@ -144,7 +156,7 @@ func main() {
 
 	// Cleanup expired file requests periodically (runs every 24 hours)
 	// File requests expire after 24 hours, then show "expired" message for 10 days, then are deleted
-	go func() {
+	safeGo("file-request-cleanup", func() {
 		// Run immediately on startup
 		if err := database.DB.CleanupExpiredFileRequests(); err != nil {
 			log.Printf("Error cleaning up expired file requests: %v", err)
@@ -158,10 +170,10 @@ func main() {
 				log.Printf("Error cleaning up expired file requests: %v", err)
 			}
 		}
-	}()
+	})
 
 	// Cleanup old soft-deleted accounts (runs daily, deletes accounts soft-deleted for 90+ days)
-	go func() {
+	safeGo("soft-delete-cleanup", func() {
 		// Run immediately on startup
 		log.Println("Starting 90-day soft delete cleanup...")
 		userCount, err := database.DB.PermanentlyDeleteOldUsers(90)
@@ -197,7 +209,7 @@ func main() {
 				log.Printf("Permanently deleted %d download accounts that were soft-deleted 90+ days ago", downloadAccountCount)
 			}
 		}
-	}()
+	})
 
 	log.Printf("Server configuration:")
 	log.Printf("  - URL: %s", cfg.ServerURL)
@@ -293,4 +305,17 @@ func isFlagPassed(name string) bool {
 		}
 	})
 	return found
+}
+
+// safeGo runs a goroutine with panic recovery
+func safeGo(name string, fn func()) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("❌ PANIC in goroutine '%s': %v", name, r)
+				log.Printf("Stack trace:\n%s", debug.Stack())
+			}
+		}()
+		fn()
+	}()
 }
