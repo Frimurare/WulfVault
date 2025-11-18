@@ -390,6 +390,12 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 	}
 	defer file.Close()
 
+	// Get optional comment from uploader
+	comment := r.FormValue("comment")
+	if len(comment) > 1000 {
+		comment = comment[:1000] // Truncate to max length
+	}
+
 	// Check file size
 	fileSize := header.Size
 	if fileRequest.MaxFileSize > 0 && fileSize > fileRequest.MaxFileSize {
@@ -454,6 +460,7 @@ func (s *Server) handleUploadRequestSubmit(w http.ResponseWriter, r *http.Reques
 		DownloadsRemaining: 100, // Default for requested files
 		DownloadCount:      0,
 		UserId:             user.Id, // File belongs to request owner
+		Comment:            comment, // Comment from uploader
 		UnlimitedDownloads: false,
 		UnlimitedTime:      false,
 		RequireAuth:        false,
@@ -691,6 +698,13 @@ func (s *Server) renderUploadRequestPage(w http.ResponseWriter, fileRequest *mod
                     <label for="file">Select File</label>
                     <input type="file" id="file" name="file" required>
                 </div>
+                <div class="form-group" style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 2px solid #3b82f6; margin-top: 16px;">
+                    <label for="comment" style="color: #1d4ed8; font-weight: 600;">💬 Description/Note (optional)</label>
+                    <textarea id="comment" name="comment" rows="3" maxlength="1000" placeholder="Add a description or note about this file (e.g., what it contains, special instructions)" style="width: 100%; padding: 10px; border: 2px solid #93c5fd; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; margin-top: 8px;"></textarea>
+                    <p style="color: #1e40af; font-size: 12px; margin-top: 4px;">
+                        This message will be shown to the recipient on the download page (max 1000 characters)
+                    </p>
+                </div>
                 <div class="progress" id="progressContainer">
                     <div class="progress-bar" id="progressBar">0%</div>
                 </div>
@@ -725,6 +739,10 @@ func (s *Server) renderUploadRequestPage(w http.ResponseWriter, fileRequest *mod
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            const commentField = document.getElementById('comment');
+            if (commentField && commentField.value) {
+                formData.append('comment', commentField.value);
+            }
 
             submitBtn.disabled = true;
             progressContainer.style.display = 'block';

@@ -341,8 +341,8 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 				</div>
 				%s
 				%s
-				<div style="text-align: center; margin: 25px 0;">
-					<a href="%s" style="display: inline-block; background: %s; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">⬇️ Download File</a>
+				<div style="text-align: center; margin: 30px 0;">
+					<a href="%s" style="display: inline-block; background: %s; color: white; padding: 20px 60px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-transform: uppercase; letter-spacing: 1px;">⬇️ DOWNLOAD FILE</a>
 				</div>
 				<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0;">
 				<p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
@@ -793,6 +793,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 <div class="upload-options" id="uploadOptions" style="display: none;">
                     <h3 style="margin-bottom: 16px; color: #333;">Upload Settings</h3>
 
+                    <div class="form-group" style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 2px solid #3b82f6; margin-bottom: 20px;">
+                        <label for="fileComment" style="color: #1d4ed8; font-weight: 600;">💬 Description/Note (optional but recommended)</label>
+                        <textarea id="fileComment" name="file_comment" rows="3" maxlength="1000" placeholder="Add a description or note about this file (e.g., what it contains, special instructions, password hints)" style="width: 100%; padding: 10px; border: 2px solid #93c5fd; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; margin-top: 8px;"></textarea>
+                        <p style="color: #1e40af; font-size: 12px; margin-top: 4px;">
+                            This message will be shown to recipients on the download page and included in email notifications (max 1000 characters)
+                        </p>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="expireDate">📅 Expiration Date</label>
@@ -846,14 +854,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                                 Recipients will need this password to download the file
                             </p>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="fileComment">💬 Description/Note (optional)</label>
-                        <textarea id="fileComment" name="file_comment" rows="3" maxlength="1000" placeholder="Add a description or note about this file (e.g., what it contains, special instructions, password hints)" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
-                        <p style="color: #666; font-size: 12px; margin-top: 4px;">
-                            This message will be shown to recipients on the download page and included in email notifications (max 1000 characters)
-                        </p>
                     </div>
 
                     <div class="form-group">

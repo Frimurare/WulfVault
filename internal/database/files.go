@@ -254,7 +254,7 @@ func (d *Database) GetDeletedFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files WHERE DeletedAt > 0 ORDER BY DeletedAt DESC`)
 	if err != nil {
@@ -275,7 +275,7 @@ func (d *Database) GetOldDeletedFiles(retentionDays int) ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files WHERE DeletedAt > 0 AND DeletedAt < ?`, cutoffTime)
 	if err != nil {
@@ -299,7 +299,7 @@ func (d *Database) GetExpiredFiles() ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files
 		WHERE DeletedAt = 0 AND ((ExpireAt > 0 AND ExpireAt < ? AND UnlimitedTime = 0)
