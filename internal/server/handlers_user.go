@@ -79,6 +79,7 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 	expirationDays, _ := strconv.Atoi(r.FormValue("expiration_days"))
 	downloadsLimit, _ := strconv.Atoi(r.FormValue("downloads_limit"))
 	teamIDStr := r.FormValue("team_id")
+	fileComment := r.FormValue("file_comment")
 
 	// Get file to verify ownership
 	fileInfo, err := database.DB.GetFileByID(fileID)
@@ -113,6 +114,12 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 	if err := database.DB.UpdateFileSettings(fileID, downloadsLimit, newExpireAt, newExpireAtString, unlimitedDownloads, unlimitedTime); err != nil {
 		s.sendError(w, http.StatusInternalServerError, "Failed to update file: "+err.Error())
 		return
+	}
+
+	// Update comment if provided
+	if err := database.DB.UpdateFileComment(fileID, fileComment); err != nil {
+		log.Printf("Warning: Failed to update file comment: %v", err)
+		// Don't fail the request, just log the error
 	}
 
 	// Share to team if team_id is provided
@@ -1035,7 +1042,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="Send file link via email" style="background: #007bff;">
                             📧 Email
                         </button>
-                        <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t)" title="Edit file settings">
+                        <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s')" title="Edit file settings">
                             ✏️ Edit
                         </button>
                         <button class="btn btn-danger" onclick="deleteFile('%s', '%s')">
@@ -1045,7 +1052,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay, commentDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
-				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, f.Id, template.JSEscapeString(f.Name))
+				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.Id, template.JSEscapeString(f.Name))
 		}
 		html += `
             </ul>`
@@ -1111,6 +1118,12 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             <div id="editDownloadLimitSection" style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">Downloads Remaining:</label>
                 <input type="number" id="editDownloadsLimit" value="5" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">💬 Description/Note:</label>
+                <textarea id="editFileComment" rows="3" maxlength="1000" placeholder="Add a description or note about this file..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">This message will be shown to recipients on the download page (max 1000 characters)</p>
             </div>
 
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
@@ -1388,7 +1401,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
 
         // Edit File Modal Functions
-        function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime) {
+        function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime, fileComment) {
             // Store file info
             const fileIdInput = document.getElementById('editFileId');
             if (!fileIdInput) {
@@ -1398,6 +1411,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             }
             fileIdInput.value = fileId;
             document.getElementById('editFileName').textContent = fileName;
+
+            // Set comment/note
+            document.getElementById('editFileComment').value = fileComment || '';
 
             // Set unlimited checkboxes
             document.getElementById('editUnlimitedTime').checked = unlimitedTime;
@@ -1566,6 +1582,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             const unlimitedTime = document.getElementById('editUnlimitedTime').checked;
             const unlimitedDownloads = document.getElementById('editUnlimitedDownloads').checked;
             const teamId = document.getElementById('editTeamSelect').value;
+            const fileComment = document.getElementById('editFileComment').value;
 
             if (!fileId || fileId === '') {
                 alert('Error: File ID is missing. Please close and reopen the edit dialog.');
@@ -1586,6 +1603,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             formData.append('file_id', fileId);
             formData.append('expiration_days', expirationDays);
             formData.append('downloads_limit', downloadsLimit);
+            formData.append('file_comment', fileComment);
             if (teamId) {
                 formData.append('team_id', teamId);
             }

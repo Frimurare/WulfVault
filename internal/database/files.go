@@ -207,6 +207,20 @@ func (d *Database) UpdateFilePassword(fileId string, password string) error {
 	return err
 }
 
+// UpdateFileComment updates a file's comment/description
+func (d *Database) UpdateFileComment(fileId string, comment string) error {
+	// Convert empty comment to NULL for database storage
+	var fileComment interface{}
+	if comment == "" {
+		fileComment = nil
+	} else {
+		fileComment = comment
+	}
+
+	_, err := d.db.Exec("UPDATE Files SET Comment = ? WHERE Id = ?", fileComment, fileId)
+	return err
+}
+
 // DeleteFile soft-deletes a file (moves to trash for 5 days)
 func (d *Database) DeleteFile(fileId string, userId int) error {
 	now := time.Now().Unix()
