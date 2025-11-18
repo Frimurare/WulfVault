@@ -325,6 +325,7 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 				<p style="color: #666; margin: 0;">Size: %.2f MB</p>
 			</div>
 			%s
+			%s
 			<p>
 				<a href="%s" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">Download File</a>
 			</p>
@@ -335,6 +336,12 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 		</html>
 	`, user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
 		func() string {
+			if fileInfo.Comment != "" {
+				return fmt.Sprintf(`<div style="background: #f0f9ff; border-left: 4px solid #2563eb; padding: 15px; margin: 15px 0; border-radius: 4px;"><p style="margin: 0; color: #1e40af;"><strong>💬 File Description:</strong></p><p style="margin: 8px 0 0 0; color: #334155;">%s</p></div>`, template.HTMLEscapeString(fileInfo.Comment))
+			}
+			return ""
+		}(),
+		func() string {
 			if request.Message != "" {
 				return fmt.Sprintf(`<p style="color: #666;"><em>Message from sender:</em><br>%s</p>`, request.Message)
 			}
@@ -343,8 +350,14 @@ func (s *Server) handleFileEmail(w http.ResponseWriter, r *http.Request) {
 		fileURL, s.config.CompanyName)
 
 	textBody := fmt.Sprintf(
-		"%s has shared a file with you\n\nFile: %s\nSize: %.2f MB\n\n%sDownload: %s\n\nThis link was sent from %s",
+		"%s has shared a file with you\n\nFile: %s\nSize: %.2f MB\n\n%s%sDownload: %s\n\nThis link was sent from %s",
 		user.Name, fileInfo.Name, float64(fileInfo.SizeBytes)/(1024*1024),
+		func() string {
+			if fileInfo.Comment != "" {
+				return fmt.Sprintf("File Description: %s\n\n", fileInfo.Comment)
+			}
+			return ""
+		}(),
 		func() string {
 			if request.Message != "" {
 				return fmt.Sprintf("Message: %s\n\n", request.Message)
