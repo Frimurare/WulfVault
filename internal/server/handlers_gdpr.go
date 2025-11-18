@@ -473,68 +473,7 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
         </div>
     </div>
 
-    <script>
-    (function() {
-        'use strict';
-        function initMobileNav() {
-            const header = document.querySelector('.nav-header');
-            if (!header) return;
-            const nav = header.querySelector('nav');
-            if (!nav) return;
-            const hamburger = header.querySelector('.hamburger');
-            if (!hamburger) return;
-            const overlay = document.querySelector('.mobile-nav-overlay');
-            if (!overlay) return;
-
-            function toggleMenu() {
-                const isActive = nav.classList.contains('active');
-                nav.classList.toggle('active');
-                hamburger.classList.toggle('active');
-                overlay.classList.toggle('active');
-                hamburger.setAttribute('aria-expanded', !isActive);
-
-                if (!isActive) {
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = '';
-                }
-            }
-
-            function closeMenu() {
-                nav.classList.remove('active');
-                hamburger.classList.remove('active');
-                overlay.classList.remove('active');
-                hamburger.setAttribute('aria-expanded', 'false');
-                document.body.style.overflow = '';
-            }
-
-            hamburger.addEventListener('click', function(e) {
-                e.stopPropagation();
-                toggleMenu();
-            });
-
-            overlay.addEventListener('click', closeMenu);
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && nav.classList.contains('active')) {
-                    closeMenu();
-                }
-            });
-
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768 && nav.classList.contains('active')) {
-                    closeMenu();
-                }
-            });
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMobileNav);
-        } else {
-            initMobileNav();
-        }
-    })();
-    </script>
+    
 </body>
 </html>`
 

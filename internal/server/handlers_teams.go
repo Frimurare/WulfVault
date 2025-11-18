@@ -1261,84 +1261,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             });
         }
     </script>
-    <script>
-    (function() {
-        'use strict';
-        function initMobileNav() {
-            const header = document.querySelector('.header');
-            if (!header) return;
-            const nav = header.querySelector('nav');
-            if (!nav) return;
-            const hamburger = header.querySelector('.hamburger');
-            if (!hamburger) return;
-            let overlay = document.querySelector('.mobile-nav-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.className = 'mobile-nav-overlay';
-                document.body.appendChild(overlay);
-            }
-            function toggleNav() {
-                const isActive = nav.classList.contains('active');
-                if (isActive) {
-                    nav.classList.remove('active');
-                    hamburger.classList.remove('active');
-                    overlay.classList.remove('active');
-                    hamburger.setAttribute('aria-expanded', 'false');
-                    document.body.style.overflow = '';
-                } else {
-                    nav.classList.add('active');
-                    hamburger.classList.add('active');
-                    overlay.classList.add('active');
-                    hamburger.setAttribute('aria-expanded', 'true');
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-            hamburger.addEventListener('click', toggleNav);
-            overlay.addEventListener('click', toggleNav);
-            const navLinks = nav.querySelectorAll('a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        toggleNav();
-                    }
-                });
-            });
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
-                        toggleNav();
-                    }
-                }, 250);
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && nav.classList.contains('active')) {
-                    toggleNav();
-                }
-            });
-            const tables = document.querySelectorAll('table');
-            tables.forEach(table => {
-                const headers = table.querySelectorAll('th');
-                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    cells.forEach((cell, index) => {
-                        if (headerTexts[index]) {
-                            cell.setAttribute('data-label', headerTexts[index]);
-                        }
-                    });
-                });
-            });
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMobileNav);
-        } else {
-            initMobileNav();
-        }
-    })();
-    </script>
+    
 </body>
 </html>`
 
@@ -1348,10 +1271,6 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 // renderUserTeams renders the user teams page
 func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams []*models.TeamWithMembers) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	// Get branding config
-	brandingConfig, _ := database.DB.GetBrandingConfig()
-	logoData := brandingConfig["branding_logo"]
 
 	html := `<!DOCTYPE html>
 <html lang="en">
@@ -1371,49 +1290,6 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             max-width: 1400px;
             margin: 40px auto;
             padding: 0 20px;
-        }
-        .header {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .header .logo img {
-            max-height: 50px;
-            max-width: 180px;
-        }
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
-        }
-        .header nav {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header nav a {
-            color: white;
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            transition: background 0.3s;
-        }
-        .header nav a:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        .header nav span {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 11px;
-            font-weight: 400;
         }
         .teams-grid {
             display: grid;
@@ -1466,98 +1342,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             color: #333;
         }
 
-        /* Mobile Navigation Styles */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            cursor: pointer;
-            padding: 8px;
-            background: none;
-            border: none;
-            z-index: 1001;
-        }
-        .hamburger span {
-            width: 25px;
-            height: 3px;
-            background: white;
-            margin: 3px 0;
-            transition: 0.3s;
-            border-radius: 2px;
-        }
-        .hamburger.active span:nth-child(1) {
-            transform: rotate(-45deg) translate(-5px, 6px);
-        }
-        .hamburger.active span:nth-child(2) {
-            opacity: 0;
-        }
-        .hamburger.active span:nth-child(3) {
-            transform: rotate(45deg) translate(-5px, -6px);
-        }
-        .mobile-nav-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-        }
-        .mobile-nav-overlay.active {
-            display: block;
-        }
-
         @media screen and (max-width: 768px) {
-            .header {
-                padding: 15px 20px !important;
-                flex-wrap: wrap;
-            }
-            .header .logo h1 {
-                font-size: 18px !important;
-            }
-            .header .logo img {
-                max-height: 40px !important;
-                max-width: 120px !important;
-            }
-            .hamburger {
-                display: flex !important;
-                order: 3;
-            }
-            .header nav {
-                display: none !important;
-                position: fixed !important;
-                top: 0 !important;
-                right: -100% !important;
-                width: 280px !important;
-                height: 100vh !important;
-                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important;
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                padding: 80px 30px 30px !important;
-                gap: 0 !important;
-                transition: right 0.3s ease !important;
-                z-index: 1000 !important;
-                overflow-y: auto !important;
-                box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
-            }
-            .header nav.active {
-                display: flex !important;
-                right: 0 !important;
-            }
-            .header nav a {
-                width: 100%;
-                padding: 15px 20px !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                font-size: 16px !important;
-                margin: 0 !important;
-            }
-            .header nav a:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-            .header nav span {
-                padding: 15px 20px !important;
-                margin: 0 !important;
-            }
             .container {
                 padding: 0 15px !important;
             }
@@ -1568,53 +1353,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">`
-
-	// Add logo if exists
-	if logoData != "" {
-		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
-	} else {
-		html += `<h1>` + s.config.CompanyName + `</h1>`
-	}
-
-	html += `
-        </div>
-        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <nav>`
-
-	// Different navigation for admin vs regular user
-	if user.IsAdmin() {
-		html += `
-            <a href="/admin">Admin Dashboard</a>
-            <a href="/dashboard">My Files</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/teams">Teams</a>
-            <a href="/admin/files">All Files</a>
-            <a href="/admin/trash">Trash</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/admin/email-settings">Email</a>
-            <a href="/admin/settings">Server</a>
-            <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
-            <span>v` + s.config.Version + `</span>`
-	} else {
-		html += `
-            <a href="/dashboard">Dashboard</a>
-            <a href="/teams">Teams</a>
-            <a href="/settings">Settings</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
-            <span>v` + s.config.Version + `</span>`
-	}
-
-	html += `
-        </nav>
-    </div>
-    <div class="mobile-nav-overlay"></div>
+    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
 
     <div class="container">
         <h2 style="margin-bottom: 8px;">👥 My Teams</h2>
@@ -1664,84 +1403,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             window.location.href = '/teams?id=' + teamId;
         }
     </script>
-    <script>
-    (function() {
-        'use strict';
-        function initMobileNav() {
-            const header = document.querySelector('.header');
-            if (!header) return;
-            const nav = header.querySelector('nav');
-            if (!nav) return;
-            const hamburger = header.querySelector('.hamburger');
-            if (!hamburger) return;
-            let overlay = document.querySelector('.mobile-nav-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.className = 'mobile-nav-overlay';
-                document.body.appendChild(overlay);
-            }
-            function toggleNav() {
-                const isActive = nav.classList.contains('active');
-                if (isActive) {
-                    nav.classList.remove('active');
-                    hamburger.classList.remove('active');
-                    overlay.classList.remove('active');
-                    hamburger.setAttribute('aria-expanded', 'false');
-                    document.body.style.overflow = '';
-                } else {
-                    nav.classList.add('active');
-                    hamburger.classList.add('active');
-                    overlay.classList.add('active');
-                    hamburger.setAttribute('aria-expanded', 'true');
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-            hamburger.addEventListener('click', toggleNav);
-            overlay.addEventListener('click', toggleNav);
-            const navLinks = nav.querySelectorAll('a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        toggleNav();
-                    }
-                });
-            });
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
-                        toggleNav();
-                    }
-                }, 250);
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && nav.classList.contains('active')) {
-                    toggleNav();
-                }
-            });
-            const tables = document.querySelectorAll('table');
-            tables.forEach(table => {
-                const headers = table.querySelectorAll('th');
-                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    cells.forEach((cell, index) => {
-                        if (headerTexts[index]) {
-                            cell.setAttribute('data-label', headerTexts[index]);
-                        }
-                    });
-                });
-            });
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMobileNav);
-        } else {
-            initMobileNav();
-        }
-    })();
-    </script>
+    
 </body>
 </html>`
 
@@ -1751,10 +1413,6 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 // renderTeamFiles displays all files shared with a specific team
 func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team *models.Team) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	// Get branding config
-	brandingConfig, _ := database.DB.GetBrandingConfig()
-	logoData := brandingConfig["branding_logo"]
 
 	// Get team files
 	teamFiles, err := database.DB.GetTeamFiles(team.Id)
@@ -1776,49 +1434,6 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f5f5;
-        }
-        .header {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .header .logo img {
-            max-height: 50px;
-            max-width: 180px;
-        }
-        .header h1 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
-        }
-        .header nav {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header nav a {
-            color: white;
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            transition: background 0.3s;
-        }
-        .header nav a:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        .header nav span {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 11px;
-            font-weight: 400;
         }
         .container {
             max-width: 1400px;
@@ -1922,98 +1537,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             font-size: 15px;
         }
 
-        /* Mobile Navigation Styles */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            cursor: pointer;
-            padding: 8px;
-            background: none;
-            border: none;
-            z-index: 1001;
-        }
-        .hamburger span {
-            width: 25px;
-            height: 3px;
-            background: white;
-            margin: 3px 0;
-            transition: 0.3s;
-            border-radius: 2px;
-        }
-        .hamburger.active span:nth-child(1) {
-            transform: rotate(-45deg) translate(-5px, 6px);
-        }
-        .hamburger.active span:nth-child(2) {
-            opacity: 0;
-        }
-        .hamburger.active span:nth-child(3) {
-            transform: rotate(45deg) translate(-5px, -6px);
-        }
-        .mobile-nav-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-        }
-        .mobile-nav-overlay.active {
-            display: block;
-        }
-
         @media screen and (max-width: 768px) {
-            .header {
-                padding: 15px 20px !important;
-                flex-wrap: wrap;
-            }
-            .header .logo h1 {
-                font-size: 18px !important;
-            }
-            .header .logo img {
-                max-height: 40px !important;
-                max-width: 120px !important;
-            }
-            .hamburger {
-                display: flex !important;
-                order: 3;
-            }
-            .header nav {
-                display: none !important;
-                position: fixed !important;
-                top: 0 !important;
-                right: -100% !important;
-                width: 280px !important;
-                height: 100vh !important;
-                background: linear-gradient(180deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%) !important;
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                padding: 80px 30px 30px !important;
-                gap: 0 !important;
-                transition: right 0.3s ease !important;
-                z-index: 1000 !important;
-                overflow-y: auto !important;
-                box-shadow: -5px 0 15px rgba(0,0,0,0.3) !important;
-            }
-            .header nav.active {
-                display: flex !important;
-                right: 0 !important;
-            }
-            .header nav a {
-                width: 100%;
-                padding: 15px 20px !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                font-size: 16px !important;
-                margin: 0 !important;
-            }
-            .header nav a:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-            .header nav span {
-                padding: 15px 20px !important;
-                margin: 0 !important;
-            }
             .container {
                 padding: 0 15px !important;
             }
@@ -2070,53 +1594,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">`
-
-	// Add logo if exists
-	if logoData != "" {
-		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
-	} else {
-		html += `<h1>` + s.config.CompanyName + `</h1>`
-	}
-
-	html += `
-        </div>
-        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <nav>`
-
-	// Different navigation for admin vs regular user
-	if user.IsAdmin() {
-		html += `
-            <a href="/admin">Admin Dashboard</a>
-            <a href="/dashboard">My Files</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/teams">Teams</a>
-            <a href="/admin/files">All Files</a>
-            <a href="/admin/trash">Trash</a>
-            <a href="/admin/branding">Branding</a>
-            <a href="/admin/email-settings">Email</a>
-            <a href="/admin/settings">Server</a>
-            <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
-            <span>v` + s.config.Version + `</span>`
-	} else {
-		html += `
-            <a href="/dashboard">Dashboard</a>
-            <a href="/teams">Teams</a>
-            <a href="/settings">Settings</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
-            <span>v` + s.config.Version + `</span>`
-	}
-
-	html += `
-        </nav>
-    </div>
-    <div class="mobile-nav-overlay"></div>
+    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
 
     <div class="container">
         <div class="page-header">
@@ -2206,84 +1684,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 
 	html += `
     </div>
-    <script>
-    (function() {
-        'use strict';
-        function initMobileNav() {
-            const header = document.querySelector('.header');
-            if (!header) return;
-            const nav = header.querySelector('nav');
-            if (!nav) return;
-            const hamburger = header.querySelector('.hamburger');
-            if (!hamburger) return;
-            let overlay = document.querySelector('.mobile-nav-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.className = 'mobile-nav-overlay';
-                document.body.appendChild(overlay);
-            }
-            function toggleNav() {
-                const isActive = nav.classList.contains('active');
-                if (isActive) {
-                    nav.classList.remove('active');
-                    hamburger.classList.remove('active');
-                    overlay.classList.remove('active');
-                    hamburger.setAttribute('aria-expanded', 'false');
-                    document.body.style.overflow = '';
-                } else {
-                    nav.classList.add('active');
-                    hamburger.classList.add('active');
-                    overlay.classList.add('active');
-                    hamburger.setAttribute('aria-expanded', 'true');
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-            hamburger.addEventListener('click', toggleNav);
-            overlay.addEventListener('click', toggleNav);
-            const navLinks = nav.querySelectorAll('a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        toggleNav();
-                    }
-                });
-            });
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (window.innerWidth > 768 && nav.classList.contains('active')) {
-                        toggleNav();
-                    }
-                }, 250);
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && nav.classList.contains('active')) {
-                    toggleNav();
-                }
-            });
-            const tables = document.querySelectorAll('table');
-            tables.forEach(table => {
-                const headers = table.querySelectorAll('th');
-                const headerTexts = Array.from(headers).map(th => th.textContent.trim());
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(row => {
-                    const cells = row.querySelectorAll('td');
-                    cells.forEach((cell, index) => {
-                        if (headerTexts[index]) {
-                            cell.setAttribute('data-label', headerTexts[index]);
-                        }
-                    });
-                });
-            });
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMobileNav);
-        } else {
-            initMobileNav();
-        }
-    })();
-    </script>
+    
 </body>
 </html>`
 

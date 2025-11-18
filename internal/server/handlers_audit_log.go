@@ -223,33 +223,6 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
             margin: 0 auto;
         }
 
-        .header {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 24px;
-        }
-
-        .nav-links a {
-            color: #667eea;
-            text-decoration: none;
-            margin-left: 20px;
-            font-weight: 500;
-        }
-
-        .nav-links a:hover {
-            text-decoration: underline;
-        }
-
         .filters-card {
             background: white;
             padding: 25px;
@@ -509,15 +482,6 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
         }
 
         @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .nav-links {
-                margin-top: 15px;
-            }
-
             .filters-grid {
                 grid-template-columns: 1fr;
             }
@@ -530,14 +494,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📋 Audit Logs</h1>
-            <div class="nav-links">
-                <a href="/admin">Dashboard</a>
-                <a href="/admin/settings">Settings</a>
-                <a href="/logout">Logout</a>
-            </div>
-        </div>
+        ` + s.getAdminHeaderHTML("") + `
 
         <div class="filters-card">
             <h3 style="margin-bottom: 15px; color: #333;">Filters</h3>

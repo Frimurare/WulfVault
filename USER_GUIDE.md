@@ -1,4 +1,4 @@
-# WulfVault User Guide v4.5.13 Gold
+# WulfVault User Guide v4.6.5 Champagne
 
 **Complete Guide for Administrators and Users**
 
