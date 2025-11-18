@@ -1,5 +1,54 @@
 # Changelog
 
+## [4.7.2 Galadriel] - 2025-11-18 🐺 Favicon, Email Polish & Bug Fixes
+
+### 🎯 Visual Improvements
+
+**Wolf Favicon:**
+- Added wolf emoji (🐺) as favicon in browser tabs
+- SVG-based for crisp rendering at all sizes
+
+**Download Notification Email:**
+- Redesigned with same professional table-based layout as other emails
+- Green "Good news!" header for positive notification
+- Clean file info table with all download details
+- Prominent "VIEW IN DASHBOARD" button
+- Dark mode compatible design
+
+### 🐛 Bug Fixes
+
+**Team File Sharing:**
+- Fixed bug where files could only be added to one team
+- Fixed bug where removing files from teams didn't work
+- Root cause: JSON field name mismatch between frontend (snake_case) and backend (camelCase)
+
+---
+
+## [4.7.1 Galadriel] - 2025-11-18 📧 Email Improvements & Audit Logging
+
+### 🎯 Improved Email Templates & Audit Logging
+
+**Email Template Redesign:**
+- Completely redesigned Upload Request and Download/Share emails
+- Table-based layout for compatibility with all email clients (including dark mode)
+- Professional design with clear headers and footers
+- "What is this?" explanation section for non-technical users
+- Large, prominent action buttons (green for upload, blue for download)
+- Clear expiration warnings with date/time
+- Backup link at bottom for button-click issues
+
+**Enhanced Audit Logging:**
+- Email sends now logged to audit trail
+- File request uploads logged with full details (uploader IP, file info, etc.)
+
+### 🔧 Technical Details
+
+- HTML emails use table-based layout for Outlook/dark mode compatibility
+- High-contrast colors ensure readability in all themes
+- Audit entries include recipient, file details, and timestamps
+
+---
+
 ## [4.7.0 Galadriel] - 2025-11-18 💬 File Comments/Descriptions - Stable Release
 
 ### 🎉 Stable Release - File Comments Feature Complete

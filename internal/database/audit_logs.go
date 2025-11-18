@@ -380,6 +380,7 @@ const (
 	ActionFileShared         = "FILE_SHARED"
 	ActionFileDownloaded     = "FILE_DOWNLOADED"
 	ActionFileExpired        = "FILE_EXPIRED"
+	ActionEmailSent          = "EMAIL_SENT"
 
 	// Team actions
 	ActionTeamCreated       = "TEAM_CREATED"
