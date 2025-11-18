@@ -410,7 +410,7 @@ func (d *Database) GetFilesByUserWithTeams(userId int) ([]*FileInfo, error) {
 	rows, err := d.db.Query(`
 		SELECT DISTINCT f.Id, f.Name, f.Size, f.SHA1, f.PasswordHash, f.FilePasswordPlain, f.HotlinkId,
 		       f.ContentType, f.AwsBucket, f.ExpireAtString, f.ExpireAt, f.PendingDeletion,
-		       f.SizeBytes, f.UploadDate, f.DownloadsRemaining, f.DownloadCount, f.UserId,
+		       f.SizeBytes, f.UploadDate, f.DownloadsRemaining, f.DownloadCount, f.UserId, f.Comment,
 		       f.UnlimitedDownloads, f.UnlimitedTime, f.RequireAuth, f.DeletedAt, f.DeletedBy
 		FROM Files f
 		LEFT JOIN TeamFiles tf ON f.Id = tf.FileId
@@ -425,7 +425,7 @@ func (d *Database) GetFilesByUserWithTeams(userId int) ([]*FileInfo, error) {
 	var files []*FileInfo
 	for rows.Next() {
 		file := &FileInfo{}
-		var passwordHash, filePasswordPlain, hotlinkId, awsBucket, expireAtString sql.NullString
+		var passwordHash, filePasswordPlain, hotlinkId, awsBucket, expireAtString, comment sql.NullString
 		var pendingDeletion, expireAt, deletedAt, deletedBy sql.NullInt64
 		var unlimitedDownloads, unlimitedTime, requireAuth int
 
@@ -433,7 +433,7 @@ func (d *Database) GetFilesByUserWithTeams(userId int) ([]*FileInfo, error) {
 			&file.Id, &file.Name, &file.Size, &file.SHA1, &passwordHash, &filePasswordPlain,
 			&hotlinkId, &file.ContentType, &awsBucket, &expireAtString,
 			&expireAt, &pendingDeletion, &file.SizeBytes, &file.UploadDate,
-			&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
+			&file.DownloadsRemaining, &file.DownloadCount, &file.UserId, &comment,
 			&unlimitedDownloads, &unlimitedTime, &requireAuth, &deletedAt, &deletedBy,
 		)
 		if err != nil {
@@ -447,6 +447,7 @@ func (d *Database) GetFilesByUserWithTeams(userId int) ([]*FileInfo, error) {
 		file.ExpireAtString = expireAtString.String
 		file.ExpireAt = expireAt.Int64
 		file.PendingDeletion = pendingDeletion.Int64
+		file.Comment = comment.String
 		file.UnlimitedDownloads = unlimitedDownloads == 1
 		file.UnlimitedTime = unlimitedTime == 1
 		file.RequireAuth = requireAuth == 1
