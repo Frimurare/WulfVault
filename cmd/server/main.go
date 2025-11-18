@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "4.6.5 Champagne"
+	Version = "4.7.0-beta.1 Galadriel"
 )
 
 var (

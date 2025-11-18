@@ -30,6 +30,7 @@ type File struct {
 	DownloadsRemaining      int            `json:"DownloadsRemaining" redis:"DownloadsRemaining"` // The remaining downloads for this file
 	DownloadCount           int            `json:"DownloadCount" redis:"DownloadCount"`           // The amount of times the file has been downloaded
 	UserId                  int            `json:"UserId" redis:"UserId"`                         // The user ID of the uploader
+	Comment                 string         `json:"Comment" redis:"Comment"`                       // Optional description/note about the file from uploader
 	Encryption              EncryptionInfo `json:"Encryption" redis:"-"`                          // If the file is encrypted, this stores all info for decrypting
 	UnlimitedDownloads      bool           `json:"UnlimitedDownloads" redis:"UnlimitedDownloads"` // True if the uploader did not limit the downloads
 	UnlimitedTime           bool           `json:"UnlimitedTime" redis:"UnlimitedTime"`           // True if the uploader did not limit the time
@@ -46,6 +47,7 @@ type FileApiOutput struct {
 	ExpireAtString               string `json:"ExpireAtString"`               // Time expiry in a human-readable format in local time
 	UrlDownload                  string `json:"UrlDownload"`                  // The public download URL for the file
 	UrlHotlink                   string `json:"UrlHotlink"`                   // The public hotlink URL for the file
+	Comment                      string `json:"Comment"`                      // Optional description/note about the file from uploader
 	UploadDate                   int64  `json:"UploadDate"`                   // UTC timestamp of upload time
 	ExpireAt                     int64  `json:"ExpireAt"`                     // UTC timestamp of file expiry
 	SizeBytes                    int64  `json:"SizeBytes"`                    // Filesize in bytes

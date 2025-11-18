@@ -219,6 +219,17 @@ func (d *Database) runMigrations() error {
 		}
 	}
 
+	// Migration 9: Add Comment column to Files table for file descriptions
+	row = d.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('Files') WHERE name='Comment'")
+	if err := row.Scan(&count); err == nil && count == 0 {
+		log.Printf("Running migration: Adding Comment column to Files table")
+		if _, err := d.db.Exec("ALTER TABLE Files ADD COLUMN Comment TEXT DEFAULT ''"); err != nil {
+			log.Printf("Migration warning for Comment: %v", err)
+		} else {
+			log.Printf("Migration completed: Comment column added to Files table")
+		}
+	}
+
 	return nil
 }
 

@@ -35,6 +35,7 @@ type FileInfo struct {
 	DownloadsRemaining int
 	DownloadCount      int
 	UserId             int
+	Comment            string
 	UnlimitedDownloads bool
 	UnlimitedTime      bool
 	RequireAuth        bool
@@ -69,13 +70,13 @@ func (d *Database) SaveFile(file *FileInfo) error {
 		INSERT INTO Files (
 			Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 			AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-			UploadDate, DownloadsRemaining, DownloadCount, UserId,
+			UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 			UnlimitedDownloads, UnlimitedTime, RequireAuth
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		file.Id, file.Name, file.Size, file.SHA1, file.PasswordHash, filePassword, file.HotlinkId,
 		file.ContentType, file.AwsBucket, file.ExpireAtString, file.ExpireAt,
 		file.PendingDeletion, file.SizeBytes, file.UploadDate, file.DownloadsRemaining,
-		file.DownloadCount, file.UserId, unlimitedDownloads, unlimitedTime, requireAuth,
+		file.DownloadCount, file.UserId, file.Comment, unlimitedDownloads, unlimitedTime, requireAuth,
 	)
 	return err
 }
@@ -85,17 +86,18 @@ func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 	file := &FileInfo{}
 	var unlimitedDownloads, unlimitedTime, requireAuth int
 	var filePassword sql.NullString
+	var comment sql.NullString
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
 		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
-		       UploadDate, DownloadsRemaining, DownloadCount, UserId,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
 		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
 		FROM Files WHERE Id = ? AND DeletedAt = 0`, id).Scan(
 		&file.Id, &file.Name, &file.Size, &file.SHA1, &file.PasswordHash, &filePassword,
 		&file.HotlinkId, &file.ContentType, &file.AwsBucket, &file.ExpireAtString,
 		&file.ExpireAt, &file.PendingDeletion, &file.SizeBytes, &file.UploadDate,
-		&file.DownloadsRemaining, &file.DownloadCount, &file.UserId,
+		&file.DownloadsRemaining, &file.DownloadCount, &file.UserId, &comment,
 		&unlimitedDownloads, &unlimitedTime, &requireAuth, &file.DeletedAt, &file.DeletedBy,
 	)
 
@@ -109,6 +111,11 @@ func (d *Database) GetFileByID(id string) (*FileInfo, error) {
 	// Handle NULL password
 	if filePassword.Valid {
 		file.FilePasswordPlain = filePassword.String
+	}
+
+	// Handle NULL comment
+	if comment.Valid {
+		file.Comment = comment.String
 	}
 
 	file.UnlimitedDownloads = unlimitedDownloads == 1

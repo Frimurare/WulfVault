@@ -812,6 +812,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                     </div>
 
                     <div class="form-group">
+                        <label for="fileComment">💬 Description/Note (optional)</label>
+                        <textarea id="fileComment" name="file_comment" rows="3" maxlength="1000" placeholder="Add a description or note about this file (e.g., what it contains, special instructions, password hints)" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">
+                            This message will be shown to recipients on the download page and included in email notifications (max 1000 characters)
+                        </p>
+                    </div>
+
+                    <div class="form-group">
                         <label for="sendToEmail">📧 Send link to email (optional)</label>
                         <input type="email" id="sendToEmail" name="send_to_email" placeholder="recipient@example.com" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">

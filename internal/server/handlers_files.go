@@ -69,6 +69,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	unlimitedDownloads := r.FormValue("unlimited_downloads") == "true"
 	filePassword := r.FormValue("file_password")
 	sendToEmail := r.FormValue("send_to_email")
+	fileComment := r.FormValue("file_comment")
 	// Parse form to get array values
 	if err := r.ParseForm(); err != nil {
 		log.Printf("Warning: Failed to parse form: %v", err)
@@ -177,6 +178,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		DownloadsRemaining: downloadsLimit,
 		DownloadCount:      0,
 		UserId:             user.Id,
+		Comment:            fileComment,
 		UnlimitedDownloads: unlimitedDownloads,
 		UnlimitedTime:      unlimitedTime,
 		RequireAuth:        requireAuth,
