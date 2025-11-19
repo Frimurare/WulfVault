@@ -71,7 +71,7 @@
 | 3.7 | Session cookies secure: HttpOnly, Secure, SameSite=Lax | [ ] | ✓ Verified |
 | 3.8 | Session timeout configured (default: 24 hours) | [ ] | Timeout: ___________ |
 | 3.9 | 2FA (TOTP) available for users (recommended for admins) | [ ] | [ ] Mandatory [ ] Optional |
-| 3.10 | Database encryption at rest (optional but recommended) | [ ] | [ ] Enabled (SQLCipher) [ ] Not Enabled |
+| 3.10 | Database encryption at rest (optional but recommended) | [ ] | [ ] Enabled (OS-level disk encryption) [ ] Not Enabled |
 | 3.11 | Firewall rules configured (restrict access to database, admin ports) | [ ] | ✓ Configured |
 | 3.12 | Security headers configured (CSP, X-Frame-Options, etc.) | [ ] | ✓ Verified |
 | 3.13 | File upload restrictions enabled (file types, size limits) | [ ] | Max size: ___________ |

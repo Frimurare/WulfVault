@@ -207,7 +207,7 @@ go build -o wulfvault ./cmd/server
 
 ### For Large Organizations (>250 employees)
 - ✅ All of the above, plus:
-- ⚠️ Consider encryption at rest (SQLCipher)
+- ⚠️ Consider encryption at rest (OS-level disk encryption)
 - ⚠️ Implement breach notification procedure
 - ⚠️ Assign Data Protection Officer (DPO)
 - ⚠️ Complete Data Protection Impact Assessment (DPIA)

@@ -524,7 +524,7 @@ WulfVault is designed with **privacy-by-design** and **privacy-by-default** prin
 #### Technical Measures (Art. 32)
 - ✅ **Audit Logging** - Comprehensive activity tracking with configurable retention (1-3650 days)
 - ✅ **Encryption in Transit** - TLS/HTTPS for all connections (TLS 1.2+ required)
-- ✅ **Encryption at Rest** - Optional SQLCipher database encryption
+- ⚠️ **Encryption at Rest** - Not built-in; use OS-level disk encryption (LUKS, BitLocker, FileVault)
 - ✅ **Password Security** - bcrypt hashing (cost factor 12, never plaintext)
 - ✅ **2FA Support** - TOTP-based two-factor authentication
 - ✅ **Session Security** - HttpOnly, Secure, SameSite cookies with 24-hour timeout
@@ -588,7 +588,7 @@ Complete GDPR compliance package available in the `/gdpr-compliance/` directory:
 | Authentication & Security | ✅ | A+ |
 | Role-Based Access Control | ✅ | A+ |
 | Encryption (Transit) | ✅ | A |
-| Encryption (At Rest) | ⚠️ Optional | B+ |
+| Encryption (At Rest) | ⚠️ Use OS-level | B |
 | Data Retention Policies | ✅ | A |
 | Privacy Documentation | ⚠️ Templates Provided | A |
 | Cookie Consent | ✅ N/A (Essential cookies only) | A |
@@ -615,7 +615,7 @@ The `COOKIE_CONSENT_BANNER.html` template is provided for organizations that add
 - ✅ **UK GDPR** (United Kingdom)
 - ✅ **ePrivacy Directive** (Cookie Law) - Compliant without banner
 - ✅ **SOC 2** (Audit logging and access controls)
-- ✅ **HIPAA** (Healthcare - with encryption at rest enabled)
+- ⚠️ **HIPAA** (Healthcare - requires OS-level disk encryption)
 - ✅ **ISO 27001** (Information security management)
 
 ### Data Processing Summary
@@ -659,7 +659,7 @@ The `COOKIE_CONSENT_BANNER.html` template is provided for organizations that add
 - ✅ Breach notification within 24 hours to customers
 
 #### Healthcare / Finance / Government
-- ✅ Enable encryption at rest (SQLCipher)
+- ✅ Enable OS-level disk encryption (LUKS, BitLocker, FileVault)
 - ✅ Conduct Data Protection Impact Assessment (DPIA)
 - ✅ Enhanced audit logging and retention
 - ✅ Annual security assessments
