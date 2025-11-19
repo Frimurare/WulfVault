@@ -2157,7 +2157,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             background: #f5f5f5;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1100px;
             margin: 40px auto;
             padding: 0 20px;
         }
@@ -2184,32 +2184,118 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             font-weight: 700;
             color: ` + s.getPrimaryColor() + `;
         }
-        table {
-            width: 100%;
+        /* Card-based file list */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .file-card {
             background: white;
             border-radius: 12px;
-            overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+            overflow: hidden;
         }
-        th, td {
-            padding: 16px;
-            text-align: left;
+        .file-card:hover {
+            border-color: ` + s.getPrimaryColor() + `;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        th {
-            background: #f9f9f9;
+        .file-card-header {
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            padding: 12px 16px;
             font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-card-body {
+            padding: 16px;
+        }
+        .file-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .file-info-item {
+            font-size: 13px;
+        }
+        .file-info-item label {
+            display: block;
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .file-info-item span {
+            font-weight: 500;
+            color: #333;
+        }
+        .file-note {
+            background: #f8f9fa;
+            border-left: 4px solid ` + s.getPrimaryColor() + `;
+            padding: 10px 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .file-note strong {
+            font-weight: 700;
+        }
+        .files-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .file-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .file-item {
+            padding: 20px 24px;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-info h3 {
+            color: #333;
+            font-size: 16px;
+            margin: 0 0 4px 0;
+        }
+        .file-info p {
             color: #666;
             font-size: 14px;
+            margin: 0;
         }
-        tr:not(:last-child) td {
-            border-bottom: 1px solid #e0e0e0;
+        .file-note {
+            background: #f8f9fa;
+            border-left: 4px solid ` + s.getPrimaryColor() + `;
+            padding: 10px 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 13px;
         }
-        tr:hover {
-            background: #f9f9f9;
+        .file-note strong {
+            font-weight: 700;
         }
-        td:last-child {
-            white-space: nowrap;
-            min-width: 200px;
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: #999;
         }
         .badge {
             padding: 4px 12px;
@@ -2422,27 +2508,14 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>User</th>
-                    <th>Size</th>
-                    <th>Downloads</th>
-                    <th>Expiration</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>`
+        <div class="files-section">
+            <ul class="file-list">`
 
 	if len(files) == 0 {
 		html += `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
-                        No files in the system yet.
-                    </td>
-                </tr>`
+                <li class="empty-state">
+                    No files in the system yet.
+                </li>`
 	}
 
 	for _, f := range files {
@@ -2478,53 +2551,37 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
 		downloadURL := s.getPublicURL() + "/d/" + f.Id
 
+		// Note display
+		noteDisplay := ""
+		if f.Comment != "" {
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong>📝 Note:</strong> %s</p>`,
+				template.HTMLEscapeString(f.Comment))
+		}
+
 		html += fmt.Sprintf(`
-                <tr>
-                    <td data-label="File Name">
-                        <div class="file-name" title="%s">📄 %s%s</div>
-                    </td>
-                    <td data-label="User">%s</td>
-                    <td data-label="Size">%s</td>
-                    <td data-label="Downloads">%d</td>
-                    <td data-label="Expiration">%s</td>
-                    <td data-label="Status">%s</td>
-                    <td data-label="Actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history">
-                            📊
-                        </button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" title="Copy link">
-                            📋
-                        </button>
-                        <button class="btn btn-secondary" onclick="deleteFile('%s')" title="Delete file">
-                            🗑️
-                        </button>
-                    </td>
-                </tr>`,
-			f.Name, f.Name, authBadge,
-			userName,
-			f.Size,
-			f.DownloadCount,
-			expiryInfo,
-			status,
+                <li class="file-item">
+                    <div class="file-info">
+                        <h3>📄 %s %s %s</h3>
+                        <p>%s • %s • %d downloads • Expires: %s</p>
+                        %s
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')">📊 History</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)">📋 Copy</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
+                    </div>
+                </li>`,
+			f.Name, authBadge, status,
+			userName, f.Size, f.DownloadCount, expiryInfo,
+			noteDisplay,
 			f.Id, f.Name,
 			downloadURL,
 			f.Id)
-
-		// Add comment row if comment exists
-		if f.Comment != "" {
-			html += fmt.Sprintf(`
-                <tr style="background: #f9f9f9;">
-                    <td colspan="7" style="padding: 12px 16px; border-left: 3px solid %s;">
-                        <strong>💬 Note:</strong> %s
-                    </td>
-                </tr>`,
-				s.getPrimaryColor(), template.HTMLEscapeString(f.Comment))
-		}
 	}
 
 	html += `
-            </tbody>
-        </table>
+            </ul>
+        </div>
     </div>
 
     <script>

@@ -524,6 +524,27 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 		fileTeams = make(map[string][]string) // Empty map as fallback
 	}
 
+	// Collect all unique team names for the team filter dropdown
+	allTeamNames := make(map[string]bool)
+	for _, teams := range fileTeams {
+		for _, teamName := range teams {
+			allTeamNames[teamName] = true
+		}
+	}
+	// Convert to sorted slice
+	var uniqueTeamNames []string
+	for teamName := range allTeamNames {
+		uniqueTeamNames = append(uniqueTeamNames, teamName)
+	}
+	// Sort alphabetically
+	for i := 0; i < len(uniqueTeamNames); i++ {
+		for j := i + 1; j < len(uniqueTeamNames); j++ {
+			if uniqueTeamNames[i] > uniqueTeamNames[j] {
+				uniqueTeamNames[i], uniqueTeamNames[j] = uniqueTeamNames[j], uniqueTeamNames[i]
+			}
+		}
+	}
+
 	// Calculate storage
 	storageUsed := user.StorageUsedMB
 	storageQuota := user.StorageQuotaMB
@@ -658,7 +679,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
         .file-item {
             padding: 20px 24px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1041,10 +1062,19 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         <div class="files-section">
             <div class="files-header">
                 <h2>My Files</h2>
-                <div class="file-tabs" style="margin-top: 16px; display: flex; gap: 12px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">
+                <div class="file-tabs" style="margin-top: 16px; display: flex; gap: 12px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; align-items: center;">
                     <button class="file-tab active" onclick="filterFiles('all')" data-filter="all" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid ` + s.getPrimaryColor() + `; color: ` + s.getPrimaryColor() + `;">All Files</button>
                     <button class="file-tab" onclick="filterFiles('my')" data-filter="my" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">My Files</button>
                     <button class="file-tab" onclick="filterFiles('team')" data-filter="team" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">Team Files</button>
+                    <select id="teamFilter" onchange="filterByTeam(this.value)" style="display: none; margin-left: auto; padding: 6px 12px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 6px; font-size: 13px; background: white; cursor: pointer;">
+                        <option value="">All Teams</option>` + func() string {
+		teamOptionsHTML := ""
+		for _, teamName := range uniqueTeamNames {
+			teamOptionsHTML += fmt.Sprintf(`<option value="%s">%s</option>`, template.HTMLEscapeString(teamName), template.HTMLEscapeString(teamName))
+		}
+		return teamOptionsHTML
+	}() + `
+                    </select>
                 </div>
             </div>`
 
@@ -1132,12 +1162,26 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
 			commentDisplay := ""
 			if f.Comment != "" {
-				commentDisplay = fmt.Sprintf(`<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid %s; border-radius: 4px; color: #555;"><strong>💬 Note:</strong> %s</p>`,
+				commentDisplay = fmt.Sprintf(`<p style="margin-top: 8px; padding: 12px; background: #fff3cd; border-left: 4px solid %s; border-radius: 4px; color: #333; font-weight: 500;"><strong style="font-weight: 700;">📝 Note:</strong> %s</p>`,
 					s.getPrimaryColor(), template.HTMLEscapeString(f.Comment))
 			}
 
+			// Create data-teams attribute for filtering
+			dataTeamsAttr := ""
+			if teams, ok := fileTeams[f.Id]; ok && len(teams) > 0 {
+				// Join team names with comma for the attribute
+				teamsJSON := ""
+				for i, t := range teams {
+					if i > 0 {
+						teamsJSON += ","
+					}
+					teamsJSON += template.HTMLEscapeString(t)
+				}
+				dataTeamsAttr = teamsJSON
+			}
+
 			html += fmt.Sprintf(`
-                <li class="file-item" data-file-type="%s">
+                <li class="file-item" data-file-type="%s" data-teams="%s">
                     <div class="file-info">
                         <h3>📄 %s %s%s%s</h3>
                         %s
@@ -1171,7 +1215,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             🗑️ Delete
                         </button>
                     </div>
-                </li>`, fileType, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
+                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.Id, template.JSEscapeString(f.Name))
@@ -1753,6 +1797,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         function filterFiles(type) {
             const fileItems = document.querySelectorAll('.file-item');
             const tabs = document.querySelectorAll('.file-tab');
+            const teamFilter = document.getElementById('teamFilter');
 
             // Update active tab
             tabs.forEach(tab => {
@@ -1770,6 +1815,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 }
             });
 
+            // Show/hide team filter dropdown
+            if (type === 'team') {
+                teamFilter.style.display = 'block';
+            } else {
+                teamFilter.style.display = 'none';
+                teamFilter.value = ''; // Reset selection when switching away
+            }
+
             // Filter files
             fileItems.forEach(item => {
                 const fileType = item.getAttribute('data-file-type');
@@ -1781,6 +1834,35 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 } else if (type === 'team') {
                     // Show team files and my files shared with teams (both)
                     item.style.display = (fileType === 'team' || fileType === 'both') ? '' : 'none';
+                }
+            });
+        }
+
+        // Filter by specific team
+        function filterByTeam(teamName) {
+            const fileItems = document.querySelectorAll('.file-item');
+
+            fileItems.forEach(item => {
+                const fileType = item.getAttribute('data-file-type');
+                const teams = item.getAttribute('data-teams') || '';
+
+                // Only filter team files (team or both)
+                if (fileType !== 'team' && fileType !== 'both') {
+                    item.style.display = 'none';
+                    return;
+                }
+
+                if (!teamName) {
+                    // Show all team files
+                    item.style.display = '';
+                } else {
+                    // Check if file belongs to selected team
+                    const teamList = teams.split(',').map(t => t.trim());
+                    if (teamList.includes(teamName)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
                 }
             });
         }

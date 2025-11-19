@@ -1,5 +1,28 @@
 # Changelog
 
+## [4.7.3 Galadriel] - 2025-11-18 📋 Improved File List Navigation
+
+### 🎯 Visual Improvements
+
+**All Files Page Redesign:**
+- Zebra striping - alternating row colors for easy visual scanning
+- Header row now uses primary color with white text
+- Reduced page width for better readability (no horizontal scrolling)
+- Fixed column widths to prevent layout shifts
+- Note rows highlighted in yellow with bold text
+- Hover effect on rows for better interaction feedback
+
+**My Files Dashboard:**
+- Thicker separators using primary color between files
+- Notes now have yellow background with bold text for visibility
+- Better contrast and readability
+
+**General:**
+- Consistent styling across all file list views
+- Better use of custom branding colors
+
+---
+
 ## [4.7.2 Galadriel] - 2025-11-18 🐺 Favicon, Email Polish & Bug Fixes
 
 ### 🎯 Visual Improvements

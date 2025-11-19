@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 4.7.2 Galadriel** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.7.3 Galadriel** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -68,6 +68,7 @@ WulfVault solves this by providing:
   - **Team storage quotas** - Per-team storage limits and usage tracking
   - **Smart team badges** - Files show team names or count with hover tooltips
   - **Real-time team sync** - Instant updates when files are shared/unshared
+  - **Team filter dropdown (v4.7.3+)** - Filter Team Files by specific team for easy navigation when in multiple teams
 - **Per-user storage quotas** - Individually configurable storage limits (MB to TB)
 - **User dashboard** - Real-time quota usage, file management, and download statistics
 - **Active/inactive status** - Temporarily disable users without deletion
@@ -213,6 +214,7 @@ WulfVault solves this by providing:
   - Permanent deletion from trash with confirmation dialogs
   - Detailed trash view: who deleted, when, days remaining, original owner
   - Modern, responsive UI with gradient buttons and emoji indicators
+  - **Improved All Files view (v4.7.3+)** - Card-based layout with clear file separation, grouped file+note display, and better visual hierarchy
 - **User administration:**
   - Create, edit, and delete users with full audit trail
   - Manage download accounts with comprehensive controls
