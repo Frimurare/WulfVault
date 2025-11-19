@@ -162,7 +162,7 @@ The Processor implements the following technical and organizational measures:
 | Measure | Implementation |
 |---------|----------------|
 | **Encryption in Transit** | TLS 1.2+ for all connections |
-| **Encryption at Rest** | [OPTIONAL: SQLCipher for database encryption] |
+| **Encryption at Rest** | [OPTIONAL: OS-level disk encryption for database encryption] |
 | **Password Security** | bcrypt hashing (cost factor 12) |
 | **Two-Factor Authentication** | TOTP-based 2FA (optional for users) |
 | **Access Control** | Role-based access control (Admin, Manager, User) |
@@ -503,7 +503,7 @@ https://ec.europa.eu/info/law/law-topic/data-protection/international-dimension-
 | Password Storage | bcrypt hashing (cost factor 12), irreversible |
 | 2FA Secrets | AES-256-GCM encryption with key rotation |
 | Deleted Accounts | Email pseudonymization: `deleted-user-[ID]@deleted.local` |
-| Optional Encryption | [IF ENABLED: SQLCipher for database encryption at rest] |
+| Optional Encryption | [IF ENABLED: OS-level disk encryption for database encryption at rest] |
 
 ---
 

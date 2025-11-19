@@ -60,7 +60,7 @@ WulfVault implements the following GDPR requirements **out of the box**:
 
 ### ✅ Technical Measures
 - **Audit Logging:** All user actions logged with configurable retention (1-3650 days)
-- **Data Encryption:** TLS/HTTPS for data in transit, optional SQLCipher for data at rest
+- **Data Encryption:** TLS/HTTPS for data in transit; use OS-level disk encryption (LUKS, BitLocker) for data at rest
 - **Secure Authentication:** bcrypt password hashing, TOTP 2FA, secure sessions
 - **Access Control:** Role-based access control (RBAC) with 8 permissions
 - **Data Minimization:** Only necessary data collected (no tracking or analytics)

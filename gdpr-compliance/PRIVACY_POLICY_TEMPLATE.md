@@ -142,7 +142,7 @@ We implement industry-standard security measures:
 | Security Measure | Implementation |
 |------------------|----------------|
 | **Encryption in Transit** | TLS 1.2+ (HTTPS) for all connections |
-| **Encryption at Rest** | [ENABLED/OPTIONAL - SQLCipher for database] |
+| **Encryption at Rest** | [ENABLED/OPTIONAL - OS-level disk encryption for database] |
 | **Password Storage** | bcrypt hashing (cost factor 12, never plaintext) |
 | **Two-Factor Authentication** | TOTP-based 2FA with encrypted secret storage |
 | **Access Control** | Role-based permissions (Admin, Manager, User) |

@@ -207,7 +207,7 @@ If Yes, safeguards: _______________
 ### 2.6 Technical and Organizational Measures
 
 **Security Measures:**
-- Optional encryption at rest (SQLCipher for database)
+- Optional encryption at rest (OS-level disk encryption for database)
 - HTTPS/TLS for file transfers
 - Access control (only file owner and share link holders can access)
 - File upload restrictions (size limits, file type filtering)
