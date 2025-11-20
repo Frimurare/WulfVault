@@ -1,23 +1,14 @@
 # Changelog
 
-## [4.7.4 Galadriel] - 2025-11-20 🐺 Favicon Fix & SMTP Security
+## [4.7.5 Galadriel] - 2025-11-20 🔒 SMTP Security Fix
 
 ### 🔒 Security Fixes
 
-**SMTP Implementation:**
-- **CRITICAL:** Fixed security vulnerability in SMTP when TLS disabled
+**SMTP Implementation (CRITICAL):**
+- Fixed security vulnerability in SMTP when TLS disabled
 - Previously set `InsecureSkipVerify=true` when TLS off, allowing Man-in-the-Middle attacks
 - Now safely delegates to gomail's default behavior when TLS disabled
 - All SMTP connections now properly verify certificates when TLS enabled
-
-### 🐛 Bug Fixes
-
-**Wolf Favicon Now Working:**
-- Fixed favicon not displaying in browser tabs
-- Moved favicon HTML from body to `<head>` section (where it belongs)
-- Created `getFaviconHTML()` helper function in `header.go`
-- Updated all 31 HTML generation locations across 13 handler files
-- Wolf emoji (🐺) now properly displays in all browser tabs
 
 ### 📝 Improvements
 
@@ -27,6 +18,24 @@
 - Detailed error messages with connection context for debugging
 - Visual indicators (emojis) for quick log scanning
 - Success confirmations for sent emails
+
+**Email System Verification:**
+- Verified all 10 email functions use EmailProvider interface
+- Confirmed NO direct calls to Brevo - all via GetActiveProvider()
+- Provider-switching works seamlessly between Brevo and SMTP
+
+---
+
+## [4.7.4 Galadriel] - 2025-11-20 🐺 Favicon Fix
+
+### 🐛 Bug Fixes
+
+**Wolf Favicon Now Working:**
+- Fixed favicon not displaying in browser tabs
+- Moved favicon HTML from body to `<head>` section (where it belongs)
+- Created `getFaviconHTML()` helper function in `header.go`
+- Updated all 31 HTML generation locations across 13 handler files
+- Wolf emoji (🐺) now properly displays in all browser tabs
 
 ---
 

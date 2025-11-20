@@ -1,7 +1,7 @@
 # WulfVault Development Notes
 
 **Last Updated:** 2025-11-20
-**Current Version:** v4.7.4 Galadriel
+**Current Version:** v4.7.5 Galadriel
 **Current Branch:** wolfface
 
 ---
@@ -19,31 +19,41 @@ WulfVault is a self-hosted secure file sharing system written in Go with a web U
 
 ### What We Accomplished Today
 
-#### v4.7.4 Galadriel - Wolf Favicon Fix
-**Problem:** Wolf emoji favicon was added in v4.7.2 but never displayed in browser tabs.
+#### v4.7.5 Galadriel - SMTP Security Fix
 
-**Root Cause:** Favicon HTML was generated in `getHeaderHTML()` which returns content inserted into `<body>`, but browsers only recognize favicons in the `<head>` section.
+**1. Wolf Favicon Fix**
+- **Problem:** Wolf emoji favicon was added in v4.7.2 but never displayed in browser tabs
+- **Root Cause:** Favicon HTML was in `<body>` but browsers only recognize it in `<head>`
+- **Solution:** Created `getFaviconHTML()` helper in `header.go:13-16`, updated 31 locations across 13 handler files
+- **Result:** Wolf emoji 🐺 now displays correctly in all browser tabs
 
-**Solution:**
-- Created new `getFaviconHTML()` helper function in `header.go:13-16`
-- Removed favicon from `getHeaderHTML()` return statement
-- Updated **31 HTML generation locations** across **13 handler files** to include `s.getFaviconHTML()` in `<head>`
-- Files updated:
-  - handlers_2fa.go (1 location)
-  - handlers_admin.go (8 locations)
-  - handlers_audit_log.go (1 location)
-  - handlers_auth.go (1 location)
-  - handlers_download_user.go (2 locations)
-  - handlers_email.go (1 location)
-  - handlers_file_requests.go (3 locations)
-  - handlers_files.go (5 locations)
-  - handlers_gdpr.go (3 locations)
-  - handlers_password_reset.go (4 locations)
-  - handlers_teams.go (3 locations)
-  - handlers_user.go (1 location)
-  - handlers_user_settings.go (1 location)
+**2. SMTP Security Fix (CRITICAL)**
+- **Problem:** SMTP implementation had security vulnerability when TLS disabled
+- **Root Cause:** Code set `InsecureSkipVerify=true` when `useTLS=false`, allowing Man-in-the-Middle attacks
+- **Impact:** Attackers could intercept password resets, file sharing links, GDPR data
+- **Solution:**
+  - Removed dangerous `InsecureSkipVerify=true` setting in `internal/email/smtp.go:61-68`
+  - Now safely delegates to gomail's default behavior when TLS disabled
+  - Added comprehensive logging (8 new log statements with emojis)
+  - Better error messages with host:port context
+- **Files updated:**
+  - `internal/email/smtp.go` - Security fix + logging
+  - `CHANGELOG.md` - Documented security fix
+- **Result:** SMTP now secure, works with Gmail, Outlook, SendGrid, Mailgun, custom servers
 
-**Result:** Wolf emoji 🐺 now displays correctly in all browser tabs
+**3. Email System Architecture Verification**
+- **Verified:** All 10 email functions use `EmailProvider` interface
+- **Verified:** NO direct calls to Brevo - all via `GetActiveProvider()`
+- **Verified:** Provider-switching works seamlessly between Brevo and SMTP
+- **Functions tested:**
+  1. SendSplashLinkEmail
+  2. SendFileDownloadNotification
+  3. SendFileUploadNotification
+  4. SendAccountDeletionConfirmation
+  5. SendWelcomeEmail
+  6. SendTeamInvitationEmail
+  7. SendPasswordResetEmail
+  8-10. Provider-specific implementations (via interface)
 
 ---
 
@@ -181,6 +191,11 @@ grep "WulfVault File Sharing System" /tmp/wulfvault.log | tail -1
 ---
 
 ## Version History Quick Reference
+
+### v4.7.5 Galadriel (2025-11-20) - wolfface branch
+- **CRITICAL:** Fixed SMTP security vulnerability (InsecureSkipVerify)
+- Added comprehensive SMTP logging
+- Verified email system architecture (10 functions, provider-switching)
 
 ### v4.7.4 Galadriel (2025-11-20) - wolfface branch
 - Fixed wolf favicon not displaying (moved to `<head>`)
