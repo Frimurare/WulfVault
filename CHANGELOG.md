@@ -1,6 +1,14 @@
 # Changelog
 
-## [4.7.4 Galadriel] - 2025-11-20 🐺 Favicon Fix
+## [4.7.4 Galadriel] - 2025-11-20 🐺 Favicon Fix & SMTP Security
+
+### 🔒 Security Fixes
+
+**SMTP Implementation:**
+- **CRITICAL:** Fixed security vulnerability in SMTP when TLS disabled
+- Previously set `InsecureSkipVerify=true` when TLS off, allowing Man-in-the-Middle attacks
+- Now safely delegates to gomail's default behavior when TLS disabled
+- All SMTP connections now properly verify certificates when TLS enabled
 
 ### 🐛 Bug Fixes
 
@@ -10,6 +18,15 @@
 - Created `getFaviconHTML()` helper function in `header.go`
 - Updated all 31 HTML generation locations across 13 handler files
 - Wolf emoji (🐺) now properly displays in all browser tabs
+
+### 📝 Improvements
+
+**SMTP Logging:**
+- Added comprehensive logging for all SMTP operations
+- Log shows destination, host, port, and TLS status on send
+- Detailed error messages with connection context for debugging
+- Visual indicators (emojis) for quick log scanning
+- Success confirmations for sent emails
 
 ---
 
