@@ -621,6 +621,7 @@ func (s *Server) renderUploadRequestPage(w http.ResponseWriter, fileRequest *mod
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Upload File - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -906,6 +907,7 @@ func (s *Server) renderUploadRequestExpired(w http.ResponseWriter, fileRequest *
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Request Expired - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -974,6 +976,7 @@ func (s *Server) renderUploadRequestUsed(w http.ResponseWriter, fileRequest *mod
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Link Already Used - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

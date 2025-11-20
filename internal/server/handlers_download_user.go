@@ -221,6 +221,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>My Downloads - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -412,6 +413,7 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Change Password - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

@@ -10,6 +10,11 @@ import (
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
+// getFaviconHTML returns the wolf emoji favicon link tag for use in <head>
+func (s *Server) getFaviconHTML() string {
+	return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐺</text></svg>">`
+}
+
 // getAdminHeaderHTML returns branded header HTML for admin pages (compatibility wrapper)
 func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 	// Create a dummy admin user for header rendering
@@ -364,9 +369,6 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
         });
     </script>`
 
-	// Wolf emoji favicon as SVG data URI
-	faviconSVG := `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐺</text></svg>">`
-
-	return faviconSVG + `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
+	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
 }
 

@@ -1,6 +1,6 @@
 # WulfVault REST API Documentation
 
-**Version:** 4.7.3
+**Version:** 4.7.4
 
 WulfVault provides a comprehensive REST API for managing users, files, teams, and system settings. This documentation covers all available endpoints, authentication methods, and usage examples.
 

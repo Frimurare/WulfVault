@@ -692,6 +692,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Manage Teams - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1279,6 +1280,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>My Teams - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1428,6 +1430,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + team.Name + ` - Files - WulfVault</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

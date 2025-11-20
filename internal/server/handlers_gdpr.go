@@ -138,6 +138,7 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Mitt konto - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -491,6 +492,7 @@ func (s *Server) renderAccountDeletionSuccess(w http.ResponseWriter) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Konto raderat - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -705,6 +707,7 @@ func (s *Server) renderUserAccountSettings(w http.ResponseWriter, user *models.U
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Account Settings - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
