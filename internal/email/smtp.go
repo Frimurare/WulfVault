@@ -7,6 +7,8 @@ package email
 
 import (
 	"crypto/tls"
+	"fmt"
+	"log"
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/models"
@@ -43,6 +45,8 @@ func NewSMTPProvider(host string, port int, username, password, fromEmail, fromN
 
 // SendEmail skickar ett e-postmeddelande via SMTP
 func (sp *SMTPProvider) SendEmail(to, subject, htmlBody, textBody string) error {
+	log.Printf("📧 Sending email via SMTP to %s through %s:%d (TLS: %v)", to, sp.host, sp.port, sp.useTLS)
+
 	m := gomail.NewMessage()
 	m.SetHeader("From", m.FormatAddress(sp.fromEmail, sp.fromName))
 	m.SetHeader("To", to)
@@ -52,18 +56,26 @@ func (sp *SMTPProvider) SendEmail(to, subject, htmlBody, textBody string) error 
 
 	d := gomail.NewDialer(sp.host, sp.port, sp.username, sp.password)
 
+	// Only configure TLS if explicitly enabled
+	// When disabled, gomail will use the server's default behavior
 	if sp.useTLS {
 		d.TLSConfig = &tls.Config{
 			ServerName:         sp.host,
 			InsecureSkipVerify: false,
 		}
+		log.Printf("🔒 TLS enabled with certificate verification")
 	} else {
-		d.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
+		log.Printf("⚠️  TLS disabled - connection may be insecure")
 	}
 
-	return d.DialAndSend(m)
+	err := d.DialAndSend(m)
+	if err != nil {
+		log.Printf("❌ SMTP failed to %s:%d - %v", sp.host, sp.port, err)
+		return fmt.Errorf("SMTP connection failed to %s:%d - %w", sp.host, sp.port, err)
+	}
+
+	log.Printf("✓ Email sent successfully via SMTP to %s", to)
+	return nil
 }
 
 // SendFileUploadNotification skickar notifiering när fil laddats upp via request
