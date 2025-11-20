@@ -1,7 +1,7 @@
 # WulfVault Development Notes
 
 **Last Updated:** 2025-11-20
-**Current Version:** v4.7.5 Galadriel
+**Current Version:** v4.7.6 Galadriel
 **Current Branch:** wolfface
 
 ---

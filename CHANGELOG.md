@@ -1,5 +1,31 @@
 # Changelog
 
+## [4.7.6 Galadriel] - 2025-11-20 📧 Email Provider Activation Control
+
+### 🎯 New Features
+
+**Email Provider Activation:**
+- Added "Make Active" buttons for both Brevo and SMTP providers
+- Red activation button appears when provider is configured but not active
+- New `/api/email/activate` endpoint to switch active provider
+- Clear visual feedback when activating a provider
+- Page auto-reloads to show updated active status
+
+### 🐛 Bug Fixes
+
+**Email Provider Switching:**
+- Fixed issue where saving settings didn't reliably activate the provider
+- Now have explicit control over which provider is active
+- Can configure both Brevo and SMTP, then choose which one to use
+
+### 📝 Improvements
+
+- Better UX: Separate "Save Settings" from "Make Active"
+- Visual indicators show which provider is currently active
+- Audit logging for provider activation events
+
+---
+
 ## [4.7.5 Galadriel] - 2025-11-20 🔒 SMTP Security Fix
 
 ### 🔒 Security Fixes

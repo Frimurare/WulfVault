@@ -234,6 +234,77 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 	s.sendJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
 
+// handleEmailActivate activates a specific email provider
+func (s *Server) handleEmailActivate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req struct {
+		Provider string `json:"provider"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.sendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate provider
+	if req.Provider != "brevo" && req.Provider != "smtp" {
+		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo' or 'smtp'")
+		return
+	}
+
+	// Check if provider exists and is configured
+	var exists int
+	err := database.DB.QueryRow("SELECT COUNT(*) FROM EmailProviderConfig WHERE Provider = ?", req.Provider).Scan(&exists)
+	if err != nil || exists == 0 {
+		s.sendError(w, http.StatusBadRequest, fmt.Sprintf("%s provider is not configured yet. Please configure it first.", req.Provider))
+		return
+	}
+
+	// Deactivate all providers
+	_, err = database.DB.Exec("UPDATE EmailProviderConfig SET IsActive = 0")
+	if err != nil {
+		log.Printf("Failed to deactivate providers: %v", err)
+		s.sendError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	// Activate the selected provider
+	result, err := database.DB.Exec("UPDATE EmailProviderConfig SET IsActive = 1 WHERE Provider = ?", req.Provider)
+	if err != nil {
+		log.Printf("Failed to activate provider %s: %v", req.Provider, err)
+		s.sendError(w, http.StatusInternalServerError, "Failed to activate provider")
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		s.sendError(w, http.StatusInternalServerError, "Provider activation failed")
+		return
+	}
+
+	log.Printf("✅ Email provider activated: %s", req.Provider)
+
+	// Log the action
+	user, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(user.Id),
+		UserEmail:  user.Email,
+		Action:     "EMAIL_PROVIDER_ACTIVATED",
+		EntityType: "Settings",
+		EntityID:   "email",
+		Details:    fmt.Sprintf("{\"provider\":\"%s\"}", req.Provider),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+		ErrorMsg:   "",
+	})
+
+	s.sendJSON(w, http.StatusOK, map[string]string{"status": "success", "provider": req.Provider})
+}
+
 // handleEmailTest tests the email configuration
 // EmailTestRequest represents a request to test email settings
 type EmailTestRequest struct {
@@ -648,6 +719,26 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             background: #ccc;
             cursor: not-allowed;
         }
+        .btn-activate {
+            width: 100%;
+            padding: 12px 24px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .btn-activate:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+        .btn-activate:active {
+            transform: translateY(0);
+        }
         .info-box {
             background: #e3f2fd;
             border-left: 4px solid #2196f3;
@@ -813,6 +904,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 </div>
 
                 <button type="submit" class="btn-primary">Save Brevo Settings</button>
+                ` + func() string {
+			if brevoConfigured && !isBrevoActive {
+				return `<button type="button" class="btn-activate" id="activate-brevo">🚀 Make Brevo Active</button>`
+			}
+			return ""
+		}() + `
             </form>
         </div>
 
@@ -884,6 +981,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 </div>
 
                 <button type="submit" class="btn-primary">Save SMTP Settings</button>
+                ` + func() string {
+			if smtpConfigured && !isSMTPActive {
+				return `<button type="button" class="btn-activate" id="activate-smtp">🚀 Make SMTP Active</button>`
+			}
+			return ""
+		}() + `
             </form>
         </div>
 
@@ -1145,6 +1248,66 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Test connection';
+            }
+        });
+
+        // Activate Brevo
+        document.getElementById('activate-brevo')?.addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Activating...';
+
+            try {
+                const response = await fetch('/api/email/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ provider: 'brevo' })
+                });
+
+                if (response.ok) {
+                    showSuccess('Brevo activated successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const error = await response.json();
+                    showError('Failed to activate: ' + error.error);
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Make Brevo Active';
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '🚀 Make Brevo Active';
+            }
+        });
+
+        // Activate SMTP
+        document.getElementById('activate-smtp')?.addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Activating...';
+
+            try {
+                const response = await fetch('/api/email/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ provider: 'smtp' })
+                });
+
+                if (response.ok) {
+                    showSuccess('SMTP activated successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const error = await response.json();
+                    showError('Failed to activate: ' + error.error);
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Make SMTP Active';
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '🚀 Make SMTP Active';
             }
         });
 

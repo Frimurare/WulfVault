@@ -142,6 +142,7 @@ func (s *Server) Start() error {
 
 	// Email API routes
 	mux.HandleFunc("/api/email/configure", s.requireAuth(s.requireAdmin(s.handleEmailConfigure)))
+	mux.HandleFunc("/api/email/activate", s.requireAuth(s.requireAdmin(s.handleEmailActivate)))
 	mux.HandleFunc("/api/email/test", s.requireAuth(s.requireAdmin(s.handleEmailTest)))
 	mux.HandleFunc("/api/email/send-splash-link", s.requireAuth(s.handleSendSplashLink))
 
