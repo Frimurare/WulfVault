@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.7.4 Galadriel] - 2025-11-20 🐺 Favicon Fix
+
+### 🐛 Bug Fixes
+
+**Wolf Favicon Now Working:**
+- Fixed favicon not displaying in browser tabs
+- Moved favicon HTML from body to `<head>` section (where it belongs)
+- Created `getFaviconHTML()` helper function in `header.go`
+- Updated all 31 HTML generation locations across 13 handler files
+- Wolf emoji (🐺) now properly displays in all browser tabs
+
+---
+
 ## [4.7.3 Galadriel] - 2025-11-18 📋 Improved File List Navigation
 
 ### 🎯 Visual Improvements

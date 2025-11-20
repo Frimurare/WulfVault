@@ -823,6 +823,7 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Password Required - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1004,6 +1005,7 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Download File - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1212,6 +1214,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Download File - ` + companyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1446,6 +1449,7 @@ func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *databa
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>File Expired - ` + companyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -1591,6 +1595,7 @@ func (s *Server) performDownloadWithRedirect(w http.ResponseWriter, r *http.Requ
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Account Created - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

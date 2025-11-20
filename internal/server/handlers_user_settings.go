@@ -63,6 +63,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Settings - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

@@ -673,6 +673,7 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, account *
 <head>
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
@@ -1161,6 +1162,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Admin Dashboard - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1367,6 +1369,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Manage Users - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1986,6 +1989,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 <head>
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
@@ -2149,6 +2153,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>All Files - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2731,6 +2736,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Branding Settings - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2929,6 +2935,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Settings - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -3198,6 +3205,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Trash - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

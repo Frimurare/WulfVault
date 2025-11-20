@@ -204,6 +204,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Logs - ` + companyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * {
             margin: 0;

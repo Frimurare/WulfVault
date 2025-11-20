@@ -175,6 +175,7 @@ func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, message string)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Glömt Lösenord - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -335,6 +336,7 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
     <meta charset="UTF-8">
     <meta name="author" content="Ulf Holmström">
     <title>Felaktig Länk - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -393,6 +395,7 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Återställ Lösenord - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -576,6 +579,7 @@ func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Lösenord Återställt - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

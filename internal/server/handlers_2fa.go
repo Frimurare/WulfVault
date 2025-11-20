@@ -346,6 +346,7 @@ func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, err
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>Two-Factor Authentication - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
