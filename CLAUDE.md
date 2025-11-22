@@ -19,13 +19,13 @@ WulfVault is a self-hosted secure file sharing system written in Go with a web U
 
 ### What We Accomplished Today
 
-#### v4.7.8 Shotgun - Resend Email Provider (Recommended)
+#### v4.7.8 Shotgun - Resend Email Provider (Recommended) + DNS Verification
 
 **1. Resend Integration**
 - **User Request:** Integrate Resend.com as recommended email provider
 - **Why Recommended:** Built on AWS SES with industry-leading deliverability and inbox placement
 - **Solution:**
-  - Created Resend provider in `internal/email/resend.go` (171 lines)
+  - Created Resend provider in `internal/email/resend.go` (154 lines)
   - Uses simple REST API with Bearer token authentication
   - Endpoint: `https://api.resend.com/emails`
   - Requires only: API key, from email/name (simpler than Mailgun)
@@ -34,27 +34,59 @@ WulfVault is a self-hosted secure file sharing system written in Go with a web U
 - **Testing:** Successfully sent test email to `uffe.holmstrom@gmail.com`
 - **Email ID:** `516c879c-3a12-4d98-ae8b-7d64c19627d0`
 
-**2. UI/UX Prioritization**
+**2. DNS Domain Verification (wulfvault.se)**
+- **Challenge:** Resend requires domain verification to send to anyone (not just test account)
+- **Initial Errors:**
+  - `403: The gmail.com domain is not verified` - trying to send from @gmail.com
+  - `403: You can only send testing emails to your own email address` - test mode limitation
+- **Solution Process:**
+  1. Added `wulfvault.se` domain to Resend (EU region: eu-west-1)
+  2. Received 4 DNS records from Resend (DKIM, SPF MX, SPF TXT, DMARC)
+  3. **User confusion:** Initially added records under wrong sections (*, @, www) in Loopia
+  4. **Guided user:** Explained Loopia DNS editor requires separate sections for each subdomain
+  5. **Correct setup:** Added 4 records in their own sections:
+     - `resend._domainkey` (TXT) - DKIM verification
+     - `send` (MX + TXT) - SPF authorization
+     - `_dmarc` (TXT) - DMARC policy
+  6. **Wait time:** 10-15 minutes for DNS propagation
+  7. **Verification:** Clicked "Verify" in Resend control panel
+  8. **Success:** Domain verified! ✅
+  9. **Update WulfVault:** Changed From Email from `onboarding@resend.dev` to `noreply@wulfvault.se`
+  10. **Test:** Successfully sent emails to anyone! 🎉
+
+**3. DNS Documentation Created**
+- Created comprehensive `docs/LOOPIA.md` guide
+- Synced with existing `resend_loopia_setup.md` from GitHub
+- Documented common mistakes (adding to wrong sections, full domain names, etc.)
+- Included success story with timeline (12:35-12:59, 24 minutes total)
+- Added troubleshooting section for DNS propagation issues
+
+**4. UI/UX Prioritization**
 - **Resend marked as "(recommended)"** with green badge in UI
 - **Tab order changed:** Resend (first), Brevo, Mailgun, SendGrid, SMTP
 - **Helpful text:** "Recommended provider: Built on AWS SES with excellent deliverability"
 - Resend configuration form identical to SendGrid/Brevo (API key only)
 
-**3. Email Provider Ecosystem - Now 5 Providers**
-1. **Resend (recommended)** - AWS SES-based, best deliverability
-2. **Brevo** - API-based (formerly Sendinblue)
-3. **Mailgun** - API-based with domain/region
+**5. Email Provider Ecosystem - Now 5 Providers**
+1. **Resend (recommended)** - AWS SES-based, best deliverability, **VERIFIED & WORKING** ✅
+2. **Brevo** - API-based (formerly Sendinblue) - user's account closed by Brevo
+3. **Mailgun** - API-based with domain/region - requires sandbox activation
 4. **SendGrid** - API-based, simple setup
-5. **SMTP** - Plain SMTP with/without TLS
+5. **SMTP** - Plain SMTP with/without TLS (tested with MailHog)
 
 **Files Modified:**
-- `internal/email/resend.go` - New Resend provider (171 lines)
+- `internal/email/resend.go` - New Resend provider (154 lines)
 - `internal/email/email.go` - Added Resend case to GetActiveProvider()
 - `internal/server/handlers_email.go` - Added Resend UI, endpoints, handlers
 - `cmd/server/main.go` - Version 4.7.7 → 4.7.8
-- `CHANGELOG.md` - Documented Resend support
-- `README.md` - Updated version
+- `CHANGELOG.md` - Documented Resend support + DNS verification
+- `README.md` - Updated email providers section with all 5 providers
+- `docs/LOOPIA.md` - New comprehensive DNS verification guide
 - `CLAUDE.md` - This file
+
+**User Feedback:**
+- "Wulfvault fungerar nu med resend API ... snyggt jobbat" (It works now with Resend API ... well done)
+- "Jag tycker du gjort ett fantastiskt jobb idag, och Brevo kan dra åt skogen" (I think you did a fantastic job today, and Brevo can go to hell)
 
 ---
 
