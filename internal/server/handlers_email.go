@@ -21,8 +21,8 @@ import (
 
 // EmailConfigRequest represents a request for email configuration
 type EmailConfigRequest struct {
-	Provider       string `json:"provider"`       // "brevo", "smtp", "mailgun", or "sendgrid"
-	ApiKey         string `json:"apiKey"`         // For Brevo, Mailgun, and SendGrid
+	Provider       string `json:"provider"`       // "brevo", "smtp", "mailgun", "sendgrid", or "resend"
+	ApiKey         string `json:"apiKey"`         // For Brevo, Mailgun, SendGrid, and Resend
 	SMTPHost       string `json:"smtpHost"`       // For SMTP
 	SMTPPort       int    `json:"smtpPort"`       // For SMTP
 	SMTPUsername   string `json:"smtpUsername"`   // For SMTP
@@ -85,11 +85,20 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Printf("⚠️  NO API key in request body (keeping existing)")
 		}
+	} else if req.Provider == "resend" {
+		if req.ApiKey != "" {
+			log.Printf("🔑 Received NEW Resend API key in request: length=%d, starts='%s...', ends='...%s'",
+				len(req.ApiKey),
+				req.ApiKey[:min(15, len(req.ApiKey))],
+				req.ApiKey[max(0, len(req.ApiKey)-15):])
+		} else {
+			log.Printf("⚠️  NO API key in request body (keeping existing)")
+		}
 	}
 
 	// Validate provider
-	if req.Provider != "brevo" && req.Provider != "smtp" && req.Provider != "mailgun" && req.Provider != "sendgrid" {
-		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo', 'smtp', 'mailgun', or 'sendgrid'")
+	if req.Provider != "brevo" && req.Provider != "smtp" && req.Provider != "mailgun" && req.Provider != "sendgrid" && req.Provider != "resend" {
+		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo', 'smtp', 'mailgun', 'sendgrid', or 'resend'")
 		return
 	}
 
@@ -136,6 +145,16 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 			apiKeyEncrypted, err = email.EncryptAPIKey(req.ApiKey, masterKey)
 			if err != nil {
 				log.Printf("Failed to encrypt SendGrid API key: %v", err)
+				s.sendError(w, http.StatusInternalServerError, "Encryption failed")
+				return
+			}
+		}
+	} else if req.Provider == "resend" {
+		// Resend: encrypt API key if provided
+		if req.ApiKey != "" {
+			apiKeyEncrypted, err = email.EncryptAPIKey(req.ApiKey, masterKey)
+			if err != nil {
+				log.Printf("Failed to encrypt Resend API key: %v", err)
 				s.sendError(w, http.StatusInternalServerError, "Encryption failed")
 				return
 			}
@@ -285,6 +304,46 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 				log.Printf("INSERT created row with ID: %d", lastId)
 			}
 		}
+	} else if req.Provider == "resend" {
+		// Check if Resend config already exists
+		var existingId int
+		err := database.DB.QueryRow("SELECT Id FROM EmailProviderConfig WHERE Provider = ?", "resend").Scan(&existingId)
+
+		if err == nil {
+			// Update existing
+			log.Printf("Updating existing Resend config (ID: %d)", existingId)
+			updateSQL := `UPDATE EmailProviderConfig SET IsActive = 1, FromEmail = ?, FromName = ?, UpdatedAt = ?`
+			args := []interface{}{req.FromEmail, req.FromName, now}
+
+			if apiKeyEncrypted != "" {
+				updateSQL += ", ApiKeyEncrypted = ?"
+				args = append(args, apiKeyEncrypted)
+				log.Printf("Updating with new API key")
+			} else {
+				log.Printf("Keeping existing API key")
+			}
+
+			updateSQL += " WHERE Provider = ?"
+			args = append(args, "resend")
+
+			result, err = database.DB.Exec(updateSQL, args...)
+			if err == nil {
+				rowsAffected, _ := result.RowsAffected()
+				log.Printf("UPDATE affected %d row(s)", rowsAffected)
+			}
+		} else {
+			// Create new
+			log.Printf("Creating new Resend config (no existing found: %v)", err)
+			result, err = database.DB.Exec(`
+				INSERT INTO EmailProviderConfig
+					(Provider, IsActive, ApiKeyEncrypted, FromEmail, FromName, CreatedAt, UpdatedAt)
+				VALUES (?, 1, ?, ?, ?, ?, ?)
+			`, "resend", apiKeyEncrypted, req.FromEmail, req.FromName, now, now)
+			if err == nil {
+				lastId, _ := result.LastInsertId()
+				log.Printf("INSERT created row with ID: %d", lastId)
+			}
+		}
 	} else {
 		// SMTP
 		var existingId int
@@ -373,8 +432,8 @@ func (s *Server) handleEmailActivate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate provider
-	if req.Provider != "brevo" && req.Provider != "smtp" && req.Provider != "mailgun" && req.Provider != "sendgrid" {
-		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo', 'smtp', 'mailgun', or 'sendgrid'")
+	if req.Provider != "brevo" && req.Provider != "smtp" && req.Provider != "mailgun" && req.Provider != "sendgrid" && req.Provider != "resend" {
+		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo', 'smtp', 'mailgun', 'sendgrid', or 'resend'")
 		return
 	}
 
@@ -515,6 +574,18 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 			provider = email.NewSendGridProvider(req.ApiKey, req.FromEmail, req.FromName)
 			log.Printf("Testing SendGrid with API key: %s...", req.ApiKey[:min(10, len(req.ApiKey))])
 
+		case "resend":
+			if req.ApiKey == "" {
+				s.sendError(w, http.StatusBadRequest, "API key is required")
+				return
+			}
+			if req.FromEmail == "" {
+				s.sendError(w, http.StatusBadRequest, "From email is required")
+				return
+			}
+			provider = email.NewResendProvider(req.ApiKey, req.FromEmail, req.FromName)
+			log.Printf("Testing Resend with API key: %s...", req.ApiKey[:min(10, len(req.ApiKey))])
+
 		case "smtp":
 			if req.SMTPHost == "" || req.SMTPUsername == "" || req.SMTPPassword == "" {
 				s.sendError(w, http.StatusBadRequest, "SMTP host, username and password are required")
@@ -637,9 +708,9 @@ func (s *Server) handleSendSplashLink(w http.ResponseWriter, r *http.Request) {
 // handleEmailSettings renders the email settings page
 func (s *Server) handleEmailSettings(w http.ResponseWriter, r *http.Request) {
 	// Check if any provider is configured
-	var brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured bool
-	var brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName string
-	var isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive bool
+	var brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured bool
+	var brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName string
+	var isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive bool
 
 	// Check Brevo
 	row := database.DB.QueryRow("SELECT FromEmail, FromName, IsActive FROM EmailProviderConfig WHERE Provider = 'brevo'")
@@ -661,21 +732,30 @@ func (s *Server) handleEmailSettings(w http.ResponseWriter, r *http.Request) {
 	err = row.Scan(&sendgridFromEmail, &sendgridFromName, &isSendGridActive)
 	sendgridConfigured = (err == nil && sendgridFromEmail != "")
 
+	// Check Resend
+	row = database.DB.QueryRow("SELECT FromEmail, FromName, IsActive FROM EmailProviderConfig WHERE Provider = 'resend'")
+	err = row.Scan(&resendFromEmail, &resendFromName, &isResendActive)
+	resendConfigured = (err == nil && resendFromEmail != "")
+
 	// Render page
-	s.renderEmailSettingsPage(w, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName)
+	s.renderEmailSettingsPage(w, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName)
 }
 
 // renderEmailSettingsPage renders the email settings page
-func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive bool, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName string) {
+func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive bool, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	activeTab := "brevo"
-	if isSMTPActive {
+	activeTab := "resend"
+	if isResendActive {
+		activeTab = "resend"
+	} else if isSMTPActive {
 		activeTab = "smtp"
 	} else if isMailgunActive {
 		activeTab = "mailgun"
 	} else if isSendGridActive {
 		activeTab = "sendgrid"
+	} else if isBrevoActive {
+		activeTab = "brevo"
 	}
 
 	brevoStatus := "Not configured"
@@ -724,6 +804,18 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 		}
 	} else {
 		sendgridButtonDisabled = "disabled"
+	}
+
+	resendStatus := "Not configured"
+	resendButtonText := "Test connection"
+	resendButtonDisabled := ""
+	if resendConfigured {
+		resendStatus = "Configured"
+		if !isResendActive {
+			resendStatus += " (inactive)"
+		}
+	} else {
+		resendButtonDisabled = "disabled"
 	}
 
 	html := `<!DOCTYPE html>
@@ -1052,9 +1144,12 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             <div id="success-message" class="success-message"></div>
             <div id="error-message" class="error-message"></div>
 
-            ` + getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive) + `
+            ` + getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive) + `
 
         <div class="tab-buttons">
+            <button class="tab-btn ` + activeTabClass("resend", activeTab) + `" data-provider="resend">
+                Resend <span style="color: #10b981; font-weight: 600;">(recommended)</span> ` + getActiveProviderBadge(isResendActive) + `
+            </button>
             <button class="tab-btn ` + activeTabClass("brevo", activeTab) + `" data-provider="brevo">
                 Brevo (Sendinblue) ` + getActiveProviderBadge(isBrevoActive) + `
             </button>
@@ -1067,6 +1162,51 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             <button class="tab-btn ` + activeTabClass("smtp", activeTab) + `" data-provider="smtp">
                 SMTP Server ` + getActiveProviderBadge(isSMTPActive) + `
             </button>
+        </div>
+
+        <!-- Resend Configuration -->
+        <div id="resend-config" class="provider-config ` + activeConfigClass("resend", activeTab) + `">
+            <form id="resend-form">
+                <div class="form-group">
+                    <label>Resend API Key *</label>
+                    <input type="password"
+                           id="resend-api-key"
+                           placeholder="` + placeholderText(resendConfigured, "re_...") + `"
+                           autocomplete="off">
+                    <small><strong>Recommended provider:</strong> Built on AWS SES with excellent deliverability. Create an API key at <a href="https://resend.com/api-keys" target="_blank">resend.com/api-keys</a>.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>From Email Address *</label>
+                    <input type="email"
+                           id="resend-from-email"
+                           placeholder="no-reply@yourdomain.com"
+                           value="` + resendFromEmail + `"
+                           required>
+                    <small>Must be verified in your Resend account.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>From Name (optional)</label>
+                    <input type="text"
+                           id="resend-from-name"
+                           placeholder="WulfVault"
+                           value="` + resendFromName + `">
+                </div>
+
+                <div class="status-indicator">
+                    <span class="` + statusClass(resendConfigured) + `">` + resendStatus + `</span>
+                    <button type="button" class="btn-secondary" id="test-resend" ` + resendButtonDisabled + `>` + resendButtonText + `</button>
+                </div>
+
+                <button type="submit" class="btn-primary">Save Resend Settings</button>
+                ` + func() string {
+			if resendConfigured && !isResendActive {
+				return `<button type="button" class="btn-activate" id="activate-resend">🚀 Make Resend Active</button>`
+			}
+			return ""
+		}() + `
+            </form>
         </div>
 
         <!-- Brevo Configuration -->
@@ -1921,6 +2061,143 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             }
         });
 
+        // Resend form submission
+        document.getElementById('resend-form')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const apiKey = document.getElementById('resend-api-key').value.trim();
+            const fromEmail = document.getElementById('resend-from-email').value.trim();
+            const fromName = document.getElementById('resend-from-name').value.trim();
+
+            try {
+                const response = await fetch('/api/email/configure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: 'resend',
+                        apiKey: apiKey || undefined,
+                        fromEmail: fromEmail,
+                        fromName: fromName
+                    }),
+                    signal: AbortSignal.timeout(30000)
+                });
+
+                if (response.ok) {
+                    showSuccess('Resend settings saved successfully! You can now test the connection.');
+                    document.getElementById('resend-api-key').value = '';
+                    document.getElementById('resend-api-key').placeholder = '••••••••••••••••';
+                    document.getElementById('test-resend').disabled = false;
+                } else {
+                    const error = await response.json();
+                    showError('Error: ' + error.error);
+                }
+            } catch (err) {
+                if (err.name === 'TimeoutError') {
+                    showError('Request timed out. Please try again.');
+                } else if (err.name === 'AbortError') {
+                    showError('Request was aborted. Please try again.');
+                } else {
+                    showError('Error: ' + err.message);
+                }
+            }
+        });
+
+        // Test Resend
+        document.getElementById('test-resend')?.addEventListener('click', async function() {
+            const btn = this;
+            const apiKey = document.getElementById('resend-api-key').value.trim();
+            const apiKeyPlaceholder = document.getElementById('resend-api-key').placeholder;
+            const fromEmail = document.getElementById('resend-from-email').value.trim();
+            const fromName = document.getElementById('resend-from-name').value.trim();
+
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+
+            try {
+                let response;
+
+                // If API key field has value, test with provided config (before save)
+                if (apiKey && fromEmail) {
+                    response = await fetch('/api/email/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            provider: 'resend',
+                            apiKey: apiKey,
+                            fromEmail: fromEmail,
+                            fromName: fromName
+                        }),
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // If API key field is empty but placeholder shows saved (bullets), test saved config
+                else if (apiKeyPlaceholder && apiKeyPlaceholder.includes('•')) {
+                    response = await fetch('/api/email/test', {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // Neither provided nor saved config exists
+                else {
+                    showError('Please save your Resend settings first, or enter API key and from email to test before saving');
+                    btn.disabled = false;
+                    btn.textContent = 'Test connection';
+                    return;
+                }
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(result.message || 'Connection to Resend successful! Test email sent.');
+                } else {
+                    const error = await response.json();
+                    showError('Test failed: ' + error.error);
+                }
+            } catch (err) {
+                if (err.name === 'TimeoutError') {
+                    showError('Test timed out. Please check your connection and try again.');
+                } else if (err.name === 'AbortError') {
+                    showError('Test was aborted. Please try again.');
+                } else {
+                    showError('Test failed: ' + err.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test connection';
+            }
+        });
+
+        // Activate Resend
+        document.getElementById('activate-resend')?.addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Activating...';
+
+            try {
+                const response = await fetch('/api/email/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ provider: 'resend' })
+                });
+
+                if (response.ok) {
+                    showSuccess('Resend activated successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const error = await response.json();
+                    showError('Failed to activate: ' + error.error);
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Make Resend Active';
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '🚀 Make Resend Active';
+            }
+        });
+
         function showSuccess(message) {
             const el = document.getElementById('success-message');
             el.textContent = message;
@@ -2023,8 +2300,13 @@ func getMailgunRegion() string {
 	return region.String
 }
 
-func getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive bool) string {
-	if isBrevoActive {
+func getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive bool) string {
+	if isResendActive {
+		return `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>✓ Active Provider:</strong> Resend (recommended) - Email notifications are enabled
+        </div>`
+	} else if isBrevoActive {
 		return `
         <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
             <strong>✓ Active Provider:</strong> Brevo (Sendinblue) - Email notifications are enabled
@@ -2047,7 +2329,7 @@ func getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSen
 	}
 	return `
         <div style="background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
-            <strong>⚠ No Active Provider:</strong> Configure Brevo, Mailgun, SendGrid, or SMTP to enable email notifications
+            <strong>⚠ No Active Provider:</strong> Configure Resend, Brevo, Mailgun, SendGrid, or SMTP to enable email notifications
         </div>`
 }
 

@@ -1,7 +1,7 @@
 # WulfVault Development Notes
 
 **Last Updated:** 2025-11-22
-**Current Version:** v4.7.7 Shotgun
+**Current Version:** v4.7.8 Shotgun
 **Current Branch:** wolfface → main (ready for release)
 
 ---
@@ -18,6 +18,47 @@ WulfVault is a self-hosted secure file sharing system written in Go with a web U
 ## Current Development Session (2025-11-22)
 
 ### What We Accomplished Today
+
+#### v4.7.8 Shotgun - Resend Email Provider (Recommended)
+
+**1. Resend Integration**
+- **User Request:** Integrate Resend.com as recommended email provider
+- **Why Recommended:** Built on AWS SES with industry-leading deliverability and inbox placement
+- **Solution:**
+  - Created Resend provider in `internal/email/resend.go` (171 lines)
+  - Uses simple REST API with Bearer token authentication
+  - Endpoint: `https://api.resend.com/emails`
+  - Requires only: API key, from email/name (simpler than Mailgun)
+  - Returns 200 OK on success with email ID
+- **API Key:** `re_REDACTED_ROTATED_KEY`
+- **Testing:** Successfully sent test email to `admin@example.com`
+- **Email ID:** `516c879c-3a12-4d98-ae8b-7d64c19627d0`
+
+**2. UI/UX Prioritization**
+- **Resend marked as "(recommended)"** with green badge in UI
+- **Tab order changed:** Resend (first), Brevo, Mailgun, SendGrid, SMTP
+- **Helpful text:** "Recommended provider: Built on AWS SES with excellent deliverability"
+- Resend configuration form identical to SendGrid/Brevo (API key only)
+
+**3. Email Provider Ecosystem - Now 5 Providers**
+1. **Resend (recommended)** - AWS SES-based, best deliverability
+2. **Brevo** - API-based (formerly Sendinblue)
+3. **Mailgun** - API-based with domain/region
+4. **SendGrid** - API-based, simple setup
+5. **SMTP** - Plain SMTP with/without TLS
+
+**Files Modified:**
+- `internal/email/resend.go` - New Resend provider (171 lines)
+- `internal/email/email.go` - Added Resend case to GetActiveProvider()
+- `internal/server/handlers_email.go` - Added Resend UI, endpoints, handlers
+- `cmd/server/main.go` - Version 4.7.7 → 4.7.8
+- `CHANGELOG.md` - Documented Resend support
+- `README.md` - Updated version
+- `CLAUDE.md` - This file
+
+---
+
+## Previous Session (2025-11-22 earlier)
 
 #### v4.7.7 Shotgun - Mailgun & SendGrid Email Providers
 

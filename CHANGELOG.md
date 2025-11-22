@@ -1,5 +1,38 @@
 # Changelog
 
+## [4.7.8 Shotgun] - 2025-11-22 ✨ Resend Support (Recommended)
+
+### 🎯 New Features
+
+**Resend Integration (Recommended):**
+- Added Resend email provider support - **marked as recommended**
+- Built on AWS SES with industry-leading deliverability
+- Simple API key-based setup (like SendGrid/Brevo)
+- Fastest email delivery and best inbox placement rates
+- Bearer token authentication via REST API
+- Full email sending with text + HTML support
+- Test connection before activation
+- Prioritized as first tab in Email Settings UI
+
+### 📧 Email Provider Ecosystem
+
+WulfVault now supports **5 email providers**:
+1. **Resend (recommended)** - Built on AWS SES, best deliverability
+2. **Brevo** - API-based (formerly Sendinblue)
+3. **Mailgun** - API-based with domain/region configuration
+4. **SendGrid** - API-based with simple setup
+5. **SMTP** - Classic SMTP with/without TLS (MailHog, etc.)
+
+### 📝 Improvements
+
+- Resend tab shows green "(recommended)" badge in UI
+- Email Settings now has 5 tabs with Resend prioritized first
+- All providers support test emails before activation
+- Encrypted storage of all API keys and passwords (AES-256-GCM)
+- Consistent UI/UX across all provider configurations
+
+---
+
 ## [4.7.7 Shotgun] - 2025-11-22 📬 Mailgun & SendGrid Support
 
 ### 🎯 New Features

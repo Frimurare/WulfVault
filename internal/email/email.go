@@ -118,6 +118,18 @@ func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 		log.Printf("SendGrid provider loaded")
 		return NewSendGridProvider(apiKey, fromEmail.String, fromName.String), nil
 
+	case "resend":
+		if !apiKeyEncrypted.Valid || apiKeyEncrypted.String == "" {
+			return nil, errors.New("resend API key not configured")
+		}
+		apiKey, err := DecryptAPIKey(apiKeyEncrypted.String, masterKey)
+		if err != nil {
+			log.Printf("Failed to decrypt Resend API key: %v", err)
+			return nil, err
+		}
+		log.Printf("Resend provider loaded")
+		return NewResendProvider(apiKey, fromEmail.String, fromName.String), nil
+
 	case "smtp":
 		if !smtpPasswordEncrypted.Valid || smtpPasswordEncrypted.String == "" {
 			return nil, errors.New("SMTP password not configured")
