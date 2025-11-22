@@ -162,11 +162,17 @@ WulfVault solves this by providing:
   - Database optimization and maintenance
 
 ### 🌐 Email & Notifications
-- **Multiple email providers:**
-  - SMTP configuration for self-hosted email
-  - Brevo (SendInBlue) API integration for transactional email
-  - Encrypted credential storage
-  - Test email functionality before deployment
+- **5 Email Providers Supported:**
+  - **Resend (recommended)** - Built on AWS SES with best-in-class deliverability
+  - **SendGrid** - Industry-leading email API with simple setup
+  - **Mailgun** - Powerful API with domain/region configuration
+  - **Brevo** - API-based transactional email (formerly SendInBlue)
+  - **SMTP** - Classic SMTP with/without TLS for self-hosted servers
+- **Security & Management:**
+  - Encrypted credential storage (AES-256-GCM)
+  - Test email functionality before activation
+  - Switch between providers with one click
+  - Complete DNS verification guides (Loopia, generic DNS)
 - **Email templates:**
   - Password reset emails with secure tokens
   - File sharing notifications with download links
