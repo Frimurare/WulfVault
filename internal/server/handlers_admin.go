@@ -1163,195 +1163,355 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     <meta name="author" content="Ulf Holmström">
     <title>Admin Dashboard - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
-        .container { max-width: 1400px; margin: 40px auto; padding: 0 20px; }
-        h2 { margin-bottom: 24px; color: #333; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .stat-card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .stat-card h3 { color: #888; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-        .stat-card .value { font-size: 36px; font-weight: 700; color: #1a1a2e; }
-        .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px; }
-        .action-btn { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; text-decoration: none; color: #333; font-weight: 500; transition: transform 0.2s; }
-        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .joke-section { margin: 30px 0; padding: 25px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }
-        .joke-title { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1.5px; }
-        .joke-text { color: white; font-size: 17px; line-height: 1.6; font-weight: 500; font-style: italic; }
-        @media screen and (max-width: 768px) {
-            .container { padding: 0 15px !important; margin: 20px auto !important; }
-            .stats { grid-template-columns: 1fr !important; gap: 15px !important; }
-            .stat-card { padding: 20px !important; }
-            .stat-card .value { font-size: 28px !important; }
-            .quick-actions { grid-template-columns: 1fr !important; }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 107, 237, 0.3), transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2), transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow:
+                0 8px 32px 0 rgba(31, 38, 135, 0.15),
+                0 20px 60px rgba(0, 0, 0, 0.1),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                0 12px 48px 0 rgba(31, 38, 135, 0.25),
+                0 30px 80px rgba(0, 0, 0, 0.15),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+        }
+
+        .stat-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border-radius: 1rem;
+            padding: 2px;
+        }
+
+        .gradient-border-inner {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: calc(1rem - 2px);
+            padding: 1.5rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .section-title {
+            background: linear-gradient(135deg, #1e293b, #475569);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+        }
+
+        .wisdom-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow:
+                0 20px 60px rgba(102, 126, 234, 0.4),
+                0 10px 30px rgba(118, 75, 162, 0.3);
+        }
+
+        /* Twemoji image sizing */
+        img.emoji {
+            height: 1em;
+            width: 1em;
+            margin: 0 0.05em 0 0.1em;
+            vertical-align: -0.1em;
+            display: inline-block;
+        }
+
+        /* Larger emojis in specific contexts */
+        .text-3xl img.emoji {
+            height: 1.875rem;
+            width: 1.875rem;
+        }
+
+        .text-4xl img.emoji {
+            height: 2.25rem;
+            width: 2.25rem;
         }
     </style>
 </head>
 <body>
     ` + s.getAdminHeaderHTML("") + `
-    <div class="container">
-        <div class="joke-section">
-            <div class="joke-title">💡 File Sharing Wisdom</div>
-            <div class="joke-text">` + joke.Text + `</div>
-        </div>
 
-        <h2>Dashboard Overview</h2>
+    <div class="main-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Total Users</h3>
-                <div class="value">` + fmt.Sprintf("%d", totalUsers) + `</div>
-            </div>
-            <div class="stat-card">
-                <h3>Active Users</h3>
-                <div class="value">` + fmt.Sprintf("%d", activeUsers) + `</div>
-            </div>
-            <div class="stat-card">
-                <h3>Total Downloads</h3>
-                <div class="value">` + fmt.Sprintf("%d", totalDownloads) + `</div>
-            </div>
-            <div class="stat-card">
-                <h3>Downloads Today</h3>
-                <div class="value">` + fmt.Sprintf("%d", downloadsToday) + `</div>
+        <!-- File Sharing Wisdom Banner -->
+        <div class="wisdom-banner relative overflow-hidden rounded-2xl mb-12 transition-all duration-500 hover:scale-[1.02]">
+            <div class="p-6 sm:p-8">
+                <div class="flex items-start gap-4">
+                    <span class="emoji text-4xl">💡</span>
+                    <div>
+                        <div class="text-xs font-bold text-white/90 uppercase tracking-widest mb-3">File Sharing Wisdom</div>
+                        <p class="text-white text-lg sm:text-xl font-medium leading-relaxed">` + joke.Text + `</p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <h2 style="margin-top: 40px;">📥 Downloaded Data</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                <h3>Today</h3>
-                <div class="value">` + bytesDownloadedTodayStr + `</div>
+        <!-- Dashboard Overview -->
+        <h2 class="section-title text-3xl mb-8">Dashboard Overview</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Users</h3>
+                    <span class="emoji text-3xl">👥</span>
+                </div>
+                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", totalUsers) + `</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                <h3>This Week</h3>
-                <div class="value">` + bytesDownloadedWeekStr + `</div>
+
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Active Users</h3>
+                    <span class="emoji text-3xl">✅</span>
+                </div>
+                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", activeUsers) + `</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                <h3>This Month</h3>
-                <div class="value">` + bytesDownloadedMonthStr + `</div>
+
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Downloads</h3>
+                    <span class="emoji text-3xl">⬇️</span>
+                </div>
+                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", totalDownloads) + `</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                <h3>This Year</h3>
-                <div class="value">` + bytesDownloadedYearStr + `</div>
+
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Downloads Today</h3>
+                    <span class="emoji text-3xl">📅</span>
+                </div>
+                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", downloadsToday) + `</div>
             </div>
         </div>
 
-        <h2 style="margin-top: 40px;">📤 Uploaded Data</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #10b981;">
-                <h3>Today</h3>
-                <div class="value">` + bytesUploadedTodayStr + `</div>
+        <!-- Downloaded Data -->
+        <h2 class="section-title text-3xl mb-8">📥 Downloaded Data</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Today</h3>
+                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedTodayStr + `</div>
+                </div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #10b981;">
-                <h3>This Week</h3>
-                <div class="value">` + bytesUploadedWeekStr + `</div>
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Week</h3>
+                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedWeekStr + `</div>
+                </div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #10b981;">
-                <h3>This Month</h3>
-                <div class="value">` + bytesUploadedMonthStr + `</div>
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Month</h3>
+                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedMonthStr + `</div>
+                </div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #10b981;">
-                <h3>This Year</h3>
-                <div class="value">` + bytesUploadedYearStr + `</div>
-            </div>
-        </div>
-
-        <h2 style="margin-top: 40px;">👥 User Growth (This Month)</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #4CAF50;">
-                <h3>Users Added</h3>
-                <div class="value" style="color: #4CAF50;">` + fmt.Sprintf("%d", usersAdded) + `</div>
-            </div>
-            <div class="stat-card" style="border-left: 4px solid #f44336;">
-                <h3>Users Removed</h3>
-                <div class="value" style="color: #f44336;">` + fmt.Sprintf("%d", usersRemoved) + `</div>
-            </div>
-            <div class="stat-card" style="border-left: 4px solid #2196F3;">
-                <h3>Growth</h3>
-                <div class="value" style="color: #2196F3;">` + fmt.Sprintf("%.1f%%", userGrowth) + `</div>
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Year</h3>
+                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedYearStr + `</div>
+                </div>
             </div>
         </div>
 
-        <h2 style="margin-top: 40px;">📈 Usage Statistics</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #9C27B0;">
-                <h3>Active Files (7 days)</h3>
-                <div class="value" style="color: #9C27B0;">` + fmt.Sprintf("%d", activeFiles7Days) + `</div>
+        <!-- Uploaded Data -->
+        <h2 class="section-title text-3xl mb-8">📤 Uploaded Data</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">Today</h3>
+                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedTodayStr + `</div>
+                </div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #673AB7;">
-                <h3>Active Files (30 days)</h3>
-                <div class="value" style="color: #673AB7;">` + fmt.Sprintf("%d", activeFiles30Days) + `</div>
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Week</h3>
+                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedWeekStr + `</div>
+                </div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #3F51B5;">
-                <h3>Avg File Size</h3>
-                <div class="value" style="color: #3F51B5;">` + avgFileSizeStr + `</div>
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Month</h3>
+                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedMonthStr + `</div>
+                </div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #2196F3;">
-                <h3>Avg Downloads/File</h3>
-                <div class="value" style="color: #2196F3;">` + fmt.Sprintf("%.1f", avgDownloadsPerFile) + `</div>
-            </div>
-        </div>
-
-        <h2 style="margin-top: 40px;">🔐 Security Overview</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #8b5cf6; grid-column: span 2;">
-                <h3>2FA Adoption Rate</h3>
-                <div class="value">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 14px;">Percentage of Users/Admins with 2FA enabled</p>
-            </div>
-            <div class="stat-card" style="border-left: 4px solid #8b5cf6; grid-column: span 2;">
-                <h3>Avg Backup Codes Remaining</h3>
-                <div class="value">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 14px;">Average per user with 2FA enabled</p>
+            <div class="gradient-border">
+                <div class="gradient-border-inner">
+                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Year</h3>
+                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedYearStr + `</div>
+                </div>
             </div>
         </div>
 
-        <h2 style="margin-top: 40px;">📁 File Statistics</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #f59e0b; grid-column: span 2;">
-                <h3>Largest File</h3>
-                <div class="value" style="font-size: 24px; word-break: break-word;">` + largestFileName + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 16px;">` + largestFileSizeStr + `</p>
+        <!-- User Growth -->
+        <h2 class="section-title text-3xl mb-8">👥 User Growth (This Month)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-green-600 uppercase tracking-widest mb-4">Users Added</h3>
+                <div class="text-5xl font-extrabold text-green-600">` + fmt.Sprintf("%d", usersAdded) + `</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #f59e0b; grid-column: span 2;">
-                <h3>Most Active User</h3>
-                <div class="value" style="font-size: 24px;">` + mostActiveUser + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d files uploaded", userFileCount) + `</p>
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-red-600 uppercase tracking-widest mb-4">Users Removed</h3>
+                <div class="text-5xl font-extrabold text-red-600">` + fmt.Sprintf("%d", usersRemoved) + `</div>
             </div>
-        </div>
-
-        <h2 style="margin-top: 40px;">⚡ Trend Data</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #64748b;">
-                <h3>Top File Types</h3>
-                <div class="value" style="font-size: 16px; word-break: break-word;">` + fileTypesStr + `</div>
-            </div>
-            <div class="stat-card" style="border-left: 4px solid #64748b;">
-                <h3>Most Active Day</h3>
-                <div class="value" style="font-size: 20px;">` + topWeekday + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 14px;">` + fmt.Sprintf("%d downloads", weekdayCount) + `</p>
-            </div>
-            <div class="stat-card" style="border-left: 4px solid #64748b; grid-column: span 2;">
-                <h3>Storage Trend (Last 30 Days)</h3>
-                <div class="value" style="font-size: 20px;">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 14px;">` + storagePastStr + ` → ` + storageNowStr + `</p>
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Growth</h3>
+                <div class="text-5xl font-extrabold text-blue-600">` + fmt.Sprintf("%.1f%%", userGrowth) + `</div>
             </div>
         </div>
 
-        <h2 style="margin-top: 40px;">🎯 Fun Fact</h2>
-        <div class="stats">
-            <div class="stat-card" style="border-left: 4px solid #ec4899; grid-column: span 2;">
-                <h3>Most Downloaded File</h3>
-                <div class="value" style="font-size: 24px; word-break: break-word;">` + mostDownloadedFile + `</div>
-                <p style="color: #666; margin-top: 10px; font-size: 16px;">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
+        <!-- Usage Statistics -->
+        <h2 class="section-title text-3xl mb-8">📈 Usage Statistics</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-4">Active Files (7 days)</h3>
+                <div class="text-4xl font-extrabold text-purple-600">` + fmt.Sprintf("%d", activeFiles7Days) + `</div>
+            </div>
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-purple-700 uppercase tracking-widest mb-4">Active Files (30 days)</h3>
+                <div class="text-4xl font-extrabold text-purple-700">` + fmt.Sprintf("%d", activeFiles30Days) + `</div>
+            </div>
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Avg File Size</h3>
+                <div class="text-3xl font-extrabold text-indigo-600">` + avgFileSizeStr + `</div>
+            </div>
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Avg Downloads/File</h3>
+                <div class="text-4xl font-extrabold text-blue-600">` + fmt.Sprintf("%.1f", avgDownloadsPerFile) + `</div>
+            </div>
+        </div>
+
+        <!-- Security Overview -->
+        <h2 class="section-title text-3xl mb-8">🔐 Security Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xs font-bold text-violet-600 uppercase tracking-widest mb-5">2FA Adoption Rate</h3>
+                <div class="stat-number text-5xl font-extrabold mb-3">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
+                <p class="text-sm text-slate-600 font-medium">Percentage of Users/Admins with 2FA enabled</p>
+            </div>
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xs font-bold text-violet-600 uppercase tracking-widest mb-5">Avg Backup Codes Remaining</h3>
+                <div class="stat-number text-5xl font-extrabold mb-3">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
+                <p class="text-sm text-slate-600 font-medium">Average per user with 2FA enabled</p>
+            </div>
+        </div>
+
+        <!-- File Statistics -->
+        <h2 class="section-title text-3xl mb-8">📁 File Statistics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">Largest File</h3>
+                <div class="text-2xl font-extrabold text-slate-900 mb-3 break-words">` + largestFileName + `</div>
+                <p class="text-lg text-amber-600 font-bold">` + largestFileSizeStr + `</p>
+            </div>
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">Most Active User</h3>
+                <div class="text-2xl font-extrabold text-slate-900 mb-3">` + mostActiveUser + `</div>
+                <p class="text-lg text-amber-600 font-bold">` + fmt.Sprintf("%d files uploaded", userFileCount) + `</p>
+            </div>
+        </div>
+
+        <!-- Trend Data -->
+        <h2 class="section-title text-3xl mb-8">⚡ Trend Data</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Top File Types</h3>
+                <div class="text-lg font-bold text-slate-900 break-words">` + fileTypesStr + `</div>
+            </div>
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Most Active Day</h3>
+                <div class="text-3xl font-extrabold text-slate-900 mb-2">` + topWeekday + `</div>
+                <p class="text-sm text-slate-600">` + fmt.Sprintf("%d downloads", weekdayCount) + `</p>
+            </div>
+            <div class="glass-card rounded-2xl p-6 lg:col-span-2">
+                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Storage Trend (Last 30 Days)</h3>
+                <div class="stat-number text-4xl font-extrabold mb-2">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
+                <p class="text-sm text-slate-600 font-medium">` + storagePastStr + ` → ` + storageNowStr + `</p>
+            </div>
+        </div>
+
+        <!-- Fun Fact -->
+        <h2 class="section-title text-3xl mb-8">🎯 Fun Fact</h2>
+        <div class="grid grid-cols-1 gap-6 mb-16">
+            <div class="glass-card rounded-2xl p-8">
+                <h3 class="text-xs font-bold text-pink-600 uppercase tracking-widest mb-5">Most Downloaded File</h3>
+                <div class="text-3xl font-extrabold text-slate-900 mb-3 break-words">` + mostDownloadedFile + `</div>
+                <p class="text-lg text-pink-600 font-bold">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
             </div>
         </div>
     </div>
-    <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
+
+    <!-- Footer -->
+    <div class="text-center py-8 text-xs text-slate-400">
         Powered by WulfVault Version ` + s.config.Version + `
     </div>
-    
+
+    <script>
+        // Convert all emojis to colorful Twemoji images
+        window.addEventListener('DOMContentLoaded', function() {
+            twemoji.parse(document.body, {
+                folder: 'svg',
+                ext: '.svg'
+            });
+        });
+    </script>
+
 </body>
 </html>`
 

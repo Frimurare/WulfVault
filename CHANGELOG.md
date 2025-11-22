@@ -1,5 +1,48 @@
 # Changelog
 
+## [4.7.9 Shotgun] - 2025-11-22 🎨 Glassmorphic Dashboard + Security Hardening
+
+### 🎨 UI/UX Redesign
+
+**Modern 2025 Glassmorphic Admin Dashboard:**
+- Complete redesign of admin dashboard with modern glassmorphic design
+- Animated gradient background (purple-to-pink) with 15s smooth animation
+- Glass-morphism cards with backdrop blur effects (20px)
+- Floating number animations for statistics
+- Gradient text effects on section titles
+- Deep shadow layers for visual depth
+- Twemoji integration for colorful emoji rendering across all platforms
+- Inspired by Linear, Vercel, and modern NFT marketplace aesthetics
+- Fully responsive grid layout (mobile-first design)
+- Smooth hover animations and transitions
+- Professional color palette: slate/zinc/neutral with indigo/purple accents
+
+### 🔒 Security Improvements
+
+**CRITICAL: Authentication Now Required by Default:**
+- **RequireAuth checkbox now CHECKED by default** in upload form
+- Users can still uncheck to allow unauthenticated downloads
+- Protects against crawler attacks and unauthorized access
+- Prevents automated bot downloads from AWS/GCP crawlers
+
+**Investigation Results:**
+- Detected AWS EC2 and GCP crawler attack on Milestone ISO file
+- 28 downloads from multiple IP addresses (mostly AWS EC2 us-east-1)
+- 17 downloads within 7 seconds on 2025-11-20 from automated bots
+- Root cause: Files with `UnlimitedDownloads` + no `RequireAuth`
+
+### 📝 Files Changed
+
+- `internal/server/handlers_admin.go` - Complete glassmorphic dashboard redesign
+- `internal/server/handlers_user.go` - RequireAuth checkbox now checked by default
+- `cmd/server/main.go` - Version bump to 4.7.9
+
+### ⚠️ Breaking Changes
+
+**None** - Existing functionality preserved, only defaults changed
+
+---
+
 ## [4.7.8 Shotgun] - 2025-11-22 ✨ Resend Support (Recommended) + DNS Verification
 
 ### 🎯 New Features
