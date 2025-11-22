@@ -6,6 +6,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -971,7 +972,14 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                 </div>
 
                 <div class="form-group checkbox-group">
-                    <input type="checkbox" id="smtp-use-tls" checked>
+                    <input type="checkbox" id="smtp-use-tls" ` + func() string {
+			var useTLS sql.NullInt64
+			database.DB.QueryRow("SELECT SMTPUseTLS FROM EmailProviderConfig WHERE Provider = 'smtp'").Scan(&useTLS)
+			if useTLS.Valid && useTLS.Int64 == 1 {
+				return "checked"
+			}
+			return ""
+		}() + `>
                     <label for="smtp-use-tls" style="margin-bottom: 0;">Use TLS/STARTTLS</label>
                 </div>
 
@@ -1362,18 +1370,30 @@ func placeholderText(configured bool, defaultText string) string {
 }
 
 func getSMTPHost() string {
-	// TODO: Retrieve from database if exists
-	return ""
+	var host sql.NullString
+	err := database.DB.QueryRow("SELECT SMTPHost FROM EmailProviderConfig WHERE Provider = 'smtp' LIMIT 1").Scan(&host)
+	if err != nil || !host.Valid {
+		return ""
+	}
+	return host.String
 }
 
 func getSMTPPort() string {
-	// TODO: Retrieve from database if exists
-	return "587"
+	var port sql.NullInt64
+	err := database.DB.QueryRow("SELECT SMTPPort FROM EmailProviderConfig WHERE Provider = 'smtp' LIMIT 1").Scan(&port)
+	if err != nil || !port.Valid {
+		return "587"
+	}
+	return fmt.Sprintf("%d", port.Int64)
 }
 
 func getSMTPUsername() string {
-	// TODO: Retrieve from database if exists
-	return ""
+	var username sql.NullString
+	err := database.DB.QueryRow("SELECT SMTPUsername FROM EmailProviderConfig WHERE Provider = 'smtp' LIMIT 1").Scan(&username)
+	if err != nil || !username.Valid {
+		return ""
+	}
+	return username.String
 }
 
 func btoi(b bool) int {

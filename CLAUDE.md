@@ -1,8 +1,8 @@
 # WulfVault Development Notes
 
-**Last Updated:** 2025-11-20
+**Last Updated:** 2025-11-22
 **Current Version:** v4.7.6 Galadriel
-**Current Branch:** wolfface
+**Current Branch:** wolfface → main (ready for release)
 
 ---
 
@@ -15,7 +15,64 @@ WulfVault is a self-hosted secure file sharing system written in Go with a web U
 
 ---
 
-## Current Development Session (2025-11-20)
+## Current Development Session (2025-11-22)
+
+### What We Accomplished Today
+
+#### v4.7.6 Galadriel - Email Provider Activation & Plain SMTP Support
+
+**1. Email Provider Activation Controls**
+- **Problem:** User had both Brevo and SMTP configured, but no way to choose which was active
+- **Root Cause:** Saving settings was supposed to activate provider, but wasn't reliable
+- **Solution:**
+  - Created `/api/email/activate` endpoint in `internal/server/handlers_email.go`
+  - Added red "🚀 Make Active" buttons for both Brevo and SMTP in UI
+  - Buttons only show for configured but inactive providers
+  - Deactivates all providers, then activates the selected one
+  - Audit logging for activation events
+  - Page auto-reloads to show updated status
+- **Result:** Users can now configure multiple providers and explicitly choose which one to use
+
+**2. Fixed SMTP Settings UI Bugs**
+- **Problem 1:** SMTP settings disappeared after page refresh
+- **Root Cause:** `getSMTPHost()`, `getSMTPPort()`, `getSMTPUsername()` returned empty strings (were TODOs)
+- **Solution:** Implemented database queries in all three functions
+- **Problem 2:** TLS checkbox always checked after refresh, even when unchecked and saved
+- **Root Cause:** Checkbox had hardcoded `checked` attribute in HTML
+- **Solution:** Made checkbox read from database dynamically using inline function
+- **Problem 3:** Port reverting to 587 instead of saved value
+- **Root Cause:** `getSMTPPort()` returned hardcoded "587" as default
+- **Solution:** Return database value, only use 587 if no value exists
+- **Result:** All SMTP settings now properly persist and display correctly
+
+**3. Plain SMTP Support (for MailHog and test servers)**
+- **Problem:** Even with TLS unchecked, got "unencrypted connection" error
+- **Root Cause:** gomail library REQUIRES STARTTLS/TLS, refuses plain SMTP connections
+- **Solution:**
+  - Created custom `sendPlainSMTP()` function in `internal/email/smtp.go:82-151`
+  - Uses Go's standard `net/smtp` library for plain SMTP
+  - Modified `SendEmail()` to route to plain SMTP when `useTLS = false`
+  - Full MIME multipart/alternative support (text + HTML parts)
+  - Raw SMTP protocol: MAIL FROM, RCPT TO, DATA commands
+- **Testing:** Successfully tested with MailHog at 192.168.86.142:1025
+- **Result:** WulfVault now works with MailHog, test servers, and any SMTP without TLS
+
+**4. MailHog Installation**
+- Installed MailHog for testing: `go install github.com/mailhog/MailHog@latest`
+- SMTP: localhost:1025, Web UI: localhost:8025
+- Configured WulfVault database to use MailHog
+- MailHog kept installed on container for future testing
+
+**Files Modified:**
+- `internal/email/smtp.go` - Added plain SMTP implementation
+- `internal/server/handlers_email.go` - Activation endpoint, UI fixes
+- `internal/server/server.go` - Added activation route
+- `CHANGELOG.md` - Documented all changes
+- `cmd/server/main.go` - Version already at 4.7.6
+
+---
+
+## Previous Development Session (2025-11-20)
 
 ### What We Accomplished Today
 

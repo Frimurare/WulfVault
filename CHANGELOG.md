@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.7.6 Galadriel] - 2025-11-20 📧 Email Provider Activation Control
+## [4.7.6 Galadriel] - 2025-11-22 📧 Email Provider Activation & Plain SMTP
 
 ### 🎯 New Features
 
@@ -11,6 +11,12 @@
 - Clear visual feedback when activating a provider
 - Page auto-reloads to show updated active status
 
+**Plain SMTP Support:**
+- Added support for plain SMTP without TLS (for MailHog, test servers, etc.)
+- Custom `sendPlainSMTP()` implementation using Go's net/smtp library
+- Automatically uses plain SMTP when TLS checkbox is unchecked
+- Full MIME multipart/alternative email support (text + HTML)
+
 ### 🐛 Bug Fixes
 
 **Email Provider Switching:**
@@ -18,11 +24,23 @@
 - Now have explicit control over which provider is active
 - Can configure both Brevo and SMTP, then choose which one to use
 
+**SMTP Settings UI:**
+- Fixed SMTP settings disappearing after page refresh
+- Implemented `getSMTPHost()`, `getSMTPPort()`, `getSMTPUsername()` to read from database
+- Fixed TLS checkbox not reflecting saved state (was always checked)
+- Fixed port reverting to 587 instead of saved value
+- All SMTP settings now properly persist and display
+
+**SMTP Connection:**
+- Fixed "unencrypted connection" error when TLS disabled
+- gomail library requires STARTTLS, now bypassed for plain SMTP with custom implementation
+
 ### 📝 Improvements
 
 - Better UX: Separate "Save Settings" from "Make Active"
 - Visual indicators show which provider is currently active
 - Audit logging for provider activation events
+- Works with MailHog and other test SMTP servers without TLS
 
 ---
 
