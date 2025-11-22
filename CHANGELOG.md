@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.7.8 Shotgun] - 2025-11-22 ✨ Resend Support (Recommended)
+## [4.7.8 Shotgun] - 2025-11-22 ✨ Resend Support (Recommended) + DNS Verification
 
 ### 🎯 New Features
 
@@ -13,6 +13,8 @@
 - Full email sending with text + HTML support
 - Test connection before activation
 - Prioritized as first tab in Email Settings UI
+- **Successfully tested and verified** with `wulfvault.se` domain
+- Complete DNS verification guide in `docs/LOOPIA.md`
 
 ### 📧 Email Provider Ecosystem
 
