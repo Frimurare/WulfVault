@@ -952,7 +952,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
                     <div class="form-group">
                         <label>
-                            <input type="checkbox" id="requireAuth" name="require_auth">
+                            <input type="checkbox" id="requireAuth" name="require_auth" checked>
                             🔒 Require recipient authentication (email + password)
                         </label>
                     </div>

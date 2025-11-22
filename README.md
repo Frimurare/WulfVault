@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 4.7.8 Shotgun** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 4.7.9 Shotgun** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -33,8 +33,8 @@ WulfVault solves this by providing:
 - **Drag-and-drop upload interface** - Modern, intuitive file upload experience
 - **Large file support** - Files up to 5GB+ (configurable, tested with video surveillance footage)
 - **Two sharing modes:**
-  - **Authenticated downloads** - Recipients create secure download accounts (email + password)
-  - **Direct download links** - No authentication required for quick sharing
+  - **Authenticated downloads (v4.7.9+: DEFAULT)** - Recipients create secure download accounts (email + password) - **Now checked by default for enhanced security**
+  - **Direct download links** - Optional: uncheck RequireAuth for quick sharing without authentication
 - **Password-protected files** - Add extra security layer with password protection per file
 - **Expiring shares** - Auto-delete after X downloads or Y days (or both)
 - **Custom expiration settings** - Flexible download limits (1-999) and date-based expiration
@@ -76,13 +76,22 @@ WulfVault solves this by providing:
 - **Download account portal** - Recipients can view their download history and manage their accounts
 
 ### 📊 Download Tracking & Accountability
+- **Modern Glassmorphic Admin Dashboard (v4.7.9+):**
+  - **2025 modern design** - Animated gradient backgrounds with glassmorphism effects
+  - **Real-time statistics** - Total users, active users, downloads, storage trends
+  - **Comprehensive metrics** - Download/upload data (today, week, month, year)
+  - **User growth tracking** - Monthly user additions/removals with growth percentages
+  - **Security overview** - 2FA adoption rates, backup code status
+  - **File statistics** - Largest files, most active users, top file types
+  - **Trend analysis** - Storage trends, most active days, download patterns
+  - **Twemoji integration** - Colorful emojis across all platforms (Linux, Windows, macOS)
+  - **Responsive design** - Mobile-first with smooth animations and transitions
 - **Complete audit trail:**
   - Track exactly **who** downloaded files (email addresses for authenticated downloads)
   - Record **when** downloads occurred (precise timestamps)
   - Log **from where** downloads originated (IP addresses with configurable privacy controls)
 - **Per-file download history** - View detailed download logs for each file
 - **Exportable reports** - Download tracking data in CSV format for compliance
-- **Real-time statistics** - Dashboard shows total files, downloads, and storage usage
 - **Download count limits** - Automatically expire files after reaching download threshold
 - **Email notifications** - Optional notifications when files are downloaded (configurable)
 
