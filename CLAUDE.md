@@ -1,7 +1,7 @@
 # WulfVault Development Notes
 
 **Last Updated:** 2025-11-22
-**Current Version:** v4.7.6 Galadriel
+**Current Version:** v4.7.7 Shotgun
 **Current Branch:** wolfface → main (ready for release)
 
 ---
@@ -18,6 +18,69 @@ WulfVault is a self-hosted secure file sharing system written in Go with a web U
 ## Current Development Session (2025-11-22)
 
 ### What We Accomplished Today
+
+#### v4.7.7 Shotgun - Mailgun & SendGrid Email Providers
+
+**1. Mailgun Integration**
+- **User Need:** Brevo closed user's API key, needed alternative email provider
+- **Solution:**
+  - Created complete Mailgun provider in `internal/email/mailgun.go`
+  - Uses multipart form-data (not JSON) for API requests
+  - Supports US and EU regions with different API endpoints
+  - Requires: API key, domain, region, from email/name
+  - Added database columns: `MailgunDomain`, `MailgunRegion`
+  - Full UI with test connection before activation
+- **Testing:** Configured with sandbox domain, waiting for user to authorize recipients
+- **API Endpoint:** `https://api.mailgun.net/v3/{domain}/messages` (US) or `.eu.` (EU)
+
+**2. SendGrid Integration**
+- **User Need:** Wanted multiple email provider options for reliability
+- **Solution:**
+  - Created SendGrid provider in `internal/email/sendgrid.go`
+  - Simpler than Mailgun - only needs API key
+  - Uses Bearer token authentication with API v3
+  - JSON-based API (similar to Brevo)
+  - Requires: API key, from email/name
+  - Accepts both 200 OK and 202 Accepted responses
+- **API Endpoint:** `https://api.sendgrid.com/v3/mail/send`
+
+**3. Email Provider Architecture**
+- **Now supports 4 providers total:**
+  1. Brevo - API-based (original)
+  2. Mailgun - API-based with domain/region
+  3. SendGrid - API-based (simplest)
+  4. SMTP - Plain SMTP with/without TLS
+- **All providers:**
+  - Implement same `EmailProvider` interface
+  - Support all 5 email functions (splash link, upload/download notifications, GDPR deletion, etc.)
+  - Encrypted credentials (AES-256-GCM)
+  - Test connection before activation
+  - "Make Active" button to switch providers
+- **UI:** Email Settings now has 4 tabs, consistent UX across all providers
+
+**4. Database Schema Updates**
+- Added columns to `EmailProviderConfig` table:
+  - `MailgunDomain TEXT`
+  - `MailgunRegion TEXT DEFAULT 'us'`
+- No changes needed for SendGrid (uses existing `ApiKeyEncrypted` column)
+
+**Files Modified:**
+- `internal/email/mailgun.go` - New Mailgun provider
+- `internal/email/sendgrid.go` - New SendGrid provider
+- `internal/email/email.go` - Updated `GetActiveProvider()` for both new providers
+- `internal/server/handlers_email.go` - Added UI and endpoints for both providers (1429 lines → ~2000 lines)
+- `cmd/server/main.go` - Version 4.7.6 → 4.7.7 Shotgun
+- `CHANGELOG.md` - Documented new providers
+- `CLAUDE.md` - This file
+
+**Testing Notes:**
+- Mailgun requires account activation and authorized recipients for sandbox
+- SendGrid ready to test with valid API key
+- Both providers follow same pattern as Brevo for consistency
+
+---
+
+## Previous Session (2025-11-22 earlier)
 
 #### v4.7.6 Galadriel - Email Provider Activation & Plain SMTP Support
 

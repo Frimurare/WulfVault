@@ -41,18 +41,21 @@ func NewEmailService(provider EmailProvider, db *database.Database) *EmailServic
 func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 	var provider string
 	var apiKeyEncrypted, smtpHost, smtpUsername, smtpPasswordEncrypted, fromEmail, fromName sql.NullString
+	var mailgunDomain, mailgunRegion sql.NullString
 	var smtpPort, smtpUseTLS sql.NullInt64
 
 	row := db.QueryRow(`
 		SELECT Provider, ApiKeyEncrypted, SMTPHost, SMTPPort, SMTPUsername,
-		       SMTPPasswordEncrypted, SMTPUseTLS, FromEmail, FromName
+		       SMTPPasswordEncrypted, SMTPUseTLS, FromEmail, FromName,
+		       MailgunDomain, MailgunRegion
 		FROM EmailProviderConfig
 		WHERE IsActive = 1
 		LIMIT 1
 	`)
 
 	err := row.Scan(&provider, &apiKeyEncrypted, &smtpHost, &smtpPort,
-		&smtpUsername, &smtpPasswordEncrypted, &smtpUseTLS, &fromEmail, &fromName)
+		&smtpUsername, &smtpPasswordEncrypted, &smtpUseTLS, &fromEmail, &fromName,
+		&mailgunDomain, &mailgunRegion)
 	if err != nil {
 		log.Printf("GetActiveProvider scan error: %v", err)
 		return nil, errors.New("no active email provider configured")
@@ -83,6 +86,37 @@ func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 		}
 		log.Printf("Decrypted API key length: %d chars, starts with: %s...", len(apiKey), prefix)
 		return NewBrevoProvider(apiKey, fromEmail.String, fromName.String), nil
+
+	case "mailgun":
+		if !apiKeyEncrypted.Valid || apiKeyEncrypted.String == "" {
+			return nil, errors.New("mailgun API key not configured")
+		}
+		if !mailgunDomain.Valid || mailgunDomain.String == "" {
+			return nil, errors.New("mailgun domain not configured")
+		}
+		apiKey, err := DecryptAPIKey(apiKeyEncrypted.String, masterKey)
+		if err != nil {
+			log.Printf("Failed to decrypt Mailgun API key: %v", err)
+			return nil, err
+		}
+		region := "us"
+		if mailgunRegion.Valid && mailgunRegion.String != "" {
+			region = mailgunRegion.String
+		}
+		log.Printf("Mailgun provider: domain=%s, region=%s", mailgunDomain.String, region)
+		return NewMailgunProvider(apiKey, mailgunDomain.String, fromEmail.String, fromName.String, region), nil
+
+	case "sendgrid":
+		if !apiKeyEncrypted.Valid || apiKeyEncrypted.String == "" {
+			return nil, errors.New("sendgrid API key not configured")
+		}
+		apiKey, err := DecryptAPIKey(apiKeyEncrypted.String, masterKey)
+		if err != nil {
+			log.Printf("Failed to decrypt SendGrid API key: %v", err)
+			return nil, err
+		}
+		log.Printf("SendGrid provider loaded")
+		return NewSendGridProvider(apiKey, fromEmail.String, fromName.String), nil
 
 	case "smtp":
 		if !smtpPasswordEncrypted.Valid || smtpPasswordEncrypted.String == "" {

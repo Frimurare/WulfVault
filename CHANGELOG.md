@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.7.7 Shotgun] - 2025-11-22 📬 Mailgun & SendGrid Support
+
+### 🎯 New Features
+
+**Mailgun Integration:**
+- Added complete Mailgun email provider support
+- Configure API key, domain, and region (US/EU)
+- Full email sending with multipart/alternative (text + HTML)
+- Test connection before saving
+- "Make Active" button to switch providers
+
+**SendGrid Integration:**
+- Added SendGrid email provider support
+- Simple configuration with API key only
+- Industry-leading deliverability rates
+- Bearer token authentication via API v3
+- Test connection functionality
+
+### 📧 Email Provider Ecosystem
+
+WulfVault now supports **4 email providers**:
+1. **Brevo** - API-based (formerly Sendinblue)
+2. **Mailgun** - API-based with domain/region configuration
+3. **SendGrid** - API-based with simple setup
+4. **SMTP** - Classic SMTP with/without TLS (MailHog, etc.)
+
+Users can configure multiple providers and switch between them with one click!
+
+### 📝 Improvements
+
+- Email Settings now has 4 tabs (Brevo, Mailgun, SendGrid, SMTP)
+- All providers support test emails before activation
+- Encrypted storage of all API keys and passwords (AES-256-GCM)
+- Comprehensive logging for debugging email issues
+- Consistent UI/UX across all provider configurations
+
+---
+
 ## [4.7.6 Galadriel] - 2025-11-22 📧 Email Provider Activation & Plain SMTP
 
 ### 🎯 New Features

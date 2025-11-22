@@ -21,15 +21,17 @@ import (
 
 // EmailConfigRequest represents a request for email configuration
 type EmailConfigRequest struct {
-	Provider     string `json:"provider"`     // "brevo" or "smtp"
-	ApiKey       string `json:"apiKey"`       // For Brevo
-	SMTPHost     string `json:"smtpHost"`     // For SMTP
-	SMTPPort     int    `json:"smtpPort"`     // For SMTP
-	SMTPUsername string `json:"smtpUsername"` // For SMTP
-	SMTPPassword string `json:"smtpPassword"` // For SMTP
-	SMTPUseTLS   bool   `json:"smtpUseTLS"`   // For SMTP
-	FromEmail    string `json:"fromEmail"`    // Common
-	FromName     string `json:"fromName"`     // Common
+	Provider       string `json:"provider"`       // "brevo", "smtp", "mailgun", or "sendgrid"
+	ApiKey         string `json:"apiKey"`         // For Brevo, Mailgun, and SendGrid
+	SMTPHost       string `json:"smtpHost"`       // For SMTP
+	SMTPPort       int    `json:"smtpPort"`       // For SMTP
+	SMTPUsername   string `json:"smtpUsername"`   // For SMTP
+	SMTPPassword   string `json:"smtpPassword"`   // For SMTP
+	SMTPUseTLS     bool   `json:"smtpUseTLS"`     // For SMTP
+	MailgunDomain  string `json:"mailgunDomain"`  // For Mailgun
+	MailgunRegion  string `json:"mailgunRegion"`  // For Mailgun (default "us")
+	FromEmail      string `json:"fromEmail"`      // Common
+	FromName       string `json:"fromName"`       // Common
 }
 
 // handleEmailConfigure handles configuration of email settings
@@ -52,6 +54,8 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 	req.SMTPHost = strings.TrimSpace(req.SMTPHost)
 	req.SMTPUsername = strings.TrimSpace(req.SMTPUsername)
 	req.SMTPPassword = strings.TrimSpace(req.SMTPPassword)
+	req.MailgunDomain = strings.TrimSpace(req.MailgunDomain)
+	req.MailgunRegion = strings.TrimSpace(req.MailgunRegion)
 
 	// Log received API key for debugging
 	if req.Provider == "brevo" {
@@ -63,11 +67,29 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Printf("⚠️  NO API key in request body (keeping existing)")
 		}
+	} else if req.Provider == "mailgun" {
+		if req.ApiKey != "" {
+			log.Printf("🔑 Received NEW Mailgun API key in request: length=%d, starts='%s...', ends='...%s'",
+				len(req.ApiKey),
+				req.ApiKey[:min(15, len(req.ApiKey))],
+				req.ApiKey[max(0, len(req.ApiKey)-15):])
+		} else {
+			log.Printf("⚠️  NO API key in request body (keeping existing)")
+		}
+	} else if req.Provider == "sendgrid" {
+		if req.ApiKey != "" {
+			log.Printf("🔑 Received NEW SendGrid API key in request: length=%d, starts='%s...', ends='...%s'",
+				len(req.ApiKey),
+				req.ApiKey[:min(15, len(req.ApiKey))],
+				req.ApiKey[max(0, len(req.ApiKey)-15):])
+		} else {
+			log.Printf("⚠️  NO API key in request body (keeping existing)")
+		}
 	}
 
 	// Validate provider
-	if req.Provider != "brevo" && req.Provider != "smtp" {
-		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo' or 'smtp'")
+	if req.Provider != "brevo" && req.Provider != "smtp" && req.Provider != "mailgun" && req.Provider != "sendgrid" {
+		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo', 'smtp', 'mailgun', or 'sendgrid'")
 		return
 	}
 
@@ -94,6 +116,26 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 			apiKeyEncrypted, err = email.EncryptAPIKey(req.ApiKey, masterKey)
 			if err != nil {
 				log.Printf("Failed to encrypt Brevo API key: %v", err)
+				s.sendError(w, http.StatusInternalServerError, "Encryption failed")
+				return
+			}
+		}
+	} else if req.Provider == "mailgun" {
+		// Mailgun: encrypt API key if provided
+		if req.ApiKey != "" {
+			apiKeyEncrypted, err = email.EncryptAPIKey(req.ApiKey, masterKey)
+			if err != nil {
+				log.Printf("Failed to encrypt Mailgun API key: %v", err)
+				s.sendError(w, http.StatusInternalServerError, "Encryption failed")
+				return
+			}
+		}
+	} else if req.Provider == "sendgrid" {
+		// SendGrid: encrypt API key if provided
+		if req.ApiKey != "" {
+			apiKeyEncrypted, err = email.EncryptAPIKey(req.ApiKey, masterKey)
+			if err != nil {
+				log.Printf("Failed to encrypt SendGrid API key: %v", err)
 				s.sendError(w, http.StatusInternalServerError, "Encryption failed")
 				return
 			}
@@ -158,6 +200,86 @@ func (s *Server) handleEmailConfigure(w http.ResponseWriter, r *http.Request) {
 					(Provider, IsActive, ApiKeyEncrypted, FromEmail, FromName, CreatedAt, UpdatedAt)
 				VALUES (?, 1, ?, ?, ?, ?, ?)
 			`, "brevo", apiKeyEncrypted, req.FromEmail, req.FromName, now, now)
+			if err == nil {
+				lastId, _ := result.LastInsertId()
+				log.Printf("INSERT created row with ID: %d", lastId)
+			}
+		}
+	} else if req.Provider == "mailgun" {
+		// Check if Mailgun config already exists
+		var existingId int
+		err := database.DB.QueryRow("SELECT Id FROM EmailProviderConfig WHERE Provider = ?", "mailgun").Scan(&existingId)
+
+		if err == nil {
+			// Update existing
+			log.Printf("Updating existing Mailgun config (ID: %d)", existingId)
+			updateSQL := `UPDATE EmailProviderConfig SET IsActive = 1, FromEmail = ?, FromName = ?, MailgunDomain = ?, MailgunRegion = ?, UpdatedAt = ?`
+			args := []interface{}{req.FromEmail, req.FromName, req.MailgunDomain, req.MailgunRegion, now}
+
+			if apiKeyEncrypted != "" {
+				updateSQL += ", ApiKeyEncrypted = ?"
+				args = append(args, apiKeyEncrypted)
+				log.Printf("Updating with new API key")
+			} else {
+				log.Printf("Keeping existing API key")
+			}
+
+			updateSQL += " WHERE Provider = ?"
+			args = append(args, "mailgun")
+
+			result, err = database.DB.Exec(updateSQL, args...)
+			if err == nil {
+				rowsAffected, _ := result.RowsAffected()
+				log.Printf("UPDATE affected %d row(s)", rowsAffected)
+			}
+		} else {
+			// Create new
+			log.Printf("Creating new Mailgun config (no existing found: %v)", err)
+			result, err = database.DB.Exec(`
+				INSERT INTO EmailProviderConfig
+					(Provider, IsActive, ApiKeyEncrypted, MailgunDomain, MailgunRegion, FromEmail, FromName, CreatedAt, UpdatedAt)
+				VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)
+			`, "mailgun", apiKeyEncrypted, req.MailgunDomain, req.MailgunRegion, req.FromEmail, req.FromName, now, now)
+			if err == nil {
+				lastId, _ := result.LastInsertId()
+				log.Printf("INSERT created row with ID: %d", lastId)
+			}
+		}
+	} else if req.Provider == "sendgrid" {
+		// Check if SendGrid config already exists
+		var existingId int
+		err := database.DB.QueryRow("SELECT Id FROM EmailProviderConfig WHERE Provider = ?", "sendgrid").Scan(&existingId)
+
+		if err == nil {
+			// Update existing
+			log.Printf("Updating existing SendGrid config (ID: %d)", existingId)
+			updateSQL := `UPDATE EmailProviderConfig SET IsActive = 1, FromEmail = ?, FromName = ?, UpdatedAt = ?`
+			args := []interface{}{req.FromEmail, req.FromName, now}
+
+			if apiKeyEncrypted != "" {
+				updateSQL += ", ApiKeyEncrypted = ?"
+				args = append(args, apiKeyEncrypted)
+				log.Printf("Updating with new API key")
+			} else {
+				log.Printf("Keeping existing API key")
+			}
+
+			updateSQL += " WHERE Provider = ?"
+			args = append(args, "sendgrid")
+
+			result, err = database.DB.Exec(updateSQL, args...)
+			if err == nil {
+				rowsAffected, _ := result.RowsAffected()
+				log.Printf("UPDATE affected %d row(s)", rowsAffected)
+			}
+		} else {
+			// Create new
+			log.Printf("Creating new SendGrid config (no existing found: %v)", err)
+			result, err = database.DB.Exec(`
+				INSERT INTO EmailProviderConfig
+					(Provider, IsActive, ApiKeyEncrypted, FromEmail, FromName, CreatedAt, UpdatedAt)
+				VALUES (?, 1, ?, ?, ?, ?, ?)
+			`, "sendgrid", apiKeyEncrypted, req.FromEmail, req.FromName, now, now)
 			if err == nil {
 				lastId, _ := result.LastInsertId()
 				log.Printf("INSERT created row with ID: %d", lastId)
@@ -251,8 +373,8 @@ func (s *Server) handleEmailActivate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate provider
-	if req.Provider != "brevo" && req.Provider != "smtp" {
-		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo' or 'smtp'")
+	if req.Provider != "brevo" && req.Provider != "smtp" && req.Provider != "mailgun" && req.Provider != "sendgrid" {
+		s.sendError(w, http.StatusBadRequest, "Invalid provider. Must be 'brevo', 'smtp', 'mailgun', or 'sendgrid'")
 		return
 	}
 
@@ -309,15 +431,17 @@ func (s *Server) handleEmailActivate(w http.ResponseWriter, r *http.Request) {
 // handleEmailTest tests the email configuration
 // EmailTestRequest represents a request to test email settings
 type EmailTestRequest struct {
-	Provider     string `json:"provider"`
-	ApiKey       string `json:"apiKey"`
-	FromEmail    string `json:"fromEmail"`
-	FromName     string `json:"fromName"`
-	SMTPHost     string `json:"smtpHost"`
-	SMTPPort     int    `json:"smtpPort"`
-	SMTPUsername string `json:"smtpUsername"`
-	SMTPPassword string `json:"smtpPassword"`
-	SMTPUseTLS   bool   `json:"smtpUseTLS"`
+	Provider      string `json:"provider"`
+	ApiKey        string `json:"apiKey"`
+	FromEmail     string `json:"fromEmail"`
+	FromName      string `json:"fromName"`
+	SMTPHost      string `json:"smtpHost"`
+	SMTPPort      int    `json:"smtpPort"`
+	SMTPUsername  string `json:"smtpUsername"`
+	SMTPPassword  string `json:"smtpPassword"`
+	SMTPUseTLS    bool   `json:"smtpUseTLS"`
+	MailgunDomain string `json:"mailgunDomain"`
+	MailgunRegion string `json:"mailgunRegion"`
 }
 
 func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
@@ -358,6 +482,38 @@ func (s *Server) handleEmailTest(w http.ResponseWriter, r *http.Request) {
 			}
 			provider = email.NewBrevoProvider(req.ApiKey, req.FromEmail, req.FromName)
 			log.Printf("Testing Brevo with API key: %s...", req.ApiKey[:min(10, len(req.ApiKey))])
+
+		case "mailgun":
+			if req.ApiKey == "" {
+				s.sendError(w, http.StatusBadRequest, "API key is required")
+				return
+			}
+			if req.MailgunDomain == "" {
+				s.sendError(w, http.StatusBadRequest, "Mailgun domain is required")
+				return
+			}
+			if req.FromEmail == "" {
+				s.sendError(w, http.StatusBadRequest, "From email is required")
+				return
+			}
+			region := req.MailgunRegion
+			if region == "" {
+				region = "us"
+			}
+			provider = email.NewMailgunProvider(req.ApiKey, req.MailgunDomain, region, req.FromEmail, req.FromName)
+			log.Printf("Testing Mailgun with domain: %s, region: %s", req.MailgunDomain, region)
+
+		case "sendgrid":
+			if req.ApiKey == "" {
+				s.sendError(w, http.StatusBadRequest, "API key is required")
+				return
+			}
+			if req.FromEmail == "" {
+				s.sendError(w, http.StatusBadRequest, "From email is required")
+				return
+			}
+			provider = email.NewSendGridProvider(req.ApiKey, req.FromEmail, req.FromName)
+			log.Printf("Testing SendGrid with API key: %s...", req.ApiKey[:min(10, len(req.ApiKey))])
 
 		case "smtp":
 			if req.SMTPHost == "" || req.SMTPUsername == "" || req.SMTPPassword == "" {
@@ -481,9 +637,9 @@ func (s *Server) handleSendSplashLink(w http.ResponseWriter, r *http.Request) {
 // handleEmailSettings renders the email settings page
 func (s *Server) handleEmailSettings(w http.ResponseWriter, r *http.Request) {
 	// Check if any provider is configured
-	var brevoConfigured, smtpConfigured bool
-	var brevoFromEmail, smtpFromEmail, brevoFromName, smtpFromName string
-	var isBrevoActive, isSMTPActive bool
+	var brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured bool
+	var brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName string
+	var isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive bool
 
 	// Check Brevo
 	row := database.DB.QueryRow("SELECT FromEmail, FromName, IsActive FROM EmailProviderConfig WHERE Provider = 'brevo'")
@@ -495,17 +651,31 @@ func (s *Server) handleEmailSettings(w http.ResponseWriter, r *http.Request) {
 	err = row.Scan(&smtpFromEmail, &smtpFromName, &isSMTPActive)
 	smtpConfigured = (err == nil && smtpFromEmail != "")
 
+	// Check Mailgun
+	row = database.DB.QueryRow("SELECT FromEmail, FromName, IsActive FROM EmailProviderConfig WHERE Provider = 'mailgun'")
+	err = row.Scan(&mailgunFromEmail, &mailgunFromName, &isMailgunActive)
+	mailgunConfigured = (err == nil && mailgunFromEmail != "")
+
+	// Check SendGrid
+	row = database.DB.QueryRow("SELECT FromEmail, FromName, IsActive FROM EmailProviderConfig WHERE Provider = 'sendgrid'")
+	err = row.Scan(&sendgridFromEmail, &sendgridFromName, &isSendGridActive)
+	sendgridConfigured = (err == nil && sendgridFromEmail != "")
+
 	// Render page
-	s.renderEmailSettingsPage(w, brevoConfigured, smtpConfigured, isBrevoActive, isSMTPActive, brevoFromEmail, smtpFromEmail, brevoFromName, smtpFromName)
+	s.renderEmailSettingsPage(w, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName)
 }
 
 // renderEmailSettingsPage renders the email settings page
-func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured, smtpConfigured, isBrevoActive, isSMTPActive bool, brevoFromEmail, smtpFromEmail, brevoFromName, smtpFromName string) {
+func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive bool, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	activeTab := "brevo"
 	if isSMTPActive {
 		activeTab = "smtp"
+	} else if isMailgunActive {
+		activeTab = "mailgun"
+	} else if isSendGridActive {
+		activeTab = "sendgrid"
 	}
 
 	brevoStatus := "Not configured"
@@ -530,6 +700,30 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 		}
 	} else {
 		smtpButtonDisabled = "disabled"
+	}
+
+	mailgunStatus := "Not configured"
+	mailgunButtonText := "Test connection"
+	mailgunButtonDisabled := ""
+	if mailgunConfigured {
+		mailgunStatus = "Configured"
+		if !isMailgunActive {
+			mailgunStatus += " (inactive)"
+		}
+	} else {
+		mailgunButtonDisabled = "disabled"
+	}
+
+	sendgridStatus := "Not configured"
+	sendgridButtonText := "Test connection"
+	sendgridButtonDisabled := ""
+	if sendgridConfigured {
+		sendgridStatus = "Configured"
+		if !isSendGridActive {
+			sendgridStatus += " (inactive)"
+		}
+	} else {
+		sendgridButtonDisabled = "disabled"
 	}
 
 	html := `<!DOCTYPE html>
@@ -858,11 +1052,17 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             <div id="success-message" class="success-message"></div>
             <div id="error-message" class="error-message"></div>
 
-            ` + getActiveProviderBanner(isBrevoActive, isSMTPActive) + `
+            ` + getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive) + `
 
         <div class="tab-buttons">
             <button class="tab-btn ` + activeTabClass("brevo", activeTab) + `" data-provider="brevo">
                 Brevo (Sendinblue) ` + getActiveProviderBadge(isBrevoActive) + `
+            </button>
+            <button class="tab-btn ` + activeTabClass("mailgun", activeTab) + `" data-provider="mailgun">
+                Mailgun ` + getActiveProviderBadge(isMailgunActive) + `
+            </button>
+            <button class="tab-btn ` + activeTabClass("sendgrid", activeTab) + `" data-provider="sendgrid">
+                SendGrid ` + getActiveProviderBadge(isSendGridActive) + `
             </button>
             <button class="tab-btn ` + activeTabClass("smtp", activeTab) + `" data-provider="smtp">
                 SMTP Server ` + getActiveProviderBadge(isSMTPActive) + `
@@ -995,6 +1195,126 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 			}
 			return ""
 		}() + `
+            </form>
+        </div>
+
+        <!-- Mailgun Configuration -->
+        <div id="mailgun-config" class="provider-config ` + activeConfigClass("mailgun", activeTab) + `">
+            <form id="mailgun-form">
+                <div class="form-group">
+                    <label>Mailgun API Key *</label>
+                    <input type="password"
+                           id="mailgun-api-key"
+                           placeholder="` + placeholderText(mailgunConfigured, "key-...") + `"
+                           autocomplete="off">
+                    <small>Your Mailgun private API key. Find it in Settings → API Keys in your Mailgun dashboard.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Mailgun Domain *</label>
+                    <input type="text"
+                           id="mailgun-domain"
+                           placeholder="mg.yourdomain.com"
+                           value="` + getMailgunDomain() + `">
+                    <small>Your verified sending domain in Mailgun (e.g., mg.yourdomain.com or sandbox123.mailgun.org)</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Region *</label>
+                    <select id="mailgun-region" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <option value="us" ` + func() string {
+			region := getMailgunRegion()
+			if region == "" || region == "us" {
+				return "selected"
+			}
+			return ""
+		}() + `>US (api.mailgun.net)</option>
+                        <option value="eu" ` + func() string {
+			region := getMailgunRegion()
+			if region == "eu" {
+				return "selected"
+			}
+			return ""
+		}() + `>EU (api.eu.mailgun.net)</option>
+                    </select>
+                    <small>Choose based on where your Mailgun domain is registered.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>From Email Address *</label>
+                    <input type="email"
+                           id="mailgun-from-email"
+                           placeholder="no-reply@yourdomain.com"
+                           value="` + mailgunFromEmail + `"
+                           required>
+                    <small>Must match or be authorized by your Mailgun domain.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>From Name (optional)</label>
+                    <input type="text"
+                           id="mailgun-from-name"
+                           placeholder="WulfVault"
+                           value="` + mailgunFromName + `">
+                </div>
+
+                <div class="status-indicator">
+                    <span class="` + statusClass(mailgunConfigured) + `">` + mailgunStatus + `</span>
+                    <button type="button" class="btn-secondary" id="test-mailgun" ` + mailgunButtonDisabled + `>` + mailgunButtonText + `</button>
+                </div>
+
+                <button type="submit" class="btn-primary">Save Mailgun Settings</button>
+                ` + func() string {
+			if mailgunConfigured && !isMailgunActive {
+				return `<button type="button" class="btn-activate" id="activate-mailgun">🚀 Make Mailgun Active</button>`
+			}
+			return ""
+		}() + `
+            </form>
+        </div>
+
+        <!-- SendGrid Configuration -->
+        <div id="sendgrid-config" class="provider-config ` + activeConfigClass("sendgrid", activeTab) + `">
+            <form id="sendgrid-form">
+                <div class="form-group">
+                    <label>SendGrid API Key *</label>
+                    <input type="password"
+                           id="sendgrid-api-key"
+                           placeholder="` + placeholderText(sendgridConfigured, "SG.xxxxx...") + `"
+                           autocomplete="off">
+                    <small>Your SendGrid API key. Create one at Settings → API Keys in your SendGrid dashboard.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>From Email Address *</label>
+                    <input type="email"
+                           id="sendgrid-from-email"
+                           placeholder="no-reply@yourdomain.com"
+                           value="` + sendgridFromEmail + `"
+                           required>
+                    <small>Must be verified in your SendGrid account.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>From Name (optional)</label>
+                    <input type="text"
+                           id="sendgrid-from-name"
+                           placeholder="WulfVault"
+                           value="` + sendgridFromName + `">
+                </div>
+
+                <div class="status-indicator">
+                    <span class="` + statusClass(sendgridConfigured) + `">` + sendgridStatus + `</span>
+                    <button type="button" class="btn-secondary" id="test-sendgrid" ` + sendgridButtonDisabled + `>` + sendgridButtonText + `</button>
+                </div>
+
+                <button type="submit" class="btn-primary">Save SendGrid Settings</button>
+                ` + func() string {
+		if sendgridConfigured && !isSendGridActive {
+			return `<button type="button" class="btn-activate" id="activate-sendgrid">🚀 Make SendGrid Active</button>`
+		}
+		return ""
+	}() + `
             </form>
         </div>
 
@@ -1319,6 +1639,288 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
             }
         });
 
+        // Mailgun form submission
+        document.getElementById('mailgun-form')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const apiKey = document.getElementById('mailgun-api-key').value.trim();
+            const domain = document.getElementById('mailgun-domain').value.trim();
+            const region = document.getElementById('mailgun-region').value;
+            const fromEmail = document.getElementById('mailgun-from-email').value.trim();
+            const fromName = document.getElementById('mailgun-from-name').value.trim();
+
+            try {
+                const response = await fetch('/api/email/configure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: 'mailgun',
+                        apiKey: apiKey || undefined,
+                        mailgunDomain: domain,
+                        mailgunRegion: region,
+                        fromEmail: fromEmail,
+                        fromName: fromName
+                    }),
+                    signal: AbortSignal.timeout(30000)
+                });
+
+                if (response.ok) {
+                    showSuccess('Mailgun settings saved successfully! You can now test the connection.');
+                    document.getElementById('mailgun-api-key').value = '';
+                    document.getElementById('mailgun-api-key').placeholder = '••••••••••••••••';
+                    document.getElementById('test-mailgun').disabled = false;
+                } else {
+                    const error = await response.json();
+                    showError('Error: ' + error.error);
+                }
+            } catch (err) {
+                if (err.name === 'TimeoutError') {
+                    showError('Request timed out. Please try again.');
+                } else if (err.name === 'AbortError') {
+                    showError('Request was aborted. Please try again.');
+                } else {
+                    showError('Error: ' + err.message);
+                }
+            }
+        });
+
+        // Test Mailgun
+        document.getElementById('test-mailgun')?.addEventListener('click', async function() {
+            const btn = this;
+            const apiKey = document.getElementById('mailgun-api-key').value.trim();
+            const apiKeyPlaceholder = document.getElementById('mailgun-api-key').placeholder;
+            const domain = document.getElementById('mailgun-domain').value.trim();
+            const region = document.getElementById('mailgun-region').value;
+            const fromEmail = document.getElementById('mailgun-from-email').value.trim();
+            const fromName = document.getElementById('mailgun-from-name').value.trim();
+
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+
+            try {
+                let response;
+
+                // If API key and domain have values, test with provided config (before save)
+                if (apiKey && domain && fromEmail) {
+                    response = await fetch('/api/email/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            provider: 'mailgun',
+                            apiKey: apiKey,
+                            mailgunDomain: domain,
+                            mailgunRegion: region,
+                            fromEmail: fromEmail,
+                            fromName: fromName
+                        }),
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // If API key field is empty but placeholder shows saved (bullets), test saved config
+                else if (apiKeyPlaceholder && apiKeyPlaceholder.includes('•')) {
+                    response = await fetch('/api/email/test', {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // Neither provided nor saved config exists
+                else {
+                    showError('Please save your Mailgun settings first, or enter API key, domain, and from email to test before saving');
+                    btn.disabled = false;
+                    btn.textContent = 'Test connection';
+                    return;
+                }
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(result.message || 'Connection to Mailgun successful! Test email sent.');
+                } else {
+                    const error = await response.json();
+                    showError('Test failed: ' + error.error);
+                }
+            } catch (err) {
+                if (err.name === 'TimeoutError') {
+                    showError('Test timed out. Please check your connection and try again.');
+                } else if (err.name === 'AbortError') {
+                    showError('Test was aborted. Please try again.');
+                } else {
+                    showError('Test failed: ' + err.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test connection';
+            }
+        });
+
+        // Activate Mailgun
+        document.getElementById('activate-mailgun')?.addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Activating...';
+
+            try {
+                const response = await fetch('/api/email/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ provider: 'mailgun' })
+                });
+
+                if (response.ok) {
+                    showSuccess('Mailgun activated successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const error = await response.json();
+                    showError('Failed to activate: ' + error.error);
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Make Mailgun Active';
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '🚀 Make Mailgun Active';
+            }
+        });
+
+        // SendGrid form submission
+        document.getElementById('sendgrid-form')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const apiKey = document.getElementById('sendgrid-api-key').value.trim();
+            const fromEmail = document.getElementById('sendgrid-from-email').value.trim();
+            const fromName = document.getElementById('sendgrid-from-name').value.trim();
+
+            try {
+                const response = await fetch('/api/email/configure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: 'sendgrid',
+                        apiKey: apiKey || undefined,
+                        fromEmail: fromEmail,
+                        fromName: fromName
+                    }),
+                    signal: AbortSignal.timeout(30000)
+                });
+
+                if (response.ok) {
+                    showSuccess('SendGrid settings saved successfully! You can now test the connection.');
+                    document.getElementById('sendgrid-api-key').value = '';
+                    document.getElementById('sendgrid-api-key').placeholder = '••••••••••••••••';
+                    document.getElementById('test-sendgrid').disabled = false;
+                } else {
+                    const error = await response.json();
+                    showError('Error: ' + error.error);
+                }
+            } catch (err) {
+                if (err.name === 'TimeoutError') {
+                    showError('Request timed out. Please try again.');
+                } else if (err.name === 'AbortError') {
+                    showError('Request was aborted. Please try again.');
+                } else {
+                    showError('Error: ' + err.message);
+                }
+            }
+        });
+
+        // Test SendGrid
+        document.getElementById('test-sendgrid')?.addEventListener('click', async function() {
+            const btn = this;
+            const apiKey = document.getElementById('sendgrid-api-key').value.trim();
+            const apiKeyPlaceholder = document.getElementById('sendgrid-api-key').placeholder;
+            const fromEmail = document.getElementById('sendgrid-from-email').value.trim();
+            const fromName = document.getElementById('sendgrid-from-name').value.trim();
+
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+
+            try {
+                let response;
+
+                // If API key field has value, test with provided config (before save)
+                if (apiKey && fromEmail) {
+                    response = await fetch('/api/email/test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            provider: 'sendgrid',
+                            apiKey: apiKey,
+                            fromEmail: fromEmail,
+                            fromName: fromName
+                        }),
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // If API key field is empty but placeholder shows saved (bullets), test saved config
+                else if (apiKeyPlaceholder && apiKeyPlaceholder.includes('•')) {
+                    response = await fetch('/api/email/test', {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        signal: AbortSignal.timeout(30000)
+                    });
+                }
+                // Neither provided nor saved config exists
+                else {
+                    showError('Please save your SendGrid settings first, or enter API key and from email to test before saving');
+                    btn.disabled = false;
+                    btn.textContent = 'Test connection';
+                    return;
+                }
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(result.message || 'Connection to SendGrid successful! Test email sent.');
+                } else {
+                    const error = await response.json();
+                    showError('Test failed: ' + error.error);
+                }
+            } catch (err) {
+                if (err.name === 'TimeoutError') {
+                    showError('Test timed out. Please check your connection and try again.');
+                } else if (err.name === 'AbortError') {
+                    showError('Test was aborted. Please try again.');
+                } else {
+                    showError('Test failed: ' + err.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test connection';
+            }
+        });
+
+        // Activate SendGrid
+        document.getElementById('activate-sendgrid')?.addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Activating...';
+
+            try {
+                const response = await fetch('/api/email/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ provider: 'sendgrid' })
+                });
+
+                if (response.ok) {
+                    showSuccess('SendGrid activated successfully!');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const error = await response.json();
+                    showError('Failed to activate: ' + error.error);
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Make SendGrid Active';
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+                btn.disabled = false;
+                btn.textContent = '🚀 Make SendGrid Active';
+            }
+        });
+
         function showSuccess(message) {
             const el = document.getElementById('success-message');
             el.textContent = message;
@@ -1403,7 +2005,25 @@ func btoi(b bool) int {
 	return 0
 }
 
-func getActiveProviderBanner(isBrevoActive, isSMTPActive bool) string {
+func getMailgunDomain() string {
+	var domain sql.NullString
+	err := database.DB.QueryRow("SELECT MailgunDomain FROM EmailProviderConfig WHERE Provider = 'mailgun' LIMIT 1").Scan(&domain)
+	if err != nil || !domain.Valid {
+		return ""
+	}
+	return domain.String
+}
+
+func getMailgunRegion() string {
+	var region sql.NullString
+	err := database.DB.QueryRow("SELECT MailgunRegion FROM EmailProviderConfig WHERE Provider = 'mailgun' LIMIT 1").Scan(&region)
+	if err != nil || !region.Valid {
+		return "us"
+	}
+	return region.String
+}
+
+func getActiveProviderBanner(isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive bool) string {
 	if isBrevoActive {
 		return `
         <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
@@ -1414,10 +2034,20 @@ func getActiveProviderBanner(isBrevoActive, isSMTPActive bool) string {
         <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
             <strong>✓ Active Provider:</strong> SMTP Server - Email notifications are enabled
         </div>`
+	} else if isMailgunActive {
+		return `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>✓ Active Provider:</strong> Mailgun - Email notifications are enabled
+        </div>`
+	} else if isSendGridActive {
+		return `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>✓ Active Provider:</strong> SendGrid - Email notifications are enabled
+        </div>`
 	}
 	return `
         <div style="background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 16px; border-radius: 4px; margin-bottom: 20px;">
-            <strong>⚠ No Active Provider:</strong> Configure Brevo or SMTP to enable email notifications
+            <strong>⚠ No Active Provider:</strong> Configure Brevo, Mailgun, SendGrid, or SMTP to enable email notifications
         </div>`
 }
 
