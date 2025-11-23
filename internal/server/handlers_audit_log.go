@@ -214,13 +214,13 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
-            padding: 20px;
         }
 
         .container {
-            margin: 0 auto;
+            max-width: 1400px;
+            margin: 40px auto;
             padding: 0 20px;
         }
 
@@ -494,9 +494,9 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
     </style>
 </head>
 <body>
-    <div class="container">
-        ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("") + `
 
+    <div class="container">
         <div class="filters-card">
             <h3 style="margin-bottom: 15px; color: #333;">Filters</h3>
             <div class="filters-grid">

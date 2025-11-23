@@ -1,5 +1,25 @@
 # Changelog
 
+## [4.8.8 Shrimpmaster] - 2025-11-23 🎨 Audit Logs UI Consistency Fix
+
+### 🐛 Bug Fixes
+
+**Audit Logs Page Styling:**
+- Fixed Audit Logs page to match all other admin pages
+- Removed unique purple gradient background
+- Changed to standard #f5f5f5 background like other admin pages
+- Moved header outside container for full-width consistency
+- Updated container max-width to 1400px matching other admin views
+- Now visually consistent with Admin Dashboard, Users, Teams, Files, Settings
+
+### 📝 Files Changed
+
+- `internal/server/handlers_audit_log.go` - Fixed body background, container width, and header placement
+- `cmd/server/main.go` - Version bump to 4.8.8 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
 ## [4.8.7 Shrimpmaster] - 2025-11-23 🎨 Modern Dashboard UI + Layout Fixes
 
 ### 🐛 Bug Fixes
