@@ -1,11 +1,36 @@
 # Changelog
 
-## [4.8.5 Shrimpmaster] - 2025-11-23 🎨 Modern Dashboard UI for Teams
+## [4.8.7 Shrimpmaster] - 2025-11-23 🎨 Modern Dashboard UI + Layout Fixes
+
+### 🐛 Bug Fixes
+
+**File Note Layout Fix:**
+- Fixed long file notes/comments breaking layout in Admin All Files view
+- Added `word-wrap: break-word` and `overflow-wrap: break-word` to `.file-note` CSS
+- Notes now wrap properly without pushing action buttons off screen
+- Prevents horizontal scrolling on very long file descriptions
+
+**Audit Logs Width Consistency:**
+- Fixed Audit Logs page header container to use full width like all other admin pages
+- Removed `max-width: 1400px` constraint from `.container` in Audit Logs
+- Now consistent with Admin Dashboard, Users, Teams, Files, and other admin pages
+- Better use of screen real estate on wide monitors
+
+### 📝 Files Changed
+
+- `internal/server/handlers_admin.go` - Fixed `.file-note` CSS to wrap long text properly
+- `internal/server/handlers_audit_log.go` - Removed max-width constraint from container
+- `cmd/server/main.go` - Version bump to 4.8.7 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
+## [4.8.6 Shrimpmaster] - 2025-11-23 🎨 Modern Dashboard UI for Teams + Admin Views
 
 ### 🎨 UI/UX Improvements
 
-**Teams View Redesign:**
-- Applied modern dashboard-style UI to Teams listing (previously card-based grid)
+**User Teams View Redesign:**
+- Applied modern dashboard-style UI to user Teams listing (`/teams`)
 - Teams now display in a clean vertical list with colored borders
 - Smooth hover effect with subtle padding shift for better interactivity
 - Consistent styling with "My Files" dashboard view
@@ -14,25 +39,42 @@
   - Admin: Blue badge
   - Member: Purple/indigo badge
 
-**Team Files View Redesign:**
-- Replaced traditional table layout with modern dashboard-style file list
-- Files now display as expandable items with colored borders
+**User Team Files View Redesign:**
+- Replaced traditional table layout with modern dashboard-style file list (`/teams?id=X`)
+- Files now display as items with colored borders
 - Better information hierarchy with file metadata in organized rows
 - Improved filename handling with ellipsis for long names + tooltip on hover
 - Consistent styling across all file views in the application
 - Mobile-friendly responsive design maintained
 
+**Admin Teams View Redesign:**
+- Applied dashboard-style list to Admin Teams management (`/admin/teams`)
+- Replaced table layout with vertical team-item list
+- Consistent 3px colored borders matching dashboard aesthetic
+- Hover effects with smooth padding transition
+- Better action button organization with flexbox layout
+- Status badges for Active/Inactive teams
+
+**Admin All Files View - Filename Fix:**
+- Fixed long filename display issue in Admin All Files view (`/admin/files`)
+- Filenames now truncated to max 600px width with ellipsis
+- Added hover tooltip showing full filename when truncated
+- Applied same solution as dashboard "My Files" view
+- Prevents UI breaking with very long filenames or hashes
+
 **Visual Consistency:**
-- All team views now match the modern dashboard aesthetic
+- All team views (user + admin) now match the modern dashboard aesthetic
+- All file views apply consistent filename truncation with tooltips
 - Consistent use of primary color borders (3px solid)
 - Uniform hover effects and transitions
 - Better use of whitespace and typography
-- Improved mobile responsiveness for all team views
+- Improved mobile responsiveness across all views
 
 ### 📝 Files Changed
 
-- `internal/server/handlers_teams.go` - Updated `renderUserTeams()` and `renderTeamFiles()` with new UI
-- `cmd/server/main.go` - Version bump to 4.8.5 Shrimpmaster
+- `internal/server/handlers_teams.go` - Updated `renderUserTeams()`, `renderTeamFiles()`, and `renderAdminTeams()` with new UI
+- `internal/server/handlers_admin.go` - Fixed filename truncation in `renderAdminFiles()`
+- `cmd/server/main.go` - Version bump to 4.8.6 Shrimpmaster
 - `CHANGELOG.md` - This changelog
 
 ---

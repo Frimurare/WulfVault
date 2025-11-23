@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "4.8.5 Shrimpmaster"
+	Version = "4.8.7 Shrimpmaster"
 )
 
 var (

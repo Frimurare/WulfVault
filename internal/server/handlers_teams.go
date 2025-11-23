@@ -732,24 +732,74 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             background: #6b7280;
             margin-left: 8px;
         }
-        table {
-            width: 100%;
+        .team-list {
             background: white;
-            border-radius: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        th, td {
-            padding: 16px;
-            text-align: left;
+        .team-item {
+            padding: 20px 24px;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+            transition: all 0.2s;
         }
-        th {
+        .team-item:hover {
             background: #f9f9f9;
-            font-weight: 600;
-            color: #666;
+            padding-left: 28px;
         }
-        tr:not(:last-child) td {
-            border-bottom: 1px solid #e0e0e0;
+        .team-item:last-child {
+            border-bottom: none;
+        }
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .team-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .team-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .team-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .team-stats span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .team-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn-action {
+            padding: 8px 16px;
+            background: ` + s.getPrimaryColor() + `;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-action:hover {
+            opacity: 0.9;
+        }
+        .btn-action.btn-danger {
+            background: #dc2626;
         }
         .badge {
             padding: 4px 12px;
@@ -759,17 +809,15 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
         }
         .badge-active { background: #d1fae5; color: #065f46; }
         .badge-inactive { background: #fee2e2; color: #991b1b; }
-        .action-links a, .action-links button {
-            margin-right: 12px;
-            color: ` + s.getPrimaryColor() + `;
-            text-decoration: none;
-            cursor: pointer;
-            background: none;
-            border: none;
-            font-size: 14px;
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
         }
-        .action-links button:hover {
-            text-decoration: underline;
+        .empty-state h3 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 20px;
         }
         .modal {
             display: none;
@@ -921,34 +969,23 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
         <div class="actions">
             <h2>📁 Manage Teams</h2>
             <button class="btn" onclick="showCreateModal()">+ Create Team</button>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Team Name</th>
-                    <th>Description</th>
-                    <th>Members</th>
-                    <th>Storage</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="teamsTable">`
+        </div>`
 
 	if len(teams) == 0 {
 		html += `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
-                        No teams yet. Click "Create Team" to get started.
-                    </td>
-                </tr>`
+        <div class="empty-state">
+            <h3>No teams yet</h3>
+            <p>Click "Create Team" to get started.</p>
+        </div>`
 	} else {
+		html += `
+        <div class="team-list">`
 		for _, team := range teams {
 			statusBadge := `<span class="badge badge-active">Active</span>`
+			badgeClass := "badge-active"
 			if !team.IsActive {
 				statusBadge = `<span class="badge badge-inactive">Inactive</span>`
+				badgeClass = "badge-inactive"
 			}
 
 			storagePercent := team.GetStoragePercentage()
@@ -956,35 +993,37 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 			storageTotal := fmt.Sprintf("%.1f GB", float64(team.StorageQuotaMB)/1024)
 
 			html += fmt.Sprintf(`
-                <tr>
-                    <td data-label="Team Name"><strong>%s</strong></td>
-                    <td data-label="Description">%s</td>
-                    <td data-label="Members">%d members</td>
-                    <td data-label="Storage">
-                        %s / %s (%d%%)
-                        <div class="storage-bar">
-                            <div class="storage-bar-fill" style="width: %d%%"></div>
-                        </div>
-                    </td>
-                    <td data-label="Created">%s</td>
-                    <td data-label="Status">%s</td>
-                    <td data-label="Actions" class="action-links">
-                        <button onclick="window.location.href='/teams?id=%d'">📁 Files</button>
-                        <button onclick="viewMembers(%d, '%s')">👥 Members</button>
-                        <button onclick="editTeam(%d)">✏️ Edit</button>
-                        <button onclick="deleteTeam(%d, '%s')">🗑️ Delete</button>
-                    </td>
-                </tr>`,
-				team.Name, team.Description, team.MemberCount,
-				storageUsed, storageTotal, storagePercent, storagePercent,
-				team.GetReadableCreatedAt(), statusBadge,
+            <div class="team-item">
+                <div class="team-header">
+                    <div class="team-name">👥 %s</div>
+                    <span class="badge %s">%s</span>
+                </div>
+                <div class="team-description">%s</div>
+                <div class="team-stats">
+                    <span>👤 %d members</span>
+                    <span>💾 %s / %s (%d%%)</span>
+                    <span>📅 Created: %s</span>
+                </div>
+                <div class="team-actions">
+                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'">📁 Files</button>
+                    <button class="btn-action" onclick="viewMembers(%d, '%s')">👥 Members</button>
+                    <button class="btn-action" onclick="editTeam(%d)">✏️ Edit</button>
+                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')">🗑️ Delete</button>
+                </div>
+            </div>`,
+				team.Name,
+				badgeClass, statusBadge,
+				team.Description,
+				team.MemberCount,
+				storageUsed, storageTotal, storagePercent,
+				team.GetReadableCreatedAt(),
 				team.Id, team.Id, team.Name, team.Id, team.Id, team.Name)
 		}
+		html += `
+        </div>`
 	}
 
 	html += `
-            </tbody>
-        </table>
     </div>
 
     <!-- Create/Edit Team Modal -->

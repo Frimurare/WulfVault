@@ -220,8 +220,8 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
         }
 
         .container {
-            max-width: 1400px;
             margin: 0 auto;
+            padding: 0 20px;
         }
 
         .filters-card {

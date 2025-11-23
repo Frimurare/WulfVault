@@ -2416,6 +2416,9 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             margin-top: 12px;
             border-radius: 4px;
             font-size: 13px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
         .file-note strong {
             font-weight: 700;
@@ -2458,6 +2461,9 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             margin-top: 12px;
             border-radius: 4px;
             font-size: 13px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
         .file-note strong {
             font-weight: 700;
@@ -2736,7 +2742,9 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 		html += fmt.Sprintf(`
                 <li class="file-item">
                     <div class="file-info">
-                        <h3>📄 %s %s %s</h3>
+                        <h3 title="%s">
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s
+                        </h3>
                         <p>%s • %s • %d downloads • Expires: %s</p>
                         %s
                     </div>
@@ -2746,6 +2754,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                         <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
                     </div>
                 </li>`,
+			template.HTMLEscapeString(f.Name),
 			f.Name, authBadge, status,
 			userName, f.Size, f.DownloadCount, expiryInfo,
 			noteDisplay,
