@@ -546,7 +546,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	regularUser, err := database.DB.GetUserByEmail(email)
 	if err == nil {
 		// User exists as regular user/admin - verify password
-		if !auth.CheckPasswordHash(password, regularUser.PasswordHash) {
+		if !auth.CheckPasswordHash(password, regularUser.Password) {
 			s.renderDownloadAuthPage(w, fileInfo, "Invalid credentials")
 			return
 		}
