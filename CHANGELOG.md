@@ -1,5 +1,84 @@
 # Changelog
 
+## [4.8.0 Shotgun] - 2025-11-23 🎨 UI Improvements + Download Time Tracking + Unified Authentication
+
+### 🎨 UI/UX Improvements
+
+**File List Display:**
+- Fixed long filename display issue - filenames now truncated to max 600px width with ellipsis
+- Added hover tooltip on filename to show full filename when truncated
+- Fixed button alignment - History, Email, Edit, Delete buttons now consistently placed using flexbox
+- Added `display: flex` and `gap: 8px` to file-actions container for consistent spacing
+- Improved visual consistency across all file cards
+
+**Admin Dashboard - Most Active Users:**
+- Changed "Most Active User" (singular) to "5 Most Active Users" (plural)
+- Now shows top 5 users with their file upload counts
+- Displays as a vertical list with rank numbers (1-5)
+- Each user shown with name and file count in styled cards
+- Added `GetTop5ActiveUsers()` database function returning arrays of users and counts
+
+**Enhanced Edit Dialog:**
+- Confirmed full feature parity with upload form
+- Users can edit: expiration, downloads limit, authentication, password, teams, and comments
+- All settings modifiable after upload (already implemented, now verified working)
+
+### 🔐 Security & Authentication
+
+**Unified Authentication System:**
+- Regular users and admins can now use existing accounts to download password-protected files
+- System no longer creates duplicate "download user" accounts for existing users
+- Authentication flow now checks for existing user account BEFORE creating download account
+- Regular user session created automatically when existing user authenticates for download
+- Download accounts only created for users without existing accounts
+- Prevents confusion and duplicate account creation
+
+**Implementation:**
+- `handleAuthenticatedDownload()` now checks `userFromContext()` first
+- If user already logged in as regular user/admin, download proceeds immediately
+- `handleDownloadAccountCreation()` checks `GetUserByEmail()` before creating download account
+- Regular users redirected after authentication to trigger download with session cookie
+
+### 📊 Audit & Tracking
+
+**Download Time Tracking:**
+- Added download duration measurement to all file downloads
+- Download time recorded in seconds (e.g., 2.45 seconds)
+- Stored in audit log `Details` field as `download_time_seconds`
+- Log message format: "File brustablett.jpg was downloaded and it took the user 2 seconds to download it"
+- Helps detect:
+  - Bot activity (0-second "downloads" without actual file transfer)
+  - Network performance issues (slow downloads)
+  - Incomplete downloads vs. successful transfers
+- Uses `time.Now()` before and after `http.ServeFile()` call
+- Accurate measurement of actual transfer time
+
+### 🔧 Technical Changes
+
+**Frontend:**
+- Updated filename HTML structure with `<span>` wrapper for max-width control
+- Changed file-actions from default layout to flexbox with explicit sizing
+- All buttons now have `flex: 0 0 auto` to prevent resizing issues
+
+**Backend:**
+- `internal/database/downloads.go` - Added `GetTop5ActiveUsers()` returning `[]string`, `[]int`
+- `internal/server/handlers_admin.go` - Updated dashboard to use top 5 users array
+- `internal/server/handlers_admin.go` - Modified `renderAdminDashboard()` signature
+- `internal/server/handlers_files.go` - Added download timing to `performDownload()`
+- `internal/server/handlers_files.go` - Enhanced authentication checks in download flow
+- Audit log now includes `download_time_seconds` in JSON details field
+
+### 📝 Files Changed
+
+- `internal/server/handlers_user.go` - Filename display fix, button alignment fix
+- `internal/server/handlers_admin.go` - Top 5 active users display
+- `internal/server/handlers_files.go` - Download timing, unified authentication
+- `internal/database/downloads.go` - New `GetTop5ActiveUsers()` function
+- `cmd/server/main.go` - Version already at 4.8.0 Shotgun
+- `CHANGELOG.md` - This changelog
+
+---
+
 ## [4.7.9 Shotgun] - 2025-11-22 🎨 Glassmorphic Dashboard + Security Hardening
 
 ### 🎨 UI/UX Redesign

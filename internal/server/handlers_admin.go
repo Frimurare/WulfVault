@@ -70,7 +70,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 
 	// Get file statistics
 	largestFileName, largestFileSize, _ := database.DB.GetLargestFile()
-	mostActiveUser, userFileCount, _ := database.DB.GetMostActiveUser()
+	top5ActiveUsers, top5FileCounts, _ := database.DB.GetTop5ActiveUsers()
 
 	// Get trend data
 	topFileTypes, fileTypeCounts, _ := database.DB.GetTopFileTypes()
@@ -86,7 +86,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		usersAdded, usersRemoved, userGrowth,
 		activeFiles7Days, activeFiles30Days, avgFileSize, avgDownloadsPerFile,
 		twoFAAdoption, avgBackupCodes,
-		largestFileName, largestFileSize, mostActiveUser, userFileCount,
+		largestFileName, largestFileSize, top5ActiveUsers, top5FileCounts,
 		topFileTypes, fileTypeCounts, topWeekday, weekdayCount, storagePast, storageNow,
 		mostDownloadedFile, downloadCount)
 }
@@ -1096,7 +1096,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	usersAdded, usersRemoved int, userGrowth float64,
 	activeFiles7Days, activeFiles30Days int, avgFileSize int64, avgDownloadsPerFile float64,
 	twoFAAdoption, avgBackupCodes float64,
-	largestFileName string, largestFileSize int64, mostActiveUser string, userFileCount int,
+	largestFileName string, largestFileSize int64, top5ActiveUsers []string, top5FileCounts []int,
 	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
 	mostDownloadedFile string, downloadCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -1461,9 +1461,19 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
                 <p class="text-lg text-amber-600 font-bold">` + largestFileSizeStr + `</p>
             </div>
             <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">Most Active User</h3>
-                <div class="text-2xl font-extrabold text-slate-900 mb-3">` + mostActiveUser + `</div>
-                <p class="text-lg text-amber-600 font-bold">` + fmt.Sprintf("%d files uploaded", userFileCount) + `</p>
+                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">5 Most Active Users</h3>` +
+		func() string {
+			html := `<div style="display: flex; flex-direction: column; gap: 8px;">`
+			for i := 0; i < len(top5ActiveUsers) && i < 5; i++ {
+				html += fmt.Sprintf(`
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 8px;">
+                        <span style="font-weight: 600; color: #1e293b;">%d. %s</span>
+                        <span style="color: #f59e0b; font-weight: 600;">%d files</span>
+                    </div>`, i+1, top5ActiveUsers[i], top5FileCounts[i])
+			}
+			html += `</div>`
+			return html
+		}() + `
             </div>
         </div>
 

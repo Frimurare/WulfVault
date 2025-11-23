@@ -663,6 +663,42 @@ func (d *Database) GetMostActiveUser() (string, int, error) {
 	return username, fileCount, err
 }
 
+// GetTop5ActiveUsers returns the top 5 users who have uploaded the most files
+func (d *Database) GetTop5ActiveUsers() ([]string, []int, error) {
+	rows, err := d.db.Query(`
+		SELECT u.Name, COUNT(f.Id) as file_count
+		FROM Files f
+		JOIN Users u ON f.UserId = u.Id
+		WHERE f.DeletedAt = 0
+		GROUP BY f.UserId, u.Name
+		ORDER BY file_count DESC
+		LIMIT 5
+	`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var usernames []string
+	var fileCounts []int
+
+	for rows.Next() {
+		var username string
+		var fileCount int
+		if err := rows.Scan(&username, &fileCount); err != nil {
+			return nil, nil, err
+		}
+		usernames = append(usernames, username)
+		fileCounts = append(fileCounts, fileCount)
+	}
+
+	if len(usernames) == 0 {
+		return []string{"N/A"}, []int{0}, nil
+	}
+
+	return usernames, fileCounts, rows.Err()
+}
+
 // ============================================================================
 // TREND DATA
 // ============================================================================

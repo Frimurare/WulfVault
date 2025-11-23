@@ -80,6 +80,8 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 	downloadsLimit, _ := strconv.Atoi(r.FormValue("downloads_limit"))
 	teamIDStr := r.FormValue("team_id")
 	fileComment := r.FormValue("file_comment")
+	requireAuth := r.FormValue("require_auth") == "true"
+	filePassword := r.FormValue("file_password")
 
 	// Get file to verify ownership
 	fileInfo, err := database.DB.GetFileByID(fileID)
@@ -119,6 +121,18 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 	// Update comment if provided
 	if err := database.DB.UpdateFileComment(fileID, fileComment); err != nil {
 		log.Printf("Warning: Failed to update file comment: %v", err)
+		// Don't fail the request, just log the error
+	}
+
+	// Update require auth setting
+	if err := database.DB.UpdateFileRequireAuth(fileID, requireAuth); err != nil {
+		log.Printf("Warning: Failed to update require auth: %v", err)
+		// Don't fail the request, just log the error
+	}
+
+	// Update password (empty string will clear the password)
+	if err := database.DB.UpdateFilePassword(fileID, filePassword); err != nil {
+		log.Printf("Warning: Failed to update file password: %v", err)
 		// Don't fail the request, just log the error
 	}
 
@@ -681,9 +695,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         .file-item {
             padding: 20px 24px;
             border-bottom: 3px solid ` + s.getPrimaryColor() + `;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         .file-item:last-child {
             border-bottom: none;
@@ -700,6 +711,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         .file-actions {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
         .btn {
             padding: 8px 16px;
@@ -1184,7 +1196,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 			html += fmt.Sprintf(`
                 <li class="file-item" data-file-type="%s" data-teams="%s">
                     <div class="file-info">
-                        <h3>📄 %s %s%s%s</h3>
+                        <h3 title="%s">
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
+                        </h3>
                         %s
                         <p>%s • Downloaded %d times • %s</p>
                         <p style="color: %s;">Status: %s</p>
@@ -1201,25 +1215,25 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                                 <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 Copy</button>
                             </div>
                         </div>
+                        <div class="file-actions" style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history" style="flex: 0 0 auto;">
+                                📊 History
+                            </button>
+                            <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="Send file link via email" style="background: #007bff; flex: 0 0 auto;">
+                                📧 Email
+                            </button>
+                            <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s', %t, '%s')" title="Edit file settings" style="flex: 0 0 auto;">
+                                ✏️ Edit
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteFile('%s', '%s')" style="flex: 0 0 auto;">
+                                🗑️ Delete
+                            </button>
+                        </div>
                     </div>
-                    <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history">
-                            📊 History
-                        </button>
-                        <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="Send file link via email" style="background: #007bff;">
-                            📧 Email
-                        </button>
-                        <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s')" title="Edit file settings">
-                            ✏️ Edit
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s', '%s')">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
+                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
-				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.Id, template.JSEscapeString(f.Name))
+				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.RequireAuth, template.JSEscapeString(f.FilePasswordPlain), f.Id, template.JSEscapeString(f.Name))
 		}
 		html += `
             </ul>`
@@ -1291,6 +1305,26 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">💬 Description/Note:</label>
                 <textarea id="editFileComment" rows="3" maxlength="1000" placeholder="Add a description or note about this file..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
                 <p style="font-size: 12px; color: #999; margin-top: 4px;">This message will be shown to recipients on the download page (max 1000 characters)</p>
+            </div>
+
+            <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="editRequireAuth">
+                    🔒 Require authentication to download
+                </label>
+                <p style="font-size: 12px; color: #999; margin-top: 4px; margin-left: 24px;">If enabled, only logged-in users can download this file</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">
+                    <input type="checkbox" id="editEnablePassword" onchange="toggleEditPasswordField()">
+                    🔐 Password protect this file
+                </label>
+                <div id="editPasswordFieldContainer" style="display: none; margin-top: 12px; margin-left: 24px;">
+                    <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">Password:</label>
+                    <input type="text" id="editFilePassword" placeholder="Enter password" maxlength="100" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                    <p style="font-size: 12px; color: #999; margin-top: 4px;">Recipients will need this password to download the file</p>
+                </div>
             </div>
 
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
@@ -1568,7 +1602,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
 
         // Edit File Modal Functions
-        function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime, fileComment) {
+        function showEditModal(fileId, fileName, downloadsRemaining, expireAt, unlimitedDownloads, unlimitedTime, fileComment, requireAuth, filePassword) {
             // Store file info
             const fileIdInput = document.getElementById('editFileId');
             if (!fileIdInput) {
@@ -1585,6 +1619,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             // Set unlimited checkboxes
             document.getElementById('editUnlimitedTime').checked = unlimitedTime;
             document.getElementById('editUnlimitedDownloads').checked = unlimitedDownloads;
+
+            // Set require auth checkbox
+            document.getElementById('editRequireAuth').checked = requireAuth;
+
+            // Set password protection
+            const hasPassword = filePassword && filePassword.length > 0;
+            document.getElementById('editEnablePassword').checked = hasPassword;
+            document.getElementById('editFilePassword').value = filePassword || '';
+            toggleEditPasswordField();
 
             // Calculate days until expiration
             if (expireAt > 0 && !unlimitedTime) {
@@ -1744,15 +1787,39 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             section.style.display = checkbox.checked ? 'none' : 'block';
         }
 
+        function toggleEditPasswordField() {
+            const checkbox = document.getElementById('editEnablePassword');
+            const container = document.getElementById('editPasswordFieldContainer');
+            const passwordInput = document.getElementById('editFilePassword');
+
+            if (checkbox.checked) {
+                container.style.display = 'block';
+                passwordInput.required = true;
+            } else {
+                container.style.display = 'none';
+                passwordInput.required = false;
+                passwordInput.value = '';
+            }
+        }
+
         function saveFileEdit() {
             const fileId = document.getElementById('editFileId').value;
             const unlimitedTime = document.getElementById('editUnlimitedTime').checked;
             const unlimitedDownloads = document.getElementById('editUnlimitedDownloads').checked;
             const teamId = document.getElementById('editTeamSelect').value;
             const fileComment = document.getElementById('editFileComment').value;
+            const requireAuth = document.getElementById('editRequireAuth').checked;
+            const enablePassword = document.getElementById('editEnablePassword').checked;
+            const filePassword = document.getElementById('editFilePassword').value;
 
             if (!fileId || fileId === '') {
                 alert('Error: File ID is missing. Please close and reopen the edit dialog.');
+                return;
+            }
+
+            // Validate password if enabled
+            if (enablePassword && (!filePassword || filePassword.trim() === '')) {
+                alert('Please enter a password or uncheck the password protection option.');
                 return;
             }
 
@@ -1771,6 +1838,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             formData.append('expiration_days', expirationDays);
             formData.append('downloads_limit', downloadsLimit);
             formData.append('file_comment', fileComment);
+            formData.append('require_auth', requireAuth ? 'true' : 'false');
+
+            // Only send password if checkbox is enabled
+            if (enablePassword) {
+                formData.append('file_password', filePassword);
+            } else {
+                formData.append('file_password', ''); // Clear password
+            }
+
             if (teamId) {
                 formData.append('team_id', teamId);
             }

@@ -221,6 +221,17 @@ func (d *Database) UpdateFileComment(fileId string, comment string) error {
 	return err
 }
 
+// UpdateFileRequireAuth updates a file's require authentication setting
+func (d *Database) UpdateFileRequireAuth(fileId string, requireAuth bool) error {
+	requireAuthInt := 0
+	if requireAuth {
+		requireAuthInt = 1
+	}
+
+	_, err := d.db.Exec("UPDATE Files SET RequireAuth = ? WHERE Id = ?", requireAuthInt, fileId)
+	return err
+}
+
 // DeleteFile soft-deletes a file (moves to trash for 5 days)
 func (d *Database) DeleteFile(fileId string, userId int) error {
 	now := time.Now().Unix()

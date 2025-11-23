@@ -496,6 +496,14 @@ func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.
 
 // handleAuthenticatedDownload handles downloads that require authentication
 func (s *Server) handleAuthenticatedDownload(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo) {
+	// First check if user is logged in as regular user or admin
+	if user, ok := userFromContext(r.Context()); ok {
+		// User is already logged in as regular user/admin - allow download
+		log.Printf("User %s (%s) downloading file %s with existing user account", user.Name, user.Email, fileInfo.Name)
+		s.performDownload(w, r, fileInfo, nil)
+		return
+	}
+
 	// Check if user has download session
 	cookie, err := r.Cookie("download_session_" + fileInfo.Id)
 	if err == nil {
@@ -534,11 +542,47 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Check if account exists
+	// First check if this email belongs to a regular user or admin
+	regularUser, err := database.DB.GetUserByEmail(email)
+	if err == nil {
+		// User exists as regular user/admin - verify password
+		if !auth.CheckPasswordHash(password, regularUser.PasswordHash) {
+			s.renderDownloadAuthPage(w, fileInfo, "Invalid credentials")
+			return
+		}
+
+		// Valid regular user - create session and allow download
+		log.Printf("Regular user %s (%s) authenticated for file download", regularUser.Name, regularUser.Email)
+
+		// Create a regular user session
+		sessionToken, err := auth.CreateSession(regularUser.Id)
+		if err != nil {
+			log.Printf("Warning: Could not create session for user: %v", err)
+			s.renderDownloadAuthPage(w, fileInfo, "Authentication failed")
+			return
+		}
+
+		// Set session cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    sessionToken,
+			Path:     "/",
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			Secure:   false,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		// Redirect to download (browser will re-request with session cookie)
+		http.Redirect(w, r, "/d/"+fileInfo.Id, http.StatusSeeOther)
+		return
+	}
+
+	// Not a regular user, check if download account exists
 	account, err := database.DB.GetDownloadAccountByEmail(email)
 	isNewAccount := false
 	if err != nil {
-		// Create new account - name is required for new accounts
+		// Create new download account - name is required for new accounts
 		if name == "" {
 			s.renderDownloadAuthPage(w, fileInfo, "Name is required for new accounts")
 			return
@@ -565,7 +609,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 			ErrorMsg:   "",
 		})
 	} else {
-		// Verify password
+		// Verify password for existing download account
 		if !checkDownloadPassword(password, account.Password) {
 			s.renderDownloadAuthPage(w, fileInfo, "Invalid credentials")
 			return
@@ -682,9 +726,12 @@ func (s *Server) performDownload(w http.ResponseWriter, r *http.Request, fileInf
 	w.Header().Set("Content-Type", fileInfo.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.SizeBytes, 10))
 
-	log.Printf("File downloaded: %s (%s) by %s", fileInfo.Name, fileInfo.Size, getDownloaderInfo(account, r.RemoteAddr))
+	log.Printf("File download started: %s (%s) by %s", fileInfo.Name, fileInfo.Size, getDownloaderInfo(account, r.RemoteAddr))
 
-	// Log the action
+	// Start timing the download
+	downloadStartTime := time.Now()
+
+	// Log the action (before download starts)
 	var userID int64
 	var userEmail string
 	if account != nil {
@@ -694,20 +741,29 @@ func (s *Server) performDownload(w http.ResponseWriter, r *http.Request, fileInf
 		userID = 0
 		userEmail = "anonymous"
 	}
+
+	// Serve the file
+	http.ServeFile(w, r, filePath)
+
+	// Calculate download duration
+	downloadDuration := time.Since(downloadStartTime)
+	downloadSeconds := downloadDuration.Seconds()
+
+	log.Printf("File download completed: %s (%s) by %s - took %.2f seconds", fileInfo.Name, fileInfo.Size, getDownloaderInfo(account, r.RemoteAddr), downloadSeconds)
+
+	// Log the action with download time
 	database.DB.LogAction(&database.AuditLogEntry{
 		UserID:     userID,
 		UserEmail:  userEmail,
 		Action:     "FILE_DOWNLOADED",
 		EntityType: "File",
 		EntityID:   fileInfo.Id,
-		Details:    fmt.Sprintf("{\"file_name\":\"%s\",\"size\":%d,\"authenticated\":%v}", fileInfo.Name, fileInfo.SizeBytes, account != nil),
+		Details:    fmt.Sprintf("{\"file_name\":\"%s\",\"size\":%d,\"authenticated\":%v,\"download_time_seconds\":%.2f}", fileInfo.Name, fileInfo.SizeBytes, account != nil, downloadSeconds),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
 		ErrorMsg:   "",
 	})
-
-	http.ServeFile(w, r, filePath)
 }
 
 // API Handlers
