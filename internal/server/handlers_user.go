@@ -1049,9 +1049,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                     </div>
 
                     <div style="margin-bottom: 24px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Max file size (MB)</label>
-                        <input type="number" id="requestMaxSize" min="1" max="5000" value="100" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Maximum size per file (0 = no limit)</p>
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Max file size (GB)</label>
+                        <input type="number" id="requestMaxSize" min="0.1" max="15" step="0.1" value="1" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Maximum size per file (1-15 GB, default: 1 GB)</p>
                     </div>
 
                     <div style="margin-bottom: 24px; background: #fff9e6; padding: 16px; border-radius: 8px; border: 3px solid #ff9800;">

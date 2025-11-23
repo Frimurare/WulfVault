@@ -7,6 +7,7 @@ package server
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -71,7 +72,14 @@ func (s *Server) handleDownloadDashboard(w http.ResponseWriter, r *http.Request)
 		downloadLogs = []*models.DownloadLog{}
 	}
 
-	s.renderDownloadDashboard(w, account, downloadLogs)
+	// Get accessible files (files they can re-download)
+	accessibleFiles, err := database.DB.GetAccessibleFilesByDownloadAccount(account.Id)
+	if err != nil {
+		log.Printf("Error fetching accessible files: %v", err)
+		accessibleFiles = []*database.FileInfo{}
+	}
+
+	s.renderDownloadDashboard(w, account, downloadLogs, accessibleFiles)
 }
 
 // handleDownloadChangePassword allows download users to change their password
@@ -211,7 +219,7 @@ func (s *Server) handleDownloadAccountDeleteSelf(w http.ResponseWriter, r *http.
 }
 
 // renderDownloadDashboard renders the download user dashboard
-func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.DownloadAccount, downloadLogs []*models.DownloadLog) {
+func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.DownloadAccount, downloadLogs []*models.DownloadLog, accessibleFiles []*database.FileInfo) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
@@ -322,7 +330,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getDownloadUserHeaderHTML() + `
 
     <div class="container">
         <div class="account-info">
@@ -347,7 +355,72 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
             </div>
         </div>
 
-        <h2 style="margin-bottom: 20px; color: #333;">Download History</h2>
+        <h2 style="margin-bottom: 20px; color: #333;">📁 Available Files</h2>
+        <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 40px;">`
+
+	if len(accessibleFiles) == 0 {
+		html += `
+            <div style="text-align: center; padding: 40px; color: #999;">
+                No files available
+            </div>`
+	} else {
+		html += `
+            <div style="display: flex; flex-direction: column;">`
+		for _, file := range accessibleFiles {
+			// Calculate expiration info
+			expiryInfo := ""
+			if file.UnlimitedTime {
+				expiryInfo = "Never expires"
+			} else {
+				expiryTime := time.Unix(file.ExpireAt, 0)
+				timeLeft := time.Until(expiryTime)
+				if timeLeft > 24*time.Hour {
+					daysLeft := int(timeLeft.Hours() / 24)
+					expiryInfo = fmt.Sprintf("Expires in %d days", daysLeft)
+				} else if timeLeft > time.Hour {
+					hoursLeft := int(timeLeft.Hours())
+					expiryInfo = fmt.Sprintf("Expires in %d hours", hoursLeft)
+				} else if timeLeft > 0 {
+					expiryInfo = "Expires soon"
+				} else {
+					expiryInfo = "Expired"
+				}
+			}
+
+			// Download limit info
+			downloadInfo := ""
+			if file.UnlimitedDownloads {
+				downloadInfo = "Unlimited downloads"
+			} else {
+				downloadInfo = fmt.Sprintf("%d downloads remaining", file.DownloadsRemaining)
+			}
+
+			html += fmt.Sprintf(`
+                <div style="padding: 20px 24px; border-bottom: 3px solid %s; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1; min-width: 0;">
+                        <h3 style="font-size: 16px; font-weight: 600; color: #333; margin-bottom: 8px; word-wrap: break-word;">📄 %s</h3>
+                        <p style="font-size: 14px; color: #666; margin: 4px 0;">%s • %s • %s</p>
+                    </div>
+                    <div style="flex-shrink: 0; margin-left: 20px;">
+                        <a href="/d/%s" class="btn btn-primary" style="padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500; transition: all 0.3s; display: inline-block; background: %s; color: white;">⬇️ Download</a>
+                    </div>
+                </div>`,
+				s.getPrimaryColor(),
+				template.HTMLEscapeString(file.Name),
+				file.Size,
+				expiryInfo,
+				downloadInfo,
+				file.Id,
+				s.getPrimaryColor())
+		}
+		html += `
+            </div>`
+	}
+
+	html += `
+        </div>
+
+        <h2 style="margin-bottom: 20px; color: #333;">📜 Download History</h2>
         <table>
             <thead>
                 <tr>
@@ -477,7 +550,7 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getDownloadUserHeaderHTML() + `
 
     <div class="container">
         <div class="card">

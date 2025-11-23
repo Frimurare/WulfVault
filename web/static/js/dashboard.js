@@ -422,7 +422,7 @@ function showCreateRequestModal() {
         modal.style.display = 'flex';
         // Reset form
         document.getElementById('fileRequestForm').reset();
-        document.getElementById('requestMaxSize').value = 100;
+        document.getElementById('requestMaxSize').value = 1; // Default 1 GB
     }
 }
 
@@ -438,10 +438,13 @@ function submitFileRequest(event) {
 
     const title = document.getElementById('requestTitle').value;
     const message = document.getElementById('requestMessage').value;
-    const maxSizeMB = document.getElementById('requestMaxSize').value;
+    const maxSizeGB = document.getElementById('requestMaxSize').value;
     const recipientEmail = document.getElementById('requestRecipientEmail').value;
 
-    console.log('Creating file request:', {title, message, maxSizeMB, recipientEmail});
+    // Convert GB to MB for backend (backend expects MB)
+    const maxSizeMB = Math.round(parseFloat(maxSizeGB) * 1024);
+
+    console.log('Creating file request:', {title, message, maxSizeGB, maxSizeMB, recipientEmail});
 
     const data = new FormData();
     data.append('title', title);

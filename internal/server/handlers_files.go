@@ -497,9 +497,11 @@ func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.
 // handleAuthenticatedDownload handles downloads that require authentication
 func (s *Server) handleAuthenticatedDownload(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo) {
 	// First check if user is logged in as regular user or admin
-	if user, ok := userFromContext(r.Context()); ok {
+	// NOTE: /d/ route doesn't use requireAuth middleware, so we need to manually check session
+	user, err := s.getUserFromSession(r)
+	if err == nil && user != nil {
 		// User is already logged in as regular user/admin - allow download
-		log.Printf("User %s (%s) downloading file %s with existing user account", user.Name, user.Email, fileInfo.Name)
+		log.Printf("Regular user %s (%s) authenticated for file download", user.Name, user.Email)
 		s.performDownload(w, r, fileInfo, nil)
 		return
 	}
@@ -626,32 +628,25 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	// If this is a new account, also set global download session for dashboard access
-	if isNewAccount {
-		log.Printf("🔐 Setting up global session for new download account: %s", email)
-		sessionEmail, err := auth.CreateDownloadAccountSession(account.Id)
-		if err != nil {
-			log.Printf("❌ Warning: Could not create global session for new account: %v", err)
-		} else {
-			log.Printf("✅ Global download_session cookie set for: %s", sessionEmail)
-			http.SetCookie(w, &http.Cookie{
-				Name:     "download_session",
-				Value:    sessionEmail,
-				Path:     "/",
-				Expires:  time.Now().Add(24 * time.Hour),
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-			})
-		}
+	// Set global download session for dashboard access (both new and existing accounts)
+	log.Printf("🔐 Setting up global session for download account: %s (new: %v)", email, isNewAccount)
+	sessionEmail, err := auth.CreateDownloadAccountSession(account.Id)
+	if err != nil {
+		log.Printf("❌ Warning: Could not create global session: %v", err)
+	} else {
+		log.Printf("✅ Global download_session cookie set for: %s", sessionEmail)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "download_session",
+			Value:    sessionEmail,
+			Path:     "/",
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
 	}
 
-	// For new accounts, render a special page that downloads the file and redirects to dashboard
-	if isNewAccount {
-		s.performDownloadWithRedirect(w, r, fileInfo, account)
-	} else {
-		// Perform normal download
-		s.performDownload(w, r, fileInfo, account)
-	}
+	// All download accounts get the redirect page (downloads file + redirects to dashboard)
+	s.performDownloadWithRedirect(w, r, fileInfo, account)
 }
 
 // performDownload performs the actual file download
@@ -1638,19 +1633,28 @@ func (s *Server) performDownloadWithRedirect(w http.ResponseWriter, r *http.Requ
 		}
 	}()
 
-	log.Printf("File downloaded: %s (%s) by %s (new account - redirecting to dashboard)", fileInfo.Name, fileInfo.Size, account.Email)
+	log.Printf("File download initiated: %s (%s) by %s (redirecting to dashboard)", fileInfo.Name, fileInfo.Size, account.Email)
+
+	// Check if this is a newly created account (created within last 30 seconds)
+	isNewAccount := time.Now().Unix()-account.CreatedAt < 30
 
 	// Render HTML page that downloads file and redirects to dashboard
 	downloadURL := "/d/" + fileInfo.Id
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	pageTitle := "Download"
+	if isNewAccount {
+		pageTitle = "Account Created"
+	}
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Account Created - ` + s.config.CompanyName + `</title>
+    <title>` + pageTitle + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1744,15 +1748,35 @@ func (s *Server) performDownloadWithRedirect(w http.ResponseWriter, r *http.Requ
     <div class="success-container">
         <div class="success-icon">✓</div>
 
-        <h1>Account Created Successfully!</h1>
+        <h1>` + func() string {
+		if isNewAccount {
+			return "Account Created Successfully!"
+		}
+		return "Download Started!"
+	}() + `</h1>
 
-        <div class="info-box">
+        <div class="info-box">`
+
+	if isNewAccount {
+		html += `
             <p><strong>✓</strong> Your download account has been created</p>
             <p><strong>✓</strong> You are now logged in</p>
-            <p><strong>✓</strong> Your file download is starting...</p>
+            <p><strong>✓</strong> Your file download is starting...</p>`
+	} else {
+		html += `
+            <p><strong>✓</strong> You are logged in</p>
+            <p><strong>✓</strong> Your file download is starting...</p>`
+	}
+
+	html += `
         </div>
 
-        <p>Welcome <strong>` + account.Name + `</strong>!</p>
+        <p>` + func() string {
+		if isNewAccount {
+			return "Welcome <strong>" + account.Name + "</strong>!"
+		}
+		return "Welcome back <strong>" + account.Name + "</strong>!"
+	}() + `</p>
         <p>Your file <strong>` + fileInfo.Name + `</strong> is being downloaded.</p>
 
         <div class="spinner"></div>

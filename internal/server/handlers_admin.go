@@ -3397,6 +3397,10 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             margin: 40px auto;
             padding: 0 20px;
         }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
         .info-box {
             background: #fff3cd;
             border: 1px solid #ffc107;
@@ -3405,128 +3409,115 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        table {
-            width: 100%;
+        .file-list {
             background: white;
-            border-radius: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        th, td {
-            padding: 16px;
-            text-align: left;
+        .file-item {
+            padding: 20px 24px;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
         }
-        th {
+        .file-item:hover {
             background: #f9f9f9;
+            padding-left: 28px;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-info h3 {
+            font-size: 16px;
             font-weight: 600;
-            color: #666;
+            color: #333;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+        .file-info p {
             font-size: 14px;
+            color: #666;
+            margin: 4px 0;
         }
-        tr:not(:last-child) td {
-            border-bottom: 1px solid #e0e0e0;
-        }
-        tr:hover {
-            background: #f9f9f9;
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
         }
         .btn {
             padding: 10px 20px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin-right: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-width: 150px;
-            text-align: center;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
         .btn-restore {
-            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            background: #4caf50;
             color: white;
-            border: 2px solid #45a049;
         }
         .btn-restore:hover {
-            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+            background: #45a049;
+            transform: translateY(-1px);
         }
         .btn-delete {
-            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+            background: #f44336;
             color: white;
-            border: 2px solid #da190b;
         }
         .btn-delete:hover {
-            background: linear-gradient(135deg, #da190b 0%, #c41408 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+            background: #da190b;
+            transform: translateY(-1px);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .warning-badge {
+            display: inline-block;
+            background: #ff9800;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
         }
 
-        /* Mobile Responsive Styles */
+        /* Mobile Responsive */
         @media screen and (max-width: 768px) {
             .container {
-                margin: 20px auto !important;
-                padding: 0 10px !important;
+                margin: 20px auto;
+                padding: 0 10px;
             }
-            .info-box {
-                padding: 12px !important;
-                font-size: 14px !important;
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 16px;
             }
-            /* Hide table headers on mobile */
-            table thead {
-                display: none;
+            .file-item:hover {
+                padding-left: 16px;
             }
-            /* Make table, tbody, tr, td block elements */
-            table, table tbody, table tr, table td {
-                display: block;
+            .file-actions {
                 width: 100%;
-            }
-            /* Style each row as a card */
-            table tr {
-                margin-bottom: 15px;
-                border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                padding: 15px;
-                background: white;
-            }
-            table tr:hover {
-                background: white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            }
-            /* Style table cells with labels */
-            table td {
-                padding: 8px 0 !important;
-                border: none !important;
-                position: relative;
-                padding-left: 50% !important;
-                text-align: right;
-            }
-            table td:before {
-                content: attr(data-label);
-                position: absolute;
-                left: 0;
-                width: 45%;
-                padding-right: 10px;
-                font-weight: 600;
-                color: #666;
-                text-align: left;
-            }
-            /* Make action buttons stack vertically */
-            table td:last-child {
-                text-align: center;
-                padding-left: 0 !important;
-            }
-            table td:last-child:before {
-                display: none;
+                flex-direction: column;
             }
             .btn {
-                display: block;
                 width: 100%;
-                margin: 5px 0 !important;
-                padding: 12px 16px !important;
-                font-size: 15px !important;
             }
         }
     </style>
@@ -3534,33 +3525,20 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 <body>
     ` + s.getAdminHeaderHTML("") + `
     <div class="container">
-        <h2 style="margin-bottom: 20px;">Trash (Deleted Files)</h2>
+        <h2>🗑️ Trash (Deleted Files)</h2>
 
         <div class="info-box">
             ⚠️ Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Owner</th>
-                    <th>Size</th>
-                    <th>Deleted At</th>
-                    <th>Deleted By</th>
-                    <th>Days Left</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>`
+        <div class="file-list">`
 
 	if len(files) == 0 {
 		html += `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
-                        Trash is empty
-                    </td>
-                </tr>`
+            <div class="empty-state">
+                <div class="empty-state-icon">🎉</div>
+                <p>Trash is empty</p>
+            </div>`
 	}
 
 	for _, f := range files {
@@ -3592,36 +3570,41 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 			daysLeft = 0
 		}
 
+		// Warning badge for files close to permanent deletion
+		warningBadge := ""
+		if daysLeft <= 2 {
+			warningBadge = `<span class="warning-badge">⚠️ ` + fmt.Sprintf("%d days left", daysLeft) + `</span>`
+		}
+
 		html += fmt.Sprintf(`
-                <tr>
-                    <td data-label="File Name">📄 %s</td>
-                    <td data-label="Owner">%s</td>
-                    <td data-label="Size">%s</td>
-                    <td data-label="Deleted At">%s</td>
-                    <td data-label="Deleted By">%s</td>
-                    <td data-label="Days Left">%d days</td>
-                    <td data-label="Actions">
-                        <button class="btn btn-restore" onclick="restoreFile('%s')">
-                            ♻️ Restore
-                        </button>
-                        <button class="btn btn-delete" onclick="permanentDelete('%s')">
-                            🗑️ Delete Forever
-                        </button>
-                    </td>
-                </tr>`,
-			f.Name,
-			userName,
+            <div class="file-item">
+                <div class="file-info">
+                    <h3>📄 %s%s</h3>
+                    <p>Owner: %s • Size: %s • Deleted: %s</p>
+                    <p>Deleted by: %s • Auto-delete in: %d days</p>
+                </div>
+                <div class="file-actions">
+                    <button class="btn btn-restore" onclick="restoreFile('%s')">
+                        ♻️ Restore
+                    </button>
+                    <button class="btn btn-delete" onclick="permanentDelete('%s')">
+                        🗑️ Delete Forever
+                    </button>
+                </div>
+            </div>`,
+			template.HTMLEscapeString(f.Name),
+			warningBadge,
+			template.HTMLEscapeString(userName),
 			f.Size,
 			deletedAt.Format("2006-01-02 15:04"),
-			deletedByName,
+			template.HTMLEscapeString(deletedByName),
 			daysLeft,
 			f.Id,
 			f.Id)
 	}
 
 	html += `
-            </tbody>
-        </table>
+        </div>
     </div>
 
     <script>
@@ -3667,7 +3650,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             }
         }
     </script>
-    
+
 </body>
 </html>`
 
