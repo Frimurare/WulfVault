@@ -1269,7 +1269,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 	w.Write([]byte(html))
 }
 
-// renderUserTeams renders the user teams page
+// renderUserTeams renders the user teams page with dashboard-style UI
 func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams []*models.TeamWithMembers) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -1289,42 +1289,71 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             background: #f5f5f5;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 40px auto;
             padding: 0 20px;
         }
-        .teams-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 24px;
-            margin-top: 24px;
+        .page-header {
+            margin-bottom: 32px;
         }
-        .team-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .team-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .team-card h3 {
-            color: #111;
+        .page-header h2 {
+            color: #1a1a2e;
+            font-size: 28px;
             margin-bottom: 8px;
         }
-        .team-card p {
+        .page-header p {
+            color: #666;
+            font-size: 15px;
+        }
+        .team-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .team-item {
+            padding: 20px 24px;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .team-item:hover {
+            background: #f9f9f9;
+            padding-left: 28px;
+        }
+        .team-item:last-child {
+            border-bottom: none;
+        }
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .team-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .team-description {
             color: #666;
             font-size: 14px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .team-stats {
             display: flex;
+            flex-wrap: wrap;
             gap: 16px;
-            font-size: 13px;
+            font-size: 14px;
             color: #666;
+        }
+        .team-stats span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .badge {
             padding: 4px 12px;
@@ -1334,22 +1363,37 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             background: #e0e7ff;
             color: #3730a3;
         }
+        .badge.owner {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge.admin {
+            background: #dbeafe;
+            color: #1e40af;
+        }
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
+            padding: 80px 20px;
             color: #666;
         }
         .empty-state h3 {
             margin-bottom: 12px;
             color: #333;
+            font-size: 20px;
         }
 
         @media screen and (max-width: 768px) {
             .container {
                 padding: 0 15px !important;
             }
-            .teams-grid {
-                grid-template-columns: 1fr !important;
+            .team-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .team-stats {
+                flex-direction: column;
+                gap: 8px;
             }
         }
     </style>
@@ -1358,46 +1402,54 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
     ` + s.getHeaderHTML(user, user.IsAdmin()) + `
 
     <div class="container">
-        <h2 style="margin-bottom: 8px;">👥 My Teams</h2>
-        <p style="color: #666; margin-bottom: 24px;">Teams you're a member of</p>
-
-        <div class="teams-grid">`
+        <div class="page-header">
+            <h2>👥 My Teams</h2>
+            <p>Teams you're a member of</p>
+        </div>`
 
 	if len(teams) == 0 {
 		html += `
-            <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-state">
                 <h3>No teams yet</h3>
                 <p>You haven't been added to any teams yet. Contact your administrator to get started.</p>
             </div>`
 	} else {
+		html += `
+        <div class="team-list">`
 		for _, team := range teams {
 			roleText := "Member"
+			badgeClass := ""
 			if team.UserRole == models.TeamRoleOwner {
 				roleText = "Owner"
+				badgeClass = "owner"
 			} else if team.UserRole == models.TeamRoleAdmin {
 				roleText = "Admin"
+				badgeClass = "admin"
 			}
 
 			storageUsed := fmt.Sprintf("%.1f GB", float64(team.StorageUsedMB)/1024)
 			storageTotal := fmt.Sprintf("%.1f GB", float64(team.StorageQuotaMB)/1024)
 
 			html += fmt.Sprintf(`
-            <div class="team-card" onclick="viewTeamFiles(%d, '%s')">
-                <h3>%s</h3>
-                <p>%s</p>
+            <div class="team-item" onclick="viewTeamFiles(%d, '%s')">
+                <div class="team-header">
+                    <div class="team-name">👥 %s</div>
+                    <span class="badge %s">%s</span>
+                </div>
+                <div class="team-description">%s</div>
                 <div class="team-stats">
                     <span>👤 %d members</span>
-                    <span>💾 %s / %s</span>
-                    <span class="badge">%s</span>
+                    <span>💾 %s / %s used</span>
                 </div>
             </div>`,
-				team.Id, team.Name, team.Name, team.Description,
-				team.MemberCount, storageUsed, storageTotal, roleText)
+				team.Id, team.Name, team.Name, badgeClass, roleText,
+				team.Description, team.MemberCount, storageUsed, storageTotal)
 		}
+		html += `
+        </div>`
 	}
 
 	html += `
-        </div>
     </div>
 
     <script>
@@ -1405,14 +1457,14 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
             window.location.href = '/teams?id=' + teamId;
         }
     </script>
-    
+
 </body>
 </html>`
 
 	w.Write([]byte(html))
 }
 
-// renderTeamFiles displays all files shared with a specific team
+// renderTeamFiles displays all files shared with a specific team using dashboard-style list
 func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team *models.Team) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -1439,7 +1491,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             background: #f5f5f5;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 40px auto;
             padding: 0 20px;
         }
@@ -1447,7 +1499,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 32px;
         }
         .page-header h2 {
             color: #1a1a2e;
@@ -1472,40 +1524,40 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         .back-btn:hover {
             background: #d0d0d0;
         }
-        .files-table {
+        .file-list {
             background: white;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             overflow: hidden;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .file-item {
+            padding: 20px 24px;
+            border-bottom: 3px solid ` + s.getPrimaryColor() + `;
+            transition: all 0.2s;
         }
-        thead {
-            background: #f8f9fa;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        th {
-            padding: 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #1a1a2e;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        td {
-            padding: 16px;
-            border-top: 1px solid #f0f0f0;
-            color: #333;
-        }
-        tr:hover {
+        .file-item:hover {
             background: #f9f9f9;
+            padding-left: 28px;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
         .file-name {
-            font-weight: 500;
-            color: ` + s.getPrimaryColor() + `;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            display: inline-block;
+            max-width: 600px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
         }
         .file-icon {
             margin-right: 8px;
@@ -1525,6 +1577,18 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         }
         .btn-download:hover {
             opacity: 0.9;
+        }
+        .file-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 14px;
+            color: #666;
+        }
+        .file-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .empty-state {
             text-align: center;
@@ -1553,45 +1617,17 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                 width: 100%;
                 text-align: center;
             }
-            table thead {
-                display: none;
+            .file-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
             }
-            table, table tbody, table tr {
-                display: block;
-                width: 100%;
+            .file-name {
+                max-width: 100%;
             }
-            table tr {
-                margin-bottom: 15px;
-                border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                padding: 15px;
-                background: white;
-            }
-            table td {
-                display: block;
-                text-align: left;
-                padding: 12px 0;
-                border: none;
-                position: relative;
-                min-height: 35px;
-            }
-            table td::before {
-                content: attr(data-label);
-                display: block;
-                font-weight: 600;
-                color: #666;
-                margin-bottom: 4px;
-                font-size: 13px;
-            }
-            table td:last-child {
-                padding-left: 0;
-                text-align: center;
-                padding-top: 15px;
-                margin-top: 10px;
-                border-top: 1px solid #e0e0e0;
-            }
-            table td:last-child::before {
-                display: none;
+            .file-meta {
+                flex-direction: column;
+                gap: 8px;
             }
         }
     </style>
@@ -1616,20 +1652,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
         </div>`
 	} else {
 		html += `
-        <div class="files-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>File Name</th>
-                        <th>Owner</th>
-                        <th>Shared By</th>
-                        <th>Shared Date</th>
-                        <th>Size</th>
-                        <th>Downloads</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>`
+        <div class="file-list">`
 
 		for _, tf := range teamFiles {
 			file, err := database.DB.GetFileByID(tf.FileId)
@@ -1668,26 +1691,28 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 			sharedDate := sharedTime.Format("2006-01-02 15:04")
 
 			html += fmt.Sprintf(`
-                    <tr>
-                        <td data-label="File Name"><span class="file-icon">📄</span><span class="file-name">%s</span></td>
-                        <td data-label="Owner">%s</td>
-                        <td data-label="Shared By">%s</td>
-                        <td data-label="Shared Date">%s</td>
-                        <td data-label="Size">%s</td>
-                        <td data-label="Downloads">%d</td>
-                        <td data-label="Action"><a href="/d/%s" class="btn-download">Download</a></td>
-                    </tr>`, file.Name, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, file.Id)
+            <div class="file-item">
+                <div class="file-header">
+                    <span class="file-name" title="%s"><span class="file-icon">📄</span>%s</span>
+                    <a href="/d/%s" class="btn-download">⬇️ Download</a>
+                </div>
+                <div class="file-meta">
+                    <span>👤 Owner: <strong>%s</strong></span>
+                    <span>📤 Shared by: <strong>%s</strong></span>
+                    <span>📅 Shared: %s</span>
+                    <span>📦 Size: %s</span>
+                    <span>⬇️ Downloads: %d</span>
+                </div>
+            </div>`, file.Name, file.Name, file.Id, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount)
 		}
 
 		html += `
-                </tbody>
-            </table>
         </div>`
 	}
 
 	html += `
     </div>
-    
+
 </body>
 </html>`
 

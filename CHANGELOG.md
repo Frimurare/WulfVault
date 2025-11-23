@@ -1,5 +1,42 @@
 # Changelog
 
+## [4.8.5 Shrimpmaster] - 2025-11-23 🎨 Modern Dashboard UI for Teams
+
+### 🎨 UI/UX Improvements
+
+**Teams View Redesign:**
+- Applied modern dashboard-style UI to Teams listing (previously card-based grid)
+- Teams now display in a clean vertical list with colored borders
+- Smooth hover effect with subtle padding shift for better interactivity
+- Consistent styling with "My Files" dashboard view
+- Improved role badges with distinct colors:
+  - Owner: Yellow/amber badge
+  - Admin: Blue badge
+  - Member: Purple/indigo badge
+
+**Team Files View Redesign:**
+- Replaced traditional table layout with modern dashboard-style file list
+- Files now display as expandable items with colored borders
+- Better information hierarchy with file metadata in organized rows
+- Improved filename handling with ellipsis for long names + tooltip on hover
+- Consistent styling across all file views in the application
+- Mobile-friendly responsive design maintained
+
+**Visual Consistency:**
+- All team views now match the modern dashboard aesthetic
+- Consistent use of primary color borders (3px solid)
+- Uniform hover effects and transitions
+- Better use of whitespace and typography
+- Improved mobile responsiveness for all team views
+
+### 📝 Files Changed
+
+- `internal/server/handlers_teams.go` - Updated `renderUserTeams()` and `renderTeamFiles()` with new UI
+- `cmd/server/main.go` - Version bump to 4.8.5 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
 ## [4.8.0 Shotgun] - 2025-11-23 🎨 UI Improvements + Download Time Tracking + Unified Authentication
 
 ### 🎨 UI/UX Improvements
