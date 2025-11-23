@@ -1,5 +1,173 @@
 # Changelog
 
+## [4.9.5 Silverbullet] - 2025-11-23 📏 File Request Capacity Upgrade
+
+### ✨ New Features
+
+**File Request Size Limits - Now in Gigabytes:**
+- **CHANGED:** File request max size now uses **GB instead of MB** for better usability
+- **Maximum file size:** Increased from 5GB to **15GB**
+- **Default size:** Changed from 100MB to **1GB** (more practical for modern files)
+- **User Interface:** Cleaner GB-based input with 0.1 GB increments
+- **Backend:** Automatically converts GB to MB for internal processing
+
+**Technical Details:**
+- Input field: `min="0.1"` `max="15"` `step="0.1"` `value="1"`
+- JavaScript converts GB to MB: `Math.round(parseFloat(maxSizeGB) * 1024)`
+- Backend still expects `max_file_size_mb` for compatibility
+- Help text: "Maximum size per file (1-15 GB, default: 1 GB)"
+
+### 📝 Files Changed
+
+- `internal/server/handlers_user.go` - Updated file request form UI (GB instead of MB)
+- `web/static/js/dashboard.js` - Added GB to MB conversion, updated default to 1GB
+- `cmd/server/main.go` - Version bump to 4.9.5 Silverbullet
+- `CHANGELOG.md` - This changelog
+
+---
+
+## [4.9.4 Shrimpmaster] - 2025-11-23 🔒 Login Security Enhancement
+
+### 🐛 Bug Fixes
+
+**Double-Login Prevention:**
+- **FIXED:** Intermittent issue where users had to login twice before being redirected
+- **Root Cause:** Users could accidentally double-click login button or browser auto-filled and resubmitted form
+- **Solution:** Added JavaScript to prevent double form submission
+  - Login button disables immediately after first click
+  - Button text changes to "Logging in..." to provide feedback
+  - Prevents multiple form submissions to `/login` endpoint
+- **Impact:** Users now reliably redirected to dashboard after single successful login
+- **Location:** `internal/server/handlers_auth.go:323-341` (JavaScript), `300-306` (CSS)
+
+### 🎨 UI/UX Improvements
+
+**Login Button Visual States:**
+- Added disabled button styling (grayed out, cursor: not-allowed)
+- Hover effect only applies when button is enabled
+- Clear visual feedback during login process
+
+### 📝 Files Changed
+
+- `internal/server/handlers_auth.go` - Added double-submission prevention JavaScript and disabled button styles
+- `cmd/server/main.go` - Version bump to 4.9.4 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
+## [4.9.3 Shrimpmaster] - 2025-11-23 ✨ Download User File Access
+
+### ✨ New Features
+
+**Available Files for Download Users:**
+- **NEW:** Download users can now see and re-download files they have access to
+- Added "📁 Available Files" section to download user dashboard
+- Shows all active files the user has previously downloaded
+- Displays file information:
+  - File name and size
+  - Expiration time ("Expires in X days/hours" or "Never expires")
+  - Download limits ("X downloads remaining" or "Unlimited downloads")
+- Direct download button for each file
+- Files must be:
+  - Not deleted
+  - Not expired (or unlimited time)
+  - Have downloads remaining (or unlimited downloads)
+- Files are sorted by most recent download first
+
+**Database Function:**
+- Added `GetAccessibleFilesByDownloadAccount()` to retrieve available files
+- Uses JOIN between Files and DownloadLogs tables
+- Filters for active, non-expired files with download capacity
+
+### 📝 Files Changed
+
+- `internal/database/downloads.go` - Added `GetAccessibleFilesByDownloadAccount()` function
+- `internal/server/handlers_download_user.go` - Updated dashboard to show available files
+- `internal/server/header.go` - Updated download user navigation ("Dashboard" instead of "My Downloads")
+- `cmd/server/main.go` - Version bump to 4.9.3 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
+## [4.9.2 Shrimpmaster] - 2025-11-23 🔧 Download User Dashboard Fix
+
+### 🐛 Bug Fixes
+
+**Download User Dashboard Header:**
+- **FIXED:** Download users (external recipients) were shown admin navigation header
+- **Root Cause:** `renderDownloadDashboard()` incorrectly called `getAdminHeaderHTML()`
+- **Solution:** Created new `getDownloadUserHeaderHTML()` function with proper navigation
+- **Navigation:** Now shows "My Downloads", "Account Settings", and "Logout"
+- **Impact:** Download users now see correct navigation without admin buttons
+- **Location:** `internal/server/header.go:25-111`, `internal/server/handlers_download_user.go:325,480`
+
+**Download Dashboard Redirect:**
+- Verified automatic redirect to `/download/dashboard` after file download works correctly
+- Users are taken to their download history after successful file download
+- Already implemented in `performDownloadWithRedirect()` function
+
+### 📝 Files Changed
+
+- `internal/server/header.go` - Added `getDownloadUserHeaderHTML()` function
+- `internal/server/handlers_download_user.go` - Updated all pages to use new header
+- `cmd/server/main.go` - Version bump to 4.9.2 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
+## [4.9.1 Shrimpmaster] - 2025-11-23 🐛 Audit Logs Hotfix
+
+### 🐛 Bug Fixes
+
+**Audit Logs Table Rendering:**
+- Fixed audit logs table details column word-wrapping
+- Changed from `word-break` to `word-wrap` with `white-space: normal`
+- Increased max-width to 400px for better readability
+- Table columns now display correctly without vertical stacking
+
+### 📝 Files Changed
+
+- `internal/server/handlers_audit_log.go` - Fixed `.details-cell` CSS styling
+- `cmd/server/main.go` - Version bump to 4.9.1 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
+## [4.9.0 Shrimpmaster] - 2025-11-23 🐛 Critical Auth Fix + UI Updates
+
+### 🔥 Critical Bug Fixes
+
+**Authentication Bug - Logged in users not recognized:**
+- **FIXED:** Logged-in users (regular users and admins) were not recognized when downloading files with "Require recipient authentication" enabled
+- **Root Cause:** The `/d/` download route didn't use `requireAuth` middleware, so user context was never set
+- **Solution:** Modified `handleAuthenticatedDownload()` to manually check session cookies via `getUserFromSession()`
+- **Impact:** Users can now seamlessly download authenticated files without being prompted to login again
+- **Location:** `internal/server/handlers_files.go:498-507`
+
+### 🐛 Bug Fixes
+
+**Audit Logs Table Overflow:**
+- Fixed long session text causing horizontal scrolling in Audit Logs table
+- Added `word-break: break-all` and `max-width` constraints to session column
+- Table now properly wraps long text without breaking layout
+
+**Trash View UI Update:**
+- Updated Trash view to use modern dashboard-style list layout
+- Replaced old table layout with dashboard-style file list
+- Added consistent 3px colored borders and hover effects
+- Improved visual consistency with other admin pages
+- Delete and Restore buttons now use modern styling
+
+### 📝 Files Changed
+
+- `internal/server/handlers_files.go` - Fixed authentication check for logged-in users (lines 498-507)
+- `internal/server/handlers_audit_log.go` - Fixed table overflow with word-break CSS
+- `internal/server/handlers_admin.go` - Updated Trash view with dashboard-style list
+- `cmd/server/main.go` - Version bump to 4.9.0 Shrimpmaster
+- `CHANGELOG.md` - This changelog
+
+---
+
 ## [4.8.8 Shrimpmaster] - 2025-11-23 🎨 Audit Logs UI Consistency Fix
 
 ### 🐛 Bug Fixes

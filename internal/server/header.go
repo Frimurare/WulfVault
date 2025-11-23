@@ -22,6 +22,94 @@ func (s *Server) getAdminHeaderHTML(pageTitle string) string {
 	return s.getHeaderHTML(user, true)
 }
 
+// getDownloadUserHeaderHTML returns branded header HTML for download user pages
+func (s *Server) getDownloadUserHeaderHTML() string {
+	brandingConfig, _ := database.DB.GetBrandingConfig()
+	logoData := brandingConfig["branding_logo"]
+
+	headerCSS := `
+        .header {
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header .logo img {
+            max-height: 50px;
+            max-width: 180px;
+        }
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
+        }
+        .header nav a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .header nav span {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            font-weight: 400;
+        }
+        @media screen and (max-width: 768px) {
+            .header {
+                padding: 15px 20px !important;
+            }
+            .header nav {
+                flex-wrap: wrap;
+                gap: 5px !important;
+            }
+            .header nav a {
+                padding: 6px 12px !important;
+                font-size: 14px !important;
+            }
+        }`
+
+	headerHTML := `
+    <div class="header">
+        <div class="logo">`
+
+	if logoData != "" {
+		headerHTML += `
+            <img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
+	} else {
+		headerHTML += `
+            <h1>` + s.config.CompanyName + `</h1>`
+	}
+
+	headerHTML += `
+        </div>
+        <nav>
+            <a href="/download/dashboard">Dashboard</a>
+            <a href="/download/account-settings">Account Settings</a>
+            <a href="/download/logout" style="margin-left: auto;">Logout</a>
+            <span>v` + s.config.Version + `</span>
+        </nav>
+    </div>`
+
+	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
+}
+
 // getHeaderHTML generates consistent header HTML for all pages
 // forAdmin: true shows admin navigation, false shows user navigation
 func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {

@@ -350,6 +350,64 @@ func (d *Database) GetDownloadLogsByAccountID(accountId int) ([]*models.Download
 	return scanDownloadLogs(rows)
 }
 
+// GetAccessibleFilesByDownloadAccount retrieves all active files that a download account has access to
+// Returns files that the account has previously downloaded and are still active (not expired, have downloads left)
+func (d *Database) GetAccessibleFilesByDownloadAccount(accountId int) ([]*FileInfo, error) {
+	query := `
+		SELECT DISTINCT f.Id, f.Name, f.Size, f.SizeBytes, f.ContentType,
+		       f.UploadDate, f.ExpireAt, f.UnlimitedTime, f.DownloadCount,
+		       f.DownloadsRemaining, f.UnlimitedDownloads, f.RequireAuth,
+		       f.FilePasswordPlain, f.UserId, f.Comment, f.DeletedAt, f.DeletedBy
+		FROM Files f
+		INNER JOIN DownloadLogs dl ON f.Id = dl.FileId
+		WHERE dl.DownloadAccountId = ?
+		  AND f.DeletedAt = 0
+		  AND (f.UnlimitedDownloads = 1 OR f.DownloadsRemaining > 0)
+		  AND (f.UnlimitedTime = 1 OR f.ExpireAt > ?)
+		ORDER BY dl.DownloadedAt DESC`
+
+	rows, err := d.db.Query(query, accountId, time.Now().Unix())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var files []*FileInfo
+	for rows.Next() {
+		f := &FileInfo{}
+		var requireAuth int
+		var unlimitedTime int
+		var unlimitedDownloads int
+		var filePassword sql.NullString
+		var comment sql.NullString
+
+		err := rows.Scan(
+			&f.Id, &f.Name, &f.Size, &f.SizeBytes, &f.ContentType,
+			&f.UploadDate, &f.ExpireAt, &unlimitedTime, &f.DownloadCount,
+			&f.DownloadsRemaining, &unlimitedDownloads, &requireAuth,
+			&filePassword, &f.UserId, &comment, &f.DeletedAt, &f.DeletedBy,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if filePassword.Valid {
+			f.FilePasswordPlain = filePassword.String
+		}
+		if comment.Valid {
+			f.Comment = comment.String
+		}
+
+		f.RequireAuth = requireAuth == 1
+		f.UnlimitedTime = unlimitedTime == 1
+		f.UnlimitedDownloads = unlimitedDownloads == 1
+
+		files = append(files, f)
+	}
+
+	return files, nil
+}
+
 // GetAllDownloadLogs retrieves all download logs
 func (d *Database) GetAllDownloadLogs(limit int) ([]*models.DownloadLog, error) {
 	query := `

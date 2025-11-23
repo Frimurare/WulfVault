@@ -391,12 +391,12 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
         }
 
         .details-cell {
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            max-width: 400px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
             cursor: pointer;
             color: #667eea;
+            white-space: normal;
         }
 
         .details-cell:hover {

@@ -297,8 +297,12 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             cursor: pointer;
             transition: opacity 0.3s;
         }
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             opacity: 0.9;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         .error {
             background: #fee;
@@ -316,6 +320,25 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             font-size: 12px;
         }
     </style>
+    <script>
+        // Prevent double form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.querySelector('form');
+            const submitBtn = document.querySelector('.btn');
+
+            if (loginForm && submitBtn) {
+                loginForm.addEventListener('submit', function(e) {
+                    // Disable button to prevent double-click
+                    if (submitBtn.disabled) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Logging in...';
+                });
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="login-container">
