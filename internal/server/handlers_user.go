@@ -11,6 +11,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -1100,6 +1101,20 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 	}() + `
                     </select>
                 </div>
+                <!-- Search and Sort Controls -->
+                <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="fileSearch" placeholder="🔍 Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
+                    <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
+                        <option value="name-asc">📝 Name (A-Z)</option>
+                        <option value="name-desc">📝 Name (Z-A)</option>
+                        <option value="date-desc" selected>📅 Newest First</option>
+                        <option value="date-asc">📅 Oldest First</option>
+                        <option value="downloads-desc">📊 Most Downloads</option>
+                        <option value="downloads-asc">📊 Least Downloads</option>
+                        <option value="size-desc">📦 Largest First</option>
+                        <option value="size-asc">📦 Smallest First</option>
+                    </select>
+                </div>
             </div>`
 
 	if len(files) == 0 {
@@ -1204,8 +1219,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 				dataTeamsAttr = teamsJSON
 			}
 
+			// Get file extension
+			fileExt := filepath.Ext(f.Name)
+			if len(fileExt) > 0 && fileExt[0] == '.' {
+				fileExt = fileExt[1:] // Remove leading dot
+			}
+
 			html += fmt.Sprintf(`
-                <li class="file-item" data-file-type="%s" data-teams="%s">
+                <li class="file-item" data-file-type="%s" data-teams="%s" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d">
                     <div class="file-info">
                         <h3 title="%s">
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
@@ -1241,7 +1262,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             </button>
                         </div>
                     </div>
-                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
+                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.RequireAuth, template.JSEscapeString(f.FilePasswordPlain), f.Id, template.JSEscapeString(f.Name))
@@ -1952,6 +1973,98 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         item.style.display = 'none';
                     }
                 }
+            });
+        }
+
+        // Search and sort files function
+        function searchAndSortFiles() {
+            const searchTerm = document.getElementById('fileSearch').value.toLowerCase();
+            const sortValue = document.getElementById('fileSort').value;
+            const fileList = document.querySelector('.file-list');
+            const fileItems = Array.from(document.querySelectorAll('.file-item'));
+
+            // Filter by search term
+            fileItems.forEach(item => {
+                const filename = item.getAttribute('data-filename').toLowerCase();
+                const extension = item.getAttribute('data-extension').toLowerCase();
+
+                // Check if currently visible (respecting file type and team filters)
+                const currentDisplay = item.style.display;
+
+                if (currentDisplay === 'none') {
+                    // Already hidden by other filters, leave it hidden
+                    return;
+                }
+
+                // Search in filename and extension
+                if (filename.includes(searchTerm) || extension.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Get only visible items for sorting
+            const visibleItems = fileItems.filter(item => item.style.display !== 'none');
+
+            // Sort visible items
+            visibleItems.sort((a, b) => {
+                let aVal, bVal;
+
+                switch(sortValue) {
+                    case 'name-asc':
+                        aVal = a.getAttribute('data-filename').toLowerCase();
+                        bVal = b.getAttribute('data-filename').toLowerCase();
+                        return aVal.localeCompare(bVal);
+
+                    case 'name-desc':
+                        aVal = a.getAttribute('data-filename').toLowerCase();
+                        bVal = b.getAttribute('data-filename').toLowerCase();
+                        return bVal.localeCompare(aVal);
+
+                    case 'date-asc':
+                        aVal = parseInt(a.getAttribute('data-timestamp'));
+                        bVal = parseInt(b.getAttribute('data-timestamp'));
+                        return aVal - bVal;
+
+                    case 'date-desc':
+                        aVal = parseInt(a.getAttribute('data-timestamp'));
+                        bVal = parseInt(b.getAttribute('data-timestamp'));
+                        return bVal - aVal;
+
+                    case 'downloads-asc':
+                        aVal = parseInt(a.getAttribute('data-downloads'));
+                        bVal = parseInt(b.getAttribute('data-downloads'));
+                        return aVal - bVal;
+
+                    case 'downloads-desc':
+                        aVal = parseInt(a.getAttribute('data-downloads'));
+                        bVal = parseInt(b.getAttribute('data-downloads'));
+                        return bVal - aVal;
+
+                    case 'size-asc':
+                        aVal = parseInt(a.getAttribute('data-size'));
+                        bVal = parseInt(b.getAttribute('data-size'));
+                        return aVal - bVal;
+
+                    case 'size-desc':
+                        aVal = parseInt(a.getAttribute('data-size'));
+                        bVal = parseInt(b.getAttribute('data-size'));
+                        return bVal - aVal;
+
+                    default:
+                        return 0;
+                }
+            });
+
+            // Reorder DOM elements
+            visibleItems.forEach(item => {
+                fileList.appendChild(item);
+            });
+
+            // Append hidden items at the end
+            fileItems.filter(item => item.style.display === 'none').forEach(item => {
+                fileList.appendChild(item);
             });
         }
 

@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "4.9.6 Silverbullet"
+	Version = "4.9.7 Silverbullet"
 )
 
 var (
