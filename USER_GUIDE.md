@@ -523,6 +523,57 @@ docker exec wulfvault env | grep -E "SERVER_URL|PORT|MAX_FILE"
 2. Share link via email, chat, SMS, etc.
 3. Optionally share password separately (if used)
 
+### Searching and Sorting Files
+
+**NEW in v4.9.7:** Powerful search and sorting capabilities to manage your files efficiently.
+
+#### Search Files
+
+**Location:** Above your file list on the dashboard
+
+**How to Search:**
+1. Type in the search bar (🔍 Search files...)
+2. Results filter instantly as you type
+3. Search works for:
+   - **Filename:** Any part of the file name
+   - **Extension:** File type (e.g., "pdf", "docx", "jpg")
+
+**Search Examples:**
+- Type "report" → Finds "Q4-report.pdf", "Monthly_Report.xlsx"
+- Type "pdf" → Shows all PDF files
+- Type "2024" → Finds all files with "2024" in the name
+
+**Search Tips:**
+- Search is case-insensitive
+- Works with all file tabs (All Files, My Files, Team Files)
+- Combines with team filter when viewing team files
+
+#### Sort Files
+
+**Location:** Dropdown menu next to search bar
+
+**Sort Options:**
+- **📝 Name (A-Z)** - Alphabetical order
+- **📝 Name (Z-A)** - Reverse alphabetical
+- **📅 Newest First** - Most recently uploaded (default)
+- **📅 Oldest First** - Oldest files first
+- **📊 Most Downloads** - Most popular files
+- **📊 Least Downloads** - Least downloaded
+- **📦 Largest First** - Biggest files
+- **📦 Smallest First** - Smallest files
+
+**Use Cases:**
+- **Find recent uploads:** Use "Newest First" (default)
+- **Manage storage:** Use "Largest First" to find big files
+- **Find popular content:** Use "Most Downloads"
+- **Clean up old files:** Use "Oldest First"
+
+**Combined Search and Sort:**
+1. Enter search term (e.g., "invoice")
+2. Select sort order (e.g., "Newest First")
+3. Results are filtered AND sorted
+4. Works seamlessly with file type and team filters
+
 ### Understanding Share Modes
 
 #### Direct Download (No Authentication)
