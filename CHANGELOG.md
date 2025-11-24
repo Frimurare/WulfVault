@@ -1,5 +1,63 @@
 # Changelog
 
+## [4.9.6 Silverbullet] - 2025-11-24 🎨 Dashboard Customization & Branding
+
+### ✨ New Features
+
+**Dashboard Style Preference:**
+- **NEW:** Admin can now choose between colorful or plain white dashboard
+- Added checkbox in **Server Settings**: "Use plain white dashboard (instead of colorful)"
+- **Colorful mode (default):**
+  - User dashboard: Light gray background (#f5f5f5)
+  - Admin dashboard: Animated purple/pink gradient with floating effects
+- **Plain mode:**
+  - Both dashboards: Clean white background (#ffffff)
+  - No gradient animations or overlay effects
+- Setting stored in database as `dashboard_style` (values: "colorful" or "plain")
+- Changes apply immediately to all users after saving settings
+
+**File Sharing Wisdom Branding:**
+- **CHANGED:** "File Sharing Wisdom" banner now uses branding colors
+- Previously used hardcoded purple gradient (#667eea → #764ba2)
+- Now uses: `getPrimaryColor()` → `getSecondaryColor()` (branding colors)
+- Applies to both:
+  - User dashboard wisdom banner
+  - Admin dashboard wisdom banner
+- Automatically matches colors configured in **Admin → Branding**
+
+### 🎨 UI/UX Improvements
+
+**Consistent Branding Experience:**
+- All dashboard elements now respect the branding configuration
+- File Sharing Wisdom banner harmonizes with the rest of the interface
+- Admins have full control over visual theme through settings
+
+**Dashboard Background Options:**
+- Users who prefer minimal, distraction-free interfaces can enable plain white mode
+- Users who enjoy visual flair can keep the colorful gradient backgrounds
+- Setting is global and applies to all users in the system
+
+### 📝 Files Changed
+
+- `internal/server/handlers_admin.go` - Added dashboard_style setting handling, updated admin dashboard styling
+- `internal/server/handlers_user.go` - Updated user dashboard styling with branding colors and style preference
+- `cmd/server/main.go` - Version bump to 4.9.6 Silverbullet
+- `CHANGELOG.md` - This changelog
+
+**Modified Locations:**
+- `handlers_admin.go:927-933` - Save dashboard_style setting
+- `handlers_admin.go:3114-3122` - Retrieve dashboard_style setting
+- `handlers_admin.go:3298-3304` - UI checkbox for plain dashboard
+- `handlers_admin.go:1112-1116` - Get dashboard style in renderAdminDashboard
+- `handlers_admin.go:1197-1204` - Admin dashboard body background logic
+- `handlers_admin.go:1210-1226` - Hide gradient overlay in plain mode
+- `handlers_admin.go:1270` - Wisdom banner with branding colors (admin)
+- `handlers_user.go:519-523` - Get dashboard style in renderUserDashboard
+- `handlers_user.go:603-608` - User dashboard body background logic
+- `handlers_user.go:845` - Wisdom banner with branding colors (user)
+
+---
+
 ## [4.9.5 Silverbullet] - 2025-11-23 📏 File Request Capacity Upgrade
 
 ### ✨ New Features

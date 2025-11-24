@@ -924,6 +924,14 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Handle dashboard style preference
+	dashboardStyle := r.FormValue("dashboard_style")
+	if dashboardStyle == "on" {
+		database.DB.SetConfigValue("dashboard_style", "plain")
+	} else {
+		database.DB.SetConfigValue("dashboard_style", "colorful")
+	}
+
 	// Log the action
 	user, _ := userFromContext(r.Context())
 	database.DB.LogAction(&database.AuditLogEntry{
@@ -1101,6 +1109,12 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	mostDownloadedFile string, downloadCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Get dashboard style preference
+	dashboardStyle, _ := database.DB.GetConfigValue("dashboard_style")
+	if dashboardStyle == "" {
+		dashboardStyle = "colorful" // Default to colorful
+	}
+
 	// Get joke of the day
 	joke := models.GetJokeOfTheDay()
 
@@ -1180,15 +1194,24 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            ` + func() string {
+		if dashboardStyle == "plain" {
+			return "background: #ffffff;"
+		}
+		return `background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             background-size: 200% 200%;
-            animation: gradientShift 15s ease infinite;
+            animation: gradientShift 15s ease infinite;`
+	}() + `
             min-height: 100vh;
             position: relative;
         }
 
         body::before {
-            content: '';
+            ` + func() string {
+		if dashboardStyle == "plain" {
+			return "display: none;"
+		}
+		return `content: '';
             position: fixed;
             top: 0;
             left: 0;
@@ -1199,7 +1222,8 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
                 radial-gradient(circle at 80% 80%, rgba(255, 107, 237, 0.3), transparent 50%),
                 radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2), transparent 50%);
             pointer-events: none;
-            z-index: 0;
+            z-index: 0;`
+	}() + `
         }
 
         .main-content {
@@ -1259,10 +1283,10 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         }
 
         .wisdom-banner {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
             box-shadow:
-                0 20px 60px rgba(102, 126, 234, 0.4),
-                0 10px 30px rgba(118, 75, 162, 0.3);
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                0 10px 30px rgba(0, 0, 0, 0.15);
         }
 
         /* Twemoji image sizing */
@@ -3102,6 +3126,16 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 			auditLogMaxSizeMB = "100"
 		}
 	}
+
+	// Get dashboard style preference
+	dashboardStyle, _ := database.DB.GetConfigValue("dashboard_style")
+	if dashboardStyle == "" {
+		dashboardStyle = "colorful" // Default to colorful
+	}
+	dashboardStyleChecked := ""
+	if dashboardStyle == "plain" {
+		dashboardStyleChecked = "checked"
+	}
 	port, _ := database.DB.GetConfigValue("port")
 	if port == "" {
 		port = s.config.Port
@@ -3275,6 +3309,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                     <label for="audit_log_max_size_mb">Audit Log Max Size (MB)</label>
                     <input type="number" id="audit_log_max_size_mb" name="audit_log_max_size_mb" value="` + auditLogMaxSizeMB + `" min="10" max="10000" required>
                     <p class="help-text">Maximum database size for audit logs before automatic cleanup of oldest entries (default: 100 MB)</p>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="dashboard_style" name="dashboard_style" ` + dashboardStyleChecked + ` style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
+                        <span>Use plain white dashboard (instead of colorful)</span>
+                    </label>
+                    <p class="help-text">Enable this option for a clean white dashboard background instead of the colorful gradient</p>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save Settings</button>

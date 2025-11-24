@@ -288,6 +288,7 @@ Settings are applied in this order (later overrides earlier):
 - ✅ `MAX_FILE_SIZE_MB` - Change via Admin → Settings
 - ✅ `DEFAULT_QUOTA_MB` - Change via Admin → Settings
 - ✅ `TRASH_RETENTION_DAYS` - Change via Admin → Settings
+- ✅ `DASHBOARD_STYLE` - Change via Admin → Settings (colorful or plain white)
 - ✅ Branding (logo, colors, company name)
 - ✅ Per-user storage quotas
 
@@ -972,6 +973,35 @@ Click on any file to see:
 3. Save
 
 **Example:** "Acme Corporation File Sharing"
+
+### Dashboard Style
+
+**Choose Dashboard Appearance:**
+
+WulfVault offers two dashboard style options configurable via **Admin → Server Settings**:
+
+**Colorful Dashboard (Default):**
+- User dashboard: Light gray background (#f5f5f5)
+- Admin dashboard: Animated purple/pink gradient with floating effects
+- Visual flair and modern aesthetic
+- Engaging user experience
+
+**Plain White Dashboard:**
+- Both dashboards: Clean white background (#ffffff)
+- Minimal, distraction-free interface
+- Professional and simple look
+- No gradient animations or overlay effects
+
+**To Change Dashboard Style:**
+1. Go to **Admin → Server Settings**
+2. Check/uncheck **"Use plain white dashboard (instead of colorful)"**
+3. Click **"Save Settings"**
+4. Changes apply immediately to all users
+
+**File Sharing Wisdom Banner:**
+- Automatically uses your branding colors (Primary → Secondary gradient)
+- Configured colors in **Admin → Branding** apply to the wisdom banner
+- Harmonizes with your overall branding theme
 
 ---
 
