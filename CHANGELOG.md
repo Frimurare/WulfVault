@@ -1,5 +1,35 @@
 # Changelog
 
+## [4.9.8 Silverbullet] - 2025-11-25 🔍 Admin File Search Complete
+
+### ✨ New Features
+
+**Admin All Files Search:**
+- **NEW:** Added search and sort functionality to Admin → All Files page
+- Same powerful search as user dashboard
+- Additional sort option: Sort by User (A-Z / Z-A)
+- Search also includes username filter
+
+**Enhanced Admin Search:**
+- Search by filename, extension, or username
+- 10 sort options including user-based sorting
+- Real-time filtering as you type
+- Maintains consistency with user dashboard interface
+
+### 📝 Files Changed
+
+- `internal/server/handlers_admin.go` - Added search UI, data attributes, and JavaScript to admin files page
+- `cmd/server/main.go` - Version bump to 4.9.8 Silverbullet
+- `CHANGELOG.md` - This changelog
+
+**Modified Locations:**
+- `handlers_admin.go:2716-2731` - Search and sort UI controls
+- `handlers_admin.go:2783-2790` - File extension extraction and data attributes (including username)
+- `handlers_admin.go:2804-2806` - Updated sprintf with new parameters
+- `handlers_admin.go:2924-3017` - `searchAndSortFiles()` JavaScript function with user sort
+
+---
+
 ## [4.9.7 Silverbullet] - 2025-11-24 🔍 File Search and Advanced Sorting
 
 ### ✨ New Features
