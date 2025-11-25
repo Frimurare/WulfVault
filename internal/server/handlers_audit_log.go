@@ -391,16 +391,41 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
         }
 
         .details-cell {
-            max-width: 400px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             cursor: pointer;
             color: #667eea;
-            white-space: normal;
         }
 
         .details-cell:hover {
             text-decoration: underline;
+        }
+
+        .entity-cell {
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: help;
+        }
+
+        .ip-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .user-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .timestamp-cell {
+            white-space: nowrap;
+            font-size: 12px;
         }
 
         .details-modal {
@@ -482,13 +507,140 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
             color: #999;
         }
 
+        @media (max-width: 1200px) {
+            .details-cell {
+                max-width: 150px;
+            }
+
+            .entity-cell {
+                max-width: 120px;
+            }
+
+            .user-cell {
+                max-width: 150px;
+            }
+        }
+
+        /* Mobile card layout */
+        .mobile-log-cards {
+            display: none;
+        }
+
+        .log-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .log-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .log-card-id {
+            font-size: 11px;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .log-card-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .log-card-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 80px;
+        }
+
+        .log-card-value {
+            flex: 1;
+            text-align: right;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .log-card-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #667eea;
+            cursor: pointer;
+            word-break: break-word;
+        }
+
+        .log-card-details:hover {
+            background: #e9ecef;
+        }
+
         @media (max-width: 768px) {
             .filters-grid {
                 grid-template-columns: 1fr;
             }
 
-            .table-container {
-                font-size: 12px;
+            .filter-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .container {
+                padding: 0 10px;
+                margin: 20px auto;
+            }
+
+            .filters-card {
+                padding: 15px;
+            }
+
+            /* Hide table, show cards */
+            .table-container table {
+                display: none;
+            }
+
+            .mobile-log-cards {
+                display: block;
+                padding: 15px;
+            }
+
+            .logs-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .pagination {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .pagination-buttons {
+                width: 100%;
+            }
+
+            .pagination-buttons .btn {
+                flex: 1;
+            }
+
+            .details-modal-content {
+                margin: 20px;
+                padding: 20px;
+                max-width: calc(100% - 40px);
             }
         }
     </style>
@@ -577,14 +729,14 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Timestamp</th>
-                            <th>User</th>
-                            <th>Action</th>
-                            <th>Entity</th>
-                            <th>Details</th>
-                            <th>IP</th>
-                            <th>Status</th>
+                            <th style="width: 60px;">ID</th>
+                            <th style="width: 140px;">Timestamp</th>
+                            <th style="width: 180px;">User</th>
+                            <th style="width: 160px;">Action</th>
+                            <th style="width: 150px;">Entity</th>
+                            <th style="min-width: 200px;">Details</th>
+                            <th style="width: 120px;">IP</th>
+                            <th style="width: 80px;">Status</th>
                         </tr>
                     </thead>
                     <tbody id="logs-tbody">
@@ -593,6 +745,11 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Mobile Cards View -->
+            <div class="mobile-log-cards" id="mobile-cards">
+                <div class="loading">Loading audit logs...</div>
             </div>
 
             <div class="pagination">
@@ -641,13 +798,16 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
             const modal = document.getElementById('detailsModal');
             const jsonDiv = document.getElementById('detailsJson');
 
+            // Unescape the details string
+            const unescaped = details.replace(/\\'/g, "'").replace(/&quot;/g, '"');
+
             // Try to parse and pretty-print JSON
             try {
-                const parsed = JSON.parse(details);
+                const parsed = JSON.parse(unescaped);
                 jsonDiv.textContent = JSON.stringify(parsed, null, 2);
             } catch (e) {
-                // If not valid JSON, just show as-is
-                jsonDiv.textContent = details;
+                // If not valid JSON, just show as-is with better formatting
+                jsonDiv.textContent = unescaped;
             }
 
             modal.style.display = 'block';
@@ -699,35 +859,96 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
             }
         }
 
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function formatEntityDisplay(entityType, entityId) {
+            if (!entityType) return '';
+            // For Session entities, just show "Session" without the long ID
+            if (entityType === 'Session') {
+                return 'Session';
+            }
+            // For other entities, show type and truncated ID
+            if (entityId && entityId.length > 20) {
+                return entityType + ' #' + entityId.substring(0, 8) + '...';
+            }
+            return entityType + (entityId ? ' #' + entityId : '');
+        }
+
         function renderLogs(logs) {
             const tbody = document.getElementById('logs-tbody');
+            const mobileCards = document.getElementById('mobile-cards');
 
             if (!logs || logs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="no-data">No audit logs found</td></tr>';
+                mobileCards.innerHTML = '<div class="no-data">No audit logs found</div>';
                 document.getElementById('logs-stats').textContent = 'No entries';
                 return;
             }
 
-            let html = '';
+            let tableHtml = '';
+            let cardsHtml = '';
+
             logs.forEach(log => {
                 const badgeClass = getActionBadgeClass(log.action);
                 const statusBadge = log.success
-                    ? '<span class="badge badge-success">Success</span>'
-                    : '<span class="badge badge-danger">Failed</span>';
+                    ? '<span class="badge badge-success">✓</span>'
+                    : '<span class="badge badge-danger">✗</span>';
 
-                html += '<tr>' +
+                const entityDisplay = formatEntityDisplay(log.entity_type, log.entity_id);
+                const detailsPreview = truncateText(log.details, 50);
+                const fullDetails = log.details.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const actionText = log.action.replace(/_/g, ' ');
+
+                // Table row
+                tableHtml += '<tr>' +
                     '<td>' + log.id + '</td>' +
-                    '<td>' + formatTimestamp(log.timestamp) + '</td>' +
-                    '<td>' + log.user_email + '</td>' +
-                    '<td><span class="badge ' + badgeClass + '">' + log.action + '</span></td>' +
-                    '<td>' + log.entity_type + (log.entity_id ? ' #' + log.entity_id : '') + '</td>' +
-                    '<td class="details-cell" title="' + log.details.replace(/"/g, '&quot;') + '" onclick="showDetails(\'' + log.details.replace(/'/g, "\\'") + '\')">' + log.details + '</td>' +
-                    '<td>' + log.ip_address + '</td>' +
+                    '<td class="timestamp-cell">' + formatTimestamp(log.timestamp) + '</td>' +
+                    '<td class="user-cell" title="' + log.user_email + '">' + log.user_email + '</td>' +
+                    '<td><span class="badge ' + badgeClass + '">' + actionText + '</span></td>' +
+                    '<td class="entity-cell" title="' + log.entity_type + (log.entity_id ? ' #' + log.entity_id : '') + '">' + entityDisplay + '</td>' +
+                    '<td class="details-cell" title="Click to view full details" onclick="showDetails(\'' + fullDetails.replace(/\\/g, '\\\\') + '\')">' + detailsPreview + '</td>' +
+                    '<td class="ip-cell">' + log.ip_address + '</td>' +
                     '<td>' + statusBadge + '</td>' +
                     '</tr>';
+
+                // Mobile card
+                cardsHtml += '<div class="log-card">' +
+                    '<div class="log-card-header">' +
+                    '<span class="log-card-id">#' + log.id + '</span>' +
+                    statusBadge +
+                    '</div>' +
+                    '<div class="log-card-row">' +
+                    '<span class="log-card-label">Time:</span>' +
+                    '<span class="log-card-value">' + formatTimestamp(log.timestamp) + '</span>' +
+                    '</div>' +
+                    '<div class="log-card-row">' +
+                    '<span class="log-card-label">User:</span>' +
+                    '<span class="log-card-value">' + log.user_email + '</span>' +
+                    '</div>' +
+                    '<div class="log-card-row">' +
+                    '<span class="log-card-label">Action:</span>' +
+                    '<span class="log-card-value"><span class="badge ' + badgeClass + '">' + actionText + '</span></span>' +
+                    '</div>' +
+                    '<div class="log-card-row">' +
+                    '<span class="log-card-label">Entity:</span>' +
+                    '<span class="log-card-value">' + entityDisplay + '</span>' +
+                    '</div>' +
+                    '<div class="log-card-row">' +
+                    '<span class="log-card-label">IP:</span>' +
+                    '<span class="log-card-value">' + log.ip_address + '</span>' +
+                    '</div>' +
+                    '<div class="log-card-details" onclick="showDetails(\'' + fullDetails.replace(/\\/g, '\\\\') + '\')">' +
+                    '📋 ' + detailsPreview +
+                    '</div>' +
+                    '</div>';
             });
 
-            tbody.innerHTML = html;
+            tbody.innerHTML = tableHtml;
+            mobileCards.innerHTML = cardsHtml;
             document.getElementById('logs-stats').textContent = 'Showing ' + (currentOffset + 1) + '-' + Math.min(currentOffset + limit, totalCount) + ' of ' + totalCount + ' entries';
         }
 
