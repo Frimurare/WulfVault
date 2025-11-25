@@ -1,5 +1,81 @@
 # Changelog
 
+## [4.9.7 Silverbullet] - 2025-11-24 🔍 File Search and Advanced Sorting
+
+### ✨ New Features
+
+**File Search Functionality:**
+- **NEW:** Search bar added above file lists on user dashboard
+- Search by filename or file extension (e.g., "pdf", "report", ".docx")
+- Real-time search as you type
+- Works seamlessly with existing file type and team filters
+
+**Advanced File Sorting:**
+- **NEW:** Sort dropdown with multiple options:
+  - 📝 Name (A-Z / Z-A)
+  - 📅 Date (Newest First / Oldest First) - Default
+  - 📊 Downloads (Most / Least)
+  - 📦 Size (Largest / Smallest)
+- Sorting preserves search results and filter selections
+- Clean, intuitive UI with emoji indicators
+
+**Enhanced File Metadata:**
+- Added `data-filename`, `data-extension`, `data-size`, `data-timestamp`, `data-downloads` attributes to file items
+- Enables efficient client-side filtering and sorting
+- No additional database queries required
+
+### 🎨 UI/UX Improvements
+
+**Search Bar Design:**
+- Clean, modern input field with search icon (🔍)
+- Responsive design - adapts to mobile screens
+- Smooth border transitions on focus
+- Minimum width of 250px for usability
+
+**Sort Dropdown Design:**
+- Styled with primary brand color border
+- Bold font weight for better visibility
+- Clear emoji icons for each sort option
+- Defaults to "Newest First" for best user experience
+
+### 💡 User Benefits
+
+**Faster File Management:**
+- Quickly find files in large collections
+- No need to scroll through long lists
+- Combine search with sorting for precise results
+
+**Better Organization:**
+- Sort by relevance (downloads) to find popular files
+- Sort by date to find recent uploads
+- Sort by size to manage storage
+
+**Flexible Workflows:**
+- Search works alongside "All Files", "My Files", and "Team Files" tabs
+- Team filter remains functional with search
+- All features work together harmoniously
+
+### 📝 Files Changed
+
+- `internal/server/handlers_user.go` - Added search UI, sorting dropdown, data attributes, and JavaScript functions
+- `cmd/server/main.go` - Version bump to 4.9.7 Silverbullet
+- `CHANGELOG.md` - This changelog
+
+**Modified Locations:**
+- `handlers_user.go:8-21` - Added `path/filepath` import
+- `handlers_user.go:1103-1116` - Search and sort UI controls
+- `handlers_user.go:1222-1228` - File extension extraction and data attributes
+- `handlers_user.go:1265` - Updated sprintf with new parameters
+- `handlers_user.go:1979-2069` - `searchAndSortFiles()` JavaScript function
+
+**Technical Implementation:**
+- Search filters files by checking if search term exists in filename or extension
+- Sorting reorders DOM elements without page reload
+- Hidden files (by filters) stay hidden during search and sort
+- Efficient in-memory operations for instant results
+
+---
+
 ## [4.9.6 Silverbullet] - 2025-11-24 🎨 Dashboard Customization & Branding
 
 ### ✨ New Features
