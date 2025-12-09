@@ -583,7 +583,7 @@ async function uploadFileInChunks(file, metadata, uploadButton) {
     const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let retryCount = 0;
-    const MAX_RETRIES = 5;
+    const MAX_RETRIES = 10;
 
     try {
         // Step 1: Initialize upload
@@ -893,6 +893,38 @@ function showUploadSuccess() {
         speedInfo.style.fontSize = '20px';
         speedInfo.style.fontWeight = 'bold';
     }
+
+    // Add large green "PRESS HERE TO GO BACK" button
+    const overlay = document.getElementById('uploadProgressOverlay');
+    if (overlay) {
+        const backButton = document.createElement('button');
+        backButton.textContent = 'PRESS HERE TO GO BACK';
+        backButton.style.cssText = `
+            margin-top: 40px;
+            padding: 25px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        `;
+        backButton.onmouseover = () => {
+            backButton.style.transform = 'translateY(-3px)';
+            backButton.style.boxShadow = '0 12px 32px rgba(16, 185, 129, 0.5)';
+        };
+        backButton.onmouseout = () => {
+            backButton.style.transform = 'translateY(0)';
+            backButton.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
+        };
+        backButton.onclick = () => window.location.reload();
+        overlay.querySelector('div').appendChild(backButton);
+    }
 }
 
 function showUploadError(error, retryCount) {
@@ -966,12 +998,12 @@ function showRetryIndicator(retryCount) {
     const retryInfo = document.getElementById('uploadRetryInfo');
     if (retryInfo) {
         retryInfo.style.display = 'block';
-        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 5...`;
+        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 10...`;
 
         // Flash animation
         retryInfo.style.animation = 'pulse 1s ease-in-out 3';
 
-        console.log(`Retry ${retryCount}/5: Network interruption detected, retrying upload...`);
+        console.log(`Retry ${retryCount}/10: Network interruption detected, retrying upload...`);
     }
 }
 
