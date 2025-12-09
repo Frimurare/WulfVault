@@ -89,6 +89,17 @@ func (s *Server) Start() error {
 	// GDPR API routes (require authentication)
 	mux.HandleFunc("/api/v1/user/export-data", s.requireAuth(s.handleUserDataExport))
 	mux.HandleFunc("/upload", s.requireAuth(s.handleUpload))
+
+	// Setup tus.io resumable upload handler
+	tusHandler, err := s.setupTusHandler()
+	if err != nil {
+		log.Printf("❌ Failed to setup tus handler: %v", err)
+	} else {
+		// Mount tus handler at /files/ (requires authentication)
+		mux.Handle("/files/", s.requireAuthHandler(tusHandler))
+		log.Println("✅ Resumable upload endpoint mounted at /files/")
+	}
+
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
 	mux.HandleFunc("/file/edit", s.requireAuth(s.handleFileEdit))
@@ -439,4 +450,25 @@ func (s *Server) markTransferInactive(sessionId string) {
 	s.transfersMutex.Lock()
 	defer s.transfersMutex.Unlock()
 	delete(s.activeTransfers, sessionId)
+}
+
+// requireAuthHandler wraps an http.Handler with authentication middleware
+func (s *Server) requireAuthHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := s.getUserFromSession(r)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Update last online
+		database.DB.UpdateUserLastOnline(user.Id)
+
+		// Add user to context
+		ctx := contextWithUser(r.Context(), user)
+		r = r.WithContext(ctx)
+
+		// Call next handler
+		next.ServeHTTP(w, r)
+	})
 }

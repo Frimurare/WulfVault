@@ -888,7 +888,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         }
     </style>
 </head>
-<body>
+<body data-user-id="` + fmt.Sprintf("%d", user.Id) + `">
     ` + s.getHeaderHTML(user, user.IsAdmin()) + `
     <div class="container">
         <div class="joke-section">
@@ -1473,6 +1473,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
     </div>
 
+    <!-- tus.js client for resumable uploads -->
+    <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.1.0/dist/tus.min.js"></script>
     <script src="/static/js/dashboard.js"></script>
     <script>
         function showDownloadHistory(fileId, fileName) {

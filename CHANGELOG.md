@@ -1,5 +1,130 @@
 # Changelog
 
+## [6.0.0 BloodMoon Beta 1] - 2025-12-09 🚀 Resumable Uploads with tus.io
+
+### 🎯 Revolutionary Upload System - Automatic Retry & Resume
+
+**Major Feature: Resumable Uploads**
+- **NEW:** Complete resumable upload system using tus.io protocol
+- **Automatic retry** - Uploads automatically retry if interrupted (up to 5 attempts)
+- **Chunked uploads** - Files uploaded in 5MB chunks for better reliability
+- **Resume from interruption** - Network drops no longer mean starting over
+- **Large file support** - Perfect for multi-gigabyte files like Mordnatten20251025.zip (41GB)
+
+**How It Works:**
+1. File uploaded in 5MB chunks
+2. If network drops, upload pauses automatically
+3. When connection restored, upload resumes from last successful chunk
+4. Up to 5 automatic retry attempts with progressive delays (0s, 1s, 3s, 5s, 10s)
+5. User sees seamless progress - no manual intervention needed
+
+**Technical Implementation:**
+- **Frontend:** tus-js-client v4.1.0 with automatic retry configuration
+- **Backend:** tusd v2 Go library with filestore
+- **Endpoint:** `/files/` for resumable uploads
+- **Chunk size:** 5MB for optimal performance/reliability balance
+- **Metadata:** User ID, filename, settings passed via tus metadata
+
+**User Experience:**
+- Large visual progress overlay (same as v5.0.3)
+- Real-time progress with speed and ETA
+- Automatic retry on network issues - completely transparent to user
+- Green success animation when complete
+- Email notification for files >5GB (inherited from v5.0.3)
+
+**Example Scenario:**
+```
+User uploads 41GB file
+↓
+Progress: 5.2 GB (12%) - Speed: 8.3 MB/s
+↓
+Network drops for 30 seconds
+↓
+Upload automatically retries after 1 second
+↓
+Network restored
+↓
+Upload resumes from 5.2 GB (no data loss)
+↓
+Progress continues: 10.8 GB (26%)
+↓
+Upload completes successfully
+↓
+User receives email confirmation
+```
+
+### 🔧 Technical Changes
+
+**New Files:**
+- `internal/server/handlers_resumable_upload.go` - tus.io handler (~200 lines)
+  - `setupTusHandler()` - Configures tus with filestore
+  - `handleTusEvents()` - Processes upload completion events
+  - `processTusUploadCompleted()` - Finalizes uploads, moves files, creates DB entries
+
+**Modified Files:**
+- `web/static/js/dashboard.js` - Replaced XMLHttpRequest with tus.js client
+- `internal/server/handlers_user.go` - Added tus.js library, added data-user-id attribute
+- `internal/server/server.go` - Integrated tus handler, added requireAuthHandler()
+- `internal/server/context.go` - (no changes, but used for context helpers)
+- `cmd/server/main.go` - Version bump to 6.0.0 BloodMoon Beta 1
+
+**New Dependencies:**
+- `github.com/tus/tusd/v2/pkg/handler` - tus.io Go server
+- `github.com/tus/tusd/v2/pkg/filestore` - File storage backend
+- tus-js-client v4.1.0 (CDN) - JavaScript client
+
+**Upload Flow:**
+1. User selects file and clicks "Upload"
+2. JavaScript creates tus.Upload instance with metadata
+3. tus.js splits file into 5MB chunks
+4. Chunks uploaded to `/files/` endpoint with authentication
+5. Server stores chunks in `.tus` subdirectory
+6. On completion, server moves file to final location
+7. Server creates database entry, calculates SHA1
+8. Server updates user storage quota
+9. Email sent if file >5GB
+10. User sees green success overlay
+11. Dashboard reloads showing new file
+
+**Retry Logic:**
+- Retry delays: [0s, 1s, 3s, 5s, 10s]
+- Exponential backoff for network errors
+- Automatic resume from last successful chunk
+- Transparent to user - progress overlay shows seamless upload
+- After 5 failed retries, shows error message
+
+**Security:**
+- Authentication required via `requireAuthHandler()`
+- Session validation on every chunk upload
+- User ID verified from session, not trusted from client
+- File ownership tracked in database
+- Audit logging for resumable uploads
+
+**Storage:**
+- Temporary storage: `uploads/.tus/` directory
+- Final storage: `uploads/` directory
+- Automatic cleanup of `.tus.info` metadata files
+- SHA1 calculated after complete file assembled
+
+### 🎨 Inherited from v5.0.3
+
+- Large visual upload progress overlay
+- Red "UPLOADING - X%" display (72px text)
+- Green "UPLOAD COMPLETE - 100%" success animation
+- Real-time speed and ETA calculations
+- Email notifications for files >5GB
+- Auto-dismiss after 3 seconds
+
+### 🚀 Future Enhancements (Post-Beta 1)
+
+- SHA256 verification (planned for Beta 2)
+- Pause/Resume UI controls
+- Upload progress persistence across page refreshes
+- Multi-file resumable uploads
+- Bandwidth throttling options
+
+---
+
 ## [5.0.3 FullMoon] - 2025-12-09 🎨 Enhanced Upload UX & Large File Notifications
 
 ### ✨ Major Upload Experience Improvements
