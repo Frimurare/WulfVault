@@ -88,6 +88,56 @@
 - **Audit trail** - Complete log of all upload attempts with IP addresses
 - **Network diagnostics** - Identify users with poor connections or frequent failures
 
+### 🎨 Improved Upload Error Messages
+
+**User-Friendly Error Feedback:**
+- **Enhanced error messages** - Clear, detailed explanations when uploads fail
+- **Actionable guidance** - Tells users exactly what went wrong and how to fix it
+- **Multiple error scenarios** - Handles quota exceeded, network errors, timeouts, server errors
+- **Timeout handling** - Smart timeout (5 min for small files, 10 min for files > 1GB)
+- **Cancel/Abort detection** - Notifies user if upload is cancelled
+
+**Error Message Examples:**
+
+**Storage Quota Exceeded:**
+```
+❌ Upload Failed: Insufficient storage quota
+
+You don't have enough storage space for this file.
+Please delete some files or contact your administrator to increase your quota.
+```
+
+**Network Error:**
+```
+❌ Upload Failed: Network Error
+
+The upload failed due to a network problem. This could be caused by:
+• Lost internet connection
+• Weak or unstable network
+• Firewall or proxy blocking the upload
+• Server timeout
+
+Please check your connection and try again.
+```
+
+**Timeout:**
+```
+❌ Upload Failed: Timeout
+
+The upload took too long and timed out. This usually happens with:
+• Very large files on slow connections
+• Unstable network connection
+• Server overload
+
+Try uploading a smaller file or check your internet connection.
+```
+
+**Benefits:**
+- **Clear communication** - Users know exactly what went wrong
+- **Reduced support tickets** - Users can often fix issues themselves
+- **Better UX** - No more cryptic error messages
+- **Troubleshooting guidance** - Suggests specific actions to resolve issues
+
 ---
 
 ## [5.0.0 FullMoon] - 2025-12-09 📋 Server Logs & Enhanced HTTP Logging
