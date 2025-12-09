@@ -1,5 +1,66 @@
 # Changelog
 
+## [4.9.9 Silverbullet] - 2025-11-25 📱 Audit Log UI Enhancement & Mobile Optimization
+
+### ✨ New Features
+
+**Improved Audit Log Presentation:**
+- **Compact table layout** - No more horizontal scrolling on desktop
+- **Smart text truncation** - Entity and Details columns show preview with full info in modal
+- **Session ID handling** - Long session IDs now display as "Session" instead of cluttering the view
+- **Enhanced readability** - Action names formatted (LOGIN_SUCCESS → LOGIN SUCCESS)
+- **Optimized columns** - Fixed widths for better layout stability
+
+**Mobile Card Layout:**
+- **NEW:** Dedicated mobile view with card-based layout
+- **Touch-friendly** - Cards instead of cramped table on mobile devices
+- **Complete information** - All log details visible in clean, organized cards
+- **Responsive design** - Automatically switches between table and cards based on screen size
+- **Better navigation** - Full-width buttons and vertical layout for mobile
+
+**UI Improvements:**
+- Status indicators simplified to ✓/✗ for compact display
+- IP addresses in monospace font for better readability
+- Truncated user emails with full text on hover
+- Click-to-expand details modal with JSON formatting
+- Responsive filters collapse vertically on mobile
+
+### 🎨 Design Enhancements
+
+**Desktop (>768px):**
+- Optimized column widths prevent horizontal scroll
+- Entity column shows shortened IDs with full text on hover
+- Details preview (50 chars) with click to view full content
+
+**Mobile (<768px):**
+- Card-based layout with clear sections
+- ID and IP hidden to save space (still in full details)
+- Filters stack vertically
+- Full-width action buttons
+- Improved pagination layout
+
+### 📝 Files Changed
+
+- `internal/server/handlers_audit_log.go` - Complete UI overhaul with mobile support
+- `cmd/server/main.go` - Version bump to 4.9.9 Silverbullet
+- `CHANGELOG.md` - This changelog
+
+**Modified Functions:**
+- `renderAdminAuditLogsPage()` - Added mobile card layout HTML and responsive CSS
+- `renderLogs()` JavaScript - Dual rendering for table and mobile cards
+- `formatEntityDisplay()` - Smart entity formatting
+- `truncateText()` - Preview text generation
+
+### 🚀 User Benefits
+
+- **No more horizontal scrolling** - Clean, professional audit log view
+- **Mobile-friendly** - Full audit log access on phones and tablets
+- **Faster scanning** - Compact layout shows more entries at once
+- **Complete details** - Click any entry to see full information
+- **Better UX** - Consistent experience across all devices
+
+---
+
 ## [4.9.8 Silverbullet] - 2025-11-25 🔍 Admin File Search Complete
 
 ### ✨ New Features
