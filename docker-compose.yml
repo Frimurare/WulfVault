@@ -2,33 +2,21 @@ version: '3.8'
 
 services:
   wulfvault:
-    build: .
-    image: wulfvault/wulfvault:latest
+    image: frimurare/wulfvault:latest
     container_name: wulfvault
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/data
-      - ./uploads:/uploads
+      - wulfvault-data:/data
+      - wulfvault-uploads:/uploads
     environment:
       - SERVER_URL=http://localhost:8080
       - PORT=8080
-      - DATA_DIR=/data
-      - UPLOADS_DIR=/uploads
-      - ADMIN_EMAIL=admin@wulfvault.local
-      - ADMIN_PASSWORD=WulfVaultAdmin2024!
       - MAX_FILE_SIZE_MB=5000
       - DEFAULT_QUOTA_MB=10000
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
-# Volumes for persistent data
 volumes:
-  data:
-  uploads:
+  wulfvault-data:
+  wulfvault-uploads:
 

@@ -32,6 +32,9 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/wulfvault .
 
+# Copy static web files (frontend)
+COPY --from=builder /app/web/static ./web/static
+
 # Create directories
 RUN mkdir -p /data /uploads
 
