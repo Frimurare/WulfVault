@@ -5,17 +5,17 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.2] - Bloodmoon 🌑 - 2025-12-09
+## [6.0.2] - BloodMoon 🌙 - 2025-12-09
 
 ### Fixed
 - Improved UI spacing for action buttons across admin pages
-  - Increased top margin on container elements from 40px to 60px
+  - Added 40px padding-top to container elements
   - Better visual separation between navigation header and page content
   - Affects Users, Teams, Trash, and Download Accounts pages
   - Creates more breathing room for "Empty All Trash", "+ Create User", "+ Create Team", and "+ Create Download Account" buttons
 
 ### Changed
-- Updated version display to use new moon emoji 🌑 (keeping the Bloodmoon theme)
+- Removed claude.md from repository (moved to local development environment)
 
 ## [6.0.1] - BloodMoon 🌙 - 2025-12-07
 
