@@ -226,65 +226,8 @@ if (uploadForm) {
             user_agent: navigator.userAgent
         };
 
-        // Create tus upload with automatic retry
-        const upload = new tus.Upload(file, {
-            endpoint: '/files/',
-            retryDelays: [0, 1000, 3000, 5000, 10000], // Retry after 0s, 1s, 3s, 5s, 10s
-            metadata: metadata,
-            chunkSize: 5 * 1024 * 1024, // 5MB chunks
-
-            onError: (error) => {
-                // Mark transfer as inactive
-                if (window.inactivityTracker) {
-                    window.inactivityTracker.markTransferInactive();
-                }
-
-                hideUploadProgressOverlay();
-                console.error('Upload failed:', error);
-
-                let errorMsg = '❌ Upload Failed\n\n';
-                if (error.message) {
-                    errorMsg += error.message + '\n\n';
-                }
-                errorMsg += 'The upload could not be completed after multiple retry attempts. Please try again later.';
-
-                showError(errorMsg);
-                uploadButton.textContent = '📤 Upload File';
-                uploadButton.disabled = false;
-            },
-
-            onProgress: (bytesUploaded, bytesTotal) => {
-                const percentComplete = Math.round((bytesUploaded / bytesTotal) * 100);
-                uploadButton.textContent = `⏳ Uploading... ${percentComplete}%`;
-                updateUploadProgress(percentComplete, bytesUploaded, bytesTotal);
-            },
-
-            onSuccess: () => {
-                // Mark transfer as inactive
-                if (window.inactivityTracker) {
-                    window.inactivityTracker.markTransferInactive();
-                }
-
-                console.log('Upload completed successfully!');
-
-                // Show success with green overlay
-                showUploadSuccess();
-
-                // Reload page after showing success animation
-                setTimeout(() => window.location.reload(), 3000);
-            },
-
-            onAfterResponse: (req, res) => {
-                // Log response for debugging
-                console.log('tus response:', res.getStatus(), res.getHeader('Upload-Offset'));
-            }
-        });
-
-        // Store upload instance for potential pause/resume controls
-        window.currentUpload = upload;
-
-        // Start the upload
-        upload.start();
+        // Start chunked upload
+        uploadFileInChunks(file, metadata, uploadButton);
     });
 }
 
@@ -633,6 +576,121 @@ function escapeHtml(text) {
 }
 
 // ============================================================================
+// CHUNKED UPLOAD IMPLEMENTATION
+// ============================================================================
+
+async function uploadFileInChunks(file, metadata, uploadButton) {
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+
+    try {
+        // Step 1: Initialize upload
+        const initResponse = await fetch('/api/upload/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                filename: file.name,
+                total_size: file.size,
+                metadata: metadata
+            })
+        });
+
+        if (!initResponse.ok) {
+            throw new Error('Failed to initialize upload');
+        }
+
+        const { upload_id } = await initResponse.json();
+        console.log(`Upload initialized: ${upload_id}, ${totalChunks} chunks`);
+
+        // Step 2: Upload chunks
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+            const start = chunkIndex * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const chunk = file.slice(start, end);
+
+            let chunkUploaded = false;
+            let attempts = 0;
+
+            while (!chunkUploaded && attempts < MAX_RETRIES) {
+                try {
+                    const chunkResponse = await fetch(`/api/upload/chunk?upload_id=${upload_id}&chunk_index=${chunkIndex}`, {
+                        method: 'POST',
+                        body: chunk,
+                        credentials: 'same-origin'
+                    });
+
+                    if (!chunkResponse.ok) {
+                        throw new Error(`Chunk ${chunkIndex} upload failed`);
+                    }
+
+                    const result = await chunkResponse.json();
+                    chunkUploaded = true;
+
+                    // Update progress
+                    const percentComplete = Math.round((result.bytes_received / result.total_size) * 100);
+                    uploadButton.textContent = `⏳ Uploading... ${percentComplete}%`;
+                    updateUploadProgress(percentComplete, result.bytes_received, result.total_size);
+
+                    console.log(`Chunk ${chunkIndex + 1}/${totalChunks} uploaded (${percentComplete}%)`);
+
+                } catch (error) {
+                    attempts++;
+                    retryCount++;
+                    console.error(`Chunk ${chunkIndex} failed (attempt ${attempts}/${MAX_RETRIES}):`, error);
+
+                    if (attempts < MAX_RETRIES) {
+                        showRetryIndicator(retryCount);
+                        // Wait before retry with exponential backoff
+                        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempts - 1), 10000)));
+                    } else {
+                        throw new Error(`Chunk ${chunkIndex} failed after ${MAX_RETRIES} attempts`);
+                    }
+                }
+            }
+        }
+
+        // Step 3: Complete upload
+        const completeResponse = await fetch(`/api/upload/complete?upload_id=${upload_id}`, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+
+        if (!completeResponse.ok) {
+            throw new Error('Failed to complete upload');
+        }
+
+        const result = await completeResponse.json();
+        console.log('Upload completed successfully:', result);
+
+        // Mark transfer as inactive
+        if (window.inactivityTracker) {
+            window.inactivityTracker.markTransferInactive();
+        }
+
+        // Show success
+        showUploadSuccess();
+
+        // Reload page after showing success animation
+        setTimeout(() => window.location.reload(), 3000);
+
+    } catch (error) {
+        // Mark transfer as inactive
+        if (window.inactivityTracker) {
+            window.inactivityTracker.markTransferInactive();
+        }
+
+        console.error('Upload failed:', error);
+        showUploadError(error, retryCount);
+
+        uploadButton.textContent = '📤 Upload File';
+        uploadButton.disabled = false;
+    }
+}
+
+// ============================================================================
 // UPLOAD PROGRESS OVERLAY - Large Visual Feedback
 // ============================================================================
 
@@ -730,12 +788,24 @@ function showUploadProgressOverlay(filename, filesize) {
     `;
     speedInfo.textContent = 'Calculating speed...';
 
+    // Retry indicator
+    const retryInfo = document.createElement('div');
+    retryInfo.id = 'uploadRetryInfo';
+    retryInfo.style.cssText = `
+        font-size: 14px;
+        color: #fbbf24;
+        margin-top: 15px;
+        font-weight: 600;
+        display: none;
+    `;
+
     progressBarContainer.appendChild(progressBarFill);
     container.appendChild(statusText);
     container.appendChild(fileInfo);
     container.appendChild(sizeInfo);
     container.appendChild(progressBarContainer);
     container.appendChild(speedInfo);
+    container.appendChild(retryInfo);
     overlay.appendChild(container);
 
     // Add CSS animations
@@ -825,11 +895,83 @@ function showUploadSuccess() {
     }
 }
 
+function showUploadError(error, retryCount) {
+    const statusText = document.getElementById('uploadStatusText');
+    const progressBarFill = document.getElementById('uploadProgressBarFill');
+    const speedInfo = document.getElementById('uploadSpeedInfo');
+    const retryInfo = document.getElementById('uploadRetryInfo');
+
+    if (!statusText) return;
+
+    // Change to red error state
+    statusText.textContent = 'UPLOAD FAILED';
+    statusText.style.color = '#ef4444';
+    statusText.style.textShadow = '0 0 20px rgba(239, 68, 68, 0.8)';
+    statusText.style.animation = 'pulse 2s ease-in-out infinite';
+
+    // Update progress bar to red
+    progressBarFill.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+    progressBarFill.style.boxShadow = '0 0 20px rgba(239, 68, 68, 0.8)';
+
+    // Show error details
+    if (speedInfo) {
+        let errorMsg = error.message || 'Unknown error';
+        if (retryCount > 0) {
+            errorMsg += `\n\nFailed after ${retryCount} retry attempts.`;
+        }
+        speedInfo.innerHTML = `<div style="color: #fca5a5; font-size: 16px; line-height: 1.6; white-space: pre-wrap; max-width: 600px; margin: 0 auto;">${errorMsg}</div>`;
+    }
+
+    // Hide retry info
+    if (retryInfo) {
+        retryInfo.style.display = 'none';
+    }
+
+    // Add close button
+    const overlay = document.getElementById('uploadProgressOverlay');
+    if (overlay) {
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Close';
+        closeBtn.style.cssText = `
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: #ef4444;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        `;
+        closeBtn.onmouseover = () => closeBtn.style.background = '#dc2626';
+        closeBtn.onmouseout = () => closeBtn.style.background = '#ef4444';
+        closeBtn.onclick = () => {
+            overlay.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => overlay.remove(), 300);
+        };
+        overlay.querySelector('div').appendChild(closeBtn);
+    }
+}
+
 function hideUploadProgressOverlay() {
     const overlay = document.getElementById('uploadProgressOverlay');
     if (overlay) {
         overlay.style.animation = 'fadeOut 0.3s ease';
         setTimeout(() => overlay.remove(), 300);
+    }
+}
+
+function showRetryIndicator(retryCount) {
+    const retryInfo = document.getElementById('uploadRetryInfo');
+    if (retryInfo) {
+        retryInfo.style.display = 'block';
+        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 5...`;
+
+        // Flash animation
+        retryInfo.style.animation = 'pulse 1s ease-in-out 3';
+
+        console.log(`Retry ${retryCount}/5: Network interruption detected, retrying upload...`);
     }
 }
 
