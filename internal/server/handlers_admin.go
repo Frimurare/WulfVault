@@ -1043,6 +1043,61 @@ func (s *Server) handleAdminPermanentDelete(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// handleAdminEmptyAllTrash permanently deletes all files in trash
+func (s *Server) handleAdminEmptyAllTrash(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Get all deleted files
+	files, err := database.DB.GetDeletedFiles()
+	if err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to fetch trash files")
+		return
+	}
+
+	deletedCount := 0
+	for _, fileInfo := range files {
+		// Delete from disk
+		filePath := filepath.Join(s.config.UploadsDir, fileInfo.Id)
+		if err := os.Remove(filePath); err != nil {
+			if !os.IsNotExist(err) {
+				log.Printf("Warning: Could not delete file from disk: %v", err)
+			}
+		}
+
+		// Delete from database
+		if err := database.DB.PermanentDeleteFile(fileInfo.Id); err != nil {
+			log.Printf("Warning: Could not delete file from database: %v", err)
+			continue
+		}
+
+		deletedCount++
+
+		// Audit log each deletion
+		user, _ := userFromContext(r.Context())
+		database.DB.LogAction(&database.AuditLogEntry{
+			UserID:     int64(user.Id),
+			UserEmail:  user.Email,
+			Action:     "FILE_PERMANENTLY_DELETED",
+			EntityType: "File",
+			EntityID:   fileInfo.Id,
+			Details:    fmt.Sprintf("{\"filename\":\"%s\",\"size\":\"%s\",\"method\":\"Empty All Trash\"}", fileInfo.Name, fileInfo.Size),
+			IPAddress:  getClientIP(r),
+			UserAgent:  r.UserAgent(),
+			Success:    true,
+		})
+	}
+
+	log.Printf("Admin emptied all trash - %d files permanently deleted", deletedCount)
+
+	s.sendJSON(w, http.StatusOK, map[string]interface{}{
+		"message": fmt.Sprintf("Successfully deleted %d files", deletedCount),
+		"count":   deletedCount,
+	})
+}
+
 // handleAdminRestoreFile restores a file from trash
 func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -3708,7 +3763,30 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 <body>
     ` + s.getAdminHeaderHTML("") + `
     <div class="container">
-        <h2>🗑️ Trash (Deleted Files)</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
+
+	if len(files) > 0 {
+		html += `
+            <button onclick="emptyAllTrash()" style="
+                padding: 12px 24px;
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.4)'"
+               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">
+                🗑️ Empty All Trash
+            </button>`
+	}
+
+	html += `
+        </div>
 
         <div class="info-box">
             ⚠️ Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
@@ -3830,6 +3908,33 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
                 }
             } catch (error) {
                 alert('Delete failed: ' + error.message);
+            }
+        }
+
+        async function emptyAllTrash() {
+            if (!confirm('⚠️ Are you sure you want to PERMANENTLY DELETE ALL files in trash?\n\nThis action CANNOT be undone!')) {
+                return;
+            }
+
+            if (!confirm('⚠️ FINAL WARNING: This will permanently delete ALL trash files. Are you absolutely sure?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/trash/empty-all', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    alert('✅ All trash files have been permanently deleted');
+                    window.location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Empty trash failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Empty trash failed: ' + error.message);
             }
         }
     </script>

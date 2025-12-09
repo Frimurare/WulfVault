@@ -1690,8 +1690,22 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             <p>Files shared with this team will appear here</p>
         </div>`
 	} else {
+		// Add sorting controls
 		html += `
-        <div class="file-list">`
+        <div style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <label style="font-weight: 600; margin-right: 10px; color: #333;">🔄 Sort by:</label>
+            <select id="sortSelect" onchange="sortFiles()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                <option value="date_desc">Date (Newest First)</option>
+                <option value="date_asc">Date (Oldest First)</option>
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+                <option value="size_desc">Size (Largest First)</option>
+                <option value="size_asc">Size (Smallest First)</option>
+                <option value="user_asc">Owner (A-Z)</option>
+                <option value="user_desc">Owner (Z-A)</option>
+            </select>
+        </div>
+        <div class="file-list" id="fileList">`
 
 		for _, tf := range teamFiles {
 			file, err := database.DB.GetFileByID(tf.FileId)
@@ -1729,11 +1743,20 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 			sharedTime := time.Unix(tf.SharedAt, 0)
 			sharedDate := sharedTime.Format("2006-01-02 15:04")
 
+			// Add delete button if user is admin
+			deleteButton := ""
+			if user.IsAdmin() {
+				deleteButton = fmt.Sprintf(`<button onclick="deleteTeamFile('%s', '%s', event)" class="btn-delete" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-left: 10px;">🗑️ Delete</button>`, file.Id, file.Name)
+			}
+
 			html += fmt.Sprintf(`
-            <div class="file-item">
+            <div class="file-item" data-filename="%s" data-owner="%s" data-size="%d" data-date="%d">
                 <div class="file-header">
                     <span class="file-name" title="%s"><span class="file-icon">📄</span>%s</span>
-                    <a href="/d/%s" class="btn-download">⬇️ Download</a>
+                    <div>
+                        <a href="/d/%s" class="btn-download">⬇️ Download</a>
+                        %s
+                    </div>
                 </div>
                 <div class="file-meta">
                     <span>👤 Owner: <strong>%s</strong></span>
@@ -1742,7 +1765,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                     <span>📦 Size: %s</span>
                     <span>⬇️ Downloads: %d</span>
                 </div>
-            </div>`, file.Name, file.Name, file.Id, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount)
+            </div>`, file.Name, ownerName, file.SizeBytes, tf.SharedAt, file.Name, file.Name, file.Id, deleteButton, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount)
 		}
 
 		html += `
@@ -1751,6 +1774,69 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 
 	html += `
     </div>
+
+    <script>
+        function sortFiles() {
+            const sortBy = document.getElementById('sortSelect').value;
+            const fileList = document.getElementById('fileList');
+            const items = Array.from(fileList.getElementsByClassName('file-item'));
+
+            items.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name_asc':
+                        return a.dataset.filename.localeCompare(b.dataset.filename);
+                    case 'name_desc':
+                        return b.dataset.filename.localeCompare(a.dataset.filename);
+                    case 'size_asc':
+                        return parseInt(a.dataset.size) - parseInt(b.dataset.size);
+                    case 'size_desc':
+                        return parseInt(b.dataset.size) - parseInt(a.dataset.size);
+                    case 'user_asc':
+                        return a.dataset.owner.localeCompare(b.dataset.owner);
+                    case 'user_desc':
+                        return b.dataset.owner.localeCompare(a.dataset.owner);
+                    case 'date_asc':
+                        return parseInt(a.dataset.date) - parseInt(b.dataset.date);
+                    case 'date_desc':
+                        return parseInt(b.dataset.date) - parseInt(a.dataset.date);
+                    default:
+                        return 0;
+                }
+            });
+
+            // Clear and re-append
+            fileList.innerHTML = '';
+            items.forEach(item => fileList.appendChild(item));
+        }
+
+        function deleteTeamFile(fileId, fileName, event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!confirm('Delete "' + fileName + '" from team files? This will move it to trash.')) {
+                return;
+            }
+
+            fetch('/file/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'file_id=' + fileId,
+                credentials: 'same-origin'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('File moved to trash successfully');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to delete file'));
+                }
+            })
+            .catch(err => {
+                alert('Error deleting file: ' + err);
+            });
+        }
+    </script>
 
 </body>
 </html>`

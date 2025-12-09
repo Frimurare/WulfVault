@@ -122,6 +122,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/trash", s.requireAdmin(s.handleAdminTrash))
 	mux.HandleFunc("/admin/trash/restore", s.requireAdmin(s.handleAdminRestoreFile))
 	mux.HandleFunc("/admin/trash/delete", s.requireAdmin(s.handleAdminPermanentDelete))
+	mux.HandleFunc("/admin/trash/empty-all", s.requireAdmin(s.handleAdminEmptyAllTrash))
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
