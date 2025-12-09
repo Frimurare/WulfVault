@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "5.0.1 FullMoon"
+	Version = "5.0.3 FullMoon"
 )
 
 var (
