@@ -198,116 +198,93 @@ if (uploadForm) {
         uploadButton.disabled = true;
 
         // Create large upload progress overlay
-        showUploadProgressOverlay(formData.get('file').name, formData.get('file').size);
+        const file = formData.get('file');
+        showUploadProgressOverlay(file.name, file.size);
 
         // Mark transfer as active to prevent inactivity timeout
         if (window.inactivityTracker) {
             window.inactivityTracker.markTransferActive();
         }
 
-        // Create XMLHttpRequest for progress tracking
-        const xhr = new XMLHttpRequest();
+        // Get current user ID from page context (set by server)
+        const userIdElement = document.querySelector('[data-user-id]');
+        const userId = userIdElement ? userIdElement.getAttribute('data-user-id') : '0';
 
-        xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable) {
-                const percentComplete = Math.round((e.loaded / e.total) * 100);
+        // Prepare metadata for tus
+        const metadata = {
+            user_id: userId,
+            filename: file.name,
+            filetype: file.type,
+            expire_date: formData.get('expire_date') || '',
+            downloads_limit: formData.get('downloads_limit') || '10',
+            require_auth: formData.get('require_auth') || 'false',
+            unlimited_time: formData.get('unlimited_time') || 'false',
+            unlimited_downloads: formData.get('unlimited_downloads') || 'false',
+            file_password: formData.get('file_password') || '',
+            file_comment: formData.get('file_comment') || '',
+            client_ip: '', // Server will fill this
+            user_agent: navigator.userAgent
+        };
+
+        // Create tus upload with automatic retry
+        const upload = new tus.Upload(file, {
+            endpoint: '/files/',
+            retryDelays: [0, 1000, 3000, 5000, 10000], // Retry after 0s, 1s, 3s, 5s, 10s
+            metadata: metadata,
+            chunkSize: 5 * 1024 * 1024, // 5MB chunks
+
+            onError: (error) => {
+                // Mark transfer as inactive
+                if (window.inactivityTracker) {
+                    window.inactivityTracker.markTransferInactive();
+                }
+
+                hideUploadProgressOverlay();
+                console.error('Upload failed:', error);
+
+                let errorMsg = '❌ Upload Failed\n\n';
+                if (error.message) {
+                    errorMsg += error.message + '\n\n';
+                }
+                errorMsg += 'The upload could not be completed after multiple retry attempts. Please try again later.';
+
+                showError(errorMsg);
+                uploadButton.textContent = '📤 Upload File';
+                uploadButton.disabled = false;
+            },
+
+            onProgress: (bytesUploaded, bytesTotal) => {
+                const percentComplete = Math.round((bytesUploaded / bytesTotal) * 100);
                 uploadButton.textContent = `⏳ Uploading... ${percentComplete}%`;
-                updateUploadProgress(percentComplete, e.loaded, e.total);
-            }
-        });
+                updateUploadProgress(percentComplete, bytesUploaded, bytesTotal);
+            },
 
-        xhr.addEventListener('load', () => {
-            // Mark transfer as inactive
-            if (window.inactivityTracker) {
-                window.inactivityTracker.markTransferInactive();
-            }
+            onSuccess: () => {
+                // Mark transfer as inactive
+                if (window.inactivityTracker) {
+                    window.inactivityTracker.markTransferInactive();
+                }
 
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
+                console.log('Upload completed successfully!');
 
                 // Show success with green overlay
                 showUploadSuccess();
 
                 // Reload page after showing success animation
                 setTimeout(() => window.location.reload(), 3000);
-            } else {
-                // Hide upload overlay on error
-                hideUploadProgressOverlay();
-                let errorMsg = 'Upload failed';
-                let errorDetails = '';
+            },
 
-                try {
-                    const errorResponse = JSON.parse(xhr.responseText);
-                    errorMsg = errorResponse.error || errorMsg;
-                } catch (e) {
-                    errorMsg = xhr.statusText || errorMsg;
-                }
-
-                // Add status code to error message for debugging
-                if (xhr.status) {
-                    errorDetails = ` (Error ${xhr.status})`;
-                }
-
-                // Enhance error messages with user-friendly explanations
-                if (errorMsg.includes('Insufficient storage quota')) {
-                    errorMsg = '❌ Upload Failed: Insufficient storage quota\n\nYou don\'t have enough storage space for this file. Please delete some files or contact your administrator to increase your quota.';
-                } else if (errorMsg.includes('Failed to write file')) {
-                    errorMsg = '❌ Upload Failed: Could not save file\n\nThe upload was interrupted. This could be due to:\n• Network connection issues\n• Server storage full\n• Connection timeout\n\nPlease try again or contact support if the problem persists.';
-                } else if (errorMsg.includes('Failed to save file')) {
-                    errorMsg = '❌ Upload Failed: Could not save file\n\nThe server encountered an error while saving your file. Please try again or contact support.';
-                } else {
-                    errorMsg = `❌ Upload Failed${errorDetails}\n\n${errorMsg}\n\nPlease try again. If the problem persists, contact your administrator.`;
-                }
-
-                showError(errorMsg);
-                uploadButton.textContent = '📤 Upload File';
-                uploadButton.disabled = false;
+            onAfterResponse: (req, res) => {
+                // Log response for debugging
+                console.log('tus response:', res.getStatus(), res.getHeader('Upload-Offset'));
             }
         });
 
-        xhr.addEventListener('error', () => {
-            // Mark transfer as inactive on error
-            if (window.inactivityTracker) {
-                window.inactivityTracker.markTransferInactive();
-            }
+        // Store upload instance for potential pause/resume controls
+        window.currentUpload = upload;
 
-            hideUploadProgressOverlay();
-            showError('❌ Upload Failed: Network Error\n\nThe upload failed due to a network problem. This could be caused by:\n• Lost internet connection\n• Weak or unstable network\n• Firewall or proxy blocking the upload\n• Server timeout\n\nPlease check your connection and try again.');
-            uploadButton.textContent = '📤 Upload File';
-            uploadButton.disabled = false;
-        });
-
-        xhr.addEventListener('abort', () => {
-            // Mark transfer as inactive on abort
-            if (window.inactivityTracker) {
-                window.inactivityTracker.markTransferInactive();
-            }
-
-            hideUploadProgressOverlay();
-            showError('❌ Upload Cancelled\n\nThe upload was cancelled or interrupted.');
-            uploadButton.textContent = '📤 Upload File';
-            uploadButton.disabled = false;
-        });
-
-        xhr.addEventListener('timeout', () => {
-            // Mark transfer as inactive on timeout
-            if (window.inactivityTracker) {
-                window.inactivityTracker.markTransferInactive();
-            }
-
-            hideUploadProgressOverlay();
-            showError('❌ Upload Failed: Timeout\n\nThe upload took too long and timed out. This usually happens with:\n• Very large files on slow connections\n• Unstable network connection\n• Server overload\n\nTry uploading a smaller file or check your internet connection.');
-            uploadButton.textContent = '📤 Upload File';
-            uploadButton.disabled = false;
-        });
-
-        xhr.open('POST', '/upload');
-
-        // Set timeout for large files (10 minutes for files > 1GB, otherwise 5 minutes)
-        const fileSize = formData.get('file').size;
-        xhr.timeout = fileSize > 1024 * 1024 * 1024 ? 600000 : 300000; // 10 min or 5 min
-
-        xhr.send(formData);
+        // Start the upload
+        upload.start();
     });
 }
 
