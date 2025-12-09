@@ -702,7 +702,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
         }
         .container {
             max-width: 1400px;
-            margin: 40px auto;
+            margin: 60px auto 40px;
             padding: 0 20px;
         }
         .actions {

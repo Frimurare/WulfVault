@@ -1636,7 +1636,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
         }
         .container {
             max-width: 1400px;
-            margin: 40px auto;
+            margin: 60px auto 40px;
             padding: 0 20px;
         }
         .actions {
@@ -3632,7 +3632,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
         }
         .container {
             max-width: 1400px;
-            margin: 40px auto;
+            margin: 60px auto 40px;
             padding: 0 20px;
         }
         h2 {
