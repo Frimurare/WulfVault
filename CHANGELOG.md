@@ -1,5 +1,111 @@
 # Changelog
 
+## [5.0.3 FullMoon] - 2025-12-09 🎨 Enhanced Upload UX & Large File Notifications
+
+### ✨ Major Upload Experience Improvements
+
+**Large Visual Upload Progress:**
+- **NEW:** Full-screen upload progress overlay with large, animated display
+- **Red Progress Indicator** - Bold "UPLOADING - X%" text that counts up in real-time
+- **Green Success Animation** - Changes to green "UPLOAD COMPLETE - 100%" when done
+- **Detailed Progress Info** - Shows filename, uploaded/total size, speed, and ETA
+- **Smooth Animations** - Pulsing effects and smooth transitions
+- **Auto-dismiss** - Overlay disappears after 3 seconds on success
+
+**Upload Progress Features:**
+- **Real-time percentage** - Large 72px red text showing upload progress
+- **Speed calculation** - Shows MB/s or GB/s upload speed
+- **ETA estimation** - Calculates and displays estimated time remaining
+- **File size tracking** - Shows "X GB / Y GB" progress
+- **Visual progress bar** - Animated bar with glowing effects
+- **Success celebration** - Green animation with checkmark on 100%
+
+**Example Display:**
+```
+UPLOADING - 45%
+Mordnatten20251025.zip
+18.6 GB / 41.4 GB
+Speed: 5.2 MB/s | ETA: 1h 23m
+```
+
+### 📧 Automatic Email Notifications for Large Files
+
+**Large File Upload Confirmations:**
+- **NEW:** Automatic email sent for files > 5GB
+- **Professional design** - Beautiful HTML email with gradient header
+- **Complete file details** - Filename, size, File ID, SHA1 hash
+- **Share link included** - Direct link to share the uploaded file
+- **Clear messaging** - Explains why email was sent (automatic for large files)
+- **Peace of mind** - Users don't need to wait at computer during long uploads
+
+**Email Contains:**
+- ✓ Upload success confirmation
+- 📦 File details (name, size in GB, ID, SHA1)
+- 🔗 Share link for immediate access
+- ℹ️ Explanation of automatic notification
+- ⚠️ Security notice if user didn't upload the file
+
+**Example Email:**
+```
+Subject: Large File Upload Confirmation - Mordnatten20251025.zip
+
+✓ Upload Successful
+
+Hello John Doe,
+
+Your large file has been successfully uploaded to WulfVault and is ready to download.
+
+📦 FILE DETAILS
+Filename: Mordnatten20251025.zip
+Size: 41.36 GB
+File ID: abc123
+SHA1: def456...
+
+ℹ️ AUTOMATIC NOTIFICATION
+This is an automated confirmation email sent for all files larger than 5 GB.
+We send these notifications so you can feel confident that your file has been
+successfully uploaded, even if you don't have time to wait at your computer
+during the upload process.
+
+[View & Share File]
+```
+
+### 🎯 User Benefits
+
+- **Visual feedback** - Always know upload progress with large, easy-to-see display
+- **No more guessing** - Real-time speed and ETA calculations
+- **Peace of mind** - Email confirmation for large uploads
+- **Professional UX** - Smooth animations and polished design
+- **Mobile-friendly** - Overlay works perfectly on all screen sizes
+- **Accessibility** - Large text easy to read from distance
+
+### 🔧 Technical Changes
+
+**Modified Files:**
+- `web/static/js/dashboard.js` - Added upload progress overlay (~220 lines)
+- `internal/server/handlers_files.go` - Added email notification for files >5GB (~130 lines)
+- `cmd/server/main.go` - Version bump to 5.0.3
+- `CHANGELOG.md` - This changelog
+
+**New Functions:**
+- `showUploadProgressOverlay(filename, filesize)` - Creates full-screen overlay
+- `updateUploadProgress(percent, loaded, total)` - Updates progress in real-time
+- `showUploadSuccess()` - Shows green success animation
+- `hideUploadProgressOverlay()` - Dismisses overlay
+- `formatTime(seconds)` - Formats ETA (e.g., "1h 23m")
+- `sendLargeFileUploadNotification()` - Sends email for files >5GB
+
+**Upload Flow:**
+1. User clicks "Upload"
+2. Large red progress overlay appears
+3. Progress updates in real-time with speed/ETA
+4. On 100%: Changes to green "UPLOAD COMPLETE"
+5. Overlay auto-dismisses after 3 seconds
+6. If file >5GB: Email sent to user
+7. Dashboard reloads showing new file
+
+---
+
 ## [5.0.1 FullMoon] - 2025-12-09 🎨 Server Logs UI Redesign & Bug Fixes
 
 ### ✨ Major UI Update: Server Logs

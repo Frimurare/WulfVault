@@ -197,6 +197,9 @@ if (uploadForm) {
         uploadButton.textContent = '⏳ Uploading...';
         uploadButton.disabled = true;
 
+        // Create large upload progress overlay
+        showUploadProgressOverlay(formData.get('file').name, formData.get('file').size);
+
         // Mark transfer as active to prevent inactivity timeout
         if (window.inactivityTracker) {
             window.inactivityTracker.markTransferActive();
@@ -209,6 +212,7 @@ if (uploadForm) {
             if (e.lengthComputable) {
                 const percentComplete = Math.round((e.loaded / e.total) * 100);
                 uploadButton.textContent = `⏳ Uploading... ${percentComplete}%`;
+                updateUploadProgress(percentComplete, e.loaded, e.total);
             }
         });
 
@@ -220,11 +224,15 @@ if (uploadForm) {
 
             if (xhr.status === 200) {
                 const response = JSON.parse(xhr.responseText);
-                showSuccess('File uploaded successfully!');
 
-                // Reload page after successful upload
-                setTimeout(() => window.location.reload(), 1500);
+                // Show success with green overlay
+                showUploadSuccess();
+
+                // Reload page after showing success animation
+                setTimeout(() => window.location.reload(), 3000);
             } else {
+                // Hide upload overlay on error
+                hideUploadProgressOverlay();
                 let errorMsg = 'Upload failed';
                 let errorDetails = '';
 
@@ -263,6 +271,7 @@ if (uploadForm) {
                 window.inactivityTracker.markTransferInactive();
             }
 
+            hideUploadProgressOverlay();
             showError('❌ Upload Failed: Network Error\n\nThe upload failed due to a network problem. This could be caused by:\n• Lost internet connection\n• Weak or unstable network\n• Firewall or proxy blocking the upload\n• Server timeout\n\nPlease check your connection and try again.');
             uploadButton.textContent = '📤 Upload File';
             uploadButton.disabled = false;
@@ -274,6 +283,7 @@ if (uploadForm) {
                 window.inactivityTracker.markTransferInactive();
             }
 
+            hideUploadProgressOverlay();
             showError('❌ Upload Cancelled\n\nThe upload was cancelled or interrupted.');
             uploadButton.textContent = '📤 Upload File';
             uploadButton.disabled = false;
@@ -285,6 +295,7 @@ if (uploadForm) {
                 window.inactivityTracker.markTransferInactive();
             }
 
+            hideUploadProgressOverlay();
             showError('❌ Upload Failed: Timeout\n\nThe upload took too long and timed out. This usually happens with:\n• Very large files on slow connections\n• Unstable network connection\n• Server overload\n\nTry uploading a smaller file or check your internet connection.');
             uploadButton.textContent = '📤 Upload File';
             uploadButton.disabled = false;
@@ -642,6 +653,221 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ============================================================================
+// UPLOAD PROGRESS OVERLAY - Large Visual Feedback
+// ============================================================================
+
+function showUploadProgressOverlay(filename, filesize) {
+    // Create overlay element
+    const overlay = document.createElement('div');
+    overlay.id = 'uploadProgressOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    // Create progress container
+    const container = document.createElement('div');
+    container.style.cssText = `
+        text-align: center;
+        padding: 60px;
+        max-width: 700px;
+        width: 90%;
+    `;
+
+    // Upload status text
+    const statusText = document.createElement('div');
+    statusText.id = 'uploadStatusText';
+    statusText.style.cssText = `
+        font-size: 72px;
+        font-weight: bold;
+        color: #ef4444;
+        margin-bottom: 30px;
+        text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        animation: pulse 2s ease-in-out infinite;
+    `;
+    statusText.textContent = 'UPLOADING - 0%';
+
+    // File info
+    const fileInfo = document.createElement('div');
+    fileInfo.style.cssText = `
+        font-size: 24px;
+        color: #e5e7eb;
+        margin-bottom: 40px;
+        font-weight: 500;
+    `;
+    fileInfo.textContent = filename;
+
+    // File size
+    const sizeInfo = document.createElement('div');
+    sizeInfo.id = 'uploadSizeInfo';
+    sizeInfo.style.cssText = `
+        font-size: 18px;
+        color: #9ca3af;
+        margin-bottom: 50px;
+    `;
+    sizeInfo.textContent = `0 B / ${formatFileSize(filesize)}`;
+
+    // Progress bar container
+    const progressBarContainer = document.createElement('div');
+    progressBarContainer.style.cssText = `
+        width: 100%;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    `;
+
+    // Progress bar fill
+    const progressBarFill = document.createElement('div');
+    progressBarFill.id = 'uploadProgressBarFill';
+    progressBarFill.style.cssText = `
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+        transition: width 0.3s ease, background 0.5s ease;
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+    `;
+
+    // Speed and ETA info
+    const speedInfo = document.createElement('div');
+    speedInfo.id = 'uploadSpeedInfo';
+    speedInfo.style.cssText = `
+        font-size: 16px;
+        color: #9ca3af;
+        margin-top: 20px;
+    `;
+    speedInfo.textContent = 'Calculating speed...';
+
+    progressBarContainer.appendChild(progressBarFill);
+    container.appendChild(statusText);
+    container.appendChild(fileInfo);
+    container.appendChild(sizeInfo);
+    container.appendChild(progressBarContainer);
+    container.appendChild(speedInfo);
+    overlay.appendChild(container);
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes successPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(overlay);
+
+    // Store start time for speed calculation
+    window.uploadStartTime = Date.now();
+    window.uploadStartLoaded = 0;
+}
+
+function updateUploadProgress(percent, loaded, total) {
+    const statusText = document.getElementById('uploadStatusText');
+    const progressBarFill = document.getElementById('uploadProgressBarFill');
+    const sizeInfo = document.getElementById('uploadSizeInfo');
+    const speedInfo = document.getElementById('uploadSpeedInfo');
+
+    if (!statusText) return;
+
+    // Update status text
+    statusText.textContent = `UPLOADING - ${percent}%`;
+
+    // Update progress bar
+    progressBarFill.style.width = `${percent}%`;
+
+    // Update size info
+    sizeInfo.textContent = `${formatFileSize(loaded)} / ${formatFileSize(total)}`;
+
+    // Calculate speed and ETA
+    const now = Date.now();
+    const timeElapsed = (now - window.uploadStartTime) / 1000; // seconds
+    const bytesUploaded = loaded - window.uploadStartLoaded;
+
+    if (timeElapsed > 0) {
+        const speed = bytesUploaded / timeElapsed; // bytes per second
+        const remainingBytes = total - loaded;
+        const eta = remainingBytes / speed; // seconds
+
+        speedInfo.textContent = `Speed: ${formatFileSize(speed)}/s | ETA: ${formatTime(eta)}`;
+    }
+
+    // Update last measurement
+    window.uploadStartTime = now;
+    window.uploadStartLoaded = loaded;
+}
+
+function showUploadSuccess() {
+    const statusText = document.getElementById('uploadStatusText');
+    const progressBarFill = document.getElementById('uploadProgressBarFill');
+    const speedInfo = document.getElementById('uploadSpeedInfo');
+
+    if (!statusText) return;
+
+    // Change to green and show 100%
+    statusText.textContent = 'UPLOAD COMPLETE - 100%';
+    statusText.style.color = '#10b981';
+    statusText.style.textShadow = '0 0 20px rgba(16, 185, 129, 0.8)';
+    statusText.style.animation = 'successPulse 0.8s ease-in-out 3';
+
+    // Update progress bar to green
+    progressBarFill.style.width = '100%';
+    progressBarFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+    progressBarFill.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.8)';
+
+    // Update speed info
+    if (speedInfo) {
+        speedInfo.textContent = '✓ File uploaded successfully!';
+        speedInfo.style.color = '#10b981';
+        speedInfo.style.fontSize = '20px';
+        speedInfo.style.fontWeight = 'bold';
+    }
+}
+
+function hideUploadProgressOverlay() {
+    const overlay = document.getElementById('uploadProgressOverlay');
+    if (overlay) {
+        overlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => overlay.remove(), 300);
+    }
+}
+
+function formatTime(seconds) {
+    if (seconds < 60) {
+        return Math.round(seconds) + 's';
+    } else if (seconds < 3600) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.round(seconds % 60);
+        return `${mins}m ${secs}s`;
+    } else {
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        return `${hours}h ${mins}m`;
+    }
 }
 
 // Load file requests when page loads
