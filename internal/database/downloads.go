@@ -654,13 +654,13 @@ func (d *Database) GetActiveFilesLast30Days() (int, error) {
 
 // GetAverageFileSize returns the average file size in bytes (excluding deleted files)
 func (d *Database) GetAverageFileSize() (int64, error) {
-	var avg int64
+	var avg float64
 	err := d.db.QueryRow(`
 		SELECT COALESCE(AVG(SizeBytes), 0)
 		FROM Files
 		WHERE DeletedAt = 0
 	`).Scan(&avg)
-	return avg, err
+	return int64(avg), err
 }
 
 // GetAverageDownloadsPerFile returns the average number of downloads per file

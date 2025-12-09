@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "4.9.9 Silverbullet"
+	Version = "5.0.1 FullMoon"
 )
 
 var (
@@ -146,6 +146,24 @@ func main() {
 	if cfg.AuditLogMaxSizeMB <= 0 {
 		cfg.AuditLogMaxSizeMB = 100 // default fallback
 	}
+
+	// Load server log max size setting from database if available
+	if serverLogMaxSizeStr, err := database.DB.GetConfigValue("server_log_max_size_mb"); err == nil && serverLogMaxSizeStr != "" {
+		if sizeMB, parseErr := strconv.Atoi(serverLogMaxSizeStr); parseErr == nil && sizeMB > 0 {
+			cfg.ServerLogMaxSizeMB = sizeMB
+		}
+	}
+	if cfg.ServerLogMaxSizeMB <= 0 {
+		cfg.ServerLogMaxSizeMB = 50 // default fallback
+	}
+
+	// Initialize server logging to file
+	if err := server.InitServerLog(*dataDir, cfg.ServerLogMaxSizeMB); err != nil {
+		log.Printf("Warning: Failed to initialize server log file: %v", err)
+	} else {
+		log.Printf("📝 Server logging initialized (max size: %dMB)", cfg.ServerLogMaxSizeMB)
+	}
+	defer server.CloseServerLog()
 
 	// Start file expiration cleanup scheduler (runs every 6 hours)
 	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)

@@ -26,6 +26,7 @@ type Config struct {
 	TrashRetentionDays      int    `json:"trashRetentionDays"`
 	AuditLogRetentionDays   int    `json:"auditLogRetentionDays"`   // Days to keep audit logs (default: 90)
 	AuditLogMaxSizeMB       int    `json:"auditLogMaxSizeMB"`       // Auto-cleanup if log exceeds this size (default: 100MB)
+	ServerLogMaxSizeMB      int    `json:"serverLogMaxSizeMB"`      // Max size for server log file (default: 50MB)
 	SaveIP                  bool   `json:"saveIp"`
 	Version                 string `json:"-"` // Runtime version, not persisted
 	models.Branding     `json:"branding"`
@@ -62,6 +63,7 @@ func LoadOrCreate(dataDir string) (*Config, error) {
 		TrashRetentionDays:    5,
 		AuditLogRetentionDays: 90,  // Keep audit logs for 90 days by default
 		AuditLogMaxSizeMB:     100, // Auto-cleanup if log exceeds 100MB
+		ServerLogMaxSizeMB:    50,  // Max size for server log file (default: 50MB)
 		SaveIP:                false,
 		Branding:              models.DefaultBranding(),
 	}

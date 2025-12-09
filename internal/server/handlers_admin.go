@@ -924,6 +924,14 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	serverLogMaxSizeMB := r.FormValue("server_log_max_size_mb")
+	if serverLogMaxSizeMB != "" {
+		database.DB.SetConfigValue("server_log_max_size_mb", serverLogMaxSizeMB)
+		if sizeMB, err := strconv.Atoi(serverLogMaxSizeMB); err == nil {
+			s.config.ServerLogMaxSizeMB = sizeMB
+		}
+	}
+
 	// Handle dashboard style preference
 	dashboardStyle := r.FormValue("dashboard_style")
 	if dashboardStyle == "on" {
@@ -3245,6 +3253,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 			auditLogMaxSizeMB = "100"
 		}
 	}
+	serverLogMaxSizeMB, _ := database.DB.GetConfigValue("server_log_max_size_mb")
+	if serverLogMaxSizeMB == "" {
+		if s.config.ServerLogMaxSizeMB > 0 {
+			serverLogMaxSizeMB = fmt.Sprintf("%d", s.config.ServerLogMaxSizeMB)
+		} else {
+			serverLogMaxSizeMB = "50"
+		}
+	}
 
 	// Get dashboard style preference
 	dashboardStyle, _ := database.DB.GetConfigValue("dashboard_style")
@@ -3428,6 +3444,12 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                     <label for="audit_log_max_size_mb">Audit Log Max Size (MB)</label>
                     <input type="number" id="audit_log_max_size_mb" name="audit_log_max_size_mb" value="` + auditLogMaxSizeMB + `" min="10" max="10000" required>
                     <p class="help-text">Maximum database size for audit logs before automatic cleanup of oldest entries (default: 100 MB)</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="server_log_max_size_mb">Server Log Max Size (MB)</label>
+                    <input type="number" id="server_log_max_size_mb" name="server_log_max_size_mb" value="` + serverLogMaxSizeMB + `" min="10" max="1000" required>
+                    <p class="help-text">Maximum file size for server logs before automatic rotation (default: 50 MB)</p>
                 </div>
 
                 <div class="form-group">
