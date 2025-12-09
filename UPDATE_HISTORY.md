@@ -89,7 +89,7 @@ Chunked uploads are logged with:
 ### 🔍 Verified in Production
 
 Successfully tested with:
-- **Addici v3.mp4** - 231.6 MB uploaded in 47 chunks
+- **Anchoragev3.mp4** - 231.6 MB uploaded in 47 chunks
 - **Äggdårar 2021-10-06.zip** - 662.9 MB uploaded in 127 chunks
 - All chunks logged and verified in server logs
 
@@ -107,7 +107,6 @@ Successfully tested with:
 
 ### 🚨 Breaking Changes
 
-- **Removed tus.io dependency:** tus-js-client and tusd packages no longer used
 - **Changed upload API:** Previous `/files/` endpoint replaced with `/api/upload/*` endpoints
 - **Session cookies:** Upload sessions managed server-side with cleanup
 
