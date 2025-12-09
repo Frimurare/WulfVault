@@ -797,6 +797,36 @@ function showUploadProgressOverlay(filename, filesize) {
         display: none;
     `;
 
+    // Upload Musings - random one-liner
+    const musingsDiv = document.createElement('div');
+    musingsDiv.id = 'uploadMusings';
+    musingsDiv.style.cssText = `
+        font-size: 14px;
+        color: #9ca3af;
+        margin-top: 30px;
+        font-style: italic;
+        text-align: center;
+        max-width: 500px;
+        line-height: 1.6;
+    `;
+    const musingsTitle = document.createElement('div');
+    musingsTitle.style.cssText = `
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    `;
+    musingsTitle.textContent = '💾 Upload Musings';
+    musingsDiv.appendChild(musingsTitle);
+
+    const musingText = document.createElement('div');
+    musingText.id = 'musingText';
+    musingText.style.cssText = 'transition: opacity 0.3s ease;';
+    musingText.textContent = getRandomUploadMusing();
+    musingsDiv.appendChild(musingText);
+
     progressBarContainer.appendChild(progressBarFill);
     container.appendChild(statusText);
     container.appendChild(fileInfo);
@@ -804,7 +834,20 @@ function showUploadProgressOverlay(filename, filesize) {
     container.appendChild(progressBarContainer);
     container.appendChild(speedInfo);
     container.appendChild(retryInfo);
+    container.appendChild(musingsDiv);
     overlay.appendChild(container);
+
+    // Rotate musing every minute
+    window.musingInterval = setInterval(() => {
+        const musingEl = document.getElementById('musingText');
+        if (musingEl) {
+            musingEl.style.opacity = '0';
+            setTimeout(() => {
+                musingEl.textContent = getRandomUploadMusing();
+                musingEl.style.opacity = '1';
+            }, 300);
+        }
+    }, 60000);
 
     // Add CSS animations
     const style = document.createElement('style');
@@ -873,6 +916,11 @@ function showUploadSuccess() {
 
     if (!statusText) return;
 
+    // Stop musing rotation
+    if (window.musingInterval) {
+        clearInterval(window.musingInterval);
+    }
+
     // Change to green and show 100%
     statusText.textContent = 'UPLOAD COMPLETE - 100%';
     statusText.style.color = '#10b981';
@@ -935,6 +983,11 @@ function showUploadError(error, retryCount) {
     const retryInfo = document.getElementById('uploadRetryInfo');
 
     if (!statusText) return;
+
+    // Stop musing rotation
+    if (window.musingInterval) {
+        clearInterval(window.musingInterval);
+    }
 
     // Change to red error state
     statusText.textContent = 'UPLOAD FAILED';
@@ -1020,6 +1073,167 @@ function formatTime(seconds) {
         const mins = Math.floor((seconds % 3600) / 60);
         return `${hours}h ${mins}m`;
     }
+}
+
+// Get random upload musing - 150 one-liners about uploading files
+function getRandomUploadMusing() {
+    const musings = [
+        "Your file is climbing the digital mountain, one byte at a time.",
+        "Somewhere, a server is getting excited about your incoming data.",
+        "The internet is working overtime to deliver your masterpiece.",
+        "Your bits are traveling faster than a caffeinated cheetah.",
+        "This file is about to make someone's day... hopefully.",
+        "Uploading: where patience meets progress.",
+        "Your data is taking the scenic route through the tubes.",
+        "The cloud is preparing a cozy spot for your file.",
+        "Every byte uploaded is a byte closer to done.",
+        "Your file is on an adventure through fiber optic cables.",
+        "Servers around the world are cheering for your upload.",
+        "This file will outlive your goldfish.",
+        "Your data is traveling at the speed of internet.",
+        "The recipient has no idea what's coming their way.",
+        "Your file is making friends with packets along the way.",
+        "Uploading: the modern version of 'the mail is on its way'.",
+        "Your file is worth the wait... probably.",
+        "Every megabyte uploaded is a victory for humanity.",
+        "The internet cables are warm from your data flow.",
+        "Your file is taking the express lane to the cloud.",
+        "Somewhere, a router just high-fived your packets.",
+        "This upload is smoother than a buttered penguin on ice.",
+        "Your data is living its best life right now.",
+        "The recipient will be grateful... eventually.",
+        "Your file is one step away from digital immortality.",
+        "Packets are lining up like eager students for recess.",
+        "Your upload is the envy of slower connections everywhere.",
+        "This file will arrive faster than pizza delivery.",
+        "Your data is swimming through an ocean of bandwidth.",
+        "The servers are rolling out the red carpet for your file.",
+        "Your upload is making email attachments jealous.",
+        "This file contains hopes, dreams, and probably spreadsheets.",
+        "Your data is cruising through cyberspace like a boss.",
+        "The internet was made for moments like this.",
+        "Your file is about to land like a digital superhero.",
+        "Uploading: where time stands still but progress doesn't.",
+        "Your bits are having the time of their lives.",
+        "This file will be worth every second of waiting.",
+        "Your data is traveling with first-class tickets.",
+        "The recipient's download button is tingling with anticipation.",
+        "Your upload is breaking records... in your heart.",
+        "Every chunk uploaded brings joy to network engineers.",
+        "Your file is on a mission to make file sharing great again.",
+        "This upload is powered by determination and Wi-Fi.",
+        "Your data is making history, one packet at a time.",
+        "The cloud is getting heavier with your amazing file.",
+        "Your upload speed would make dial-up modems weep.",
+        "This file is destined for greatness... or at least delivery.",
+        "Your bits are dancing through routers with grace.",
+        "The internet is working hard so you don't have to.",
+        "Your file will arrive fashionably on time.",
+        "Uploading: because carrier pigeons retired.",
+        "Your data is traveling faster than gossip in a small town.",
+        "This file contains more promise than a politician's speech.",
+        "Your upload is smooth sailing on the digital seas.",
+        "The servers are doing push-ups to handle your file.",
+        "Your data is leaving a trail of impressed routers.",
+        "This upload is your gift to the digital world.",
+        "Your file is making the journey look easy.",
+        "The internet cables are humming your upload's victory song.",
+        "Your data is experiencing the upload of a lifetime.",
+        "This file will be remembered for minutes... maybe hours.",
+        "Your upload is faster than a speeding email attachment.",
+        "The cloud is expanding just to accommodate your file.",
+        "Your bits are having a parade through cyberspace.",
+        "This upload proves patience is a virtue.",
+        "Your data is the star of today's bandwidth show.",
+        "The recipient's inbox is getting ready to party.",
+        "Your file is making progress while you read this.",
+        "Uploading: the art of digital teleportation.",
+        "Your data is writing its own success story.",
+        "This file will be the highlight of someone's downloads folder.",
+        "Your upload is teaching routers about determination.",
+        "The internet is a better place with your file in it.",
+        "Your bits are traveling with purpose and pride.",
+        "This upload is smoother than jazz on a Sunday morning.",
+        "Your file is earning frequent flyer miles through the cloud.",
+        "The servers are taking notes on your file's excellence.",
+        "Your data is blazing trails through the digital frontier.",
+        "This upload is your contribution to internet history.",
+        "Your file is making the impossible look routine.",
+        "The cloud is lucky to host your amazing file.",
+        "Your bits are swimming upstream like determined salmon.",
+        "This upload will be the stuff of legends... or at least logs.",
+        "Your data is proof that good things take time.",
+        "The recipient is about to receive a digital treasure.",
+        "Your file is painting a masterpiece in binary.",
+        "Uploading: where dreams become downloads.",
+        "Your data is making network engineers proud.",
+        "This file will change lives... or at least inboxes.",
+        "Your upload is a testament to modern technology.",
+        "The internet was waiting for this moment.",
+        "Your bits are on a mission from the cloud.",
+        "This file contains more excitement than a season finale.",
+        "Your data is traveling with dignity and grace.",
+        "The servers are honored to process your file.",
+        "Your upload is redefining what's possible.",
+        "This file will be talked about in server rooms.",
+        "Your data is making the internet a better place.",
+        "The cloud is getting an upgrade thanks to your file.",
+        "Your bits are setting speed records we'll never measure.",
+        "This upload is your legacy in the digital realm.",
+        "Your file is teaching patience to the impatient.",
+        "The internet cables are glowing with your data.",
+        "Your upload is a love letter to bandwidth.",
+        "This file will arrive with fanfare and celebration.",
+        "Your data is making friends with every router.",
+        "The recipient has no idea how lucky they are.",
+        "Your bits are writing poetry in packet form.",
+        "This upload is your masterclass in file sharing.",
+        "Your file is destined for the downloads hall of fame.",
+        "The cloud is doing backflips over your upload.",
+        "Your data is the MVP of today's internet traffic.",
+        "This file contains more value than its file size suggests.",
+        "Your upload is making email servers jealous worldwide.",
+        "The internet is a stage and your file is the star.",
+        "Your bits are racing toward glory and success.",
+        "This upload will be remembered by server logs forever.",
+        "Your data is creating ripples across the digital ocean.",
+        "The recipient's day is about to improve significantly.",
+        "Your file is making network infrastructure proud.",
+        "Uploading: where every byte counts and every second matters.",
+        "Your data is on a non-stop flight to success.",
+        "This file will be the crown jewel of someone's storage.",
+        "Your upload is proof that good things come to those who wait.",
+        "The servers are throwing a party for your file.",
+        "Your bits are writing their names in digital history.",
+        "This upload is your gift to future you.",
+        "Your file is making the journey look effortless.",
+        "The cloud is expanding its capacity just for you.",
+        "Your data is teaching the internet about perseverance.",
+        "This file will arrive with more grace than a ballet dancer.",
+        "Your upload is making bandwidth dreams come true.",
+        "The internet cables are vibrating with excitement.",
+        "Your bits are on a quest for download destiny.",
+        "This upload is your ticket to file sharing glory.",
+        "Your file is making routers rethink their career choices.",
+        "The cloud is getting stronger with every byte you send.",
+        "Your data is the hero the internet needs right now.",
+        "This file contains possibilities beyond measure.",
+        "Your upload is rewriting the rules of file transfer.",
+        "The servers are taking screenshots to remember this moment.",
+        "Your bits are traveling with the confidence of champions.",
+        "This upload is your contribution to digital civilization.",
+        "Your file is about to make download history.",
+        "The internet is better because you're sharing this file.",
+        "Your data is creating waves in the sea of bandwidth.",
+        "This upload is smoother than a freshly waxed surfboard.",
+        "Your file is earning respect from every server it touches.",
+        "The cloud is rolling out the red carpet for your data.",
+        "Your bits are on a mission to bring joy to the recipient.",
+        "This upload is your moment of digital glory.",
+        "Your file will be remembered long after the progress bar fades."
+    ];
+
+    return musings[Math.floor(Math.random() * musings.length)];
 }
 
 // Load file requests when page loads
