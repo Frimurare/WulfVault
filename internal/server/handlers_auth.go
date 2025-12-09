@@ -36,6 +36,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("email")
 	password := r.FormValue("password")
+	rememberMe := r.FormValue("remember_me") == "on"
 
 	// Try to authenticate as any account type (User or DownloadAccount)
 	authResult, err := auth.AuthenticateAnyAccount(email, password)
@@ -64,10 +65,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 		// Check if 2FA is enabled for this user
 		if user.TOTPEnabled {
-			// Store user ID in temporary cookie and redirect to 2FA verification
+			// Store user ID and remember_me preference in temporary cookie
 			pendingData := map[string]interface{}{
-				"user_id":    user.Id,
-				"created_at": time.Now().Unix(),
+				"user_id":     user.Id,
+				"created_at":  time.Now().Unix(),
+				"remember_me": rememberMe,
 			}
 			pendingJSON, _ := json.Marshal(pendingData)
 
@@ -105,12 +107,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			ErrorMsg:   "",
 		})
 
-		// Set cookie
+		// Set cookie with appropriate expiration
+		sessionDuration := 24 * time.Hour
+		if rememberMe {
+			sessionDuration = 30 * 24 * time.Hour // 30 days
+		}
+
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session",
 			Value:    sessionID,
 			Path:     "/",
-			Expires:  time.Now().Add(24 * time.Hour),
+			Expires:  time.Now().Add(sessionDuration),
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
 		})
@@ -152,12 +159,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			ErrorMsg:   "",
 		})
 
-		// Set download account session cookie
+		// Set download account session cookie with appropriate expiration
+		sessionDuration := 24 * time.Hour
+		if rememberMe {
+			sessionDuration = 30 * 24 * time.Hour // 30 days
+		}
+
 		http.SetCookie(w, &http.Cookie{
 			Name:     "download_session",
 			Value:    sessionEmail,
 			Path:     "/",
-			Expires:  time.Now().Add(24 * time.Hour),
+			Expires:  time.Now().Add(sessionDuration),
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 		})
@@ -371,6 +383,10 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 20px;">
+                <input type="checkbox" id="remember_me" name="remember_me" style="width: auto; margin-right: 8px;">
+                <label for="remember_me" style="margin: 0; font-weight: normal; cursor: pointer;">Keep me logged in (30 days)</label>
             </div>
             <button type="submit" class="btn">Login</button>
         </form>
