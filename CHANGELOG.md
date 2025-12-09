@@ -66,6 +66,28 @@
 - Changed AVG query scan from `int64` to `float64` with conversion for correct average calculation
 - Added filter to skip log entries without StatusCode or Method (non-HTTP system messages)
 
+### 📤 Enhanced Upload Logging
+
+**Detailed Upload Tracking:**
+- **Upload Started** - Logs when file upload begins with filename, size, IP, and user info
+- **Upload Finished** - Logs successful upload with File ID and SHA1 hash
+- **Upload Failed** - Logs detailed failure reasons (quota exceeded, disk errors, etc.)
+
+**Log Format Examples:**
+```
+📤 Upload started: 'document.pdf' (42.5 MB) from IP: 192.168.1.100 | User: john@example.com (5)
+✅ Upload finished: 'document.pdf' (42.5 MB) from IP: 192.168.1.100 | User: john@example.com (5) | File ID: abc123 | SHA1: def456...
+❌ Upload failed: 'largefile.zip' from IP: 192.168.1.100 | User: john@example.com (5) | Reason: Insufficient storage quota (needs 1000 MB, has 50 MB / 500 MB)
+❌ Upload failed: 'file.txt' from IP: 192.168.1.100 | User: john@example.com (5) | Reason: Failed to write file data - disk full
+```
+
+**Benefits:**
+- **Troubleshoot connection issues** - See if uploads fail due to network problems
+- **Monitor user activity** - Track which users are uploading files
+- **Identify storage issues** - Detect when users hit quota limits or disk errors
+- **Audit trail** - Complete log of all upload attempts with IP addresses
+- **Network diagnostics** - Identify users with poor connections or frequent failures
+
 ---
 
 ## [5.0.0 FullMoon] - 2025-12-09 📋 Server Logs & Enhanced HTTP Logging

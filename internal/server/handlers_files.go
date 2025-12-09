@@ -62,6 +62,17 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Get client IP for logging
+	clientIP := getClientIP(r)
+
+	// Log upload start
+	log.Printf("📤 Upload started: '%s' (%.1f MB) from IP: %s | User: %s (%d)",
+		header.Filename,
+		float64(header.Size)/(1024*1024),
+		clientIP,
+		user.Email,
+		user.Id)
+
 	// Get expiration settings from form
 	expireDate := r.FormValue("expire_date")
 	downloadsLimit, _ := strconv.Atoi(r.FormValue("downloads_limit"))
@@ -102,6 +113,14 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Check quota
 	if !user.HasStorageSpace(fileSizeMB) {
+		log.Printf("❌ Upload failed: '%s' from IP: %s | User: %s (%d) | Reason: Insufficient storage quota (needs %d MB, has %d MB / %d MB)",
+			header.Filename,
+			clientIP,
+			user.Email,
+			user.Id,
+			fileSizeMB,
+			user.StorageQuotaMB-user.StorageUsedMB,
+			user.StorageQuotaMB)
 		s.sendError(w, http.StatusBadRequest, "Insufficient storage quota")
 		return
 	}
@@ -109,6 +128,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	// Generate file ID
 	fileID, err := generateFileID()
 	if err != nil {
+		log.Printf("❌ Upload failed: '%s' from IP: %s | User: %s (%d) | Reason: Failed to generate file ID - %v",
+			header.Filename, clientIP, user.Email, user.Id, err)
 		s.sendError(w, http.StatusInternalServerError, "Failed to generate file ID")
 		return
 	}
@@ -117,6 +138,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	uploadPath := filepath.Join(s.config.UploadsDir, fileID)
 	dst, err := os.Create(uploadPath)
 	if err != nil {
+		log.Printf("❌ Upload failed: '%s' from IP: %s | User: %s (%d) | Reason: Failed to create file - %v",
+			header.Filename, clientIP, user.Email, user.Id, err)
 		s.sendError(w, http.StatusInternalServerError, "Failed to save file")
 		return
 	}
@@ -125,6 +148,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(dst, file)
 	if err != nil {
 		os.Remove(uploadPath)
+		log.Printf("❌ Upload failed: '%s' from IP: %s | User: %s (%d) | Reason: Failed to write file data - %v",
+			header.Filename, clientIP, user.Email, user.Id, err)
 		s.sendError(w, http.StatusInternalServerError, "Failed to write file")
 		return
 	}
@@ -187,9 +212,21 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	if err := database.DB.SaveFile(fileInfo); err != nil {
 		os.Remove(uploadPath)
+		log.Printf("❌ Upload failed: '%s' from IP: %s | User: %s (%d) | Reason: Failed to save file metadata - %v",
+			header.Filename, clientIP, user.Email, user.Id, err)
 		s.sendError(w, http.StatusInternalServerError, "Failed to save file metadata: "+err.Error())
 		return
 	}
+
+	// Log successful upload
+	log.Printf("✅ Upload finished: '%s' (%.1f MB) from IP: %s | User: %s (%d) | File ID: %s | SHA1: %s",
+		header.Filename,
+		float64(fileSize)/(1024*1024),
+		clientIP,
+		user.Email,
+		user.Id,
+		fileID,
+		sha1Hash)
 
 	// Update user storage
 	newStorageUsed := user.StorageUsedMB + fileSizeMB
