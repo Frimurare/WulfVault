@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "6.0.0 BloodMoon Beta 1"
+	Version = "6.0.0 BloodMoon Beta 2"
 )
 
 var (

@@ -1012,11 +1012,41 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         </p>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-large" id="uploadButton" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <span style="font-size: 24px;">📤</span>
-                        <span style="font-size: 18px; font-weight: 700;">Upload File</span>
+                    <button type="submit" id="uploadButton" style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 12px;
+                        padding: 20px 40px;
+                        font-size: 20px;
+                        min-width: 250px;
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                        transition: all 0.3s ease;
+                        margin-bottom: 15px;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)'">
+                        <span style="font-size: 32px;">📤</span>
+                        <span style="font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">Upload File</span>
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetUploadForm()">
+                    <button type="button" onclick="resetUploadForm()" style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                        padding: 15px 30px;
+                        font-size: 18px;
+                        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">
                         ✖️ Cancel
                     </button>
                 </div>
@@ -1473,8 +1503,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
     </div>
 
-    <!-- tus.js client for resumable uploads -->
-    <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.1.0/dist/tus.min.js"></script>
     <script src="/static/js/dashboard.js"></script>
     <script>
         function showDownloadHistory(fileId, fileName) {
