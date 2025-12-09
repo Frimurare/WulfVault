@@ -583,7 +583,7 @@ async function uploadFileInChunks(file, metadata, uploadButton) {
     const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let retryCount = 0;
-    const MAX_RETRIES = 10;
+    const MAX_RETRIES = 30; // 30 retries = ~5 minutes total retry time
 
     try {
         // Step 1: Initialize upload
@@ -643,10 +643,11 @@ async function uploadFileInChunks(file, metadata, uploadButton) {
 
                     if (attempts < MAX_RETRIES) {
                         showRetryIndicator(retryCount);
-                        // Wait before retry with exponential backoff
+                        // Wait before retry with exponential backoff, max 10 seconds per retry
+                        // Total retry time: ~5 minutes (30 retries × 10s = 300s)
                         await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempts - 1), 10000)));
                     } else {
-                        throw new Error(`Chunk ${chunkIndex} failed after ${MAX_RETRIES} attempts`);
+                        throw new Error(`Chunk ${chunkIndex} failed after ${MAX_RETRIES} attempts (~5 minutes)`);
                     }
                 }
             }
@@ -670,11 +671,8 @@ async function uploadFileInChunks(file, metadata, uploadButton) {
             window.inactivityTracker.markTransferInactive();
         }
 
-        // Show success
+        // Show success (no auto-reload, user must click button)
         showUploadSuccess();
-
-        // Reload page after showing success animation
-        setTimeout(() => window.location.reload(), 3000);
 
     } catch (error) {
         // Mark transfer as inactive
@@ -894,11 +892,11 @@ function showUploadSuccess() {
         speedInfo.style.fontWeight = 'bold';
     }
 
-    // Add large green "PRESS HERE TO GO BACK" button
+    // Add large green "RETURN TO DASHBOARD" button
     const overlay = document.getElementById('uploadProgressOverlay');
     if (overlay) {
         const backButton = document.createElement('button');
-        backButton.textContent = 'PRESS HERE TO GO BACK';
+        backButton.textContent = '✓ RETURN TO DASHBOARD';
         backButton.style.cssText = `
             margin-top: 40px;
             padding: 25px 60px;
@@ -913,14 +911,17 @@ function showUploadSuccess() {
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
+            animation: pulse 2s ease-in-out infinite;
         `;
         backButton.onmouseover = () => {
-            backButton.style.transform = 'translateY(-3px)';
-            backButton.style.boxShadow = '0 12px 32px rgba(16, 185, 129, 0.5)';
+            backButton.style.transform = 'translateY(-3px) scale(1.05)';
+            backButton.style.boxShadow = '0 12px 32px rgba(16, 185, 129, 0.6)';
+            backButton.style.animation = 'none';
         };
         backButton.onmouseout = () => {
-            backButton.style.transform = 'translateY(0)';
+            backButton.style.transform = 'translateY(0) scale(1)';
             backButton.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
+            backButton.style.animation = 'pulse 2s ease-in-out infinite';
         };
         backButton.onclick = () => window.location.reload();
         overlay.querySelector('div').appendChild(backButton);
@@ -998,12 +999,12 @@ function showRetryIndicator(retryCount) {
     const retryInfo = document.getElementById('uploadRetryInfo');
     if (retryInfo) {
         retryInfo.style.display = 'block';
-        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 10...`;
+        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 30 (~5 min total)...`;
 
         // Flash animation
         retryInfo.style.animation = 'pulse 1s ease-in-out 3';
 
-        console.log(`Retry ${retryCount}/10: Network interruption detected, retrying upload...`);
+        console.log(`Retry ${retryCount}/30: Network interruption detected, retrying upload...`);
     }
 }
 
