@@ -121,8 +121,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/teams", s.requireAdmin(s.handleAdminTeams))
 	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
 	mux.HandleFunc("/admin/audit-logs", s.requireAdmin(s.handleAdminAuditLogs))
+	mux.HandleFunc("/admin/server-logs", s.requireAdmin(s.handleAdminServerLogs))
 	mux.HandleFunc("/api/v1/admin/audit-logs", s.requireAdmin(s.handleAPIGetAuditLogs))
 	mux.HandleFunc("/api/v1/admin/audit-logs/export", s.requireAdmin(s.handleAPIExportAuditLogs))
+	mux.HandleFunc("/api/v1/admin/server-logs", s.requireAdmin(s.handleAPIGetServerLogs))
+	mux.HandleFunc("/api/v1/admin/server-logs/export", s.requireAdmin(s.handleAPIExportServerLogs))
 
 	// Teams API routes (require authentication)
 	mux.HandleFunc("/api/teams/my", s.requireAuth(s.handleAPIMyTeams))
@@ -183,10 +186,10 @@ func (s *Server) Start() error {
 	addr := ":" + s.config.Port
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           s.loggingMiddleware(mux),
-		ReadHeaderTimeout: 60 * time.Second,  // Time to read request headers only (not body)
-		WriteTimeout:      8 * time.Hour,     // Extended for very large file uploads on slow connections (up to 8 hours)
-		IdleTimeout:       120 * time.Second, // Keep-alive timeout
+		Handler:           loggingMiddleware(mux), // Use the new enhanced logging middleware
+		ReadHeaderTimeout: 60 * time.Second,       // Time to read request headers only (not body)
+		WriteTimeout:      8 * time.Hour,          // Extended for very large file uploads on slow connections (up to 8 hours)
+		IdleTimeout:       120 * time.Second,      // Keep-alive timeout
 	}
 
 	log.Printf("🚀 Server starting on %s", addr)
@@ -202,14 +205,6 @@ func (s *Server) loadTemplates() error {
 	return nil
 }
 
-// Middleware: Logging
-func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s", r.Method, r.RequestURI, time.Since(start))
-	})
-}
 
 // Middleware: Require authentication
 func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {

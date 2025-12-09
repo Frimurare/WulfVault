@@ -1,5 +1,197 @@
 # Changelog
 
+## [5.0.1 FullMoon] - 2025-12-09 🎨 Server Logs UI Redesign & Bug Fixes
+
+### ✨ Major UI Update: Server Logs
+
+**Complete Redesign to Match Audit Logs:**
+- **NEW:** Server Logs now matches Audit Logs design and functionality
+- **Consistent UX** - Same layout, styling, and behavior as Audit Logs
+- **Date Range Filters** - Filter logs by start and end date
+- **Items Per Page** - Choose 25, 50 (default), 100, or 200 entries per page
+- **CSV Export** - Export filtered logs to CSV with full details
+- **Pagination** - Navigate through logs with Previous/Next buttons
+- **Advanced Filtering** - Search, log level, date range, all work together
+
+**New Filter Options:**
+- **Search** - Search across all log content
+- **Log Level** - Filter by Success, Warning, Error, or Info
+- **Start Date** - Show logs from specific date onwards
+- **End Date** - Show logs up to specific date
+- **Items Per Page** - 25, 50, 100, or 200 (default: 50)
+
+**Table View:**
+- Date/Time column
+- Level badges (colored for quick identification)
+- Status code badges
+- HTTP Method and Path
+- Duration, Request Size, Response Size
+- IP Address
+- Hover effects for better UX
+
+**API Enhancements:**
+- `GET /api/v1/admin/server-logs` - Now supports all filters
+- `GET /api/v1/admin/server-logs/export` - CSV export with filters
+- Pagination support (limit/offset)
+- Date range filtering (Unix timestamps)
+
+### 📝 Files Changed
+
+**Modified Files:**
+- `internal/server/handlers_server_logs.go` - Complete rewrite with Audit Logs-style design
+- `internal/server/server.go` - Add CSV export route
+- `cmd/server/main.go` - Version bump to 5.0.1
+- `CHANGELOG.md` - This changelog
+
+**New API Endpoints:**
+- `GET /api/v1/admin/server-logs/export` - Export server logs to CSV
+
+### 🚀 User Benefits
+
+- **Consistent Experience** - Server Logs now feels like Audit Logs
+- **Better Filtering** - Find specific logs with date ranges and search
+- **CSV Export** - Download logs for external analysis
+- **Improved Readability** - Clean table layout with color-coded badges
+- **Flexible Pagination** - Choose how many entries to view at once
+
+### 🐛 Bug Fixes
+
+**Critical Fixes:**
+- **Fixed Server Logs page crash** - Resolved nil pointer dereference in header rendering (handlers_server_logs.go:362)
+- **Fixed Dashboard "Avg File Size" showing 0 B** - Database function now correctly handles SQL AVG() float result (downloads.go:657)
+- **Fixed Server Logs showing system messages** - Now filters out non-HTTP logs (startup messages, etc.) and only displays HTTP requests
+
+**Technical Details:**
+- Changed `getHeaderHTML(nil, true)` to `getAdminHeaderHTML("Server Logs")` to avoid nil pointer
+- Changed AVG query scan from `int64` to `float64` with conversion for correct average calculation
+- Added filter to skip log entries without StatusCode or Method (non-HTTP system messages)
+
+---
+
+## [5.0.0 FullMoon] - 2025-12-09 📋 Server Logs & Enhanced HTTP Logging
+
+### 🎉 Major New Feature: Server Logs
+
+**Complete Server Logging System:**
+- **NEW:** Dedicated Server Logs page in Admin → Server menu
+- **Detailed HTTP logging** - Every request logged with status, duration, size, IP, and User-Agent
+- **File-based logging** - All logs written to `data/server.log` (dual output: file + stdout)
+- **Automatic log rotation** - Configurable max file size (default: 50MB)
+- **Real-time viewer** - Beautiful web UI with auto-refresh every 10 seconds
+- **Advanced filtering** - Search by keyword, filter by log level (Success/Warning/Error/Info)
+- **Configurable display** - View last 100, 500, 1000, or 5000 lines
+- **Download capability** - Export logs as text file
+- **Performance monitoring** - See request duration, data transfer sizes, and response codes
+
+**HTTP Request Logging Format:**
+```
+✅ [200] POST /upload | Duration: 1.2s | Req: 41.5 GB | Res: 256 B | IP: x.x.x.x | UA: Mozilla/...
+⚠️ [404] GET /missing | Duration: 5ms | Req: 0 B | Res: 1.2 KB | IP: x.x.x.x | UA: ...
+❌ [500] POST /api/error | Duration: 100ms | Req: 2.3 KB | Res: 512 B | IP: x.x.x.x | UA: ...
+```
+
+**Log Level Indicators:**
+- ✅ Success (HTTP 2xx)
+- ⚠️ Warning (HTTP 4xx - client errors)
+- ❌ Error (HTTP 5xx - server errors)
+- 📝 Info (server events, startups, rotations)
+
+**Server Logs UI Features:**
+- Dark theme log viewer (like a terminal)
+- Syntax highlighting for different log levels
+- Real-time stats (file size, total lines, last modified)
+- Search functionality across all logs
+- Filter by log level
+- Auto-refresh toggle
+- Download full log file
+- Mobile-responsive design
+- Smooth scrolling and hover effects
+
+### ⚙️ Configuration
+
+**New Configuration Options:**
+- `server_log_max_size_mb` - Maximum size before log rotation (default: 50MB)
+- **UI Settings:** Admin → Server Settings now includes Server Log Max Size control
+- Configurable via Admin UI alongside Audit Log settings
+- Rotation creates `.old` backup file
+
+**Log Rotation:**
+- Automatic rotation when file exceeds max size
+- Keeps one backup file (`.old`)
+- Rotation logged in the new log file
+- Zero downtime during rotation
+
+### 🔍 Debugging & Troubleshooting
+
+**Why Server Logs Matter:**
+This release was triggered by an investigation into a missing 41GB upload (`Mordnatten20251025.zip`). The file never appeared in:
+- Upload directory
+- Database
+- Audit logs
+
+**Without server logs, it was impossible to determine:**
+- Did the request start?
+- How much data was uploaded before failure?
+- What error occurred?
+- When did it fail?
+
+**With v5.0.0 FullMoon, you can now see:**
+- Every upload attempt with real-time progress
+- Exact failure points with error messages
+- Request duration for slow/stuck uploads
+- Complete HTTP context for debugging
+
+### 📝 Files Changed
+
+**New Files:**
+- `internal/server/middleware.go` - HTTP logging middleware with request/response tracking
+- `internal/server/handlers_server_logs.go` - Server Logs UI and API endpoints
+
+**Modified Files:**
+- `cmd/server/main.go` - Version bump to 5.0.0, server log initialization
+- `internal/server/server.go` - Use new logging middleware, add server logs routes
+- `internal/config/config.go` - Add ServerLogMaxSizeMB configuration
+- `internal/server/header.go` - Add "Server Logs" link in Server menu
+- `internal/server/handlers_admin.go` - Add Server Log Max Size setting to Server Settings UI
+- `CHANGELOG.md` - This changelog
+
+**New Routes:**
+- `GET /admin/server-logs` - Server logs web UI
+- `GET /api/v1/admin/server-logs` - Fetch logs as JSON
+- `GET /api/v1/admin/server-logs?download=true` - Download log file
+
+### 🚀 User Benefits
+
+**For Administrators:**
+- **Complete visibility** - See every request hitting your server
+- **Troubleshoot uploads** - Track large file uploads in real-time
+- **Performance monitoring** - Identify slow requests and bottlenecks
+- **Security auditing** - Monitor suspicious activity with IP addresses
+- **Error diagnosis** - Catch and debug server errors quickly
+
+**For System Operations:**
+- **Persistent logs** - Logs survive server restarts
+- **Manageable size** - Automatic rotation prevents disk filling
+- **Dual output** - Logs visible in both terminal and file
+- **Standard format** - Easy to parse with external tools
+
+### 🎯 Technical Details
+
+**Middleware Implementation:**
+- Wraps `http.ResponseWriter` to capture status code and bytes written
+- Measures request duration with nanosecond precision
+- Extracts client IP from `X-Forwarded-For`, `X-Real-IP`, or `RemoteAddr`
+- Truncates long User-Agent strings to 100 characters
+- Formats bytes in human-readable format (B, KB, MB, GB)
+
+**Performance Considerations:**
+- Lightweight logging overhead (<1ms per request)
+- Periodic rotation check (every ~100 requests)
+- Efficient tail reading for log viewer
+- Buffered file I/O for optimal performance
+
+---
+
 ## [4.9.9 Silverbullet] - 2025-11-25 📱 Audit Log UI Enhancement & Mobile Optimization
 
 ### ✨ New Features
