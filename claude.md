@@ -37,9 +37,11 @@ WulfVault/
 ### GitHub Token
 **Det är OK att fråga Ulf efter GitHub token när du behöver det.**
 
-Senaste token som användes (kan ha utgått):
+Token format: `ghp_...` (classic personal access token)
+
+Exempel på hur token används:
 ```bash
-export GH_TOKEN="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"
+export GH_TOKEN="<fråga-ulf-efter-token>"
 ```
 
 Token används för:
