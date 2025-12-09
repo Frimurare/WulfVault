@@ -1638,12 +1638,14 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             max-width: 1400px;
             margin: 40px auto;
             padding: 0 20px;
+            padding-top: 40px;
         }
         .actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
+            margin-top: 30px;
         }
         .btn {
             padding: 10px 20px;
@@ -3634,6 +3636,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
             max-width: 1400px;
             margin: 40px auto;
             padding: 0 20px;
+            padding-top: 40px;
         }
         h2 {
             margin-bottom: 20px;
@@ -3763,7 +3766,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 <body>
     ` + s.getAdminHeaderHTML("") + `
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top: 30px;">
             <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
 
 	if len(files) > 0 {

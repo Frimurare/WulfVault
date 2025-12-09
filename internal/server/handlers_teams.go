@@ -704,12 +704,14 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             max-width: 1400px;
             margin: 40px auto;
             padding: 0 20px;
+            padding-top: 40px;
         }
         .actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
+            margin-top: 30px;
         }
         .btn {
             padding: 12px 24px;
