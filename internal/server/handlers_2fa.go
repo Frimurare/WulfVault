@@ -246,8 +246,9 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pendingData struct {
-		UserID    int   `json:"user_id"`
-		CreatedAt int64 `json:"created_at"`
+		UserID     int   `json:"user_id"`
+		CreatedAt  int64 `json:"created_at"`
+		RememberMe bool  `json:"remember_me"`
 	}
 
 	decodedData, err := base64.StdEncoding.DecodeString(cookie.Value)
@@ -318,12 +319,17 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set session cookie
+	// Set session cookie with appropriate expiration
+	sessionDuration := 24 * time.Hour
+	if pendingData.RememberMe {
+		sessionDuration = 30 * 24 * time.Hour // 30 days
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    sessionID,
 		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
+		Expires:  time.Now().Add(sessionDuration),
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
