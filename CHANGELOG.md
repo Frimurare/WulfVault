@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.1 FullMoon] - 2025-12-09 🎨 Server Logs UI Redesign & Enhanced Filtering
+## [5.0.1 FullMoon] - 2025-12-09 🎨 Server Logs UI Redesign & Bug Fixes
 
 ### ✨ Major UI Update: Server Logs
 
@@ -53,6 +53,18 @@
 - **CSV Export** - Download logs for external analysis
 - **Improved Readability** - Clean table layout with color-coded badges
 - **Flexible Pagination** - Choose how many entries to view at once
+
+### 🐛 Bug Fixes
+
+**Critical Fixes:**
+- **Fixed Server Logs page crash** - Resolved nil pointer dereference in header rendering (handlers_server_logs.go:362)
+- **Fixed Dashboard "Avg File Size" showing 0 B** - Database function now correctly handles SQL AVG() float result (downloads.go:657)
+- **Fixed Server Logs showing system messages** - Now filters out non-HTTP logs (startup messages, etc.) and only displays HTTP requests
+
+**Technical Details:**
+- Changed `getHeaderHTML(nil, true)` to `getAdminHeaderHTML("Server Logs")` to avoid nil pointer
+- Changed AVG query scan from `int64` to `float64` with conversion for correct average calculation
+- Added filter to skip log entries without StatusCode or Method (non-HTTP system messages)
 
 ---
 

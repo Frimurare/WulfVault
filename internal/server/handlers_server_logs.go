@@ -190,6 +190,12 @@ func (s *Server) parseServerLogs(filePath, searchTerm, levelFilter string, start
 		line := scanner.Text()
 		entry := s.parseLogLine(line)
 
+		// Skip non-HTTP log entries (system startup messages, etc.)
+		// Only include lines that have HTTP request format (status code, method, path)
+		if entry.StatusCode == 0 || entry.Method == "" {
+			continue
+		}
+
 		// Apply filters
 		if searchTerm != "" && !strings.Contains(strings.ToLower(entry.RawLog), strings.ToLower(searchTerm)) {
 			continue
@@ -359,7 +365,7 @@ func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter) {
 		companyName = "WulfVault"
 	}
 
-	headerHTML := s.getHeaderHTML(nil, true)
+	headerHTML := s.getAdminHeaderHTML("Server Logs")
 	faviconHTML := s.getFaviconHTML()
 
 	template := ""
