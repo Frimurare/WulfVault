@@ -226,12 +226,31 @@ if (uploadForm) {
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 let errorMsg = 'Upload failed';
+                let errorDetails = '';
+
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);
                     errorMsg = errorResponse.error || errorMsg;
                 } catch (e) {
                     errorMsg = xhr.statusText || errorMsg;
                 }
+
+                // Add status code to error message for debugging
+                if (xhr.status) {
+                    errorDetails = ` (Error ${xhr.status})`;
+                }
+
+                // Enhance error messages with user-friendly explanations
+                if (errorMsg.includes('Insufficient storage quota')) {
+                    errorMsg = '❌ Upload Failed: Insufficient storage quota\n\nYou don\'t have enough storage space for this file. Please delete some files or contact your administrator to increase your quota.';
+                } else if (errorMsg.includes('Failed to write file')) {
+                    errorMsg = '❌ Upload Failed: Could not save file\n\nThe upload was interrupted. This could be due to:\n• Network connection issues\n• Server storage full\n• Connection timeout\n\nPlease try again or contact support if the problem persists.';
+                } else if (errorMsg.includes('Failed to save file')) {
+                    errorMsg = '❌ Upload Failed: Could not save file\n\nThe server encountered an error while saving your file. Please try again or contact support.';
+                } else {
+                    errorMsg = `❌ Upload Failed${errorDetails}\n\n${errorMsg}\n\nPlease try again. If the problem persists, contact your administrator.`;
+                }
+
                 showError(errorMsg);
                 uploadButton.textContent = '📤 Upload File';
                 uploadButton.disabled = false;
@@ -244,12 +263,39 @@ if (uploadForm) {
                 window.inactivityTracker.markTransferInactive();
             }
 
-            showError('Upload failed - network error');
+            showError('❌ Upload Failed: Network Error\n\nThe upload failed due to a network problem. This could be caused by:\n• Lost internet connection\n• Weak or unstable network\n• Firewall or proxy blocking the upload\n• Server timeout\n\nPlease check your connection and try again.');
+            uploadButton.textContent = '📤 Upload File';
+            uploadButton.disabled = false;
+        });
+
+        xhr.addEventListener('abort', () => {
+            // Mark transfer as inactive on abort
+            if (window.inactivityTracker) {
+                window.inactivityTracker.markTransferInactive();
+            }
+
+            showError('❌ Upload Cancelled\n\nThe upload was cancelled or interrupted.');
+            uploadButton.textContent = '📤 Upload File';
+            uploadButton.disabled = false;
+        });
+
+        xhr.addEventListener('timeout', () => {
+            // Mark transfer as inactive on timeout
+            if (window.inactivityTracker) {
+                window.inactivityTracker.markTransferInactive();
+            }
+
+            showError('❌ Upload Failed: Timeout\n\nThe upload took too long and timed out. This usually happens with:\n• Very large files on slow connections\n• Unstable network connection\n• Server overload\n\nTry uploading a smaller file or check your internet connection.');
             uploadButton.textContent = '📤 Upload File';
             uploadButton.disabled = false;
         });
 
         xhr.open('POST', '/upload');
+
+        // Set timeout for large files (10 minutes for files > 1GB, otherwise 5 minutes)
+        const fileSize = formData.get('file').size;
+        xhr.timeout = fileSize > 1024 * 1024 * 1024 ? 600000 : 300000; // 10 min or 5 min
+
         xhr.send(formData);
     });
 }
