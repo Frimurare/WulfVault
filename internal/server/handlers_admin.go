@@ -3763,7 +3763,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
 <body>
     ` + s.getAdminHeaderHTML("") + `
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
 
 	if len(files) > 0 {
