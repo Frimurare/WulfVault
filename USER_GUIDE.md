@@ -1612,6 +1612,77 @@ Recipients can:
 - Located in data directory
 - Help diagnose technical issues
 
+### Understanding Server Logs
+
+**Log Location:**
+- Server logs: `data/logs/server.log`
+- Audit logs: Accessible via Admin → Server → View Audit Logs
+
+**HTTP Status Codes:**
+
+Server logs display HTTP status codes to indicate the outcome of requests. Understanding these codes helps diagnose issues quickly:
+
+| Status Code | Color | Meaning | Common Causes |
+|-------------|-------|---------|---------------|
+| **200** | 🟢 Green | Success | Request completed successfully |
+| **201** | 🟢 Green | Created | Resource created successfully (e.g., file uploaded) |
+| **204** | 🟢 Green | No Content | Success, no data to return (e.g., delete operation) |
+| **301** | 🟡 Yellow | Moved Permanently | Resource moved to new URL |
+| **302** | 🟡 Yellow | Found (Redirect) | Temporary redirect to another page |
+| **304** | 🟡 Yellow | Not Modified | Cached content still valid |
+| **400** | 🔴 Red | Bad Request | Invalid request format or parameters |
+| **401** | 🔴 Red | Unauthorized | Authentication required or failed |
+| **403** | 🔴 Red | Forbidden | Access denied (insufficient permissions) |
+| **404** | 🔴 Red | Not Found | Resource doesn't exist (deleted/expired file) |
+| **405** | 🟡 Yellow | Method Not Allowed | Wrong HTTP method (e.g., GET instead of POST) |
+| **409** | 🔴 Red | Conflict | Request conflicts with current state |
+| **413** | 🔴 Red | Payload Too Large | File size exceeds configured limit |
+| **429** | 🟡 Yellow | Too Many Requests | Rate limit exceeded |
+| **500** | 🔴 Red | Internal Server Error | Server-side error (check logs for details) |
+| **502** | 🔴 Red | Bad Gateway | Proxy/gateway error |
+| **503** | 🔴 Red | Service Unavailable | Server temporarily unavailable |
+
+**Status Code Categories:**
+- **2xx (Green):** Success - Request processed successfully
+- **3xx (Yellow):** Redirection - Client needs to take additional action
+- **4xx (Red/Yellow):** Client Error - Problem with the request
+- **5xx (Red):** Server Error - Server failed to process valid request
+
+**Common Log Patterns:**
+
+**Normal Operations:**
+```
+200 GET  /dashboard              # User viewing dashboard
+201 POST /upload                 # File uploaded successfully
+302 GET  /login                  # Redirect to login page
+```
+
+**Authentication Issues:**
+```
+401 POST /api/login              # Failed login attempt
+403 GET  /admin                  # User without admin access
+```
+
+**File Problems:**
+```
+404 GET  /d/abc123xyz            # Expired or deleted file
+413 POST /upload                 # File too large
+```
+
+**Server Issues:**
+```
+500 POST /api/user/create        # Server error creating user
+503 GET  /                       # Server overloaded
+```
+
+**Troubleshooting with Status Codes:**
+
+1. **Frequent 401/403:** Check authentication system and user permissions
+2. **Many 404s:** Files expiring too quickly or broken links being shared
+3. **413 errors:** Increase `MAX_FILE_SIZE_MB` or use smaller files
+4. **500 errors:** Check server logs for stack traces and error details
+5. **429 errors:** Implement longer delays between requests
+
 ---
 
 ## Best Practices
