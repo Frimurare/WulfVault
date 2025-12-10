@@ -5,6 +5,14 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.1] - BloodMoon 🌙 - 2025-12-10
+
+### Fixed
+- **Critical**: Added cache busting parameter to dashboard.js (`?v=6.1.1`) to force browser reload
+  - Fixes issue where browsers cached old 5MB chunk JavaScript
+  - Users now properly get 25MB chunks without manual cache clearing
+  - Prevents confusion from seeing 5MB in logs despite code changes
+
 ## [6.1.0] - BloodMoon 🌙 - 2025-12-10
 
 ### Added
