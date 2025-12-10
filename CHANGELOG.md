@@ -5,6 +5,16 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.3] - BloodMoon 🌙 - 2025-12-10
+
+### Fixed
+- **Email Internationalization**: Translated all email templates to English
+  - Download notification email (HTML and text)
+  - Splash link email (HTML and text) - "Someone Shared a File with You"
+  - Account deletion confirmation email (GDPR)
+  - Helper functions now return English text
+  - Fixed inconsistency where some emails were in Swedish
+
 ## [6.1.2] - BloodMoon 🌙 - 2025-12-10
 
 ### Fixed

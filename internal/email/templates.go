@@ -180,29 +180,29 @@ func GenerateDownloadNotificationHTML(file *database.FileInfo, downloaderIP, ser
 `, file.Name, file.Size, downloadTime, downloaderIP, getDownloadsRemainingText(file), serverURL)
 }
 
-// GenerateDownloadNotificationText skapar text-version av nedladdningsnotifiering
+// GenerateDownloadNotificationText creates text version of download notification
 func GenerateDownloadNotificationText(file *database.FileInfo, downloaderIP, serverURL string) string {
 	downloadTime := time.Now().Format("2006-01-02 15:04:05")
 
-	return fmt.Sprintf(`Din fil har laddats ner!
+	return fmt.Sprintf(`Your file has been downloaded!
 
-Någon har laddat ner en av dina filer:
+Someone has downloaded one of your files:
 
-Filnamn: %s
-Storlek: %s
-Nedladdad: %s
-IP-adress: %s
-Nedladdningar kvar: %s
+Filename: %s
+Size: %s
+Downloaded: %s
+IP Address: %s
+Downloads remaining: %s
 
-Logga in för att se detaljer:
+Log in to see details:
 %s/dashboard
 
 ---
-Detta är ett automatiskt meddelande från WulfVault.
+This is an automated message from WulfVault.
 `, file.Name, file.Size, downloadTime, downloaderIP, getDownloadsRemainingText(file), serverURL)
 }
 
-// GenerateSplashLinkHTML skapar HTML-version av splash link e-post
+// GenerateSplashLinkHTML creates HTML version of splash link email
 func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
@@ -235,27 +235,27 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message 
 <body>
 	<div class="container">
 		<div class="header">
-			<h2>📎 Någon har delat en fil med dig</h2>
+			<h2>📎 Someone Shared a File with You</h2>
 		</div>
 		<div class="content">
 			%s
 
 			<div class="file-info">
-				<p><strong>Filnamn:</strong> %s</p>
-				<p><strong>Storlek:</strong> %s</p>
+				<p><strong>Filename:</strong> %s</p>
+				<p><strong>Size:</strong> %s</p>
 			</div>
 
 			<center>
-				<a href="%s" class="button">📥 Ladda ner fil</a>
+				<a href="%s" class="button">📥 Download File</a>
 			</center>
 
 			<div class="link-text">
-				Eller kopiera denna länk:<br/>
+				Or copy this link:<br/>
 				<code>%s</code>
 			</div>
 
 			<div class="footer">
-				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
+				<p>This is an automated message from WulfVault.</p>
 			</div>
 		</div>
 	</div>
@@ -264,29 +264,29 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message 
 `, getMessageHTML(message), file.Name, file.Size, splashLink, splashLink)
 }
 
-// GenerateSplashLinkText skapar text-version av splash link e-post
+// GenerateSplashLinkText creates text version of splash link email
 func GenerateSplashLinkText(splashLink string, file *database.FileInfo, message string) string {
-	return fmt.Sprintf(`Någon har delat en fil med dig
+	return fmt.Sprintf(`Someone Shared a File with You
 
 %s
-Filnamn: %s
-Storlek: %s
+Filename: %s
+Size: %s
 
-Ladda ner filen här: %s
+Download the file here: %s
 
 ---
-Detta är ett automatiskt meddelande från WulfVault.
+This is an automated message from WulfVault.
 `, getMessageText(message), file.Name, file.Size, splashLink)
 }
 
-// Helper-funktioner
+// Helper functions
 
 func getDownloadsRemainingText(file *database.FileInfo) string {
 	if file.UnlimitedDownloads {
-		return "Obegränsat"
+		return "Unlimited"
 	}
 	if file.DownloadsRemaining <= 0 {
-		return "0 (ingen kan ladda ner filen längre)"
+		return "0 (no one can download the file anymore)"
 	}
 	return fmt.Sprintf("%d", file.DownloadsRemaining)
 }
@@ -295,17 +295,17 @@ func getMessageHTML(message string) string {
 	if message == "" {
 		return ""
 	}
-	return fmt.Sprintf(`<div class="message-box"><strong>Meddelande:</strong><br/>%s</div>`, message)
+	return fmt.Sprintf(`<div class="message-box"><strong>Message:</strong><br/>%s</div>`, message)
 }
 
 func getMessageText(message string) string {
 	if message == "" {
 		return ""
 	}
-	return fmt.Sprintf("Meddelande: %s\n\n", message)
+	return fmt.Sprintf("Message: %s\n\n", message)
 }
 
-// GenerateAccountDeletionHTML skapar HTML-version av bekräftelse på kontoradering
+// GenerateAccountDeletionHTML creates HTML version of account deletion confirmation
 func GenerateAccountDeletionHTML(accountName string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
@@ -337,29 +337,29 @@ func GenerateAccountDeletionHTML(accountName string) string {
 <body>
 	<div class="container">
 		<div class="header">
-			<h2>✓ Ditt konto har raderats</h2>
+			<h2>✓ Your Account Has Been Deleted</h2>
 		</div>
 		<div class="content">
 			<div class="checkmark">✓</div>
 
-			<p>Hej %s,</p>
+			<p>Hello %s,</p>
 
-			<p>Detta är en bekräftelse på att ditt nedladdningskonto har raderats från vårt system enligt GDPR.</p>
+			<p>This is confirmation that your download account has been deleted from our system in accordance with GDPR.</p>
 
 			<div class="info-box">
-				<p><strong>Vad har hänt:</strong></p>
+				<p><strong>What happened:</strong></p>
 				<ul>
-					<li>Din personliga information har anonymiserats permanent</li>
-					<li>Du kan inte längre ladda ner filer med detta konto</li>
-					<li>Om du vill ladda ner filer igen måste du registrera ett nytt konto</li>
+					<li>Your personal information has been permanently anonymized</li>
+					<li>You can no longer download files with this account</li>
+					<li>If you want to download files again, you must register a new account</li>
 				</ul>
 			</div>
 
-			<p>Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.</p>
+			<p>We respect your right to deletion under GDPR and confirm that all your personal information has been handled in accordance with data protection regulations.</p>
 
 			<div class="footer">
-				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
-				<p>Om du har frågor, vänligen kontakta oss.</p>
+				<p>This is an automated message from WulfVault.</p>
+				<p>If you have questions, please contact us.</p>
 			</div>
 		</div>
 	</div>
@@ -368,24 +368,24 @@ func GenerateAccountDeletionHTML(accountName string) string {
 `, accountName)
 }
 
-// GenerateAccountDeletionText skapar text-version av bekräftelse på kontoradering
+// GenerateAccountDeletionText creates text version of account deletion confirmation
 func GenerateAccountDeletionText(accountName string) string {
-	return fmt.Sprintf(`Ditt konto har raderats
+	return fmt.Sprintf(`Your Account Has Been Deleted
 
-Hej %s,
+Hello %s,
 
-Detta är en bekräftelse på att ditt nedladdningskonto har raderats från vårt system enligt GDPR.
+This is confirmation that your download account has been deleted from our system in accordance with GDPR.
 
-Vad har hänt:
-- Din personliga information har anonymiserats permanent
-- Du kan inte längre ladda ner filer med detta konto
-- Om du vill ladda ner filer igen måste du registrera ett nytt konto
+What happened:
+- Your personal information has been permanently anonymized
+- You can no longer download files with this account
+- If you want to download files again, you must register a new account
 
-Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.
+We respect your right to deletion under GDPR and confirm that all your personal information has been handled in accordance with data protection regulations.
 
 ---
-Detta är ett automatiskt meddelande från WulfVault.
-Om du har frågor, vänligen kontakta oss.
+This is an automated message from WulfVault.
+If you have questions, please contact us.
 `, accountName)
 }
 
