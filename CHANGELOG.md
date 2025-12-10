@@ -5,6 +5,15 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.4] - BloodMoon 🌙 - 2025-12-10
+
+### Changed
+- **Upload Retry Timeout**: Extended chunk upload retry timeout from ~3 minutes to ~7.5 minutes
+  - Increased MAX_RETRIES from 30 to 50 attempts
+  - Better tolerance for router restarts and network interruptions
+  - Exponential backoff with max 10 seconds per retry
+  - Users can now recover from longer network outages during large uploads
+
 ## [6.1.3] - BloodMoon 🌙 - 2025-12-10
 
 ### Fixed
