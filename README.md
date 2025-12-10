@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 6.1.0 BloodMoon** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 6.1.4 BloodMoon** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -34,7 +34,7 @@ WulfVault solves this by providing:
 - **Large file support** - Files up to 15GB+ (configurable, tested with video surveillance footage)
 - **Custom chunked upload system (v6.0+):**
   - Automatic file splitting into 25MB chunks for optimal performance (v6.1.0+)
-  - Built-in retry logic with exponential backoff (up to 30 attempts per chunk, ~5 minutes total)
+  - Built-in retry logic with exponential backoff (up to 50 attempts per chunk, ~7.5 minutes total) (v6.1.4+)
   - Full-screen visual progress overlay with real-time statistics
   - Speed calculation and ETA display during upload
   - Network interruption recovery without losing progress
