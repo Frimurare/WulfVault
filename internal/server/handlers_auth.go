@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -37,6 +38,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	rememberMe := r.FormValue("remember_me") == "on"
+
+	// Log login attempt start (for debugging double-submit issues)
+	log.Printf("🔐 Login attempt: %s | IP: %s | RememberMe: %v", email, getClientIP(r), rememberMe)
 
 	// Try to authenticate as any account type (User or DownloadAccount)
 	authResult, err := auth.AuthenticateAnyAccount(email, password)
@@ -86,8 +90,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// No 2FA, create session directly
-		sessionID, err := auth.CreateSession(user.Id)
+		// No 2FA, create session directly with appropriate duration
+		sessionDuration := 24 * time.Hour
+		if rememberMe {
+			sessionDuration = 30 * 24 * time.Hour // 30 days
+		}
+
+		sessionID, err := auth.CreateSession(user.Id, sessionDuration)
 		if err != nil {
 			s.renderLoginPage(w, r, "Failed to create session")
 			return
@@ -107,19 +116,14 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			ErrorMsg:   "",
 		})
 
-		// Set cookie with appropriate expiration
-		sessionDuration := 24 * time.Hour
-		if rememberMe {
-			sessionDuration = 30 * 24 * time.Hour // 30 days
-		}
-
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session",
 			Value:    sessionID,
 			Path:     "/",
 			Expires:  time.Now().Add(sessionDuration),
 			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
+			SameSite: http.SameSiteLaxMode, // Lax allows cookies on top-level navigation (redirects)
+			Secure:   false,                 // Set to true if using HTTPS
 		})
 
 		// Redirect
@@ -333,20 +337,43 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
         }
     </style>
     <script>
-        // Prevent double form submission
+        // Prevent double form submission and provide feedback
         document.addEventListener('DOMContentLoaded', function() {
             const loginForm = document.querySelector('form');
             const submitBtn = document.querySelector('.btn');
+            let isSubmitting = false;
 
             if (loginForm && submitBtn) {
                 loginForm.addEventListener('submit', function(e) {
-                    // Disable button to prevent double-click
-                    if (submitBtn.disabled) {
+                    // Prevent double-submit
+                    if (isSubmitting) {
                         e.preventDefault();
                         return false;
                     }
+
+                    // Validate form fields
+                    const email = document.getElementById('email').value.trim();
+                    const password = document.getElementById('password').value;
+
+                    if (!email || !password) {
+                        return true; // Let browser validation handle it
+                    }
+
+                    // Mark as submitting
+                    isSubmitting = true;
                     submitBtn.disabled = true;
                     submitBtn.textContent = 'Logging in...';
+                    submitBtn.style.opacity = '0.7';
+
+                    // Safety timeout to re-enable after 5 seconds if no response
+                    setTimeout(function() {
+                        if (isSubmitting) {
+                            isSubmitting = false;
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Login';
+                            submitBtn.style.opacity = '1';
+                        }
+                    }, 5000);
                 });
             }
         });

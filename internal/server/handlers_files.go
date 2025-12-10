@@ -599,8 +599,8 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		// Valid regular user - create session and allow download
 		log.Printf("Regular user %s (%s) authenticated for file download", regularUser.Name, regularUser.Email)
 
-		// Create a regular user session
-		sessionToken, err := auth.CreateSession(regularUser.Id)
+		// Create a regular user session (default 24h for download auth)
+		sessionToken, err := auth.CreateSession(regularUser.Id) // Uses default duration
 		if err != nil {
 			log.Printf("Warning: Could not create session for user: %v", err)
 			s.renderDownloadAuthPage(w, fileInfo, "Authentication failed")

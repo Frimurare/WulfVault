@@ -580,7 +580,7 @@ function escapeHtml(text) {
 // ============================================================================
 
 async function uploadFileInChunks(file, metadata, uploadButton) {
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    const CHUNK_SIZE = 25 * 1024 * 1024; // 25MB chunks
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let retryCount = 0;
     const MAX_RETRIES = 30; // 30 retries = ~5 minutes total retry time

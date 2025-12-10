@@ -30,6 +30,7 @@ type ChunkedUpload struct {
 	TotalSize      int64
 	ChunksReceived int64
 	File           *os.File
+	StartTime      time.Time
 	LastActivity   time.Time
 	Metadata       map[string]string
 	mu             sync.Mutex
@@ -79,6 +80,7 @@ func (s *Server) handleChunkedUploadInit(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Store upload session
+	startTime := time.Now()
 	upload := &ChunkedUpload{
 		ID:             uploadID,
 		UserID:         user.Id,
@@ -86,7 +88,8 @@ func (s *Server) handleChunkedUploadInit(w http.ResponseWriter, r *http.Request)
 		TotalSize:      req.TotalSize,
 		ChunksReceived: 0,
 		File:           file,
-		LastActivity:   time.Now(),
+		StartTime:      startTime,
+		LastActivity:   startTime,
 		Metadata:       req.Metadata,
 	}
 
@@ -94,7 +97,9 @@ func (s *Server) handleChunkedUploadInit(w http.ResponseWriter, r *http.Request)
 	activeUploads[uploadID] = upload
 	activeUploadsMu.Unlock()
 
-	log.Printf("✅ Chunked upload initialized: %s (%s, %d bytes) by user %d", uploadID, req.Filename, req.TotalSize, user.Id)
+	fileSizeGB := float64(req.TotalSize) / (1024 * 1024 * 1024)
+	log.Printf("📤 UPLOAD STARTED: '%s' | Size: %.2f GB (%d bytes) | Upload ID: %s | User: %d (%s) | IP: %s",
+		req.Filename, fileSizeGB, req.TotalSize, uploadID, user.Id, user.Email, getClientIP(r))
 
 	// Return upload ID
 	json.NewEncoder(w).Encode(map[string]string{
@@ -163,7 +168,18 @@ func (s *Server) handleChunkedUploadChunk(w http.ResponseWriter, r *http.Request
 	upload.ChunksReceived += int64(n)
 	upload.LastActivity = time.Now()
 
-	log.Printf("📦 Chunk %d received for upload %s (%d/%d bytes)", chunkIndex, uploadID, upload.ChunksReceived, upload.TotalSize)
+	// Log all chunks to sysmonitor for detailed tracking
+	LogSysMonitor("📦 Chunk %d | Upload: %s | %d/%d bytes (%.1f%%)",
+		chunkIndex, uploadID[:16]+"...", upload.ChunksReceived, upload.TotalSize,
+		float64(upload.ChunksReceived)/float64(upload.TotalSize)*100)
+
+	// Log progress to main log only every 100 chunks to avoid spam
+	if chunkIndex%100 == 0 {
+		percentComplete := float64(upload.ChunksReceived) / float64(upload.TotalSize) * 100
+		log.Printf("📦 Upload progress: %s | %.1f%% (%s of %s) | Chunk %d",
+			upload.Filename, percentComplete,
+			database.FormatFileSize(upload.ChunksReceived), database.FormatFileSize(upload.TotalSize), chunkIndex)
+	}
 
 	// Return current status
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -306,7 +322,12 @@ func (s *Server) handleChunkedUploadComplete(w http.ResponseWriter, r *http.Requ
 		go s.sendLargeFileUploadNotification(user, upload.Filename, upload.TotalSize, uploadID, sha1Hash)
 	}
 
-	log.Printf("✅ Chunked upload completed: %s (%s) by user %d", upload.Filename, database.FormatFileSize(upload.TotalSize), user.Id)
+	// Calculate upload duration and statistics
+	totalDuration := time.Since(upload.StartTime)
+	avgSpeed := float64(upload.TotalSize) / totalDuration.Seconds() / (1024 * 1024) // MB/s
+
+	log.Printf("✅ UPLOAD COMPLETED: '%s' | Size: %s | Duration: %v | Avg Speed: %.2f MB/s | Upload ID: %s | User: %d (%s) | IP: %s",
+		upload.Filename, database.FormatFileSize(upload.TotalSize), totalDuration.Round(time.Second), avgSpeed, uploadID, user.Id, user.Email, getClientIP(r))
 
 	// Return success
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -330,14 +351,72 @@ func cleanupStaleUploads() {
 	for range ticker.C {
 		activeUploadsMu.Lock()
 		for id, upload := range activeUploads {
-			if time.Since(upload.LastActivity) > 1*time.Hour {
+			inactiveTime := time.Since(upload.LastActivity)
+			if inactiveTime > 1*time.Hour {
+				percentComplete := float64(upload.ChunksReceived) / float64(upload.TotalSize) * 100
+				totalTime := time.Since(upload.StartTime)
+
 				upload.File.Close()
 				os.Remove(filepath.Join(upload.File.Name()))
 				delete(activeUploads, id)
-				log.Printf("🧹 Cleaned up stale upload: %s", id)
+
+				log.Printf("🧹 UPLOAD ABANDONED: '%s' | Progress: %.1f%% (%s of %s) | Inactive: %v | Total time: %v | Upload ID: %s",
+					upload.Filename, percentComplete,
+					database.FormatFileSize(upload.ChunksReceived), database.FormatFileSize(upload.TotalSize),
+					inactiveTime.Round(time.Minute), totalTime.Round(time.Minute), id)
 			}
 		}
 		activeUploadsMu.Unlock()
+	}
+}
+
+// cleanupOrphanedChunks removes chunk files left behind from server restarts
+func cleanupOrphanedChunks(uploadsDir string) {
+	chunksDir := filepath.Join(uploadsDir, ".chunks")
+
+	// Check if chunks directory exists
+	if _, err := os.Stat(chunksDir); os.IsNotExist(err) {
+		return
+	}
+
+	files, err := os.ReadDir(chunksDir)
+	if err != nil {
+		log.Printf("⚠️  Failed to read chunks directory: %v", err)
+		return
+	}
+
+	now := time.Now()
+	cleanedCount := 0
+	cleanedSize := int64(0)
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		filePath := filepath.Join(chunksDir, file.Name())
+		info, err := os.Stat(filePath)
+		if err != nil {
+			continue
+		}
+
+		// Remove chunks older than 2 hours (orphaned from crashes/restarts)
+		if now.Sub(info.ModTime()) > 2*time.Hour {
+			size := info.Size()
+			if err := os.Remove(filePath); err != nil {
+				log.Printf("⚠️  Failed to remove orphaned chunk %s: %v", file.Name(), err)
+			} else {
+				cleanedCount++
+				cleanedSize += size
+				log.Printf("🧹 Removed orphaned chunk: %s (%.2f MB, age: %v)",
+					file.Name(), float64(size)/(1024*1024), now.Sub(info.ModTime()).Round(time.Minute))
+			}
+		}
+	}
+
+	if cleanedCount > 0 {
+		log.Printf("✨ Startup cleanup: Removed %d orphaned chunks, freed %.2f MB",
+			cleanedCount, float64(cleanedSize)/(1024*1024))
 	}
 }
 

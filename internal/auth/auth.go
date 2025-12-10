@@ -44,14 +44,20 @@ func GenerateSessionID() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// CreateSession creates a new session for a user
-func CreateSession(userId int) (string, error) {
+// CreateSession creates a new session for a user with specified duration
+func CreateSession(userId int, duration ...time.Duration) (string, error) {
 	sessionId, err := GenerateSessionID()
 	if err != nil {
 		return "", err
 	}
 
-	validUntil := time.Now().Add(SessionDuration).Unix()
+	// Use provided duration or default to SessionDuration
+	sessionDuration := SessionDuration
+	if len(duration) > 0 {
+		sessionDuration = duration[0]
+	}
+
+	validUntil := time.Now().Add(sessionDuration).Unix()
 
 	_, err = database.DB.Exec(`
 		INSERT INTO Sessions (Id, UserId, ValidUntil)
