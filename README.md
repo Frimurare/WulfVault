@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 6.0.0 BloodMoon** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 6.1.1 BloodMoon** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -33,7 +33,7 @@ WulfVault solves this by providing:
 - **Drag-and-drop upload interface** - Modern, intuitive file upload experience
 - **Large file support** - Files up to 15GB+ (configurable, tested with video surveillance footage)
 - **Custom chunked upload system (v6.0+):**
-  - Automatic file splitting into 5MB chunks for reliable transmission
+  - Automatic file splitting into 25MB chunks for optimal performance (v6.1.0+)
   - Built-in retry logic with exponential backoff (up to 30 attempts per chunk, ~5 minutes total)
   - Full-screen visual progress overlay with real-time statistics
   - Speed calculation and ETA display during upload
@@ -104,7 +104,9 @@ WulfVault solves this by providing:
 - **Download count limits** - Automatically expire files after reaching download threshold
 - **Email notifications** - Optional notifications when files are downloaded (configurable)
 
-### 📋 Enterprise Audit Logging
+### 📋 Enterprise Logging & Monitoring
+
+#### Audit Logs
 - **Comprehensive audit trail:**
   - All user actions logged (logins, file operations, settings changes)
   - Detailed tracking of authentication events (2FA, password changes, failed logins)
@@ -137,6 +139,37 @@ WulfVault solves this by providing:
   - Accessible via Server → Audit Logs
   - Direct URL: `/admin/audit-logs`
   - Admin-only access with secure authentication
+
+#### Server Logs (v6.1.0+)
+- **HTTP request logging:**
+  - All API requests logged with status codes, methods, paths
+  - Request and response sizes tracked
+  - Response time monitoring
+  - IP address logging for security tracking
+- **Upload event tracking:**
+  - Upload start logs with filename, size, user, email, IP
+  - Upload complete logs with duration and average speed
+  - Upload progress tracking (every 100 chunks)
+  - Upload abandonment detection with detailed metrics
+- **Admin interface:**
+  - Real-time log viewing with auto-refresh
+  - Advanced search and filtering (date range, level, keyword)
+  - Export to CSV for external analysis
+  - 50MB maximum size with automatic rotation
+  - Accessible via Server → Server Logs
+
+#### SysMonitor Logs (v6.1.0+)
+- **Detailed system monitoring:**
+  - Every chunk upload logged with progress percentage
+  - Real-time tracking of upload performance
+  - Separate from main logs to prevent spam
+  - 10MB maximum size with automatic rotation
+- **Admin monitoring interface:**
+  - Live log viewer with 5-second auto-refresh
+  - Search functionality for filtering events
+  - Perfect for debugging upload issues
+  - Detailed metrics for system administrators
+  - Accessible via Server → SysMonitor Logs
 
 ### 🔐 Security & Authentication
 - **Two-Factor Authentication (2FA):**

@@ -1,4 +1,4 @@
-# WulfVault User Guide v4.6.5 Champagne
+# WulfVault User Guide v6.1.1 BloodMoon
 
 **Complete Guide for Administrators and Users**
 
@@ -17,7 +17,7 @@
 9. [File Management](#file-management)
 10. [Branding & Customization](#branding--customization)
 11. [Email Configuration](#email-configuration)
-12. [Audit Logs & Compliance](#audit-logs--compliance)
+12. [Logging & Monitoring](#logging--monitoring)
 13. [Security Features](#security-features)
 14. [File Request Portals](#file-request-portals)
 15. [Troubleshooting](#troubleshooting)
@@ -1158,11 +1158,25 @@ From: yourname@gmail.com
 
 ---
 
-## Audit Logs & Compliance
+## Logging & Monitoring
 
 ### Overview
 
-WulfVault includes enterprise-grade audit logging to help organizations meet compliance requirements (GDPR, SOC 2, HIPAA, etc.) and maintain accountability for all system operations.
+WulfVault includes comprehensive logging and monitoring capabilities to help organizations maintain accountability, debug issues, and meet compliance requirements (GDPR, SOC 2, HIPAA, etc.).
+
+**Three Types of Logs:**
+
+1. **Audit Logs** - Compliance-focused: User actions, authentication, file lifecycle (database-stored)
+2. **Server Logs** (v6.1.0+) - Operational: HTTP requests, upload events, system operations (file-based, 50MB max)
+3. **SysMonitor Logs** (v6.1.0+) - Detailed monitoring: Every chunk upload, system metrics (file-based, 10MB max)
+
+---
+
+### 1. Audit Logs (Compliance)
+
+#### Overview
+
+Enterprise-grade audit logging for compliance requirements and accountability.
 
 ### What is Logged?
 
@@ -1339,6 +1353,147 @@ WulfVault includes enterprise-grade audit logging to help organizations meet com
 - Check server logs for cleanup scheduler
 - Verify retention days and max size are set
 - Confirm server has been running for 24+ hours
+
+---
+
+### 2. Server Logs (Operational)
+
+#### Overview (v6.1.0+)
+
+Server Logs track all HTTP requests, upload events, and system operations. Perfect for debugging, monitoring performance, and tracking file uploads.
+
+**What is Logged:**
+
+1. **HTTP Requests:**
+   - All API requests with status codes (200, 404, 500, etc.)
+   - Request methods (GET, POST, DELETE, etc.)
+   - Request and response sizes
+   - Response times and duration
+   - IP addresses for security tracking
+   - User agents (browser/client info)
+
+2. **Upload Events:**
+   - **Upload Started:** Filename, size, upload ID, user, email, IP address
+   - **Upload Completed:** Filename, size, duration, average speed, user, email, IP
+   - **Upload Progress:** Every 100 chunks with percentage complete
+   - **Upload Abandoned:** If upload inactive for >1 hour
+
+3. **System Events:**
+   - Server startup and shutdown
+   - Configuration changes
+   - Error conditions
+
+#### Accessing Server Logs
+
+**Navigate to Server Logs:**
+1. Login as admin
+2. Click **Server** in navigation
+3. Click **Server Logs**
+4. Direct URL: `/admin/server-logs`
+
+#### Using Server Logs
+
+**Filter Options:**
+- **Search:** Free-text search across all log entries
+- **Log Level:** Filter by Success (✅), Warning (⚠️), Error (❌), or Info (📝)
+- **Date Range:** View logs within specific time period
+- **Items Per Page:** 25, 50, 100, or 200 entries
+
+**View Upload Details:**
+- Filter by "UPLOAD" to see all upload-related events
+- See when uploads started, completed, or were abandoned
+- Track upload performance (speed, duration)
+- Identify problematic uploads or network issues
+
+**Export to CSV:**
+- Click "Export CSV" button to download logs
+- Includes all columns: timestamp, level, status, method, path, duration, sizes, IP
+- Perfect for external analysis or reporting
+
+#### Log Rotation
+
+- **Maximum Size:** 50MB
+- **Auto-Rotation:** When limit reached, current log renamed to `.old`
+- **Location:** `data/server.log`
+- **Old Logs:** `data/server.log.old` (overwritten on next rotation)
+
+#### Use Cases
+
+- **Debugging upload issues:** Search for specific filenames to see upload flow
+- **Performance monitoring:** Track response times and identify slow endpoints
+- **Security auditing:** Review IP addresses and failed requests
+- **Capacity planning:** Analyze upload patterns and file sizes
+
+---
+
+### 3. SysMonitor Logs (Detailed Monitoring)
+
+#### Overview (v6.1.0+)
+
+SysMonitor Logs provide extremely detailed system monitoring, tracking every chunk upload with progress percentages. Ideal for system administrators debugging upload issues or monitoring system performance.
+
+**What is Logged:**
+
+1. **Chunk Uploads:**
+   - Every single chunk upload (25MB each)
+   - Progress percentage (e.g., "📦 Chunk 42 | Upload: 3f2a... | 1050/2100 bytes (50.0%)")
+   - Upload ID (first 16 chars for readability)
+   - Exact byte counts received vs total
+
+2. **HTTP Chunk Requests:**
+   - Successful chunk POST requests with status 200
+   - Request sizes (always 25MB for full chunks)
+   - Response times
+   - IP addresses
+
+**Why Separate from Server Logs?**
+
+Large file uploads can generate thousands of chunk events (e.g., 50GB file = 2,000 chunks). Logging all these to Server Logs would create spam. SysMonitor keeps detailed tracking separate so Server Logs remain clean and readable.
+
+#### Accessing SysMonitor Logs
+
+**Navigate to SysMonitor:**
+1. Login as admin
+2. Click **Server** in navigation
+3. Click **SysMonitor Logs**
+4. Direct URL: `/admin/sysmonitor-logs`
+
+#### Using SysMonitor Logs
+
+**Features:**
+- **Auto-Refresh:** Updates every 5 seconds automatically
+- **Search:** Filter by upload ID, filename, or any keyword
+- **Real-Time Monitoring:** Watch uploads progress in real-time
+- **Monospace Font:** Easy-to-read technical log format
+
+**Typical Workflow:**
+1. User starts large file upload
+2. Admin searches for filename or upload ID
+3. Watch chunks increment: 0% → 25% → 50% → 75% → 100%
+4. Identify stuck uploads (chunks stop incrementing)
+5. Check for network issues (long gaps between chunks)
+
+#### Log Rotation
+
+- **Maximum Size:** 10MB (smaller to prevent excessive disk usage)
+- **Auto-Rotation:** When limit reached, current log renamed to `.old`
+- **Location:** `data/sysmonitor.log`
+- **Old Logs:** `data/sysmonitor.log.old` (overwritten on next rotation)
+
+#### Use Cases
+
+- **Debug stuck uploads:** See exactly which chunk failed
+- **Monitor large transfers:** Real-time tracking of multi-GB uploads
+- **Performance analysis:** Identify slow chunks or network issues
+- **Capacity planning:** Understand chunk upload patterns
+
+#### Performance Impact
+
+SysMonitor logging is designed for minimal performance impact:
+- Logs written asynchronously (non-blocking)
+- 10MB size limit prevents excessive disk usage
+- Automatic rotation keeps only recent logs
+- No database queries (file-based logging)
 
 ---
 

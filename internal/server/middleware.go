@@ -161,6 +161,14 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		requestSize := formatBytesHTTP(contentLength)
 		responseSize := formatBytesHTTP(int64(wrapped.bytes))
 
+		// Log chunk uploads to sysmonitor instead of main log
+		if r.URL.Path == "/api/upload/chunk" && statusCode == 200 {
+			LogSysMonitor("✅ [%d] %s %s | %v | Req: %s | IP: %s",
+				statusCode, r.Method, r.URL.Path, duration.Round(time.Millisecond),
+				requestSize, getClientIPFromRequest(r))
+			return
+		}
+
 		// Determine log level based on status code
 		statusEmoji := "✅"
 		if statusCode >= 400 && statusCode < 500 {

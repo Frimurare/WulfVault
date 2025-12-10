@@ -312,18 +312,19 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	// Create session
-	sessionID, err := auth.CreateSession(user.Id)
+	// Create session with appropriate duration
+	sessionDuration := 24 * time.Hour
+	if pendingData.RememberMe {
+		sessionDuration = 30 * 24 * time.Hour // 30 days
+	}
+
+	sessionID, err := auth.CreateSession(user.Id, sessionDuration)
 	if err != nil {
 		s.render2FAVerifyPage(w, r, "Failed to create session")
 		return
 	}
 
-	// Set session cookie with appropriate expiration
-	sessionDuration := 24 * time.Hour
-	if pendingData.RememberMe {
-		sessionDuration = 30 * 24 * time.Hour // 30 days
-	}
+	// Set session cookie with same expiration
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
@@ -331,7 +332,8 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  time.Now().Add(sessionDuration),
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode, // Lax allows cookies on top-level navigation (redirects)
+		Secure:   false,                 // Set to true if using HTTPS
 	})
 
 	// Redirect to appropriate dashboard

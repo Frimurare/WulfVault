@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "6.0.2 BloodMoon 🌙"
+	Version = "6.1.1 BloodMoon 🌙"
 )
 
 var (
@@ -164,6 +164,12 @@ func main() {
 		log.Printf("📝 Server logging initialized (max size: %dMB)", cfg.ServerLogMaxSizeMB)
 	}
 	defer server.CloseServerLog()
+
+	// Initialize system monitor log for detailed metrics
+	if err := server.InitSysMonitorLog(*dataDir); err != nil {
+		log.Printf("Warning: Failed to initialize sysmonitor log: %v", err)
+	}
+	defer server.CloseSysMonitorLog()
 
 	// Start file expiration cleanup scheduler (runs every 6 hours)
 	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)

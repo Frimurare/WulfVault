@@ -190,9 +190,15 @@ func (s *Server) parseServerLogs(filePath, searchTerm, levelFilter string, start
 		line := scanner.Text()
 		entry := s.parseLogLine(line)
 
-		// Skip non-HTTP log entries (system startup messages, etc.)
-		// Only include lines that have HTTP request format (status code, method, path)
-		if entry.StatusCode == 0 || entry.Method == "" {
+		// Skip non-HTTP log entries UNLESS they are important upload/system events
+		// Include: HTTP requests, upload events (📤 📦 ✅ UPLOAD), and system events
+		isHTTPLog := entry.StatusCode != 0 && entry.Method != ""
+		isUploadLog := strings.Contains(line, "UPLOAD STARTED") ||
+		              strings.Contains(line, "UPLOAD COMPLETED") ||
+		              strings.Contains(line, "UPLOAD ABANDONED") ||
+		              strings.Contains(line, "Upload progress:")
+
+		if !isHTTPLog && !isUploadLog {
 			continue
 		}
 
@@ -263,14 +269,17 @@ func (s *Server) parseLogLine(line string) ServerLogEntry {
 		}
 	}
 
-	// Detect level from emoji
-	if strings.Contains(line, "✅") {
+	// Detect level from emoji and keywords
+	if strings.Contains(line, "✅") || strings.Contains(line, "UPLOAD COMPLETED") {
 		entry.Level = "success"
-	} else if strings.Contains(line, "⚠️") {
+	} else if strings.Contains(line, "⚠️") || strings.Contains(line, "UPLOAD ABANDONED") {
 		entry.Level = "warning"
 	} else if strings.Contains(line, "❌") {
 		entry.Level = "error"
-	} else if strings.Contains(line, "📝") || strings.Contains(line, "🚀") {
+	} else if strings.Contains(line, "📝") || strings.Contains(line, "🚀") ||
+	          strings.Contains(line, "📤") || strings.Contains(line, "UPLOAD STARTED") {
+		entry.Level = "info"
+	} else if strings.Contains(line, "📦") || strings.Contains(line, "Upload progress:") {
 		entry.Level = "info"
 	}
 

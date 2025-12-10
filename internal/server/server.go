@@ -41,6 +41,9 @@ func (s *Server) Start() error {
 		return err
 	}
 
+	// Cleanup orphaned chunks from previous runs/crashes
+	cleanupOrphanedChunks(s.config.UploadsDir)
+
 	// Setup routes
 	mux := http.NewServeMux()
 
@@ -130,10 +133,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
 	mux.HandleFunc("/admin/audit-logs", s.requireAdmin(s.handleAdminAuditLogs))
 	mux.HandleFunc("/admin/server-logs", s.requireAdmin(s.handleAdminServerLogs))
+	mux.HandleFunc("/admin/sysmonitor-logs", s.requireAdmin(s.handleAdminSysMonitorLogs))
 	mux.HandleFunc("/api/v1/admin/audit-logs", s.requireAdmin(s.handleAPIGetAuditLogs))
 	mux.HandleFunc("/api/v1/admin/audit-logs/export", s.requireAdmin(s.handleAPIExportAuditLogs))
 	mux.HandleFunc("/api/v1/admin/server-logs", s.requireAdmin(s.handleAPIGetServerLogs))
 	mux.HandleFunc("/api/v1/admin/server-logs/export", s.requireAdmin(s.handleAPIExportServerLogs))
+	mux.HandleFunc("/api/v1/admin/sysmonitor-logs", s.requireAdmin(s.handleAPIGetSysMonitorLogs))
 
 	// Teams API routes (require authentication)
 	mux.HandleFunc("/api/teams/my", s.requireAuth(s.handleAPIMyTeams))
@@ -258,12 +263,20 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session")
 		if err != nil {
+			log.Printf("⚠️  Admin auth failed: No session cookie | Path: %s | IP: %s", r.URL.Path, getClientIP(r))
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 
 		user, err := s.getUserFromSession(r)
-		if err != nil || !user.IsAdmin() {
+		if err != nil {
+			log.Printf("⚠️  Admin auth failed: Invalid session %s | Error: %v | Path: %s", cookie.Value[:16]+"...", err, r.URL.Path)
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		if !user.IsAdmin() {
+			log.Printf("⚠️  Admin auth failed: User %s (ID: %d) is not admin | Path: %s", user.Email, user.Id, r.URL.Path)
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
