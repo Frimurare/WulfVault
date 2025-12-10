@@ -169,12 +169,12 @@ func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, message string)
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Glömt Lösenord - ` + s.config.CompanyName + `</title>
+    <title>Forgot Password - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -291,26 +291,26 @@ func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, message string)
 <body>
     <div class="container">
         <div class="logo">
-            <h1>🔐 Glömt Lösenord?</h1>
+            <h1>🔐 Forgot Password?</h1>
             <p>` + s.config.CompanyName + `</p>
         </div>
 
         ` + messageHTML + `
 
         <div class="info-box">
-            <p>Ange din e-postadress så skickar vi dig en länk för att återställa ditt lösenord.</p>
+            <p>Enter your email address and we'll send you a link to reset your password.</p>
         </div>
 
         <form method="POST" action="/forgot-password">
             <div class="form-group">
-                <label for="email">E-postadress</label>
+                <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" required autofocus>
             </div>
-            <button type="submit" class="btn">Skicka Återställningslänk</button>
+            <button type="submit" class="btn">Send Reset Link</button>
         </form>
 
         <div class="back-link">
-            <a href="/login">← Tillbaka till inloggning</a>
+            <a href="/login">← Back to Login</a>
         </div>
     </div>
 </body>
@@ -331,11 +331,11 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 	// If no token, show error page
 	if token == "" {
 		html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="author" content="Ulf Holmström">
-    <title>Felaktig Länk - ` + s.config.CompanyName + `</title>
+    <title>Invalid Link - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -377,10 +377,10 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 <body>
     <div class="container">
         <div class="error-icon">⚠️</div>
-        <h1>Felaktig Återställningslänk</h1>
+        <h1>Invalid Reset Link</h1>
         <p>` + errorMsg + `</p>
-        <p>Länken kan vara utgången eller felaktig. Försök begära en ny återställningslänk.</p>
-        <a href="/forgot-password" class="btn">Begär Ny Länk</a>
+        <p>The link may be expired or invalid. Try requesting a new reset link.</p>
+        <a href="/forgot-password" class="btn">Request New Link</a>
     </div>
 </body>
 </html>`
@@ -389,12 +389,12 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Återställ Lösenord - ` + s.config.CompanyName + `</title>
+    <title>Reset Password - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -513,12 +513,12 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
             const confirmPassword = document.getElementById('confirm_password').value;
 
             if (password.length < 6) {
-                alert('Lösenordet måste vara minst 6 tecken långt');
+                alert('Password must be at least 6 characters long');
                 return false;
             }
 
             if (password !== confirmPassword) {
-                alert('Lösenorden matchar inte!');
+                alert('Passwords do not match!');
                 return false;
             }
 
@@ -529,7 +529,7 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 <body>
     <div class="container">
         <div class="logo">
-            <h1>🔐 Nytt Lösenord</h1>
+            <h1>🔐 New Password</h1>
             <p>` + s.config.CompanyName + `</p>
         </div>
 
@@ -537,14 +537,14 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 
         <div class="info-box">
             <p><strong>Tips:</strong></p>
-            <p>• Minst 6 tecken</p>
-            <p>• Håll in ögat-ikonen för att se lösenordet</p>
-            <p>• Se till att båda fälten matchar</p>
+            <p>• At least 6 characters</p>
+            <p>• Hold the eye icon to view password</p>
+            <p>• Make sure both fields match</p>
         </div>
 
         <form method="POST" action="/reset-password?token=` + token + `" onsubmit="return validateForm()">
             <div class="form-group">
-                <label for="password">Nytt Lösenord</label>
+                <label for="password">New Password</label>
                 <input type="password" id="password" name="password" required minlength="6" autofocus>
                 <span class="password-toggle" id="password_icon"
                       onmousedown="togglePassword('password')"
@@ -552,14 +552,14 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
                       onmouseleave="if(document.getElementById('password').type === 'text') togglePassword('password')">👁️</span>
             </div>
             <div class="form-group">
-                <label for="confirm_password">Bekräfta Nytt Lösenord</label>
+                <label for="confirm_password">Confirm New Password</label>
                 <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
                 <span class="password-toggle" id="confirm_password_icon"
                       onmousedown="togglePassword('confirm_password')"
                       onmouseup="togglePassword('confirm_password')"
                       onmouseleave="if(document.getElementById('confirm_password').type === 'text') togglePassword('confirm_password')">👁️</span>
             </div>
-            <button type="submit" class="btn">Återställ Lösenord</button>
+            <button type="submit" class="btn">Reset Password</button>
         </form>
     </div>
 </body>
@@ -573,12 +573,12 @@ func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Lösenord Återställt - ` + s.config.CompanyName + `</title>
+    <title>Password Reset - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -645,13 +645,13 @@ func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter) {
 <body>
     <div class="container">
         <div class="success-icon">✓</div>
-        <h1>Lösenord Återställt!</h1>
-        <p>Ditt lösenord har uppdaterats framgångsrikt.</p>
-        <p>Du kan nu logga in med ditt nya lösenord.</p>
+        <h1>Password Reset!</h1>
+        <p>Your password has been successfully updated.</p>
+        <p>You can now log in with your new password.</p>
         <p style="font-size: 14px; color: #999; margin-top: 20px;">
-            Du omdirigeras automatiskt till inloggningssidan om 5 sekunder...
+            You will be redirected to the login page in 5 seconds...
         </p>
-        <a href="/login" class="btn">Logga In Nu</a>
+        <a href="/login" class="btn">Log In Now</a>
     </div>
 </body>
 </html>`

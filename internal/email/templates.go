@@ -688,29 +688,29 @@ Do not reply to this email.`, teamName, companyName, teamName, companyName, emai
 func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
 
-	subject := "Glömt lösenordet... igen? 🤔"
+	subject := "Forgot your password... again? 🤔"
 
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<style>
 		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
 		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
-		.header { 
+		.header {
 			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-			color: white; 
-			padding: 30px; 
-			border-radius: 10px 10px 0 0; 
-			text-align: center; 
+			color: white;
+			padding: 30px;
+			border-radius: 10px 10px 0 0;
+			text-align: center;
 		}
 		.header h1 { margin: 0; font-size: 28px; }
 		.header p { margin: 10px 0 0 0; opacity: 0.9; }
-		.content { 
-			background: #f9f9f9; 
-			padding: 30px; 
-			border-radius: 0 0 10px 10px; 
+		.content {
+			background: #f9f9f9;
+			padding: 30px;
+			border-radius: 0 0 10px 10px;
 		}
 		.message-box {
 			background: #fff3cd;
@@ -757,13 +757,13 @@ func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 			margin-top: 0;
 			color: #1976d2;
 		}
-		.footer { 
-			margin-top: 30px; 
+		.footer {
+			margin-top: 30px;
 			padding-top: 20px;
 			border-top: 2px solid #ddd;
-			font-size: 12px; 
-			color: #666; 
-			text-align: center; 
+			font-size: 12px;
+			color: #666;
+			text-align: center;
 		}
 		.warning {
 			background: #ffebee;
@@ -778,55 +778,55 @@ func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 <body>
 	<div class="container">
 		<div class="header">
-			<h1>🔐 Återställ Lösenord</h1>
-			<p>Vi har alla varit där...</p>
+			<h1>🔐 Reset Password</h1>
+			<p>We've all been there...</p>
 		</div>
 
 		<div class="content">
 			<div class="message-box">
-				<p style="margin: 0;"><strong>Hej där!</strong></p>
+				<p style="margin: 0;"><strong>Hey there!</strong></p>
 				<p style="margin: 10px 0 0 0;">
-					Vi fick en förfrågan om att återställa lösenordet för ditt konto. 
-					Ingen panik – det händer de bästa av oss! 
-					(Fast kanske inte <em>lika</em> ofta... 😉)
+					We received a request to reset the password for your account.
+					No panic – it happens to the best of us!
+					(Though maybe not <em>quite</em> as often... 😉)
 				</p>
 			</div>
 
 			<div class="reset-box">
-				<h2>Återställ Ditt Lösenord</h2>
-				<p>Klicka på knappen nedan för att skapa ett nytt lösenord.</p>
+				<h2>Reset Your Password</h2>
+				<p>Click the button below to create a new password.</p>
 				<p style="font-size: 14px; color: #666;">
-					(Och kanske... skriva upp det den här gången? 📝)
+					(And maybe... write it down this time? 📝)
 				</p>
-				
-				<a href="%s" class="button">Återställ Lösenord</a>
-				
+
+				<a href="%s" class="button">Reset Password</a>
+
 				<p style="font-size: 13px; color: #999; margin-top: 20px;">
-					Länken är giltig i 1 timme
+					This link is valid for 1 hour
 				</p>
 			</div>
 
 			<div class="tips">
-				<h3>💡 Pro Tips för Framtiden:</h3>
+				<h3>💡 Pro Tips for the Future:</h3>
 				<ul style="margin: 10px 0; padding-left: 20px;">
-					<li>Använd en lösenordshanterare (typ LastPass, 1Password, Bitwarden)</li>
-					<li>Gör lösenord unika för varje sajt</li>
-					<li>Tänk på en mening och ta första bokstaven från varje ord</li>
-					<li>Eller bara... skriv upp det någonstans säkert? 🤷</li>
+					<li>Use a password manager (like LastPass, 1Password, Bitwarden)</li>
+					<li>Make passwords unique for each site</li>
+					<li>Think of a sentence and take the first letter of each word</li>
+					<li>Or just... write it down somewhere safe? 🤷</li>
 				</ul>
 			</div>
 
 			<div class="warning">
-				<p style="margin: 0;"><strong>⚠️ Viktig information:</strong></p>
+				<p style="margin: 0;"><strong>⚠️ Important information:</strong></p>
 				<ul style="margin: 10px 0 0 0; padding-left: 20px;">
-					<li>Om du INTE begärde denna återställning – ignorera detta mail</li>
-					<li>Dela ALDRIG denna länk med någon annan</li>
-					<li>Vi frågar ALDRIG efter ditt lösenord via email</li>
+					<li>If you did NOT request this reset – ignore this email</li>
+					<li>NEVER share this link with anyone else</li>
+					<li>We will NEVER ask for your password via email</li>
 				</ul>
 			</div>
 
 			<p style="text-align: center; color: #666; margin-top: 30px;">
-				Fungerar inte knappen? Kopiera och klistra in denna länk i din webbläsare:
+				Button not working? Copy and paste this link into your browser:
 			</p>
 			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">
 				%s
@@ -834,31 +834,31 @@ func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 		</div>
 
 		<div class="footer">
-			<p>Detta är ett automatiskt meddelande från WulfVault.</p>
-			<p>Svara inte på detta mail.</p>
+			<p>This is an automated message from WulfVault.</p>
+			<p>Do not reply to this email.</p>
 		</div>
 	</div>
 </body>
 </html>`, resetLink, resetLink)
 
-	textBody := fmt.Sprintf(`Återställ Ditt Lösenord
+	textBody := fmt.Sprintf(`Reset Your Password
 
-Hej!
+Hey!
 
-Vi fick en förfrågan om att återställa lösenordet för ditt konto.
+We received a request to reset the password for your account.
 
-Klicka på länken nedan för att återställa ditt lösenord:
+Click the link below to reset your password:
 %s
 
-Länken är giltig i 1 timme.
+This link is valid for 1 hour.
 
-Om du inte begärde denna återställning, ignorera detta mail.
+If you did not request this reset, please ignore this email.
 
-Tips: Använd gärna en lösenordshanterare för att slippa detta i framtiden! 😊
+Tip: Consider using a password manager to avoid this in the future! 😊
 
 ---
-Detta är ett automatiskt meddelande från WulfVault.
-Svara inte på detta mail.`, resetLink)
+This is an automated message from WulfVault.
+Do not reply to this email.`, resetLink)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {

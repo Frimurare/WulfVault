@@ -5,6 +5,16 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.2] - BloodMoon 🌙 - 2025-12-10
+
+### Fixed
+- **Password Reset Internationalization**: Translated all password reset pages and emails to English
+  - Forgot password form now in English
+  - Password reset form now in English
+  - Password reset success page now in English
+  - Password reset email template now in English
+  - Fixed inconsistency where UI was English but password reset was Swedish
+
 ## [6.1.1] - BloodMoon 🌙 - 2025-12-10
 
 ### Fixed

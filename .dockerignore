@@ -1,0 +1,32 @@
+# Ignore uploads directory (can be very large)
+uploads/
+data/
+
+# Ignore build artifacts
+wulfvault
+*.exe
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# Ignore test files
+*_test.go
+
+# Ignore documentation (we only need source)
+docs/
+*.md
+!README.md
+
+# Ignore CI/CD
+.github/
