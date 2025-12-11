@@ -42,7 +42,7 @@ func (s *Server) Start() error {
 	}
 
 	// Cleanup orphaned chunks from previous runs/crashes
-	cleanupOrphanedChunks(s.config.UploadsDir)
+	CleanupOrphanedChunks(s.config.UploadsDir)
 
 	// Setup routes
 	mux := http.NewServeMux()

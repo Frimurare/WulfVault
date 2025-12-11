@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "6.1.0 BloodMoon 🌙"
+	Version = "6.1.5 BloodMoon 🌙"
 )
 
 var (
@@ -177,6 +177,16 @@ func main() {
 	// Start audit log cleanup scheduler (runs every 24 hours)
 	// Deletes logs older than AuditLogRetentionDays and maintains max size
 	cleanup.StartAuditLogCleanupScheduler(cfg.AuditLogRetentionDays, cfg.AuditLogMaxSizeMB)
+
+	// Cleanup orphaned chunks periodically (runs every hour)
+	// Removes chunks older than 2 hours that were left behind from failed uploads
+	safeGo("chunk-cleanup", func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			server.CleanupOrphanedChunks(cfg.UploadsDir)
+		}
+	})
 
 	// Cleanup expired file requests periodically (runs every 24 hours)
 	// File requests expire after 24 hours, then show "expired" message for 10 days, then are deleted

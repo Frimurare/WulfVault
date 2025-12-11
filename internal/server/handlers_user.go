@@ -1503,7 +1503,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js?v=6.1.0"></script>
+    <script src="/static/js/dashboard.js?v=6.1.5"></script>
     <script>
         function showDownloadHistory(fileId, fileName) {
             document.getElementById('historyFileName').textContent = fileName;

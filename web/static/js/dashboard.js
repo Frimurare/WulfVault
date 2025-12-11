@@ -583,7 +583,7 @@ async function uploadFileInChunks(file, metadata, uploadButton) {
     const CHUNK_SIZE = 25 * 1024 * 1024; // 25MB chunks
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let retryCount = 0;
-    const MAX_RETRIES = 30; // 30 retries = ~5 minutes total retry time
+    const MAX_RETRIES = 50; // 50 retries = ~7.5 minutes total retry time (enough for router restarts)
 
     try {
         // Step 1: Initialize upload
@@ -644,10 +644,10 @@ async function uploadFileInChunks(file, metadata, uploadButton) {
                     if (attempts < MAX_RETRIES) {
                         showRetryIndicator(retryCount);
                         // Wait before retry with exponential backoff, max 10 seconds per retry
-                        // Total retry time: ~5 minutes (30 retries × 10s = 300s)
+                        // Total retry time: ~7.5 minutes (50 retries with exponential backoff)
                         await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempts - 1), 10000)));
                     } else {
-                        throw new Error(`Chunk ${chunkIndex} failed after ${MAX_RETRIES} attempts (~5 minutes)`);
+                        throw new Error(`Chunk ${chunkIndex} failed after ${MAX_RETRIES} attempts (~7.5 minutes)`);
                     }
                 }
             }
@@ -1052,12 +1052,12 @@ function showRetryIndicator(retryCount) {
     const retryInfo = document.getElementById('uploadRetryInfo');
     if (retryInfo) {
         retryInfo.style.display = 'block';
-        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 30 (~5 min total)...`;
+        retryInfo.textContent = `⚠️ Connection interrupted - Retry attempt ${retryCount} of 50 (~7.5 min total)...`;
 
         // Flash animation
         retryInfo.style.animation = 'pulse 1s ease-in-out 3';
 
-        console.log(`Retry ${retryCount}/30: Network interruption detected, retrying upload...`);
+        console.log(`Retry ${retryCount}/50: Network interruption detected, retrying upload...`);
     }
 }
 

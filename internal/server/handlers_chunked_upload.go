@@ -370,8 +370,8 @@ func cleanupStaleUploads() {
 	}
 }
 
-// cleanupOrphanedChunks removes chunk files left behind from server restarts
-func cleanupOrphanedChunks(uploadsDir string) {
+// CleanupOrphanedChunks removes chunk files left behind from server restarts
+func CleanupOrphanedChunks(uploadsDir string) {
 	chunksDir := filepath.Join(uploadsDir, ".chunks")
 
 	// Check if chunks directory exists
