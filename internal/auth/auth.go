@@ -110,6 +110,25 @@ func DeleteSession(sessionId string) error {
 	return err
 }
 
+// IsLongSession checks if a session is a "Remember Me" session (validity > 2 days)
+// Long sessions should not be subject to inactivity timeout
+func IsLongSession(sessionId string) bool {
+	var validUntil int64
+
+	err := database.DB.QueryRow(`
+		SELECT ValidUntil FROM Sessions WHERE Id = ?`,
+		sessionId,
+	).Scan(&validUntil)
+
+	if err != nil {
+		return false
+	}
+
+	// If session expires more than 2 days from now, it's a "Remember Me" session
+	twoDaysFromNow := time.Now().Add(48 * time.Hour).Unix()
+	return validUntil > twoDaysFromNow
+}
+
 // CleanupExpiredSessions removes all expired sessions
 func CleanupExpiredSessions() error {
 	_, err := database.DB.Exec("DELETE FROM Sessions WHERE ValidUntil < ?", time.Now().Unix())

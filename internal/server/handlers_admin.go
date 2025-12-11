@@ -2533,6 +2533,11 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         .file-item:last-child {
             border-bottom: none;
         }
+        .file-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
         .file-info h3 {
             color: #333;
             font-size: 16px;
@@ -2560,7 +2565,8 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         .file-actions {
             display: flex;
             gap: 8px;
-            flex-wrap: wrap;
+            flex-shrink: 0;
+            min-width: 340px;
         }
         .empty-state {
             padding: 60px 20px;
@@ -2608,6 +2614,16 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
             background: linear-gradient(135deg, #5a6268 0%, #4e555b 100%);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: 2px solid #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
         }
         .btn:active {
             transform: translateY(0);
@@ -2754,6 +2770,23 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 
             .file-name {
                 max-width: 100%;
+            }
+
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .file-actions {
+                width: 100%;
+                min-width: 0;
+                flex-wrap: wrap;
+            }
+
+            .file-actions .btn {
+                flex: 1;
+                min-width: 100px;
             }
         }
     </style>

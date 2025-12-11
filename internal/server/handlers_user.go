@@ -1287,7 +1287,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s', %t, '%s')" title="Edit file settings" style="flex: 0 0 auto;">
                                 ✏️ Edit
                             </button>
-                            <button class="btn btn-danger" onclick="deleteFile('%s', '%s')" style="flex: 0 0 auto;">
+                            <button class="btn btn-danger" onclick="deleteFile('%s', '%s')" style="flex: 0 0 auto; background: #dc3545 !important; color: white;">
                                 🗑️ Delete
                             </button>
                         </div>
@@ -1503,7 +1503,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js?v=6.1.5"></script>
+    <script src="/static/js/dashboard.js?v=6.1.6"></script>
     <script>
         function showDownloadHistory(fileId, fileName) {
             document.getElementById('historyFileName').textContent = fileName;

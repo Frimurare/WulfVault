@@ -332,8 +332,8 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		Expires:  time.Now().Add(sessionDuration),
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode, // Lax allows cookies on top-level navigation (redirects)
-		Secure:   false,                 // Set to true if using HTTPS
+		// No SameSite for HTTP to allow cookies on POST redirects
+		Secure: false, // Set to true if using HTTPS
 	})
 
 	// Redirect to appropriate dashboard

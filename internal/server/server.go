@@ -235,7 +235,9 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Check for inactivity timeout (10 minutes), but only if no active transfer
-		if !s.hasActiveTransfer(cookie.Value) {
+		// Skip inactivity check for "Remember Me" sessions (sessions with >2 days validity)
+		isRememberMeSession := auth.IsLongSession(cookie.Value)
+		if !s.hasActiveTransfer(cookie.Value) && !isRememberMeSession {
 			timeSinceLastActivity := time.Since(time.Unix(user.LastOnline, 0))
 			if timeSinceLastActivity > auth.InactivityTimeout {
 				// Force logout due to inactivity
@@ -282,7 +284,9 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Check for inactivity timeout (10 minutes), but only if no active transfer
-		if !s.hasActiveTransfer(cookie.Value) {
+		// Skip inactivity check for "Remember Me" sessions (sessions with >2 days validity)
+		isRememberMeSession := auth.IsLongSession(cookie.Value)
+		if !s.hasActiveTransfer(cookie.Value) && !isRememberMeSession {
 			timeSinceLastActivity := time.Since(time.Unix(user.LastOnline, 0))
 			if timeSinceLastActivity > auth.InactivityTimeout {
 				// Force logout due to inactivity

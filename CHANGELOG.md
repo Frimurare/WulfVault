@@ -5,6 +5,62 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.6] - BloodMoon 🌙 - 2025-12-11
+
+### Fixed
+- **Double Login Issue**: Fixed issue where users had to log in twice
+  - Removed SameSite cookie attribute for HTTP connections
+  - Session cookies now work correctly on first login attempt
+  - Affects both regular login and 2FA login flows
+
+- **Delete Button Styling**: Fixed grey delete buttons in Admin Files view
+  - Delete buttons now properly display in red (#dc3545)
+  - Added missing `.btn-danger` CSS definition
+  - Consistent styling across all file management views
+
+- **File List Layout**: Fixed button wrapping with long file notes
+  - Action buttons (History, Copy, Delete) now stay on same row
+  - Long file descriptions/notes no longer push buttons to next line
+  - Added `flex-shrink: 0` and `min-width: 340px` to `.file-actions`
+  - Mobile-responsive: buttons stack vertically on small screens (<768px)
+
+### Added
+- **"Keep Me Logged In" Enhancement**: Inactivity timeout now respects "Remember Me" sessions
+  - Sessions with >2 days validity exempt from 10-minute inactivity timeout
+  - 30-day sessions (Remember Me checked) won't auto-logout after 10 minutes
+  - New `IsLongSession()` function to detect long-duration sessions
+  - Only regular 24-hour sessions subject to inactivity timeout
+
+- **Hourly Chunk Cleanup**: Automated cleanup of orphaned upload chunks
+  - Runs every hour to remove abandoned chunks older than 2 hours
+  - Reduces disk space usage from failed/interrupted uploads
+  - Complements existing server startup cleanup
+
+### Changed
+- **Cache Busting**: Updated dashboard.js version to 6.1.6
+  - Forces browser to reload latest JavaScript with all fixes
+
+### Technical
+- Modified `internal/server/handlers_auth.go`: Removed SameSite attribute from session cookies
+- Modified `internal/server/handlers_2fa.go`: Removed SameSite attribute for 2FA session cookies
+- Modified `internal/server/handlers_admin.go`: Added `.btn-danger` CSS, fixed `.file-actions` layout
+- Modified `internal/server/server.go`: Added `IsLongSession` check in `requireAuth` and `requireAdmin`
+- Modified `internal/auth/auth.go`: Added `IsLongSession()` function
+- Modified `cmd/server/main.go`: Added hourly chunk cleanup scheduler, updated version to 6.1.6
+- Modified `internal/server/handlers_user.go`: Added inline red styling to delete button, updated cache busting
+- Modified `.gitignore`: Added FUTURE_FEATURES.md to exclusion list
+
+## [6.1.5] - BloodMoon 🌙 - 2025-12-11
+
+### Added
+- **Retry Count Enhancement**: Increased upload retry attempts from 30 to 50
+  - Provides ~7.5 minutes total retry time (up from ~5 minutes)
+  - Better handling of router restarts and network interruptions
+  - Updated UI messages to reflect new retry count
+
+### Changed
+- **Version Update**: Bumped to 6.1.5 for retry enhancement release
+
 ## [6.1.4] - BloodMoon 🌙 - 2025-12-10
 
 ### Changed

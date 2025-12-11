@@ -114,9 +114,38 @@ docker logs wulfvault | grep "Admin Password"
 - **CORS Protection** - Configurable CORS policies
 - **HTTPS Support** - Use behind reverse proxy for HTTPS
 
-## 🌐 Reverse Proxy Setup
+## 🌐 HTTPS Setup
 
-### Nginx Example
+WulfVault runs on HTTP by default (port 8080). For HTTPS access, use a reverse proxy like Nginx or Caddy. This is the recommended approach for production deployments.
+
+**Why use a reverse proxy?**
+- Automatic SSL certificate management (Let's Encrypt)
+- Professional SSL/TLS handling
+- Load balancing support
+- Better performance with caching
+
+### Option 1: Caddy (Easiest - Auto SSL)
+
+Caddy automatically obtains and renews SSL certificates from Let's Encrypt:
+
+```bash
+# Install Caddy
+sudo apt install caddy
+
+# Create Caddyfile
+cat > /etc/caddy/Caddyfile <<EOF
+files.example.com {
+    reverse_proxy localhost:8080
+}
+EOF
+
+# Start Caddy
+sudo systemctl restart caddy
+```
+
+That's it! Caddy handles SSL automatically.
+
+### Option 2: Nginx (Manual SSL)
 
 ```nginx
 server {
@@ -157,24 +186,24 @@ labels:
 
 ### Tags
 
-- `latest` - Latest stable release (currently v6.0.2)
-- `v6.0.2` - Specific version tag
+- `latest` - Latest stable release (currently v6.1.6)
+- `v6.1.6` - Specific version tag
 - `v6.x.x` - Major.minor.patch versions
 
 ### Architecture
 
 Currently supports `amd64` (x86_64) architecture.
 
-## 📝 Version 6.0.2 BloodMoon 🌙
+## 📝 Version 6.1.6 BloodMoon 🌙
 
 Latest release includes:
 
-- **UI Improvements** - Better spacing and visual balance in admin interface
-- **Keep Me Logged In** - Optional persistent login sessions (30 days)
-- **Team File Sorting** - Multiple sorting options for team files
-- **Empty All Trash** - Bulk delete from trash
-- **Enhanced Uploads** - 150+ fun upload messages with extended retry logic
-- **Bug Fixes** - Various stability and UX improvements
+- **Login Improvements** - Fixed double-login issue, sessions now work correctly on first attempt
+- **Keep Me Logged In Enhancement** - 30-day sessions exempt from 10-minute inactivity timeout
+- **UI Fixes** - Red delete buttons in Admin Files, fixed button layout with long file notes
+- **Hourly Chunk Cleanup** - Automated cleanup of orphaned chunks every hour
+- **Extended Retry Logic** - 50 retry attempts (~7.5 minutes) for better upload reliability
+- **Mobile Responsive** - Improved layout for file lists on small screens
 
 ## 🔍 System Requirements
 
