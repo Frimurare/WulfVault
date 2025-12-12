@@ -122,8 +122,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Path:     "/",
 			Expires:  time.Now().Add(sessionDuration),
 			HttpOnly: true,
-			// No SameSite for HTTP to allow cookies on POST redirects
-			Secure: false, // Set to true if using HTTPS
+			SameSite: http.SameSiteLaxMode,
+			Secure:   false,
 		})
 
 		// Redirect

@@ -1692,20 +1692,26 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             <p>Files shared with this team will appear here</p>
         </div>`
 	} else {
-		// Add sorting controls
+		// Add search and sorting controls
 		html += `
-        <div style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <label style="font-weight: 600; margin-right: 10px; color: #333;">🔄 Sort by:</label>
-            <select id="sortSelect" onchange="sortFiles()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
-                <option value="date_desc">Date (Newest First)</option>
-                <option value="date_asc">Date (Oldest First)</option>
-                <option value="name_asc">Name (A-Z)</option>
-                <option value="name_desc">Name (Z-A)</option>
-                <option value="size_desc">Size (Largest First)</option>
-                <option value="size_asc">Size (Smallest First)</option>
-                <option value="user_asc">Owner (A-Z)</option>
-                <option value="user_desc">Owner (Z-A)</option>
-            </select>
+        <div style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 250px;">
+                <label style="font-weight: 600; margin-right: 10px; color: #333;">🔍 Search:</label>
+                <input type="text" id="searchInput" placeholder="Search files, owner, description..." oninput="filterFiles()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; max-width: 400px;">
+            </div>
+            <div>
+                <label style="font-weight: 600; margin-right: 10px; color: #333;">🔄 Sort by:</label>
+                <select id="sortSelect" onchange="sortFiles()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                    <option value="date_desc">Date (Newest First)</option>
+                    <option value="date_asc">Date (Oldest First)</option>
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                    <option value="size_desc">Size (Largest First)</option>
+                    <option value="size_asc">Size (Smallest First)</option>
+                    <option value="user_asc">Owner (A-Z)</option>
+                    <option value="user_desc">Owner (Z-A)</option>
+                </select>
+            </div>
         </div>
         <div class="file-list" id="fileList">`
 
@@ -1751,6 +1757,15 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 				deleteButton = fmt.Sprintf(`<button onclick="deleteTeamFile('%s', '%s', event)" class="btn-delete" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-left: 10px;">🗑️ Delete</button>`, file.Id, file.Name)
 			}
 
+			// Add file description/comment if it exists
+			descriptionHTML := ""
+			if file.Comment != "" {
+				descriptionHTML = fmt.Sprintf(`
+                <div class="file-description" style="margin-top: 8px; padding: 8px 12px; background: #f0f9ff; border-left: 3px solid %s; border-radius: 4px; font-size: 14px; color: #1e40af;">
+                    💬 %s
+                </div>`, s.getPrimaryColor(), file.Comment)
+			}
+
 			html += fmt.Sprintf(`
             <div class="file-item" data-filename="%s" data-owner="%s" data-size="%d" data-date="%d">
                 <div class="file-header">
@@ -1767,7 +1782,8 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                     <span>📦 Size: %s</span>
                     <span>⬇️ Downloads: %d</span>
                 </div>
-            </div>`, file.Name, ownerName, file.SizeBytes, tf.SharedAt, file.Name, file.Name, file.Id, deleteButton, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount)
+                %s
+            </div>`, file.Name, ownerName, file.SizeBytes, tf.SharedAt, file.Name, file.Name, file.Id, deleteButton, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, descriptionHTML)
 		}
 
 		html += `
@@ -1778,6 +1794,23 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     </div>
 
     <script>
+        function filterFiles() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.getElementsByClassName('file-item');
+
+            for (let item of items) {
+                const filename = item.dataset.filename.toLowerCase();
+                const owner = item.dataset.owner.toLowerCase();
+                const text = item.textContent.toLowerCase();
+
+                if (filename.includes(searchTerm) || owner.includes(searchTerm) || text.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        }
+
         function sortFiles() {
             const sortBy = document.getElementById('sortSelect').value;
             const fileList = document.getElementById('fileList');

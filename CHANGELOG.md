@@ -5,6 +5,33 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.7] - BloodMoon 🌙 - 2025-12-12
+
+### Fixed
+- **Double Login Bug**: Fixed critical issue where users had to log in twice before accessing the system
+  - Root cause: `CreateSession()` was not updating `Users.LastOnline` timestamp
+  - First login would create valid session but fail inactivity check immediately (LastOnline was 30+ minutes old)
+  - Second login would succeed because LastOnline was updated as side effect
+  - Now properly updates `LastOnline` when creating session in `internal/auth/auth.go`
+  - Ensures users can access dashboard on first login attempt
+
+### Added
+- **Team Files Enhancements**:
+  - File descriptions/comments now visible in team files view
+  - Added search field to filter team files by filename, owner, or description
+  - Search updates in real-time as you type
+  - Better organization and discoverability of shared team files
+
+### Changed
+- **Code Cleanup**: Removed temporary debug logging added during troubleshooting
+  - Removed debug statements from `handlers_auth.go`, `server.go`, `handlers_user.go`, `handlers_admin.go`
+  - Kept essential audit logging for security and monitoring
+
+### Technical
+- Modified `internal/auth/auth.go`: Added `LastOnline` update in `CreateSession()` function
+- Modified `internal/server/handlers_teams.go`: Added file description display and search functionality
+- Modified `cmd/server/main.go`: Updated version to 6.1.7
+
 ## [6.1.6] - BloodMoon 🌙 - 2025-12-11
 
 ### Fixed

@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/auth"
@@ -80,6 +81,22 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	// Get fun fact
 	mostDownloadedFile, downloadCount, _ := database.DB.GetMostDownloadedFile()
 
+	// Get actual storage used by uploads (walk the directory tree)
+	var uploadsUsed int64
+	filepath.Walk(s.config.UploadsDir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			uploadsUsed += info.Size()
+		}
+		return nil
+	})
+
+	// Get available disk space on the filesystem
+	var diskAvailable int64
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(s.config.UploadsDir, &stat); err == nil {
+		diskAvailable = int64(stat.Bavail * uint64(stat.Bsize))
+	}
+
 	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday,
 		bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear,
 		bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear,
@@ -88,7 +105,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		twoFAAdoption, avgBackupCodes,
 		largestFileName, largestFileSize, top5ActiveUsers, top5FileCounts,
 		topFileTypes, fileTypeCounts, topWeekday, weekdayCount, storagePast, storageNow,
-		mostDownloadedFile, downloadCount)
+		mostDownloadedFile, downloadCount, uploadsUsed, diskAvailable)
 }
 
 // handleAdminUsers lists all users and download accounts with pagination
@@ -1169,7 +1186,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	twoFAAdoption, avgBackupCodes float64,
 	largestFileName string, largestFileSize int64, top5ActiveUsers []string, top5FileCounts []int,
 	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
-	mostDownloadedFile string, downloadCount int) {
+	mostDownloadedFile string, downloadCount int, uploadsUsed, diskAvailable int64) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get dashboard style preference
@@ -1231,6 +1248,10 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	if storagePast > 0 {
 		storageGrowth = float64(storageNow-storagePast) / float64(storagePast) * 100
 	}
+
+	// Format disk storage statistics
+	uploadsUsedStr := formatBytes(uploadsUsed)
+	diskAvailableStr := formatBytes(diskAvailable)
 
 	html := `<!DOCTYPE html>
 <html lang="en">
@@ -1394,7 +1415,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
         <!-- Dashboard Overview -->
         <h2 class="section-title text-3xl mb-8">Dashboard Overview</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             <div class="glass-card rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Users</h3>
@@ -1425,6 +1446,22 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
                     <span class="emoji text-3xl">📅</span>
                 </div>
                 <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", downloadsToday) + `</div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Server Storage Used</h3>
+                    <span class="emoji text-3xl">💾</span>
+                </div>
+                <div class="stat-number text-5xl font-extrabold">` + uploadsUsedStr + `</div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Server Storage Left</h3>
+                    <span class="emoji text-3xl">📊</span>
+                </div>
+                <div class="stat-number text-5xl font-extrabold">` + diskAvailableStr + `</div>
             </div>
         </div>
 
