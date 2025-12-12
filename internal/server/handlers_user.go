@@ -1144,6 +1144,25 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                         <option value="size-desc">📦 Largest First</option>
                         <option value="size-asc">📦 Smallest First</option>
                     </select>
+                    <select id="perPageSelect" onchange="changePerPage()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
+                        <option value="5">5 per page</option>
+                        <option value="25" selected>25 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                        <option value="200">200 per page</option>
+                        <option value="250">250 per page</option>
+                    </select>
+                </div>
+                <!-- File counter and pagination -->
+                <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div id="fileCounter" style="font-weight: 600; color: #333; font-size: 14px;">
+                        Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> files
+                    </div>
+                    <div id="paginationControls" style="display: flex; gap: 8px; align-items: center;">
+                        <button onclick="prevPage()" id="prevBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">← Prev</button>
+                        <span id="pageInfo" style="font-size: 14px; color: #666; min-width: 80px; text-align: center;">Page 1 of 1</span>
+                        <button onclick="nextPage()" id="nextBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">Next →</button>
+                    </div>
                 </div>
             </div>`
 
@@ -1962,19 +1981,25 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                 teamFilter.value = ''; // Reset selection when switching away
             }
 
-            // Filter files
+            // Filter files - use data-filter-hidden attribute
             fileItems.forEach(item => {
                 const fileType = item.getAttribute('data-file-type');
                 if (type === 'all') {
-                    item.style.display = '';
+                    item.setAttribute('data-filter-hidden', 'false');
                 } else if (type === 'my') {
                     // Show my files and files I shared with teams (both)
-                    item.style.display = (fileType === 'my' || fileType === 'both') ? '' : 'none';
+                    const shouldShow = (fileType === 'my' || fileType === 'both');
+                    item.setAttribute('data-filter-hidden', shouldShow ? 'false' : 'true');
                 } else if (type === 'team') {
                     // Show team files and my files shared with teams (both)
-                    item.style.display = (fileType === 'team' || fileType === 'both') ? '' : 'none';
+                    const shouldShow = (fileType === 'team' || fileType === 'both');
+                    item.setAttribute('data-filter-hidden', shouldShow ? 'false' : 'true');
                 }
             });
+
+            // Update pagination after filtering
+            currentPage = 1;
+            updatePagination();
         }
 
         // Filter by specific team
@@ -1987,23 +2012,27 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
                 // Only filter team files (team or both)
                 if (fileType !== 'team' && fileType !== 'both') {
-                    item.style.display = 'none';
+                    item.setAttribute('data-filter-hidden', 'true');
                     return;
                 }
 
                 if (!teamName) {
                     // Show all team files
-                    item.style.display = '';
+                    item.setAttribute('data-filter-hidden', 'false');
                 } else {
                     // Check if file belongs to selected team
                     const teamList = teams.split(',').map(t => t.trim());
                     if (teamList.includes(teamName)) {
-                        item.style.display = '';
+                        item.setAttribute('data-filter-hidden', 'false');
                     } else {
-                        item.style.display = 'none';
+                        item.setAttribute('data-filter-hidden', 'true');
                     }
                 }
             });
+
+            // Update pagination after team filtering
+            currentPage = 1;
+            updatePagination();
         }
 
         // Search and sort files function
@@ -2013,29 +2042,25 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             const fileList = document.querySelector('.file-list');
             const fileItems = Array.from(document.querySelectorAll('.file-item'));
 
-            // Filter by search term
+            // First, apply search filter separately
             fileItems.forEach(item => {
                 const filename = item.getAttribute('data-filename').toLowerCase();
                 const extension = item.getAttribute('data-extension').toLowerCase();
 
-                // Check if currently visible (respecting file type and team filters)
-                const currentDisplay = item.style.display;
-
-                if (currentDisplay === 'none') {
-                    // Already hidden by other filters, leave it hidden
-                    return;
-                }
-
                 // Search in filename and extension
-                if (filename.includes(searchTerm) || extension.includes(searchTerm)) {
-                    item.style.display = '';
+                if (searchTerm === '' || filename.includes(searchTerm) || extension.includes(searchTerm)) {
+                    item.setAttribute('data-search-hidden', 'false');
                 } else {
-                    item.style.display = 'none';
+                    item.setAttribute('data-search-hidden', 'true');
                 }
             });
 
-            // Get only visible items for sorting
-            const visibleItems = fileItems.filter(item => item.style.display !== 'none');
+            // Get items that pass both tab/team filter AND search filter
+            const visibleItems = fileItems.filter(item => {
+                const tabFilterHidden = item.getAttribute('data-filter-hidden') === 'true';
+                const searchFilterHidden = item.getAttribute('data-search-hidden') === 'true';
+                return !tabFilterHidden && !searchFilterHidden;
+            });
 
             // Sort visible items
             visibleItems.sort((a, b) => {
@@ -2096,6 +2121,123 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             fileItems.filter(item => item.style.display === 'none').forEach(item => {
                 fileList.appendChild(item);
             });
+
+            // Update pagination after filtering/sorting
+            updatePagination();
+        }
+
+        // Pagination variables
+        let currentPage = 1;
+        let perPage = 25;
+
+        // Initialize pagination on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all items as visible
+            const fileItems = document.querySelectorAll('.file-item');
+            fileItems.forEach(item => {
+                item.setAttribute('data-filter-hidden', 'false');
+                item.setAttribute('data-search-hidden', 'false');
+            });
+            updatePagination();
+        });
+
+        function changePerPage() {
+            perPage = parseInt(document.getElementById('perPageSelect').value);
+            currentPage = 1; // Reset to first page
+            updatePagination();
+        }
+
+        function prevPage() {
+            const visibleItems = getVisibleItems();
+            const totalPages = Math.ceil(visibleItems.length / perPage);
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
+            }
+        }
+
+        function nextPage() {
+            const visibleItems = getVisibleItems();
+            const totalPages = Math.ceil(visibleItems.length / perPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePagination();
+            }
+        }
+
+        function getVisibleItems() {
+            const fileItems = Array.from(document.querySelectorAll('.file-item'));
+            // Get items that are NOT hidden by filters (tab filters, team filters, search)
+            // Use a custom attribute to track filter state separately from pagination
+            return fileItems.filter(item => {
+                // If item has been marked as filter-hidden, exclude it
+                return item.getAttribute('data-filter-hidden') !== 'true';
+            });
+        }
+
+        function updatePagination() {
+            const allItems = Array.from(document.querySelectorAll('.file-item'));
+
+            // First, determine which items are visible based on current filters (not pagination)
+            // Check both tab/team filter AND search filter
+            const visibleItems = allItems.filter(item => {
+                const tabFilterHidden = item.getAttribute('data-filter-hidden') === 'true';
+                const searchFilterHidden = item.getAttribute('data-search-hidden') === 'true';
+                return !tabFilterHidden && !searchFilterHidden;
+            });
+
+            const totalFiltered = visibleItems.length;
+            const totalPages = Math.ceil(totalFiltered / perPage);
+
+            // Ensure current page is valid
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            // Calculate start and end indices for current page
+            const startIdx = (currentPage - 1) * perPage;
+            const endIdx = Math.min(startIdx + perPage, totalFiltered);
+
+            // First hide all items
+            allItems.forEach(item => {
+                item.style.display = 'none';
+            });
+
+            // Show only items for current page (among the filtered visible items)
+            for (let i = startIdx; i < endIdx; i++) {
+                if (visibleItems[i]) {
+                    visibleItems[i].style.display = '';
+                }
+            }
+
+            // Update counter
+            const visibleCount = endIdx - startIdx;
+            const totalCountEl = document.getElementById('totalCount');
+            const visibleCountEl = document.getElementById('visibleCount');
+            if (totalCountEl) totalCountEl.textContent = totalFiltered;
+            if (visibleCountEl) visibleCountEl.textContent = visibleCount;
+
+            // Update pagination controls
+            const pageInfoEl = document.getElementById('pageInfo');
+            const prevBtnEl = document.getElementById('prevBtn');
+            const nextBtnEl = document.getElementById('nextBtn');
+
+            if (pageInfoEl) pageInfoEl.textContent = 'Page ' + currentPage + ' of ' + Math.max(1, totalPages);
+
+            if (prevBtnEl) {
+                prevBtnEl.disabled = currentPage === 1;
+                prevBtnEl.style.opacity = currentPage === 1 ? '0.5' : '1';
+                prevBtnEl.style.cursor = currentPage === 1 ? 'not-allowed' : 'pointer';
+            }
+
+            if (nextBtnEl) {
+                nextBtnEl.disabled = currentPage >= totalPages || totalPages === 0;
+                nextBtnEl.style.opacity = (currentPage >= totalPages || totalPages === 0) ? '0.5' : '1';
+                nextBtnEl.style.cursor = (currentPage >= totalPages || totalPages === 0) ? 'not-allowed' : 'pointer';
+            }
         }
 
         // Note: loadFileRequests, deleteFileRequest, escapeHtml, and copyToClipboard

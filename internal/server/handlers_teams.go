@@ -1692,12 +1692,12 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             <p>Files shared with this team will appear here</p>
         </div>`
 	} else {
-		// Add search and sorting controls
+		// Add search, sorting, and pagination controls
 		html += `
         <div style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
             <div style="flex: 1; min-width: 250px;">
                 <label style="font-weight: 600; margin-right: 10px; color: #333;">🔍 Search:</label>
-                <input type="text" id="searchInput" placeholder="Search files, owner, description..." oninput="filterFiles()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; max-width: 400px;">
+                <input type="text" id="searchInput" placeholder="Search files, owner, description..." oninput="filterAndPaginate()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; max-width: 400px;">
             </div>
             <div>
                 <label style="font-weight: 600; margin-right: 10px; color: #333;">🔄 Sort by:</label>
@@ -1712,7 +1712,31 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                     <option value="user_desc">Owner (Z-A)</option>
                 </select>
             </div>
+            <div>
+                <label style="font-weight: 600; margin-right: 10px; color: #333;">📄 Per page:</label>
+                <select id="perPageSelect" onchange="changePerPage()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                    <option value="5">5</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="250">250</option>
+                </select>
+            </div>
         </div>
+
+        <!-- File counter and pagination -->
+        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div id="fileCounter" style="font-weight: 600; color: #333; font-size: 14px;">
+                Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> files
+            </div>
+            <div id="paginationControls" style="display: flex; gap: 8px; align-items: center;">
+                <button onclick="prevPage()" id="prevBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">← Prev</button>
+                <span id="pageInfo" style="font-size: 14px; color: #666; min-width: 80px; text-align: center;">Page 1 of 1</span>
+                <button onclick="nextPage()" id="nextBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">Next →</button>
+            </div>
+        </div>
+
         <div class="file-list" id="fileList">`
 
 		for _, tf := range teamFiles {
@@ -1794,21 +1818,35 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     </div>
 
     <script>
-        function filterFiles() {
+        let currentPage = 1;
+        let perPage = 25;
+        let allItems = [];
+        let filteredItems = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            allItems = Array.from(document.getElementsByClassName('file-item'));
+            filteredItems = [...allItems];
+            updateDisplay();
+        });
+
+        function filterAndPaginate() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const items = document.getElementsByClassName('file-item');
 
+            filteredItems = [];
             for (let item of items) {
                 const filename = item.dataset.filename.toLowerCase();
                 const owner = item.dataset.owner.toLowerCase();
                 const text = item.textContent.toLowerCase();
 
                 if (filename.includes(searchTerm) || owner.includes(searchTerm) || text.includes(searchTerm)) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
+                    filteredItems.push(item);
                 }
             }
+
+            currentPage = 1; // Reset to first page when filtering
+            updateDisplay();
         }
 
         function sortFiles() {
@@ -1842,6 +1880,76 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             // Clear and re-append
             fileList.innerHTML = '';
             items.forEach(item => fileList.appendChild(item));
+
+            // Update filtered items array to match new sort order
+            allItems = items;
+            filterAndPaginate(); // Re-apply filter and pagination
+        }
+
+        function changePerPage() {
+            perPage = parseInt(document.getElementById('perPageSelect').value);
+            currentPage = 1; // Reset to first page
+            updateDisplay();
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateDisplay();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredItems.length / perPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            const totalFiles = allItems.length;
+            const totalFiltered = filteredItems.length;
+            const totalPages = Math.ceil(totalFiltered / perPage);
+
+            // Calculate start and end indices for current page
+            const startIdx = (currentPage - 1) * perPage;
+            const endIdx = Math.min(startIdx + perPage, totalFiltered);
+
+            // Hide all items first
+            allItems.forEach(item => item.style.display = 'none');
+
+            // Show only items for current page
+            for (let i = startIdx; i < endIdx; i++) {
+                filteredItems[i].style.display = '';
+            }
+
+            // Update counter
+            const visibleCount = endIdx - startIdx;
+            document.getElementById('visibleCount').textContent = visibleCount;
+            document.getElementById('totalCount').textContent = totalFiltered;
+
+            // Update pagination controls
+            document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + Math.max(1, totalPages);
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+
+            // Update button styles for disabled state
+            if (currentPage === 1) {
+                document.getElementById('prevBtn').style.opacity = '0.5';
+                document.getElementById('prevBtn').style.cursor = 'not-allowed';
+            } else {
+                document.getElementById('prevBtn').style.opacity = '1';
+                document.getElementById('prevBtn').style.cursor = 'pointer';
+            }
+
+            if (currentPage >= totalPages) {
+                document.getElementById('nextBtn').style.opacity = '0.5';
+                document.getElementById('nextBtn').style.cursor = 'not-allowed';
+            } else {
+                document.getElementById('nextBtn').style.opacity = '1';
+                document.getElementById('nextBtn').style.cursor = 'pointer';
+            }
         }
 
         function deleteTeamFile(fileId, fileName, event) {

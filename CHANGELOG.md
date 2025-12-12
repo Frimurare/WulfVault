@@ -5,6 +5,39 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.8] - BloodMoon 🌙 - 2025-12-12
+
+### Added
+- **Advanced Pagination System**: Major upgrade to file list management across the application
+  - **My Files Dashboard**:
+    - File counter showing "Showing X of Y files" (updates dynamically based on filters and search)
+    - Configurable items per page: 5, 25, 50, 100, 200, 250 files (default: 25)
+    - Previous/Next page navigation with visual feedback
+    - Page indicator showing current page and total pages
+    - Fully integrated with existing filters (All Files, My Files, Team Files)
+    - Works seamlessly with team filtering and search functionality
+  - **Team Shared Files**:
+    - Same pagination controls as My Files
+    - File counter with real-time updates
+    - Integrates with file search and sorting features
+  - **Technical Implementation**:
+    - Dual-attribute filtering system (`data-filter-hidden` and `data-search-hidden`)
+    - Separate state management for tab filters, team filters, search, and pagination
+    - Efficient DOM manipulation with proper state isolation
+    - No page reload required - all updates happen client-side
+
+### Fixed
+- **Pagination Logic**: Fixed multiple issues in initial pagination implementation
+  - Corrected visible item counting that was causing incorrect totals
+  - Fixed page navigation that wasn't working when changing items per page
+  - Resolved filter state conflicts between search and tab/team filters
+  - Fixed pagination not updating correctly after filter changes
+
+### Technical
+- Modified `internal/server/handlers_user.go`: Added complete pagination system to user dashboard
+- Modified `internal/server/handlers_teams.go`: Added pagination to team files view
+- Modified `cmd/server/main.go`: Updated version to 6.1.8
+
 ## [6.1.7] - BloodMoon 🌙 - 2025-12-12
 
 ### Fixed
