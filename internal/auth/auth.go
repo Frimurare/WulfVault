@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"log"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -72,14 +71,10 @@ func CreateSession(userId int, duration ...time.Duration) (string, error) {
 	}
 
 	// Update LastOnline when creating session (important for inactivity timeout check)
-	_, err = database.DB.Exec(`
+	database.DB.Exec(`
 		UPDATE Users SET LastOnline = ? WHERE Id = ?`,
 		now, userId,
 	)
-	if err != nil {
-		// Log error but don't fail session creation
-		log.Printf("Warning: Failed to update LastOnline for user %d: %v", userId, err)
-	}
 
 	return sessionId, nil
 }
