@@ -186,24 +186,25 @@ labels:
 
 ### Tags
 
-- `latest` - Latest stable release (currently v6.1.6)
-- `v6.1.6` - Specific version tag
+- `latest` - Latest stable release (currently v6.1.8)
+- `v6.1.8` - Specific version tag
 - `v6.x.x` - Major.minor.patch versions
 
 ### Architecture
 
 Currently supports `amd64` (x86_64) architecture.
 
-## 📝 Version 6.1.6 BloodMoon 🌙
+## 📝 Version 6.1.8 BloodMoon 🌙
 
 Latest release includes:
 
-- **Login Improvements** - Fixed double-login issue, sessions now work correctly on first attempt
-- **Keep Me Logged In Enhancement** - 30-day sessions exempt from 10-minute inactivity timeout
+- **Advanced Pagination System** - File counter with "Showing X of Y files", configurable items per page (5-250)
+- **Team File Enhancements** - File descriptions visible in team files view with real-time search
+- **Login Improvements** - Fixed critical double-login bug where users had to login twice
+- **Keep Me Logged In Enhancement** - 30-day sessions exempt from inactivity timeout
 - **UI Fixes** - Red delete buttons in Admin Files, fixed button layout with long file notes
 - **Hourly Chunk Cleanup** - Automated cleanup of orphaned chunks every hour
 - **Extended Retry Logic** - 50 retry attempts (~7.5 minutes) for better upload reliability
-- **Mobile Responsive** - Improved layout for file lists on small screens
 
 ## 🔍 System Requirements
 

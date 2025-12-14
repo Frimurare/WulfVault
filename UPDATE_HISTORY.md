@@ -4,6 +4,52 @@ This document tracks major updates and feature releases for WulfVault.
 
 ---
 
+## Version 6.1.8 BloodMoon (2025-12-12)
+
+### Major Update: Advanced Pagination & File Management
+
+**This is a significant UX enhancement** - WulfVault now features comprehensive pagination and file counting across all file list views.
+
+### 🚀 New Features
+
+#### Advanced Pagination System
+- **Dynamic file counter:** "Showing X of Y files" updates in real-time based on active filters and search
+- **Configurable items per page:** Choose from 5, 25, 50, 100, 200, or 250 files per page (default: 25)
+- **Previous/Next navigation:** Easy page navigation with visual feedback and disabled state
+- **Page indicator:** Clear "Page X of Y" display
+- **Integrated with filters:** Works seamlessly with All/My/Team filters and search functionality
+- **Separate state management:** Dual-attribute filtering system for clean separation of concerns
+
+#### Team File Enhancements
+- **File descriptions in team view:** Comments and notes now visible in shared team files
+- **Real-time search:** Filter team files by name, owner, or description
+- **Pagination support:** Same advanced pagination as My Files dashboard
+
+### 🐛 Bug Fixes
+
+#### Critical Double Login Fix
+- **Root cause identified:** `CreateSession()` wasn't updating `Users.LastOnline` timestamp
+- **Symptom:** First login created valid session but immediately failed inactivity check
+- **Solution:** Session creation now properly updates LastOnline to prevent immediate timeout
+- **Impact:** Users can now access dashboard on first login attempt
+
+### 🔧 Technical Changes
+
+#### Backend
+- **Modified:** `internal/auth/auth.go` - Added LastOnline update in CreateSession()
+- **Modified:** `internal/server/handlers_user.go` - Added pagination system to user dashboard
+- **Modified:** `internal/server/handlers_teams.go` - Added pagination and file descriptions to team files
+- **Removed:** Temporary debug logging from troubleshooting sessions
+
+#### Frontend
+- **JavaScript enhancements:**
+  - `data-filter-hidden` attribute for tab/team filters
+  - `data-search-hidden` attribute for search filtering
+  - Combined filter logic in `updatePagination()`
+  - Real-time counter updates on filter/search changes
+
+---
+
 ## Version 6.0.0 BloodMoon Beta 2 (2025-12-09)
 
 ### Major Update: Custom Chunked Upload System

@@ -1,14 +1,14 @@
 # WulfVault GDPR Compliance Summary
 
-**Version:** 4.6.0 Champagne
-**Implementation Date:** 2025-11-17
+**Version:** 6.1.8 BloodMoon
+**Last Updated:** 2025-12-12
 **Status:** ✅ **GDPR-Compliant** (Full Implementation)
 
 ---
 
 ## Executive Summary
 
-WulfVault 4.6.0 Champagne provides **complete GDPR compliance** with all required user rights implemented and accessible through the user interface. Users have full control over their personal data with one-click export and self-service account deletion.
+WulfVault 6.1.8 BloodMoon provides **complete GDPR compliance** with all required user rights implemented and accessible through the user interface. Users have full control over their personal data with one-click export and self-service account deletion.
 
 ---
 
