@@ -952,6 +952,279 @@ POST /api/v1/admin/branding
 
 ```json
 {
+  "branding_company_name": "My Company",
+  "branding_primary_color": "#2563eb",
+  "branding_secondary_color": "#1e40af"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Branding updated successfully"
+}
+```
+
+---
+
+## Audit & Logging API
+
+Comprehensive audit logging for compliance and security monitoring.
+
+### Get Audit Logs
+
+```http
+GET /api/v1/admin/audit-logs
+```
+
+**Authorization:** Admin
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `per_page` (optional): Items per page (default: 50, max: 200)
+- `user_id` (optional): Filter by user ID
+- `action` (optional): Filter by action type (LOGIN_SUCCESS, FILE_UPLOAD, etc.)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "logs": [
+    {
+      "id": 1234,
+      "userId": 3,
+      "userEmail": "admin@example.com",
+      "action": "FILE_UPLOAD",
+      "entityType": "File",
+      "entityId": "abc123",
+      "details": "{\"filename\":\"report.pdf\",\"size\":1048576}",
+      "ipAddress": "192.168.1.100",
+      "userAgent": "Mozilla/5.0...",
+      "timestamp": 1765713098,
+      "success": true,
+      "errorMsg": ""
+    }
+  ],
+  "total": 1234,
+  "page": 1,
+  "per_page": 50
+}
+```
+
+### Export Audit Logs
+
+```http
+GET /api/v1/admin/audit-logs/export
+```
+
+**Authorization:** Admin
+**Query Parameters:**
+- `start_date` (optional): Start date (YYYY-MM-DD)
+- `end_date` (optional): End date (YYYY-MM-DD)
+- `user_id` (optional): Filter by user ID
+
+**Response:** CSV file download
+
+```csv
+ID,User Email,Action,Entity Type,Entity ID,IP Address,Timestamp,Success
+1234,admin@example.com,FILE_UPLOAD,File,abc123,192.168.1.100,2025-12-14 12:00:00,true
+```
+
+### Get Server Logs
+
+```http
+GET /api/v1/admin/server-logs
+```
+
+**Authorization:** Admin
+**Query Parameters:**
+- `lines` (optional): Number of lines to retrieve (default: 100, max: 1000)
+- `level` (optional): Filter by log level (INFO, WARN, ERROR)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "logs": [
+    "2025/12/14 12:00:00 [INFO] Server starting on :8080",
+    "2025/12/14 12:00:01 [INFO] Database initialized",
+    "2025/12/14 12:00:05 [WARN] High memory usage: 85%"
+  ],
+  "count": 100
+}
+```
+
+### Export Server Logs
+
+```http
+GET /api/v1/admin/server-logs/export
+```
+
+**Authorization:** Admin
+**Response:** Text file download with server logs
+
+### Get System Monitor Logs
+
+```http
+GET /api/v1/admin/sysmonitor-logs
+```
+
+**Authorization:** Admin
+**Query Parameters:**
+- `lines` (optional): Number of lines (default: 100, max: 1000)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "logs": [
+    "2025/12/14 12:00:00 | CPU: 45% | MEM: 2048MB/4096MB | DISK: 50GB/100GB",
+    "2025/12/14 12:01:00 | CPU: 47% | MEM: 2100MB/4096MB | DISK: 50GB/100GB"
+  ],
+  "count": 100
+}
+```
+
+---
+
+## GDPR Compliance API
+
+User data export for GDPR compliance (Right to Data Portability).
+
+### Export User Data
+
+```http
+GET /api/v1/user/export-data
+```
+
+**Authorization:** Authenticated (exports current user's data)
+**Response:** JSON file download
+
+```json
+{
+  "user": {
+    "id": 3,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "storageQuotaMB": 50000,
+    "storageUsedMB": 12000
+  },
+  "files": [
+    {
+      "id": "abc123",
+      "name": "report.pdf",
+      "size": 1048576,
+      "uploadDate": "2025-12-14T12:00:00Z",
+      "downloads": 5
+    }
+  ],
+  "auditLogs": [
+    {
+      "action": "LOGIN_SUCCESS",
+      "timestamp": "2025-12-14T08:00:00Z",
+      "ipAddress": "192.168.1.100"
+    }
+  ],
+  "exportedAt": "2025-12-14T15:30:00Z"
+}
+```
+
+---
+
+## Pagination Support
+
+All list endpoints support pagination via query parameters.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number (starts at 1) |
+| `per_page` | integer | 25 | Items per page (5, 25, 50, 100, 200, 250) |
+| `sort_by` | string | varies | Sort field (name, date, size, etc.) |
+| `sort_order` | string | desc | Sort direction (asc, desc) |
+
+### Example Requests
+
+```bash
+# Get page 2 with 50 files per page
+curl -b cookies.txt "http://localhost:8080/api/v1/files?page=2&per_page=50"
+
+# Get team files sorted by name
+curl -b cookies.txt "http://localhost:8080/api/teams/files?teamId=3&sort_by=name&sort_order=asc"
+
+# Get users page 3 with 100 per page
+curl -b cookies.txt "http://localhost:8080/api/v1/users?page=3&per_page=100"
+```
+
+### Pagination Response Format
+
+```json
+{
+  "success": true,
+  "items": [...],
+  "total": 250,
+  "page": 2,
+  "per_page": 50,
+  "total_pages": 5,
+  "has_next": true,
+  "has_prev": true
+}
+```
+
+---
+
+## File Comments/Descriptions
+
+Files now support comments/descriptions for better organization.
+
+### File Response with Comment
+
+```json
+{
+  "id": "abc123",
+  "name": "Q3_Financial_Report.pdf",
+  "comment": "Q3 Financial Report - Final Version approved by CFO",
+  "size": "2.5 MB",
+  "size_bytes": 2621440,
+  "upload_date": 1765626733
+}
+```
+
+### Update File Comment
+
+```http
+PUT /api/v1/files/{id}
+```
+
+**Authorization:** Authenticated (file owner or admin)
+**Request Body:**
+
+```json
+{
+  "comment": "Updated description with approval notes"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "File updated successfully"
+}
+```
+
+**Authorization:** Admin
+**Request Body:**
+
+```json
+{
   "companyName": "My Company",
   "primaryColor": "#ff6600",
   "secondaryColor": "#cc5200",

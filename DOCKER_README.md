@@ -186,15 +186,15 @@ labels:
 
 ### Tags
 
-- `latest` - Latest stable release (currently v6.1.8)
-- `v6.1.8` - Specific version tag
+- `latest` - Latest stable release (currently v6.1.9)
+- `v6.1.9` - Specific version tag
 - `v6.x.x` - Major.minor.patch versions
 
 ### Architecture
 
 Currently supports `amd64` (x86_64) architecture.
 
-## 📝 Version 6.1.8 BloodMoon 🌙
+## 📝 Version 6.1.9 BloodMoon 🌙
 
 Latest release includes:
 

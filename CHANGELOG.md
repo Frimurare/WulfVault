@@ -5,6 +5,40 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.9] - BloodMoon 🌙 - 2025-12-14
+
+### Added
+- **Comprehensive REST API Documentation**: Complete documentation for all REST API endpoints in `docs/API.md`
+  - **Audit & Logging API**: Documented audit logs, server logs, and system monitor endpoints
+    - GET `/api/v1/admin/audit-logs` - Retrieve audit logs with pagination and filtering
+    - GET `/api/v1/admin/audit-logs/export` - Export audit logs to CSV
+    - GET `/api/v1/admin/server-logs` - Retrieve server logs with line limits
+    - GET `/api/v1/admin/server-logs/export` - Export server logs
+    - GET `/api/v1/admin/sysmonitor-logs` - Retrieve system monitor logs
+  - **GDPR Compliance API**: Documented user data export endpoint
+    - GET `/api/v1/user/export-data` - Export user's personal data (GDPR Right to Data Portability)
+  - **Pagination Support**: Documented query parameters for paginated endpoints
+    - Query parameters: `page`, `per_page`, `sort_by`, `sort_order`
+    - Examples with curl commands and response formats
+  - **File Comments/Descriptions**: Documented `comment` field in file API responses
+- **API Test Report**: Created comprehensive `API_TEST_REPORT.md` documenting REST API testing results
+  - All major endpoints tested and verified (Authentication, Users, Files, Teams, Admin Stats)
+  - API Health Score: A (95%)
+  - Status: APPROVED FOR PRODUCTION USE ✅
+
+### Changed
+- **API Documentation Version**: Updated `docs/API.md` from v4.7.4 to v6.1.9
+- **Documentation Cleanup**: Removed all legacy version markers from documentation files
+  - Removed references to v4.5.x, v4.6.x, v4.7.x versions
+  - Removed obsolete codenames (Gold, Champagne) from feature descriptions
+  - Updated all version references to v6.1.9 BloodMoon 🌙
+
+### Technical
+- Modified `docs/API.md`: Added 6 new sections with 200+ lines of endpoint documentation
+- Modified `cmd/server/main.go`: Updated version to 6.1.9 BloodMoon 🌙
+- Modified `README.md`, `DOCKER_README.md`, `USER_GUIDE.md`, `GDPR_COMPLIANCE_SUMMARY.md`: Updated to v6.1.9 BloodMoon 🌙
+- Created `API_TEST_REPORT.md`: Comprehensive REST API testing documentation
+
 ## [6.1.8] - BloodMoon 🌙 - 2025-12-12
 
 ### Added

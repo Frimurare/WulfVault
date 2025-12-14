@@ -1,4 +1,4 @@
-# WulfVault User Guide v6.1.8 BloodMoon
+# WulfVault User Guide v6.1.9 BloodMoon 🌙
 
 **Complete Guide for Administrators and Users**
 
