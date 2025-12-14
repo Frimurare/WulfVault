@@ -14,23 +14,27 @@ We thank the Gokapi team for their excellent work that inspired the foundational
 
 WulfVault is a complete rewrite that adds extensive enterprise features:
 
-- **Multi-user system** (~11,000 lines) - Role-based access (Super Admin, Admin, Users, Download Accounts)
-- **Email integration** (1,042 lines) - SMTP/Brevo support, email sharing, audit logs
-- **Two-Factor Authentication** (118 lines) - TOTP with backup codes
+- **Multi-user system** - Role-based access (Super Admin, Admin, Users, Download Accounts)
+- **Email integration** - SMTP/Brevo support, email sharing, audit logs
+- **Two-Factor Authentication** - TOTP with backup codes and recovery system
 - **Download account system** - Separate authentication for recipients with self-service portal
 - **File request portals** - Upload request links for collecting files
-- **Comprehensive audit system** - Download logs, email logs, IP tracking
-- **Branding system** - Custom logos, colors, company name
-- **Storage quota management** - Per-user quotas with usage tracking
-- **Password management** - Self-service reset via email
-- **Admin dashboards** - System-wide analytics and management
+- **Comprehensive audit system** - Download logs, email logs, IP tracking, action logging
+- **Branding system** - Custom logos, colors, company name, CSS customization
+- **Storage quota management** - Per-user and per-team quotas with usage tracking
+- **Password management** - Self-service reset via email with secure tokens
+- **Admin dashboards** - System-wide analytics, glassmorphic design, real-time statistics
 - **Soft deletion** - Trash system with configurable retention (1-365 days)
+- **Team collaboration** - Multi-team file sharing with role-based permissions
+- **Advanced pagination** - File list management with configurable items per page (5-250)
+- **File descriptions** - Comments and notes on shared files with search integration
+- **Chunked uploads** - Large file support with automatic retry and progress tracking
 
 **Code Statistics:**
-- Total: 18,016 lines of Go code
+- Total: 33,455 lines of Go code (as of v6.1.8)
 - Gokapi imports in production code: 0
-- Conceptual similarity: ~15% (basic data models, database schema foundation)
-- New code: ~80% (all HTTP handlers, database layer, email, 2FA, admin system)
+- Conceptual similarity: ~10% (basic data models, database schema foundation)
+- New code: ~90% (all HTTP handlers, database layer, email, 2FA, admin system, teams, pagination)
 
 ## License
 
