@@ -804,7 +804,7 @@ Same process as admin, but:
 - **Edit:** Change email or name
 - **Delete:** Permanently remove account
 
-### Pagination & Filtering (v4.5.13+)
+### Pagination & Filtering
 
 **Enterprise Scalability Feature** - For organizations with hundreds or thousands of users.
 

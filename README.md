@@ -42,7 +42,7 @@ WulfVault solves this by providing:
   - Large visual feedback: "UPLOADING - X%" with green success animation at 100%
   - 150 entertaining upload one-liners with 💾 emoji to keep you engaged
 - **Two sharing modes:**
-  - **Authenticated downloads (v4.7.9+: DEFAULT)** - Recipients create secure download accounts (email + password) - **Now checked by default for enhanced security**
+  - **Authenticated downloads (DEFAULT)** - Recipients create secure download accounts (email + password) - **Checked by default for enhanced security**
   - **Direct download links** - Optional: uncheck RequireAuth for quick sharing without authentication
 - **Password-protected files** - Add extra security layer with password protection per file
 - **Expiring shares** - Auto-delete after X downloads or Y days (or both)
@@ -77,7 +77,7 @@ WulfVault solves this by providing:
   - **Team storage quotas** - Per-team storage limits and usage tracking
   - **Smart team badges** - Files show team names or count with hover tooltips
   - **Real-time team sync** - Instant updates when files are shared/unshared
-  - **Team filter dropdown (v4.7.3+)** - Filter Team Files by specific team for easy navigation when in multiple teams
+  - **Team filter dropdown** - Filter Team Files by specific team for easy navigation when in multiple teams
 - **Per-user storage quotas** - Individually configurable storage limits (MB to TB)
 - **User dashboard** - Real-time quota usage, file management, and download statistics
 - **Active/inactive status** - Temporarily disable users without deletion
@@ -85,7 +85,7 @@ WulfVault solves this by providing:
 - **Download account portal** - Recipients can view their download history and manage their accounts
 
 ### 📊 Download Tracking & Accountability
-- **Modern Glassmorphic Admin Dashboard (v4.7.9+):**
+- **Modern Glassmorphic Admin Dashboard:**
   - **2025 modern design** - Animated gradient backgrounds with glassmorphism effects
   - **Real-time statistics** - Total users, active users, downloads, storage trends
   - **Comprehensive metrics** - Download/upload data (today, week, month, year)
@@ -271,13 +271,13 @@ WulfVault solves this by providing:
   - Permanent deletion from trash with confirmation dialogs
   - Detailed trash view: who deleted, when, days remaining, original owner
   - Modern, responsive UI with gradient buttons and emoji indicators
-  - **Improved All Files view (v4.7.3+)** - Card-based layout with clear file separation, grouped file+note display, and better visual hierarchy
+  - **Improved All Files view** - Card-based layout with clear file separation, grouped file+note display, and better visual hierarchy
 - **User administration:**
   - Create, edit, and delete users with full audit trail
   - Manage download accounts with comprehensive controls
   - Adjust quotas on the fly
   - Toggle user active/inactive status
-  - **Enterprise pagination & filtering (v4.5.13+):**
+  - **Enterprise pagination & filtering:**
     - Search users by name or email instantly
     - Filter by user level (Regular Users / Admins)
     - Filter by status (Active / Inactive)
