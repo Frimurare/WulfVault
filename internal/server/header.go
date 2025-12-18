@@ -386,6 +386,7 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
                 <a class="dropdown-toggle">Files</a>
                 <div class="dropdown-content">
                     <a href="/admin/files">All Files</a>
+                    <a href="/admin/duplicates">Duplicate Files</a>
                     <a href="/admin/trash">Trash</a>
                 </div>
             </div>

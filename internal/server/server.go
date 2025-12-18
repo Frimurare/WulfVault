@@ -122,6 +122,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/download-accounts/edit", s.requireAdmin(s.handleAdminEditDownloadAccount))
 	mux.HandleFunc("/admin/download-accounts/delete", s.requireAdmin(s.handleAdminDeleteDownloadAccount))
 	mux.HandleFunc("/admin/files", s.requireAdmin(s.handleAdminFiles))
+	mux.HandleFunc("/admin/duplicates", s.requireAdmin(s.handleAdminDuplicates))
 	mux.HandleFunc("/admin/trash", s.requireAdmin(s.handleAdminTrash))
 	mux.HandleFunc("/admin/trash/restore", s.requireAdmin(s.handleAdminRestoreFile))
 	mux.HandleFunc("/admin/trash/delete", s.requireAdmin(s.handleAdminPermanentDelete))

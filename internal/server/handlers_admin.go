@@ -28,7 +28,115 @@ import (
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
+// Helper function for select option
+func selected(condition bool) string {
+	if condition {
+		return " selected"
+	}
+	return ""
+}
+
 // handleAdminDashboard renders the admin dashboard
+// DuplicateFile represents a file that has duplicates
+type DuplicateFile struct {
+	Name      string
+	SizeBytes int64
+	Size      string
+	FileIds   []string
+	UserIds   []int
+	Count     int
+}
+
+// DuplicateFileDetail contains full file information for duplicates
+type DuplicateFileDetail struct {
+	Files []*database.FileInfo
+	Name  string
+	Size  string
+	Count int
+}
+
+// findDuplicateFiles finds files with the same name and size
+func (s *Server) findDuplicateFiles() []DuplicateFile {
+	files, err := database.DB.GetAllFiles()
+	if err != nil {
+		log.Printf("Error getting all files for duplicate detection: %v", err)
+		return nil
+	}
+
+	// Map with key: "filename|size" -> list of files
+	fileMap := make(map[string][]*database.FileInfo)
+
+	for _, file := range files {
+		// Skip files pending deletion
+		if file.PendingDeletion > 0 {
+			continue
+		}
+
+		key := fmt.Sprintf("%s|%d", file.Name, file.SizeBytes)
+		fileMap[key] = append(fileMap[key], file)
+	}
+
+	// Find duplicates (more than 1 file with same name+size)
+	var duplicates []DuplicateFile
+	for _, fileList := range fileMap {
+		if len(fileList) > 1 {
+			dup := DuplicateFile{
+				Name:      fileList[0].Name,
+				SizeBytes: fileList[0].SizeBytes,
+				Size:      fileList[0].Size,
+				Count:     len(fileList),
+			}
+
+			for _, f := range fileList {
+				dup.FileIds = append(dup.FileIds, f.Id)
+				dup.UserIds = append(dup.UserIds, f.UserId)
+			}
+
+			duplicates = append(duplicates, dup)
+		}
+	}
+
+	return duplicates
+}
+
+// findDuplicateFilesDetailed finds files with the same name and size with full file info
+func (s *Server) findDuplicateFilesDetailed() []DuplicateFileDetail {
+	files, err := database.DB.GetAllFiles()
+	if err != nil {
+		log.Printf("Error getting all files for duplicate detection: %v", err)
+		return nil
+	}
+
+	// Map with key: "filename|size" -> list of files
+	fileMap := make(map[string][]*database.FileInfo)
+
+	for _, file := range files {
+		// Skip files pending deletion
+		if file.PendingDeletion > 0 {
+			continue
+		}
+
+		key := fmt.Sprintf("%s|%d", file.Name, file.SizeBytes)
+		fileMap[key] = append(fileMap[key], file)
+	}
+
+	// Find duplicates (more than 1 file with same name+size)
+	var duplicates []DuplicateFileDetail
+	for _, fileList := range fileMap {
+		if len(fileList) > 1 {
+			dup := DuplicateFileDetail{
+				Files: fileList,
+				Name:  fileList[0].Name,
+				Size:  fileList[0].Size,
+				Count: len(fileList),
+			}
+			duplicates = append(duplicates, dup)
+		}
+	}
+
+	return duplicates
+}
+
 func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r.Context())
 	if !ok {
@@ -97,6 +205,9 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		diskAvailable = int64(stat.Bavail * uint64(stat.Bsize))
 	}
 
+	// Find duplicate files
+	duplicateFiles := s.findDuplicateFiles()
+
 	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday,
 		bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear,
 		bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear,
@@ -105,7 +216,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 		twoFAAdoption, avgBackupCodes,
 		largestFileName, largestFileSize, top5ActiveUsers, top5FileCounts,
 		topFileTypes, fileTypeCounts, topWeekday, weekdayCount, storagePast, storageNow,
-		mostDownloadedFile, downloadCount, uploadsUsed, diskAvailable)
+		mostDownloadedFile, downloadCount, uploadsUsed, diskAvailable, duplicateFiles)
 }
 
 // handleAdminUsers lists all users and download accounts with pagination
@@ -772,6 +883,47 @@ func (s *Server) handleAdminFiles(w http.ResponseWriter, r *http.Request) {
 	s.renderAdminFiles(w, files, totalStorage)
 }
 
+// handleAdminDuplicates shows duplicate files with pagination
+func (s *Server) handleAdminDuplicates(w http.ResponseWriter, r *http.Request) {
+	// Get all duplicate file groups
+	duplicateGroups := s.findDuplicateFilesDetailed()
+
+	// Flatten to individual files for display
+	var allDuplicateFiles []*database.FileInfo
+	for _, group := range duplicateGroups {
+		allDuplicateFiles = append(allDuplicateFiles, group.Files...)
+	}
+
+	// Parse pagination parameters
+	limit := 50
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 200 {
+			limit = l
+		}
+	}
+
+	offset := 0
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+
+	// Apply pagination
+	totalFiles := len(allDuplicateFiles)
+	end := offset + limit
+	if end > totalFiles {
+		end = totalFiles
+	}
+
+	var paginatedFiles []*database.FileInfo
+	if offset < totalFiles {
+		paginatedFiles = allDuplicateFiles[offset:end]
+	}
+
+	s.renderAdminDuplicates(w, paginatedFiles, totalFiles, limit, offset, len(duplicateGroups))
+}
+
 // handleAdminBranding handles branding settings
 func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -1186,7 +1338,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	twoFAAdoption, avgBackupCodes float64,
 	largestFileName string, largestFileSize int64, top5ActiveUsers []string, top5FileCounts []int,
 	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
-	mostDownloadedFile string, downloadCount int, uploadsUsed, diskAvailable int64) {
+	mostDownloadedFile string, downloadCount int, uploadsUsed, diskAvailable int64, duplicateFiles []DuplicateFile) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get dashboard style preference
@@ -1628,6 +1780,43 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
                 <div class="text-3xl font-extrabold text-slate-900 mb-3 break-words">` + mostDownloadedFile + `</div>
                 <p class="text-lg text-pink-600 font-bold">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
             </div>
+        </div>
+
+        <!-- Duplicate Files -->
+        <h2 class="section-title text-3xl mb-8">📋 Duplicate Files</h2>
+        <div class="glass-card rounded-2xl p-8 mb-16">
+            ` + func() string {
+		if len(duplicateFiles) == 0 {
+			return `<p class="text-slate-600 text-center">No duplicate files found. All files have unique name and size combinations.</p>`
+		}
+
+		html := `<div class="space-y-6">`
+		for _, dup := range duplicateFiles {
+			html += `
+                <div class="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-r-lg">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-900 mb-2 break-words">` + template.HTMLEscapeString(dup.Name) + `</h4>
+                            <p class="text-sm text-slate-600 mb-2">Size: ` + dup.Size + ` | Duplicates: ` + fmt.Sprintf("%d copies", dup.Count) + `</p>
+                            <div class="text-xs text-slate-500 font-mono">
+                                <p class="mb-1">File IDs: ` + func() string {
+				ids := ""
+				for i, id := range dup.FileIds {
+					if i > 0 {
+						ids += ", "
+					}
+					ids += id
+				}
+				return ids
+			}() + `</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`
+		}
+		html += `</div>`
+		return html
+	}() + `
         </div>
     </div>
 
@@ -3174,6 +3363,397 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
         </div>
     </div>
     
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.FileInfo, totalFiles, limit, offset, duplicateGroups int) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Calculate pagination
+	hasNext := offset+limit < totalFiles
+	hasPrev := offset > 0
+	currentPage := (offset / limit) + 1
+	totalPages := (totalFiles + limit - 1) / limit
+
+	html := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ulf Holmström">
+    <title>Duplicate Files - ` + s.config.CompanyName + `</title>
+    ` + s.getFaviconHTML() + `
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .stats-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .stat-item .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: ` + s.getPrimaryColor() + `;
+        }
+        .files-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .file-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .file-item {
+            padding: 20px 24px;
+            border-bottom: 3px solid #ff9800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff8e1;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .file-info h3 {
+            color: #333;
+            font-size: 16px;
+            margin: 0 0 4px 0;
+        }
+        .file-info p {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+        .file-note {
+            background: #fff;
+            border-left: 4px solid #ff9800;
+            padding: 10px 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+        .file-note strong {
+            font-weight: 700;
+        }
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            min-width: 340px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .badge-duplicate { background: #ff9800; color: white; }
+        .badge-active { background: #e8f5e9; color: #2e7d32; }
+        .badge-expired { background: #ffebee; color: #c62828; }
+        .badge-auth { background: #e3f2fd; color: #1976d2; }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
+            color: white;
+            border: 2px solid ` + s.getPrimaryColor() + `;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            border: 2px solid #6c757d;
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #4e555b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: 2px solid #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: #f8f9fa;
+            border-top: 2px solid #e0e0e0;
+        }
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .pagination-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .page-size-selector {
+            padding: 20px 24px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .page-size-selector label {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .page-size-selector select {
+            padding: 8px 12px;
+            border: 2px solid ` + s.getPrimaryColor() + `;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .file-actions {
+                width: 100%;
+                margin-top: 12px;
+                flex-direction: column;
+                min-width: unset;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    ` + s.getAdminHeaderHTML("") + `
+    <div class="container">
+        <h2 style="margin-bottom: 20px;">🔍 Duplicate Files</h2>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <h3>Duplicate Groups</h3>
+                <div class="value">` + fmt.Sprintf("%d", duplicateGroups) + `</div>
+            </div>
+            <div class="stat-item">
+                <h3>Total Duplicate Files</h3>
+                <div class="value">` + fmt.Sprintf("%d", totalFiles) + `</div>
+            </div>
+            <div class="stat-item">
+                <h3>Showing</h3>
+                <div class="value">` + fmt.Sprintf("%d-%d", offset+1, min(offset+len(files), totalFiles)) + `</div>
+            </div>
+        </div>
+
+        <div class="files-section">
+            <div class="page-size-selector">
+                <label for="pageSize">Files per page:</label>
+                <select id="pageSize" onchange="changePageSize()">
+                    <option value="10"` + selected(limit == 10) + `>10</option>
+                    <option value="25"` + selected(limit == 25) + `>25</option>
+                    <option value="50"` + selected(limit == 50) + `>50</option>
+                    <option value="100"` + selected(limit == 100) + `>100</option>
+                    <option value="200"` + selected(limit == 200) + `>200</option>
+                </select>
+            </div>
+            <ul class="file-list">`
+
+	if len(files) == 0 {
+		html += `
+                <li class="file-item">
+                    <div style="text-align: center; width: 100%; padding: 40px 20px; color: #666;">
+                        ✨ No duplicate files found! All files have unique name and size combinations.
+                    </div>
+                </li>`
+	}
+
+	for _, f := range files {
+		// Get user info
+		userName := "Deleted user"
+		user, err := database.DB.GetUserByID(f.UserId)
+		if err == nil {
+			userName = user.Name
+		}
+
+		// Status
+		status := `<span class="badge badge-active">Active</span>`
+		if !f.UnlimitedDownloads && f.DownloadsRemaining <= 0 {
+			status = `<span class="badge badge-expired">Expired</span>`
+		} else if !f.UnlimitedTime && f.ExpireAt > 0 && f.ExpireAt < time.Now().Unix() {
+			status = `<span class="badge badge-expired">Expired</span>`
+		}
+
+		// Duplicate badge
+		dupBadge := ` <span class="badge badge-duplicate">📋 DUPLICATE</span>`
+
+		// Auth badge
+		authBadge := ""
+		if f.RequireAuth {
+			authBadge = ` <span class="badge badge-auth">🔒 Auth</span>`
+		}
+
+		// Expiration info
+		expiryInfo := "Never"
+		if !f.UnlimitedTime && f.ExpireAtString != "" {
+			expiryInfo = f.ExpireAtString
+		}
+		if !f.UnlimitedDownloads {
+			expiryInfo += fmt.Sprintf(" (%d left)", f.DownloadsRemaining)
+		}
+
+		downloadURL := s.getPublicURL() + "/d/" + f.Id
+
+		// Note display
+		noteDisplay := ""
+		if f.Comment != "" {
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong>📝 Note:</strong> %s</p>`,
+				template.HTMLEscapeString(f.Comment))
+		}
+
+		html += fmt.Sprintf(`
+                <li class="file-item">
+                    <div class="file-info">
+                        <h3 title="%s">
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
+                        </h3>
+                        <p>👤 %s • 📦 %s • 📊 %d downloads • ⏰ Expires: %s • 🆔 %s</p>
+                        %s
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')">📊 History</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)">📋 Copy</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
+                    </div>
+                </li>`,
+			template.HTMLEscapeString(f.Name),
+			f.Name, dupBadge, authBadge, status,
+			userName, f.Size, f.DownloadCount, expiryInfo, f.Id,
+			noteDisplay,
+			f.Id, f.Name,
+			downloadURL,
+			f.Id)
+	}
+
+	html += `
+            </ul>
+            <div class="pagination">
+                <div class="pagination-info">
+                    Page ` + fmt.Sprintf("%d of %d", currentPage, max(totalPages, 1)) + ` • Total: ` + fmt.Sprintf("%d duplicate files", totalFiles) + `
+                </div>
+                <div class="pagination-controls">`
+
+	if hasPrev {
+		prevOffset := max(0, offset-limit)
+		html += `<a href="/admin/duplicates?limit=` + fmt.Sprintf("%d", limit) + `&offset=` + fmt.Sprintf("%d", prevOffset) + `" class="btn btn-secondary">← Previous</a>`
+	}
+
+	if hasNext {
+		nextOffset := offset + limit
+		html += `<a href="/admin/duplicates?limit=` + fmt.Sprintf("%d", limit) + `&offset=` + fmt.Sprintf("%d", nextOffset) + `" class="btn btn-secondary">Next →</a>`
+	}
+
+	html += `
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function changePageSize() {
+            const pageSize = document.getElementById('pageSize').value;
+            window.location.href = '/admin/duplicates?limit=' + pageSize + '&offset=0';
+        }
+
+        function copyToClipboard(url, btn) {
+            navigator.clipboard.writeText(url).then(() => {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        function deleteFile(fileId) {
+            if (!confirm('Are you sure you want to delete this file?')) {
+                return;
+            }
+
+            fetch('/admin/files/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'file_id=' + encodeURIComponent(fileId)
+            })
+            .then(response => response.ok ? location.reload() : alert('Failed to delete file'))
+            .catch(error => alert('Error: ' + error));
+        }
+
+        function showDownloadHistory(fileId, fileName) {
+            alert('Download history for ' + fileName + ' (ID: ' + fileId + ')\\n\\nThis feature shows download logs in the future.');
+        }
+    </script>
 </body>
 </html>`
 

@@ -5,6 +5,54 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.0] - BloodMoon 🌙 - 2025-12-18
+
+### Added
+- **Duplicate Files Detection System**: Comprehensive duplicate file management across admin interface
+  - **Admin Dashboard Widget**: New "Duplicate Files" section at bottom of dashboard
+    - Shows count of duplicate groups and total duplicate files
+    - Lists files with identical name AND size combinations
+    - Displays file IDs for easy identification
+    - Orange color scheme for visual distinction
+  - **Dedicated Duplicate Files View**: New page accessible from Files menu
+    - Full pagination support (10, 25, 50, 100, 200 files per page)
+    - Shows all duplicate files with complete metadata
+    - Displays file descriptions/notes for each duplicate
+    - Color-coded badges: 🔍 DUPLICATE (orange), Active/Expired status, Auth status
+    - Action buttons: View History, Copy Link, Delete File
+    - Statistics bar showing: Duplicate Groups, Total Duplicate Files, Currently Showing
+    - Mobile-responsive layout with stacked buttons on small screens
+  - **Smart Duplicate Detection**:
+    - Matches files by exact filename AND exact size in bytes
+    - Automatically skips files pending deletion
+    - Efficient in-memory grouping algorithm
+    - Real-time detection on page load
+  - **Navigation Menu**: Added "Duplicate Files" option in Files dropdown menu
+    - Located between "All Files" and "Trash" for logical workflow
+    - Accessible at `/admin/duplicates`
+
+### Technical
+- Modified `internal/server/handlers_admin.go`:
+  - Added `DuplicateFile` and `DuplicateFileDetail` structs
+  - Added `findDuplicateFiles()` for dashboard widget
+  - Added `findDuplicateFilesDetailed()` for dedicated page
+  - Added `handleAdminDuplicates()` handler with pagination support
+  - Added `renderAdminDuplicates()` with full UI rendering
+  - Added `selected()` helper function for dropdown options
+- Modified `internal/server/server.go`:
+  - Added `/admin/duplicates` route with admin authentication
+- Modified `internal/server/header.go`:
+  - Added "Duplicate Files" link to Files dropdown menu
+- Modified `cmd/server/main.go`:
+  - Updated version to 6.2.0 BloodMoon 🌙
+
+### User Experience
+- Administrators can now easily identify and manage duplicate files
+- Visual orange highlighting makes duplicates stand out
+- Full file information (notes, owner, downloads, expiry) helps decide which duplicate to keep
+- Pagination prevents performance issues with large numbers of duplicates
+- Dashboard widget provides quick overview of duplicate file situation
+
 ## [6.1.9] - BloodMoon 🌙 - 2025-12-14
 
 ### Added
