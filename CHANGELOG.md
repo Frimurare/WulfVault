@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Full pagination support (10, 25, 50, 100, 200 files per page)
     - Shows all duplicate files with complete metadata
     - Displays file descriptions/notes for each duplicate
+    - **Upload timestamp** showing when each file was uploaded (format: "HH:MM on YYYY-MM-DD")
     - Color-coded badges: 🔍 DUPLICATE (orange), Active/Expired status, Auth status
     - Action buttons: View History, Copy Link, Delete File
     - Statistics bar showing: Duplicate Groups, Total Duplicate Files, Currently Showing
@@ -30,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Navigation Menu**: Added "Duplicate Files" option in Files dropdown menu
     - Located between "All Files" and "Trash" for logical workflow
     - Accessible at `/admin/duplicates`
+
+### Fixed
+- **Duplicate Files Page**: Delete button now works correctly
+  - Fixed endpoint from `/admin/files/delete` to `/file/delete`
+  - Improved error handling with async/await pattern
+  - Shows detailed error messages on delete failure
+  - Enhanced confirmation dialog with "cannot be undone" warning
 
 ### Technical
 - Modified `internal/server/handlers_admin.go`:
