@@ -3663,6 +3663,10 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.
 
 		downloadURL := s.getPublicURL() + "/d/" + f.Id
 
+		// Upload timestamp
+		uploadTime := time.Unix(f.UploadDate, 0)
+		uploadTimeStr := uploadTime.Format("15:04 on 2006-01-02")
+
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
@@ -3676,7 +3680,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.
                         <h3 title="%s">
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
                         </h3>
-                        <p>👤 %s • 📦 %s • 📊 %d downloads • ⏰ Expires: %s • 🆔 %s</p>
+                        <p>👤 %s • 📦 %s • 📊 %d downloads • ⏰ Expires: %s • 📤 Uploaded: %s • 🆔 %s</p>
                         %s
                     </div>
                     <div class="file-actions">
@@ -3687,7 +3691,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.
                 </li>`,
 			template.HTMLEscapeString(f.Name),
 			f.Name, dupBadge, authBadge, status,
-			userName, f.Size, f.DownloadCount, expiryInfo, f.Id,
+			userName, f.Size, f.DownloadCount, expiryInfo, uploadTimeStr, f.Id,
 			noteDisplay,
 			f.Id, f.Name,
 			downloadURL,
@@ -3736,18 +3740,27 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.
             });
         }
 
-        function deleteFile(fileId) {
-            if (!confirm('Are you sure you want to delete this file?')) {
+        async function deleteFile(fileId) {
+            if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
                 return;
             }
 
-            fetch('/admin/files/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'file_id=' + encodeURIComponent(fileId)
-            })
-            .then(response => response.ok ? location.reload() : alert('Failed to delete file'))
-            .catch(error => alert('Error: ' + error));
+            try {
+                const response = await fetch('/file/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'file_id=' + encodeURIComponent(fileId)
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const result = await response.json();
+                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error: ' + error);
+            }
         }
 
         function showDownloadHistory(fileId, fileName) {
