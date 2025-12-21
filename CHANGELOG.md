@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - More efficient search using data attributes instead of full text content
   - Helps users find files based on what the file contains, not just the filename
 
+### Fixed
+- **Teams Shared Files Delete**: Fixed "Failed to delete" error message appearing despite successful deletion
+  - Delete button now correctly checks HTTP response status instead of expecting JSON `success` field
+  - File deletion works correctly and shows proper success message
+
 ### Technical
 - Modified `internal/server/handlers_user.go`:
   - Added `data-comment` attribute to file items in My Files view
@@ -25,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modified `internal/server/handlers_teams.go`:
   - Added `data-comment` attribute to file items in Teams Shared Files view
   - Updated `filterAndPaginate()` to search by comment instead of full text content
+  - Fixed delete button response handling to check `res.ok` instead of `data.success`
 - Modified `cmd/server/main.go`:
   - Updated version to 6.2.1 BloodMoon 🌙
 

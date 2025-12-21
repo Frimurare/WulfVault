@@ -1967,13 +1967,14 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                 body: 'file_id=' + fileId,
                 credentials: 'same-origin'
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
+            .then(res => {
+                if (res.ok) {
                     alert('File moved to trash successfully');
                     window.location.reload();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to delete file'));
+                    return res.json().then(data => {
+                        alert('Error: ' + (data.error || 'Failed to delete file'));
+                    });
                 }
             })
             .catch(err => {
