@@ -3111,7 +3111,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 		}
 
 		html += fmt.Sprintf(`
-                <li class="file-item" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-username="%s">
+                <li class="file-item" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-username="%s" data-comment="%s">
                     <div class="file-info">
                         <h3 title="%s">
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s
@@ -3125,7 +3125,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                         <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
                     </div>
                 </li>`,
-			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, userName,
+			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, userName, template.HTMLEscapeString(f.Comment),
 			template.HTMLEscapeString(f.Name),
 			f.Name, authBadge, status,
 			userName, f.Size, f.DownloadCount, expiryInfo,
@@ -3257,9 +3257,10 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
                 const filename = item.getAttribute('data-filename').toLowerCase();
                 const extension = item.getAttribute('data-extension').toLowerCase();
                 const username = item.getAttribute('data-username').toLowerCase();
+                const comment = (item.getAttribute('data-comment') || '').toLowerCase();
 
-                // Search in filename, extension, and username
-                if (filename.includes(searchTerm) || extension.includes(searchTerm) || username.includes(searchTerm)) {
+                // Search in filename, extension, username, and comment/description
+                if (filename.includes(searchTerm) || extension.includes(searchTerm) || username.includes(searchTerm) || comment.includes(searchTerm)) {
                     item.style.display = '';
                 } else {
                     item.style.display = 'none';

@@ -5,6 +5,34 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.1] - BloodMoon 🌙 - 2025-12-18
+
+### Improved
+- **Enhanced Search Functionality**: Search now includes file descriptions/notes across all file views
+  - **My Files Dashboard**: Search box now searches in filename, extension, AND file description/note
+  - **Admin All Files**: Search box now searches in filename, extension, username, AND file description/note
+  - **Teams Shared Files**: Search box now searches in filename, owner, AND file description/note
+  - More efficient search using data attributes instead of full text content
+  - Helps users find files based on what the file contains, not just the filename
+
+### Technical
+- Modified `internal/server/handlers_user.go`:
+  - Added `data-comment` attribute to file items in My Files view
+  - Updated `searchAndSortFiles()` to include comment in search filter
+- Modified `internal/server/handlers_admin.go`:
+  - Added `data-comment` attribute to file items in All Files view
+  - Updated `searchAndSortFiles()` to include comment in search filter
+- Modified `internal/server/handlers_teams.go`:
+  - Added `data-comment` attribute to file items in Teams Shared Files view
+  - Updated `filterAndPaginate()` to search by comment instead of full text content
+- Modified `cmd/server/main.go`:
+  - Updated version to 6.2.1 BloodMoon 🌙
+
+### User Experience
+- Users can now find files by searching for words in their file descriptions
+- Example: Searching "invoice" will find all files with "invoice" in the description, even if filename is "document_2024.pdf"
+- More intuitive and powerful file discovery across all file management views
+
 ## [6.2.0] - BloodMoon 🌙 - 2025-12-18
 
 ### Added

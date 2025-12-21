@@ -1275,7 +1275,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 			}
 
 			html += fmt.Sprintf(`
-                <li class="file-item" data-file-type="%s" data-teams="%s" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d">
+                <li class="file-item" data-file-type="%s" data-teams="%s" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-comment="%s">
                     <div class="file-info">
                         <h3 title="%s">
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
@@ -1311,7 +1311,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             </button>
                         </div>
                     </div>
-                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
+                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, template.HTMLEscapeString(f.Comment), template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
 				splashURL, splashURL, splashURLEscaped,
 				directURL, directURL, directURLEscaped,
 				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.RequireAuth, template.JSEscapeString(f.FilePasswordPlain), f.Id, template.JSEscapeString(f.Name))
@@ -2046,9 +2046,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
             fileItems.forEach(item => {
                 const filename = item.getAttribute('data-filename').toLowerCase();
                 const extension = item.getAttribute('data-extension').toLowerCase();
+                const comment = (item.getAttribute('data-comment') || '').toLowerCase();
 
-                // Search in filename and extension
-                if (searchTerm === '' || filename.includes(searchTerm) || extension.includes(searchTerm)) {
+                // Search in filename, extension, and comment/description
+                if (searchTerm === '' || filename.includes(searchTerm) || extension.includes(searchTerm) || comment.includes(searchTerm)) {
                     item.setAttribute('data-search-hidden', 'false');
                 } else {
                     item.setAttribute('data-search-hidden', 'true');

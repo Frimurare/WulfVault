@@ -8,6 +8,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -1791,7 +1792,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
 			}
 
 			html += fmt.Sprintf(`
-            <div class="file-item" data-filename="%s" data-owner="%s" data-size="%d" data-date="%d">
+            <div class="file-item" data-filename="%s" data-owner="%s" data-size="%d" data-date="%d" data-comment="%s">
                 <div class="file-header">
                     <span class="file-name" title="%s"><span class="file-icon">📄</span>%s</span>
                     <div>
@@ -1807,7 +1808,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
                     <span>⬇️ Downloads: %d</span>
                 </div>
                 %s
-            </div>`, file.Name, ownerName, file.SizeBytes, tf.SharedAt, file.Name, file.Name, file.Id, deleteButton, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, descriptionHTML)
+            </div>`, file.Name, ownerName, file.SizeBytes, tf.SharedAt, template.HTMLEscapeString(file.Comment), file.Name, file.Name, file.Id, deleteButton, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, descriptionHTML)
 		}
 
 		html += `
@@ -1838,9 +1839,9 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
             for (let item of items) {
                 const filename = item.dataset.filename.toLowerCase();
                 const owner = item.dataset.owner.toLowerCase();
-                const text = item.textContent.toLowerCase();
+                const comment = (item.dataset.comment || '').toLowerCase();
 
-                if (filename.includes(searchTerm) || owner.includes(searchTerm) || text.includes(searchTerm)) {
+                if (filename.includes(searchTerm) || owner.includes(searchTerm) || comment.includes(searchTerm)) {
                     filteredItems.push(item);
                 }
             }
