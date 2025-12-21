@@ -238,10 +238,6 @@ Licensed under GNU Affero General Public License v3.0 (AGPL-3.0)
 
 Ulf Holmström (Frimurare)
 
-## 🙏 Acknowledgments
-
-Inspired by [Gokapi](https://github.com/Forceu/Gokapi)
-
 ---
 
 **Latest Version:** v6.0.2 BloodMoon 🌙

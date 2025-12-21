@@ -6,8 +6,6 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
-**Architecturally inspired by [Gokapi](https://github.com/Forceu/Gokapi)** — WulfVault is a complete rewrite (~95% new code) adding multi-user management, audit logging, email integration, 2FA, branding, and enterprise features.
-
 ---
 
 ## Why WulfVault?
@@ -865,8 +863,6 @@ Contributions welcome! Please:
 This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
 
 **Why AGPL-3.0?** This license ensures that if anyone uses WulfVault to provide a service over a network (like SaaS), they must share their modifications with the community. This prevents companies from taking the code, making improvements, and keeping them proprietary. It protects the open-source nature of the project while requiring attribution and source disclosure for all network use.
-
-**Architecturally inspired by Gokapi** by Forceu - https://github.com/Forceu/Gokapi
 
 See [NOTICE.md](NOTICE.md) for full attribution and license information.
 

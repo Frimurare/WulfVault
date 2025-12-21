@@ -5,6 +5,39 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.3] - BloodMoon 🌙 - 2025-12-21
+
+### Changed
+- **Complete Removal of Legacy References**: Removed all references to legacy codebase
+  - Removed all legacy attributions and acknowledgments from documentation
+  - Updated startup message to reflect WulfVault as standalone enterprise platform
+  - Cleaned up all code comments removing legacy references
+  - Deleted old test files that referenced legacy imports
+  - Updated NOTICE.md to focus purely on WulfVault features and licensing
+  - WulfVault is now presented as a fully independent enterprise file sharing platform
+
+### Technical
+- Modified `cmd/server/main.go`:
+  - Updated startup message: "Enterprise File Sharing | Self-Hosted | Open Source (AGPL-3.0)"
+  - Updated version to 6.2.3 BloodMoon 🌙
+- Modified `internal/database/schema.go`:
+  - Removed legacy references from SQL schema comments
+- Modified `internal/models/Authentication.go`:
+  - Updated comments to reference WulfVault instead of legacy code
+- Deleted legacy test files:
+  - Removed `internal/models/*_test.go` files (6 files)
+- Updated documentation files:
+  - `README.md` - Removed legacy attribution sections
+  - `DOCKER_README.md` - Removed acknowledgments section
+  - `INSTALLATION.md` - Removed legacy references
+  - `USER_GUIDE.md` - Removed legacy attributions
+  - `NOTICE.md` - Complete rewrite focusing on WulfVault as independent platform
+
+### User Experience
+- Cleaner, more professional presentation of WulfVault as an independent enterprise platform
+- Documentation now focuses entirely on WulfVault's unique features and capabilities
+- No confusion about project origins or dependencies
+
 ## [6.2.2] - BloodMoon 🌙 - 2025-12-21
 
 ### Fixed

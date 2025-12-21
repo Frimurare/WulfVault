@@ -2019,8 +2019,6 @@ Server logs display HTTP status codes to indicate the outcome of requests. Under
 **Copyright © 2025 Ulf Holmström (Frimurare)**
 **Licensed under AGPL-3.0**
 
-*Architecturally inspired by Gokapi - Complete rewrite with enterprise features*
-
 ---
 
 **End of User Guide**

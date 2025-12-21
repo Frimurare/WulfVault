@@ -10,7 +10,7 @@ package database
 const SchemaVersion = 1
 
 const CreateTablesSQL = `
--- Users table (extended from Gokapi)
+-- Users table
 CREATE TABLE IF NOT EXISTS Users (
 	Id INTEGER PRIMARY KEY AUTOINCREMENT,
 	Name TEXT NOT NULL UNIQUE,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS Users (
 	IsActive INTEGER NOT NULL DEFAULT 1
 );
 
--- Files table (from Gokapi, with UserId for tracking)
+-- Files table
 CREATE TABLE IF NOT EXISTS Files (
 	Id TEXT PRIMARY KEY,
 	Name TEXT NOT NULL,
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS EmailLogs (
 	FOREIGN KEY (SenderUserId) REFERENCES Users(Id)
 );
 
--- Sessions table (from Gokapi)
+-- Sessions table
 CREATE TABLE IF NOT EXISTS Sessions (
 	Id TEXT PRIMARY KEY,
 	UserId INTEGER NOT NULL,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS Sessions (
 	FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
--- API Keys table (from Gokapi)
+-- API Keys table
 CREATE TABLE IF NOT EXISTS ApiKeys (
 	Id TEXT PRIMARY KEY,
 	FriendlyName TEXT NOT NULL,

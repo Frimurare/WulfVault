@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	Version = "6.2.2 BloodMoon 🌙"
+	Version = "6.2.3 BloodMoon 🌙"
 )
 
 var (
@@ -49,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("WulfVault File Sharing System v%s\n", Version)
-	fmt.Println("Inspired by Gokapi - https://github.com/Forceu/Gokapi")
+	fmt.Println("Enterprise File Sharing | Self-Hosted | Open Source (AGPL-3.0)")
 	fmt.Println("---")
 
 	// Initialize database

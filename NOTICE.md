@@ -1,18 +1,10 @@
 # Attribution and Acknowledgments
 
-## Architecturally Inspired by Gokapi
+## WulfVault - Enterprise File Sharing Platform
 
-WulfVault is architecturally inspired by **Gokapi** by Forceu, but represents a complete rewrite (~95% new code).
+WulfVault is a professional-grade, self-hosted file sharing platform built from the ground up with enterprise features and security in mind.
 
-- **Original Project:** https://github.com/Forceu/Gokapi
-- **License:** AGPL-3.0
-- **Copyright:** Forceu and contributors
-
-We thank the Gokapi team for their excellent work that inspired the foundational architecture of temporary file sharing with expiration.
-
-## WulfVault Enhancements (Complete Rewrite)
-
-WulfVault is a complete rewrite that adds extensive enterprise features:
+## Key Features
 
 - **Multi-user system** - Role-based access (Super Admin, Admin, Users, Download Accounts)
 - **Email integration** - SMTP/Brevo support, email sharing, audit logs
@@ -29,12 +21,16 @@ WulfVault is a complete rewrite that adds extensive enterprise features:
 - **Advanced pagination** - File list management with configurable items per page (5-250)
 - **File descriptions** - Comments and notes on shared files with search integration
 - **Chunked uploads** - Large file support with automatic retry and progress tracking
+- **Duplicate detection** - Identify and manage duplicate files across the system
+- **GDPR compliance** - Data export, account deletion, audit trails
 
-**Code Statistics:**
-- Total: 33,455 lines of Go code (as of v6.1.8)
-- Gokapi imports in production code: 0
-- Conceptual similarity: ~10% (basic data models, database schema foundation)
-- New code: ~90% (all HTTP handlers, database layer, email, 2FA, admin system, teams, pagination)
+## Code Statistics
+
+- **Total:** 33,455+ lines of Go code (as of v6.2.3)
+- **Architecture:** Clean, modular design with clear separation of concerns
+- **Database:** SQLite with comprehensive schema and migrations
+- **Frontend:** Modern JavaScript with responsive design
+- **Backend:** Go 1.23+ with efficient handlers and middleware
 
 ## License
 
@@ -52,3 +48,8 @@ This ensures that WulfVault remains free and open-source, even when used to prov
 
 See [LICENSE](LICENSE) for the full license text.
 
+## Author
+
+**Copyright © 2025 Ulf Holmström (Frimurare)**
+
+WulfVault is developed and maintained with a focus on security, compliance, and user experience.

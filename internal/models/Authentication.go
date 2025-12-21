@@ -5,7 +5,7 @@
 
 package models
 
-// AuthenticationConfig holds configuration on how to authenticate to Gokapi admin menu
+// AuthenticationConfig holds configuration on how to authenticate to WulfVault admin menu
 type AuthenticationConfig struct {
 	Method               int      `json:"Method"`
 	SaltAdmin            string   `json:"SaltAdmin"`
@@ -22,7 +22,7 @@ type AuthenticationConfig struct {
 }
 
 const (
-	// AuthenticationInternal authentication method uses a user / password combination handled by Gokapi
+	// AuthenticationInternal authentication method uses a user / password combination handled by WulfVault
 	AuthenticationInternal = iota
 
 	// AuthenticationOAuth2 authentication retrieves the users email with Open Connect ID

@@ -407,5 +407,3 @@ docker compose up -d
 ## License
 
 AGPL-3.0 - See [LICENSE](LICENSE) for details.
-
-Inspired by [Gokapi](https://github.com/Forceu/Gokapi) by Forceu.
