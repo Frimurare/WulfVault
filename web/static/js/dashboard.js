@@ -226,6 +226,12 @@ if (uploadForm) {
             user_agent: navigator.userAgent
         };
 
+        // Add team IDs to metadata
+        const teamIds = formData.getAll('team_ids[]');
+        if (teamIds.length > 0) {
+            metadata.team_ids = teamIds.join(','); // Send as comma-separated string
+        }
+
         // Start chunked upload
         uploadFileInChunks(file, metadata, uploadButton);
     });

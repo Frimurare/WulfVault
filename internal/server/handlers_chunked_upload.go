@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -300,6 +301,47 @@ func (s *Server) handleChunkedUploadComplete(w http.ResponseWriter, r *http.Requ
 	newStorageUsed := user.StorageUsedMB + fileSizeMB
 	if err := database.DB.UpdateUserStorage(user.Id, newStorageUsed); err != nil {
 		log.Printf("Warning: Could not update user storage: %v", err)
+	}
+
+	// Share file with teams if team IDs are provided in metadata
+	if teamIdsStr, ok := upload.Metadata["team_ids"]; ok && teamIdsStr != "" {
+		// Parse comma-separated team IDs
+		teamIdStrs := strings.Split(teamIdsStr, ",")
+		for _, teamIdStr := range teamIdStrs {
+			teamIdStr = strings.TrimSpace(teamIdStr)
+			if teamIdStr == "" {
+				continue
+			}
+
+			teamId, err := strconv.Atoi(teamIdStr)
+			if err != nil {
+				log.Printf("Warning: Invalid team_id '%s' in metadata: %v", teamIdStr, err)
+				continue
+			}
+
+			if teamId <= 0 {
+				continue
+			}
+
+			// Verify user is member of the team
+			isMember, err := database.DB.IsTeamMember(teamId, user.Id)
+			if err != nil {
+				log.Printf("Warning: Could not verify team membership for team %d: %v", teamId, err)
+				continue
+			}
+			if !isMember {
+				log.Printf("Warning: User %d is not a member of team %d, skipping team share", user.Id, teamId)
+				continue
+			}
+
+			// Share file with team
+			err = database.DB.ShareFileToTeam(uploadID, teamId, user.Id)
+			if err != nil {
+				log.Printf("Warning: Could not share file to team %d: %v", teamId, err)
+			} else {
+				log.Printf("File %s shared to team %d by user %d", upload.Filename, teamId, user.Id)
+			}
+		}
 	}
 
 	// Log the action

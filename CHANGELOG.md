@@ -5,6 +5,36 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.2] - BloodMoon 🌙 - 2025-12-21
+
+### Fixed
+- **Chunked Upload Team Assignment**: Fixed critical bug where team sharing didn't work during chunked uploads
+  - Files uploaded with team checkboxes selected were not being shared to those teams
+  - Only affected chunked uploads (large files), regular uploads worked correctly
+  - Root cause: Team IDs were not being passed in upload metadata to backend
+  - JavaScript now correctly includes `team_ids` in metadata as comma-separated string
+  - Backend now parses team IDs from metadata and shares files to selected teams
+  - Team membership verification and proper logging now working for chunked uploads
+
+### Technical
+- Modified `web/static/js/dashboard.js`:
+  - Added team IDs extraction from form data (`formData.getAll('team_ids[]')`)
+  - Added `team_ids` to upload metadata as comma-separated string
+- Modified `internal/server/handlers_chunked_upload.go`:
+  - Added `strings` import for parsing team IDs
+  - Added team assignment logic in `handleChunkedUploadComplete()`
+  - Parses comma-separated team IDs from metadata
+  - Verifies team membership before sharing
+  - Calls `ShareFileToTeam()` for each valid team
+  - Logs successful team shares
+- Modified `cmd/server/main.go`:
+  - Updated version to 6.2.2 BloodMoon 🌙
+
+### User Experience
+- Users can now reliably share uploaded files to teams regardless of file size
+- Team sharing works consistently for both small files (regular upload) and large files (chunked upload)
+- Proper logging ensures team shares are tracked in audit logs
+
 ## [6.2.1] - BloodMoon 🌙 - 2025-12-18
 
 ### Improved
