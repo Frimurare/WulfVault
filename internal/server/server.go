@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -377,7 +378,8 @@ func (s *Server) getPublicURL() string {
 	port := s.config.Port
 
 	// If port is standard (80 for http, 443 for https), don't add it
-	if port == "80" || port == "443" {
+	// Also skip port for HTTPS URLs behind reverse proxy
+	if port == "80" || port == "443" || strings.HasPrefix(serverURL, "https://") {
 		return serverURL
 	}
 

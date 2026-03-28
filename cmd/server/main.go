@@ -12,6 +12,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/auth"
@@ -94,8 +95,11 @@ func main() {
 	// Load server URL from database first (highest priority)
 	// This allows admin panel settings to override environment variables
 	if dbServerURL, err := database.DB.GetConfigValue("server_url"); err == nil && dbServerURL != "" {
-		// Add port if it's stored separately
-		if dbPort, portErr := database.DB.GetConfigValue("port"); portErr == nil && dbPort != "" {
+		// Only append port for non-HTTPS URLs (HTTPS behind reverse proxy
+		// should not expose the internal port in generated links)
+		if strings.HasPrefix(dbServerURL, "https://") {
+			cfg.ServerURL = dbServerURL
+		} else if dbPort, portErr := database.DB.GetConfigValue("port"); portErr == nil && dbPort != "" {
 			cfg.ServerURL = dbServerURL + ":" + dbPort
 		} else {
 			cfg.ServerURL = dbServerURL + ":" + cfg.Port
