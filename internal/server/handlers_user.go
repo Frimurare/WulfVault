@@ -944,7 +944,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             <label for="expireDate">📅 Expiration Date</label>
                             <input type="date" id="expireDate" name="expire_date">
                             <label style="margin-top: 8px;">
-                                <input type="checkbox" id="unlimitedTime" name="unlimited_time"> Never expire (by time)
+                                <input type="checkbox" id="unlimitedTime" name="unlimited_time" checked> Never expire (by time)
                             </label>
                         </div>
 
@@ -952,7 +952,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             <label for="downloadsLimit">⬇️ Download Limit</label>
                             <input type="number" id="downloadsLimit" name="downloads_limit" min="1" value="10">
                             <label style="margin-top: 8px;">
-                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads"> Unlimited downloads
+                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads" checked> Unlimited downloads
                             </label>
                         </div>
                     </div>
@@ -976,7 +976,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
                     <div class="form-group">
                         <label>
-                            <input type="checkbox" id="requireAuth" name="require_auth" checked>
+                            <input type="checkbox" id="requireAuth" name="require_auth">
                             🔒 Require recipient authentication (email + password)
                         </label>
                     </div>

@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -4106,7 +4107,11 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 	}
 
 	// Build full public URL for display
-	fullPublicURL := serverURL + ":" + port
+	// Skip port for HTTPS URLs (behind reverse proxy)
+	fullPublicURL := serverURL
+	if !strings.HasPrefix(serverURL, "https://") {
+		fullPublicURL = serverURL + ":" + port
+	}
 
 	html += `
             <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
