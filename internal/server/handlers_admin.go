@@ -4135,12 +4135,8 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
                     <p class="help-text">The public URL where this server is accessible (e.g., https://files.manvarg.se). Do not include the port - it's configured separately below.</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="port">Server Port</label>
-                    <input type="number" id="port" name="port" value="` + port + `" min="1" max="65535" required>
-                    <p class="help-text">Port number for the server to listen on. Ports below 1024 require administrator privileges.</p>
-                    <p class="help-text" style="color: #ff6b00; font-weight: 600;">⚠️ Changes require server restart to take effect</p>
-                </div>
+                <!-- Port is managed via systemd/config, not exposed in UI to prevent misconfiguration -->
+                <input type="hidden" id="port" name="port" value="` + port + `">
 
                 <div class="form-group">
                     <label for="max_file_size_mb">Max File Size (MB)</label>
