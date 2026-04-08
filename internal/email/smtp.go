@@ -169,10 +169,10 @@ func (sp *SMTPProvider) SendFileDownloadNotification(file *database.FileInfo, do
 }
 
 // SendSplashLinkEmail skickar splash link via e-post
-func (sp *SMTPProvider) SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message string) error {
+func (sp *SMTPProvider) SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message, senderEmail string) error {
 	subject := "Delad fil: " + file.Name
-	htmlBody := GenerateSplashLinkHTML(splashLink, file, message)
-	textBody := GenerateSplashLinkText(splashLink, file, message)
+	htmlBody := GenerateSplashLinkHTML(splashLink, file, message, senderEmail)
+	textBody := GenerateSplashLinkText(splashLink, file, message, senderEmail)
 
 	return sp.SendEmail(to, subject, htmlBody, textBody)
 }

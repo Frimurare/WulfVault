@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	Version = "6.2.3 BloodMoon 🌙"
+	Version = "6.2.4 BloodMoon 🌙"
 )
 
 var (

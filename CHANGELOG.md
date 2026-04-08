@@ -5,6 +5,22 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.4] - BloodMoon 🌙 - 2026-04-08
+
+### Changed
+- **Email notifications now include sender information**: Share emails show who sent the file (sender email), making it clear who the file comes from. Critical for police/security evidence sharing where anonymous emails get discarded.
+- **File comments included in share emails**: The comment/description text is now shown in the email body, providing context about the shared file.
+- **Download confirmation includes downloader identity**: When require-auth is enabled, the download notification email to the sender now includes who downloaded the file.
+- **Email language changed to English**: Share emails now use English (was Swedish) for international compatibility.
+- **Updated email footer**: "WulfVault Secure File Transfer" branding.
+
+### Technical
+- Modified `internal/email/templates.go`: Added `senderEmail` parameter to `GenerateSplashLinkHTML/Text`, new `getSenderHTML` helper
+- Modified `internal/email/email.go`: Updated `EmailProvider` interface + `SendSplashLinkEmail` signature
+- Modified all 5 email providers (smtp, resend, sendgrid, brevo, mailgun): Updated `SendSplashLinkEmail` signatures
+- Modified `internal/server/handlers_files.go`: Upload share email now includes sender info + file comment
+- Modified `internal/server/handlers_email.go`: Splash link email now includes sender info
+
 ## [6.2.3] - BloodMoon 🌙 - 2025-12-21
 
 ### Changed
