@@ -323,6 +323,26 @@ func (d *Database) GetExpiredFiles() ([]*FileInfo, error) {
 	return scanFiles(rows)
 }
 
+// GetFilesExpiringInDays returns active files that expire within the given number of days
+func (d *Database) GetFilesExpiringInDays(days int) ([]*FileInfo, error) {
+	now := time.Now().Unix()
+	futureLimit := time.Now().Add(time.Duration(days*24) * time.Hour).Unix()
+
+	rows, err := d.db.Query(`
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
+		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files
+		WHERE DeletedAt = 0 AND UnlimitedTime = 0 AND ExpireAt > ? AND ExpireAt <= ?`, now, futureLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanFiles(rows)
+}
+
 // CalculateUserStorage calculates total storage used by a user (non-deleted files only)
 func (d *Database) CalculateUserStorage(userId int) (int64, error) {
 	var totalBytes sql.NullInt64

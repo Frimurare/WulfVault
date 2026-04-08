@@ -5,6 +5,22 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.5] - BloodMoon 🌙 - 2026-04-08
+
+### Added
+- **Expiration reminder emails**: Automatic reminders sent to file owners when shared files are about to expire
+  - Halfway reminder (~2-3 days before expiration for 5-day files)
+  - Urgent reminder (1 day before expiration) with red urgency styling
+  - Includes file name, size, download count, and download link
+  - Runs every 6 hours as part of the cleanup scheduler
+- **Database**: `GetFilesExpiringInDays(days)` query for finding soon-to-expire files
+
+### Technical
+- New file: `internal/cleanup/reminders.go` — reminder email logic
+- Modified `internal/cleanup/cleanup.go` — scheduler now accepts optional `serverURL` for reminder links
+- Modified `internal/database/files.go` — added `GetFilesExpiringInDays` query
+- Modified `cmd/server/main.go` — passes `ServerURL` config to cleanup scheduler
+
 ## [6.2.4] - BloodMoon 🌙 - 2026-04-08
 
 ### Changed

@@ -89,7 +89,7 @@ func CleanupTrash(uploadsDir string, retentionDays int) error {
 }
 
 // StartCleanupScheduler starts a background cleanup scheduler
-func StartCleanupScheduler(uploadsDir string, interval time.Duration, trashRetentionDays int) {
+func StartCleanupScheduler(uploadsDir string, interval time.Duration, trashRetentionDays int, serverURL ...string) {
 	if trashRetentionDays <= 0 {
 		trashRetentionDays = 5 // default fallback
 	}
@@ -98,12 +98,20 @@ func StartCleanupScheduler(uploadsDir string, interval time.Duration, trashReten
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
+		srvURL := ""
+		if len(serverURL) > 0 {
+			srvURL = serverURL[0]
+		}
+
 		// Run immediately on start
 		if err := CleanupExpiredFiles(uploadsDir); err != nil {
 			log.Printf("Error during expired files cleanup: %v", err)
 		}
 		if err := CleanupTrash(uploadsDir, trashRetentionDays); err != nil {
 			log.Printf("Error during trash cleanup: %v", err)
+		}
+		if srvURL != "" {
+			SendExpirationReminders(srvURL)
 		}
 
 		// Then run on schedule
@@ -113,6 +121,9 @@ func StartCleanupScheduler(uploadsDir string, interval time.Duration, trashReten
 			}
 			if err := CleanupTrash(uploadsDir, trashRetentionDays); err != nil {
 				log.Printf("Error during trash cleanup: %v", err)
+			}
+			if srvURL != "" {
+				SendExpirationReminders(srvURL)
 			}
 		}
 	}()
