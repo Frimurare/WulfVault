@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	Version = "6.2.4 BloodMoon 🌙"
+	Version = "6.2.5 BloodMoon 🌙"
 )
 
 var (
@@ -175,8 +175,13 @@ func main() {
 	}
 	defer server.CloseSysMonitorLog()
 
-	// Start file expiration cleanup scheduler (runs every 6 hours)
-	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)
+	// Start file expiration cleanup + reminder scheduler (runs every 6 hours)
+	// Reminders sent at halfway point and 1 day before expiration
+	publicURL := cfg.ServerURL
+	if publicURL == "" {
+		publicURL = fmt.Sprintf("http://localhost:%d", cfg.Port)
+	}
+	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays, publicURL)
 
 	// Start audit log cleanup scheduler (runs every 24 hours)
 	// Deletes logs older than AuditLogRetentionDays and maintains max size
