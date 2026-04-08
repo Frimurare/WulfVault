@@ -287,10 +287,20 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			subject := "File ready for download"
 
+			senderInfo := ""
+			if user.Email != "" {
+				senderInfo = fmt.Sprintf(`<p><strong>Sent by:</strong> %s</p>`, html.EscapeString(user.Email))
+			}
+			commentInfo := ""
+			if fileComment != "" {
+				commentInfo = fmt.Sprintf(`<p><strong>Message:</strong> %s</p>`, html.EscapeString(fileComment))
+			}
+
 			htmlBody := fmt.Sprintf(`
 				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-					<h2 style="color: #333;">File Shared With You</h2>
-					<p>A file has been shared with you:</p>
+					<h2 style="color: #333;">A file has been shared with you</h2>
+					%s
+					%s
 					<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
 						<h3 style="margin-top: 0; color: #2563eb;">%s</h3>
 						<p><strong>Size:</strong> %s</p>
@@ -304,9 +314,9 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 						<strong>Direct download link:</strong> <a href="%s">%s</a>
 					</p>
 					<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-					<p style="color: #999; font-size: 12px;">This file was sent to you via WulfVault.</p>
+					<p style="color: #999; font-size: 12px;">This file was sent via WulfVault Secure File Transfer.</p>
 				</div>
-			`, html.EscapeString(header.Filename),
+			`, senderInfo, commentInfo, html.EscapeString(header.Filename),
 				database.FormatFileSize(fileSize),
 				func() string {
 					if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
@@ -322,9 +332,18 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 				}(),
 				splashLink, downloadLink, downloadLink)
 
-			textBody := fmt.Sprintf(`File Shared With You
+			senderText := ""
+			if user.Email != "" {
+				senderText = "Sent by: " + user.Email + "\n"
+			}
+			commentText := ""
+			if fileComment != "" {
+				commentText = "Message: " + fileComment + "\n"
+			}
 
-File: %s
+			textBody := fmt.Sprintf(`A file has been shared with you
+
+%s%sFile: %s
 Size: %s
 %s%s
 
@@ -332,7 +351,8 @@ View and download here: %s
 
 Direct download link: %s
 
-This file was sent to you via WulfVault.`,
+This file was sent via WulfVault Secure File Transfer.`,
+				senderText, commentText,
 				header.Filename,
 				database.FormatFileSize(fileSize),
 				func() string {

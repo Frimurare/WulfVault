@@ -203,7 +203,7 @@ Detta är ett automatiskt meddelande från WulfVault.
 }
 
 // GenerateSplashLinkHTML skapar HTML-version av splash link e-post
-func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message string) string {
+func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message, senderEmail string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -235,48 +235,54 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message 
 <body>
 	<div class="container">
 		<div class="header">
-			<h2>📎 Någon har delat en fil med dig</h2>
+			<h2>📎 A file has been shared with you</h2>
 		</div>
 		<div class="content">
 			%s
 
+			%s
+
 			<div class="file-info">
-				<p><strong>Filnamn:</strong> %s</p>
-				<p><strong>Storlek:</strong> %s</p>
+				<p><strong>Filename:</strong> %s</p>
+				<p><strong>Size:</strong> %s</p>
 			</div>
 
 			<center>
-				<a href="%s" class="button">📥 Ladda ner fil</a>
+				<a href="%s" class="button">📥 Download file</a>
 			</center>
 
 			<div class="link-text">
-				Eller kopiera denna länk:<br/>
+				Or copy this link:<br/>
 				<code>%s</code>
 			</div>
 
 			<div class="footer">
-				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
+				<p>This is an automated message from WulfVault Secure File Transfer.</p>
 			</div>
 		</div>
 	</div>
 </body>
 </html>
-`, getMessageHTML(message), file.Name, file.Size, splashLink, splashLink)
+`, getSenderHTML(senderEmail), getMessageHTML(message), file.Name, file.Size, splashLink, splashLink)
 }
 
 // GenerateSplashLinkText skapar text-version av splash link e-post
-func GenerateSplashLinkText(splashLink string, file *database.FileInfo, message string) string {
-	return fmt.Sprintf(`Någon har delat en fil med dig
+func GenerateSplashLinkText(splashLink string, file *database.FileInfo, message, senderEmail string) string {
+	senderLine := ""
+	if senderEmail != "" {
+		senderLine = "Sent by: " + senderEmail + "\n"
+	}
+	return fmt.Sprintf(`A file has been shared with you
 
-%s
-Filnamn: %s
-Storlek: %s
+%s%s
+Filename: %s
+Size: %s
 
-Ladda ner filen här: %s
+Download: %s
 
 ---
-Detta är ett automatiskt meddelande från WulfVault.
-`, getMessageText(message), file.Name, file.Size, splashLink)
+This is an automated message from WulfVault Secure File Transfer.
+`, senderLine, getMessageText(message), file.Name, file.Size, splashLink)
 }
 
 // Helper-funktioner
@@ -291,11 +297,18 @@ func getDownloadsRemainingText(file *database.FileInfo) string {
 	return fmt.Sprintf("%d", file.DownloadsRemaining)
 }
 
+func getSenderHTML(senderEmail string) string {
+	if senderEmail == "" {
+		return ""
+	}
+	return fmt.Sprintf(`<div class="file-info"><p><strong>Sent by:</strong> %s</p></div>`, senderEmail)
+}
+
 func getMessageHTML(message string) string {
 	if message == "" {
 		return ""
 	}
-	return fmt.Sprintf(`<div class="message-box"><strong>Meddelande:</strong><br/>%s</div>`, message)
+	return fmt.Sprintf(`<div class="message-box"><strong>Message:</strong><br/>%s</div>`, message)
 }
 
 func getMessageText(message string) string {

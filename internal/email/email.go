@@ -19,7 +19,7 @@ type EmailProvider interface {
 	SendEmail(to, subject, htmlBody, textBody string) error
 	SendFileUploadNotification(request *models.FileRequest, file *database.FileInfo, uploaderIP, serverURL string, recipientEmail string) error
 	SendFileDownloadNotification(file *database.FileInfo, downloaderIP, serverURL string, recipientEmail string) error
-	SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message string) error
+	SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message, senderEmail string) error
 	SendAccountDeletionConfirmation(to, accountName string) error
 }
 
@@ -169,13 +169,13 @@ func SendFileDownloadNotification(file *database.FileInfo, downloaderIP, serverU
 }
 
 // SendSplashLinkEmail skickar splash link via e-post
-func SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message string) error {
+func SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message, senderEmail string) error {
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {
 		return err
 	}
 
-	return provider.SendSplashLinkEmail(to, splashLink, file, message)
+	return provider.SendSplashLinkEmail(to, splashLink, file, message, senderEmail)
 }
 
 // SendAccountDeletionConfirmation skickar bekräftelse på kontoradering (GDPR)
