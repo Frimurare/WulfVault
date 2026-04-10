@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/email"
 )
 
 // ChunkedUpload represents an ongoing chunked upload session
@@ -267,6 +269,7 @@ func (s *Server) handleChunkedUploadComplete(w http.ResponseWriter, r *http.Requ
 	unlimitedDownloads := upload.Metadata["unlimited_downloads"] == "true"
 	filePassword := upload.Metadata["file_password"]
 	fileComment := upload.Metadata["file_comment"]
+	sendToEmail := upload.Metadata["send_to_email"]
 
 	// Create file entry in database
 	fileInfo := &database.FileInfo{
@@ -357,6 +360,119 @@ func (s *Server) handleChunkedUploadComplete(w http.ResponseWriter, r *http.Requ
 		Success:    true,
 		ErrorMsg:   "",
 	})
+
+	// Send email with download link if recipient email is provided
+	// (Mirrors the email-sending block in handlers_files.go for the legacy /upload endpoint.)
+	if sendToEmail != "" && strings.TrimSpace(sendToEmail) != "" {
+		splashLink := s.getPublicURL() + "/s/" + uploadID
+		downloadLink := s.getPublicURL() + "/d/" + uploadID
+		// Capture values needed in the goroutine
+		filename := upload.Filename
+		fileSizeBytes := upload.TotalSize
+		go func() {
+			subject := "File ready for download"
+
+			senderInfo := ""
+			if user.Email != "" {
+				senderInfo = fmt.Sprintf(`<p><strong>Sent by:</strong> %s</p>`, html.EscapeString(user.Email))
+			}
+			commentInfo := ""
+			if fileComment != "" {
+				commentInfo = fmt.Sprintf(`<p><strong>Message:</strong> %s</p>`, html.EscapeString(fileComment))
+			}
+
+			htmlBody := fmt.Sprintf(`
+				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+					<h2 style="color: #333;">A file has been shared with you</h2>
+					%s
+					%s
+					<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+						<h3 style="margin-top: 0; color: #2563eb;">%s</h3>
+						<p><strong>Size:</strong> %s</p>
+						%s
+						%s
+					</div>
+					<div style="margin: 30px 0;">
+						<a href="%s" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View & Download File</a>
+					</div>
+					<p style="color: #666; font-size: 14px;">
+						<strong>Direct download link:</strong> <a href="%s">%s</a>
+					</p>
+					<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+					<p style="color: #999; font-size: 12px;">This file was sent via WulfVault Secure File Transfer.</p>
+				</div>
+			`, senderInfo, commentInfo, html.EscapeString(filename),
+				database.FormatFileSize(fileSizeBytes),
+				func() string {
+					if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
+						return fmt.Sprintf("<p><strong>Expires:</strong> %s</p>", html.EscapeString(fileInfo.ExpireAtString))
+					}
+					return ""
+				}(),
+				func() string {
+					if !fileInfo.UnlimitedDownloads {
+						return fmt.Sprintf("<p><strong>Download limit:</strong> %d downloads</p>", fileInfo.DownloadsRemaining)
+					}
+					return ""
+				}(),
+				splashLink, downloadLink, downloadLink)
+
+			senderText := ""
+			if user.Email != "" {
+				senderText = "Sent by: " + user.Email + "\n"
+			}
+			commentText := ""
+			if fileComment != "" {
+				commentText = "Message: " + fileComment + "\n"
+			}
+
+			textBody := fmt.Sprintf(`A file has been shared with you
+
+%s%sFile: %s
+Size: %s
+%s%s
+
+View and download here: %s
+
+Direct download link: %s
+
+This file was sent via WulfVault Secure File Transfer.`,
+				senderText, commentText,
+				filename,
+				database.FormatFileSize(fileSizeBytes),
+				func() string {
+					if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
+						return fmt.Sprintf("\nExpires: %s\n", fileInfo.ExpireAtString)
+					}
+					return ""
+				}(),
+				func() string {
+					if !fileInfo.UnlimitedDownloads {
+						return fmt.Sprintf("\nDownload limit: %d downloads\n", fileInfo.DownloadsRemaining)
+					}
+					return ""
+				}(),
+				splashLink, downloadLink)
+
+			provider, err := email.GetActiveProvider(database.DB)
+			if err != nil {
+				log.Printf("Failed to get email provider for chunked upload: %v", err)
+				return
+			}
+
+			err = provider.SendEmail(sendToEmail, subject, htmlBody, textBody)
+			if err != nil {
+				log.Printf("Failed to send file download link email to %s (chunked): %v", sendToEmail, err)
+			} else {
+				log.Printf("File download link email sent to %s (chunked upload)", sendToEmail)
+
+				err = database.DB.LogEmailSent(uploadID, user.Id, sendToEmail, "", filename, fileSizeBytes)
+				if err != nil {
+					log.Printf("Failed to log email to database: %v", err)
+				}
+			}
+		}()
+	}
 
 	// Send email notification for large files (>5GB)
 	fileSizeGB := float64(upload.TotalSize) / (1024 * 1024 * 1024)

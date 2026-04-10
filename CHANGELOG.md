@@ -5,6 +5,31 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.6] - BloodMoon 🌙 - 2026-04-10
+
+### 🚨 CRITICAL BUGFIX
+
+- **Chunked upload was not sending notification emails** — A long-standing bug introduced in **v6.0.0 (2025-12-09)** when the chunked upload system replaced the legacy upload path. The new `handlers_chunked_upload.go` was missing the entire email-sending block. Since the WulfVault web UI uses chunked upload exclusively for file uploads, this meant **NO notification emails were sent when files were shared via the web UI for ~4 months**, regardless of which email provider was active (SMTP, Resend, Brevo, SendGrid, or Mailgun).
+
+  This was NOT a regression from v6.2.4 or v6.2.5 email-related changes — those touched the EmailProvider interface and added expiration reminders, but did not modify the chunked upload handler. The chunked upload handler simply never had email-sending code from the day it was created.
+
+  **Why it was missed:** The legacy `POST /upload` endpoint (used by API clients) still has the email block and works correctly. The bug only affected uploads via the web UI dashboard.
+
+  **Impact:** All file sharing via the web UI in v6.0.0 through v6.2.5 silently dropped notification emails. Recipients never got the file link via email — only the uploader saw the success message in the browser.
+
+### Fixed
+
+- **handlers_chunked_upload.go**: Added complete email-sending block after upload completion. Mirrors the implementation in `handlers_files.go` (legacy `/upload` endpoint). Reads `send_to_email` from upload metadata, builds the same HTML/text email with sender info, comment, file size, expiration, and download links, then calls the active email provider asynchronously in a goroutine. Logs success/failure with new `(chunked upload)` marker for traceability.
+- **Imports added**: `html` for HTML escaping, `internal/email` for `GetActiveProvider()`.
+
+### Migration Notes
+
+- No database changes
+- No config changes
+- No breaking API changes
+- Drop-in binary replacement
+- **Recommended: rebuild and redeploy immediately** — every WulfVault install since v6.0.0 has this bug
+
 ## [6.2.5] - BloodMoon 🌙 - 2026-04-08
 
 ### Added
