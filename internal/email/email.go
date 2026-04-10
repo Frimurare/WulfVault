@@ -131,14 +131,22 @@ func GetActiveProvider(db *database.Database) (EmailProvider, error) {
 		return NewResendProvider(apiKey, fromEmail.String, fromName.String), nil
 
 	case "smtp":
-		if !smtpPasswordEncrypted.Valid || smtpPasswordEncrypted.String == "" {
-			return nil, errors.New("SMTP password not configured")
+		// SMTP password is optional — dev/test servers like MailHog accept connections without auth.
+		// We require host to be set, but password can be empty.
+		if !smtpHost.Valid || smtpHost.String == "" {
+			return nil, errors.New("SMTP host not configured")
 		}
-		password, err := DecryptAPIKey(smtpPasswordEncrypted.String, masterKey)
-		if err != nil {
-			return nil, err
+		var password string
+		if smtpPasswordEncrypted.Valid && smtpPasswordEncrypted.String != "" {
+			decrypted, err := DecryptAPIKey(smtpPasswordEncrypted.String, masterKey)
+			if err != nil {
+				return nil, err
+			}
+			password = decrypted
 		}
 		useTLS := smtpUseTLS.Valid && smtpUseTLS.Int64 == 1
+		log.Printf("SMTP provider loaded (host=%s:%d, user=%s, tls=%v, hasPassword=%v)",
+			smtpHost.String, smtpPort.Int64, smtpUsername.String, useTLS, password != "")
 		return NewSMTPProvider(smtpHost.String, int(smtpPort.Int64), smtpUsername.String, password, fromEmail.String, fromName.String, useTLS), nil
 
 	default:

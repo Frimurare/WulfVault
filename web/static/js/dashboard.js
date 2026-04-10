@@ -210,7 +210,7 @@ if (uploadForm) {
         const userIdElement = document.querySelector('[data-user-id]');
         const userId = userIdElement ? userIdElement.getAttribute('data-user-id') : '0';
 
-        // Prepare metadata for tus
+        // Prepare metadata for chunked upload
         const metadata = {
             user_id: userId,
             filename: file.name,
@@ -222,6 +222,7 @@ if (uploadForm) {
             unlimited_downloads: formData.get('unlimited_downloads') || 'false',
             file_password: formData.get('file_password') || '',
             file_comment: formData.get('file_comment') || '',
+            send_to_email: formData.get('send_to_email') || '',
             client_ip: '', // Server will fill this
             user_agent: navigator.userAgent
         };
