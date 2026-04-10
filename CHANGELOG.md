@@ -7,27 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [6.2.6] - BloodMoon 🌙 - 2026-04-10
 
-### 🚨 CRITICAL BUGFIX
+### 🚨 CRITICAL BUGFIX — Web UI uploads dropped notification emails for 4 months
 
-- **Chunked upload was not sending notification emails** — A long-standing bug introduced in **v6.0.0 (2025-12-09)** when the chunked upload system replaced the legacy upload path. The new `handlers_chunked_upload.go` was missing the entire email-sending block. Since the WulfVault web UI uses chunked upload exclusively for file uploads, this meant **NO notification emails were sent when files were shared via the web UI for ~4 months**, regardless of which email provider was active (SMTP, Resend, Brevo, SendGrid, or Mailgun).
+For ~4 months (since v6.0.0 in December 2025), files uploaded via the WulfVault **web UI dashboard** never triggered notification emails to recipients. The legacy `POST /upload` endpoint (used by API clients like Prudencia Evidence Courier) continued to work correctly, which is why the bug remained hidden.
 
-  This was NOT a regression from v6.2.4 or v6.2.5 email-related changes — those touched the EmailProvider interface and added expiration reminders, but did not modify the chunked upload handler. The chunked upload handler simply never had email-sending code from the day it was created.
+**Three separate issues conspired to cause this:**
 
-  **Why it was missed:** The legacy `POST /upload` endpoint (used by API clients) still has the email block and works correctly. The bug only affected uploads via the web UI dashboard.
+1. **Frontend** (`web/static/js/dashboard.js`): The `metadata` object passed to chunked upload was missing the `send_to_email` field. Even though the upload form had `<input name="send_to_email">`, the JavaScript never extracted its value into the metadata sent to `/api/upload/init`. The field was lost before reaching the server.
 
-  **Impact:** All file sharing via the web UI in v6.0.0 through v6.2.5 silently dropped notification emails. Recipients never got the file link via email — only the uploader saw the success message in the browser.
+2. **Backend** (`internal/server/handlers_chunked_upload.go`): The chunked upload handler had no email-sending code at all. When the chunked upload system was created in v6.0.0, the email block from `handlers_files.go` was never copied over. Even if the frontend had sent `send_to_email`, the server would have ignored it.
+
+3. **SMTP provider initialization** (`internal/email/email.go`): The SMTP provider in `GetActiveProvider()` required a non-empty password. This blocked any test/dev SMTP server like MailHog (which accepts mail without auth) and could break production SMTP servers configured for IP-based relay.
+
+This was NOT a regression from v6.2.4 or v6.2.5. Both of those releases touched email code (sender info, splash link signature, expiration reminders) but did not modify the chunked upload handler or the dashboard.js metadata. The bug existed from the day chunked upload was introduced.
+
+**Impact:** All file sharing via the web UI in v6.0.0 through v6.2.5 silently dropped notification emails. Recipients never received the file link via email — only the uploader saw the success message in the browser. Affected ALL email providers (SMTP, Resend, Brevo, SendGrid, Mailgun) because none of them were ever called from the chunked upload code path.
 
 ### Fixed
 
-- **handlers_chunked_upload.go**: Added complete email-sending block after upload completion. Mirrors the implementation in `handlers_files.go` (legacy `/upload` endpoint). Reads `send_to_email` from upload metadata, builds the same HTML/text email with sender info, comment, file size, expiration, and download links, then calls the active email provider asynchronously in a goroutine. Logs success/failure with new `(chunked upload)` marker for traceability.
-- **Imports added**: `html` for HTML escaping, `internal/email` for `GetActiveProvider()`.
+- **`web/static/js/dashboard.js`**: Added `send_to_email: formData.get('send_to_email') || ''` to the metadata object sent to `/api/upload/init`. The form field is now correctly forwarded to the backend.
+- **`internal/server/handlers_chunked_upload.go`**: Added complete email-sending block after upload completion. Mirrors the implementation in `handlers_files.go`. Reads `send_to_email` from upload metadata, builds the same HTML/text email with sender info, comment, file size, expiration, and download links, then calls the active email provider asynchronously. New log marker `(chunked upload)` for traceability. Imports added: `html` for HTML escaping, `internal/email` for `GetActiveProvider()`.
+- **`internal/email/email.go`**: SMTP provider no longer requires a password to initialize. Empty password is allowed for dev/test servers (like MailHog) and IP-relay production setups. The check is now: SMTP host must be set; password is optional. The actual SMTP connection (in `smtp.go`) already handled passwordless auth correctly via `sendPlainSMTP()` when TLS is disabled.
+
+### Verified end-to-end on lab CT 122
+
+Tested with both providers:
+
+**With MailHog (SMTP, no auth):**
+```
+✅ UPLOAD COMPLETED: 'mh-test2.txt'
+GetActiveProvider found: provider=smtp
+SMTP provider loaded (host=127.0.0.1:1025, user=, tls=false, hasPassword=false)
+📧 Sending email via SMTP to recipient@example.com through 127.0.0.1:1025
+✓ Email sent successfully via plain SMTP
+File download link email sent to recipient@example.com (chunked upload)
+```
+
+MailHog API confirmed all 3 test mails received (chunked + legacy + Swedish chars).
+
+**With Resend (after restore):**
+```
+✅ UPLOAD COMPLETED: 'final.txt'
+📧 Sending email via Resend to admin@example.com
+📩 Resend Response Status: 200 OK
+✓ Email sent successfully via Resend
+File download link email sent to admin@example.com (chunked upload)
+```
 
 ### Migration Notes
 
 - No database changes
 - No config changes
 - No breaking API changes
-- Drop-in binary replacement
+- Drop-in binary replacement (plus updated `web/static/js/dashboard.js`)
 - **Recommended: rebuild and redeploy immediately** — every WulfVault install since v6.0.0 has this bug
 
 ## [6.2.5] - BloodMoon 🌙 - 2026-04-08
