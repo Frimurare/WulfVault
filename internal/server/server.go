@@ -101,6 +101,7 @@ func (s *Server) Start() error {
 	log.Println("✅ Chunked upload endpoints initialized")
 
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
+	mux.HandleFunc("/api/whoami", s.handleWhoAmI) // Does its own auth check, returns JSON 401
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
 	mux.HandleFunc("/file/edit", s.requireAuth(s.handleFileEdit))
 	mux.HandleFunc("/file/downloads", s.requireAuth(s.handleFileDownloadHistory))
