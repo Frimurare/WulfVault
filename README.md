@@ -508,6 +508,7 @@ Create upload request links for:
 WulfVault provides a **complete REST API** for automation, integrations, and third-party applications.
 
 **Available APIs:**
+- **Session Verification** - `GET /api/whoami` — check session validity (v6.2.7+)
 - **User Management** - Create, read, update, delete users; manage storage quotas
 - **File Management** - Upload, download, delete files; manage metadata and passwords
 - **Download Accounts** - Manage download-only user accounts
@@ -520,6 +521,11 @@ WulfVault provides a **complete REST API** for automation, integrations, and thi
 **Example API calls:**
 
 ```bash
+# Verify session (added in v6.2.7)
+curl -b cookies.txt https://wulfvault.example.com/api/whoami
+# → 200 { "authenticated": true, "email": "...", "id": 123, ... }
+# → 401 { "authenticated": false, "error": "Not authenticated" }
+
 # List all users (admin only)
 curl -b cookies.txt http://localhost:4949/api/v1/users
 
