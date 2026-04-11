@@ -5,6 +5,50 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.7] - BloodMoon 🌙 - 2026-04-11
+
+### Added
+
+- **`GET /api/whoami` — dedicated session verification endpoint**
+  New JSON endpoint for API clients and integrations (notably
+  Prudencia Evidence Courier) to reliably verify that a session
+  cookie is valid, without any side effects.
+
+  Before this endpoint existed, clients had to probe `/login` or
+  `/dashboard` and inspect HTML response bodies to determine auth
+  state — unreliable, slow, and prone to false positives when the
+  browser had cookie handling quirks.
+
+  Response format:
+  ```json
+  200 OK
+  {
+    "authenticated": true,
+    "id": 123,
+    "email": "user@example.com",
+    "name": "User Name",
+    "role": "user",
+    "storage_used_mb": 42,
+    "storage_quota_mb": 1000,
+    "server_version": "6.2.7 BloodMoon 🌙",
+    "two_factor_enabled": false
+  }
+
+  401 Unauthorized
+  { "authenticated": false, "error": "Not authenticated" }
+  ```
+
+  The `Cache-Control: no-store` header is set so clients always get
+  a fresh auth check.
+
+### Technical
+
+- New handler in `internal/server/handlers_user.go`: `handleWhoAmI()`
+- New route registered in `internal/server/server.go`: `/api/whoami`
+  under `requireAuth` middleware
+- Version bumped to `6.2.7 BloodMoon 🌙` in `cmd/server/main.go`
+  (single source of truth)
+
 ## [6.2.6] - BloodMoon 🌙 - 2026-04-10
 
 ### 🚨 CRITICAL BUGFIX — Web UI uploads dropped notification emails for 4 months
