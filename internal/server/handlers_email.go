@@ -691,7 +691,7 @@ func (s *Server) handleSendSplashLink(w http.ResponseWriter, r *http.Request) {
 	splashLink := s.getPublicURL() + "/s/" + fileInfo.Id
 
 	// Send email
-	err = email.SendSplashLinkEmail(req.Email, splashLink, fileInfo, req.Message)
+	err = email.SendSplashLinkEmail(req.Email, splashLink, fileInfo, req.Message, user.Email)
 	if err != nil {
 		log.Printf("Failed to send splash link email: %v", err)
 		s.sendError(w, http.StatusInternalServerError, "Failed to send email: "+err.Error())

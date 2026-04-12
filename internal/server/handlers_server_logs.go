@@ -365,7 +365,7 @@ func (s *Server) escapeJSON(str string) string {
 	str = strings.ReplaceAll(str, "\t", "\\t")
 	return str
 }
-// renderAdminServerLogsPage renders the server logs page with Audit Logs styling
+// renderAdminServerLogsPage renders the server logs page with inline HTML
 func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -377,15 +377,184 @@ func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter) {
 	headerHTML := s.getAdminHeaderHTML("Server Logs")
 	faviconHTML := s.getFaviconHTML()
 
-	template := ""
-	// Read template from file we just created
-	templateBytes, _ := os.ReadFile("/tmp/server_logs_ui_complete.txt")
-	template = string(templateBytes)
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Logs - ` + companyName + `</title>
+    ` + faviconHTML + `
+</head>
+<body>
+` + headerHTML + `
+    <style>
+        .log-viewer {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .log-entry {
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: #f8f9fa;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .log-entry.success { border-left: 3px solid #28a745; }
+        .log-entry.warning { border-left: 3px solid #ffc107; }
+        .log-entry.error   { border-left: 3px solid #dc3545; }
+        .log-entry.info    { border-left: 3px solid #17a2b8; }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filters input, .filters select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .filters input[type="text"] { flex: 1; min-width: 200px; }
+        .filters select { min-width: 120px; }
+        .log-info {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        .load-more-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .load-more-btn:hover { background: #0056b3; }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+        .status-badge.s2xx { background: #d4edda; color: #155724; }
+        .status-badge.s3xx { background: #cce5ff; color: #004085; }
+        .status-badge.s4xx { background: #fff3cd; color: #856404; }
+        .status-badge.s5xx { background: #f8d7da; color: #721c24; }
+    </style>
 
-	// Replace placeholders
-	template = strings.ReplaceAll(template, "${COMPANY}", companyName)
-	template = strings.ReplaceAll(template, "${HEADER}", headerHTML)
-	template = strings.ReplaceAll(template, "${FAVICON}", faviconHTML)
+    <div class="container" style="margin-top: 30px;">
+        <h2>Server Logs</h2>
+        <p class="log-info">HTTP request logs with status codes, durations and upload events</p>
 
-	fmt.Fprint(w, template)
+        <div class="filters">
+            <input type="text" id="searchBox" placeholder="Search logs..." />
+            <select id="levelFilter">
+                <option value="">All levels</option>
+                <option value="success">Success</option>
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+            </select>
+        </div>
+
+        <div id="logInfo" class="log-info"></div>
+
+        <div id="logViewer" class="log-viewer">
+            <p>Loading logs...</p>
+        </div>
+
+        <button onclick="loadMore()" id="loadMoreBtn" class="load-more-btn">Load More</button>
+    </div>
+
+    <script>
+        let currentOffset = 0;
+        const limit = 50;
+
+        function loadLogs(append) {
+            if (!append) {
+                currentOffset = 0;
+                document.getElementById('logViewer').innerHTML = '<p>Loading...</p>';
+            }
+
+            const search = document.getElementById('searchBox').value;
+            const level = document.getElementById('levelFilter').value;
+
+            let url = '/api/v1/admin/server-logs?limit=' + limit + '&offset=' + currentOffset;
+            if (search) url += '&search=' + encodeURIComponent(search);
+            if (level) url += '&level=' + encodeURIComponent(level);
+
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    const viewer = document.getElementById('logViewer');
+
+                    if (!append) viewer.innerHTML = '';
+
+                    if (!data.logs || data.logs.length === 0) {
+                        if (!append) viewer.innerHTML = '<p>No logs found</p>';
+                        document.getElementById('loadMoreBtn').style.display = 'none';
+                        return;
+                    }
+
+                    data.logs.forEach(function(log) {
+                        const entry = document.createElement('div');
+                        entry.className = 'log-entry ' + log.level;
+
+                        // Add status badge if we have a status code
+                        let html = '';
+                        if (log.status_code > 0) {
+                            let badgeClass = 's2xx';
+                            if (log.status_code >= 300) badgeClass = 's3xx';
+                            if (log.status_code >= 400) badgeClass = 's4xx';
+                            if (log.status_code >= 500) badgeClass = 's5xx';
+                            html += '<span class="status-badge ' + badgeClass + '">' + log.status_code + '</span>';
+                        }
+                        html += log.raw_log;
+                        entry.innerHTML = html;
+                        viewer.appendChild(entry);
+                    });
+
+                    document.getElementById('logInfo').textContent =
+                        'Showing ' + (currentOffset + 1) + '-' + (currentOffset + data.logs.length) +
+                        ' of ' + data.total_count + ' entries | File size: ' + data.file_size;
+
+                    currentOffset += data.logs.length;
+
+                    document.getElementById('loadMoreBtn').style.display =
+                        currentOffset >= data.total_count ? 'none' : 'block';
+                });
+        }
+
+        function loadMore() { loadLogs(true); }
+
+        var searchTimeout;
+        document.getElementById('searchBox').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() { loadLogs(false); }, 500);
+        });
+        document.getElementById('levelFilter').addEventListener('change', function() {
+            loadLogs(false);
+        });
+
+        loadLogs(false);
+
+        setInterval(function() {
+            if (currentOffset <= limit) loadLogs(false);
+        }, 5000);
+    </script>
+</body>
+</html>` + "\n"
+
+	w.Write([]byte(html))
 }

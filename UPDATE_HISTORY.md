@@ -4,6 +4,67 @@ This document tracks major updates and feature releases for WulfVault.
 
 ---
 
+## Version 6.2.7 BloodMoon 🌙 (2026-04-11)
+
+### New API Endpoint: `GET /api/whoami`
+
+Added a dedicated JSON endpoint for session verification, designed for
+programmatic API clients such as the Prudencia Evidence Courier Smart
+Client plugin.
+
+Before `/api/whoami`, clients that wanted to verify a session cookie had
+to probe `/login` or `/dashboard` and inspect HTML response bodies — an
+unreliable approach that broke on browser cookie handling quirks and
+could produce both false positives and false negatives.
+
+The new endpoint is fast, side-effect free, and returns a consistent
+JSON payload:
+
+```
+GET /api/whoami
+Cookie: session=<sessionid>
+
+200 OK
+{
+  "authenticated": true,
+  "id": 123,
+  "email": "user@example.com",
+  "name": "User Name",
+  "role": "user",
+  "storage_used_mb": 42,
+  "storage_quota_mb": 1000,
+  "server_version": "6.2.7 BloodMoon 🌙",
+  "two_factor_enabled": false
+}
+
+401 Unauthorized
+{ "authenticated": false, "error": "Not authenticated" }
+```
+
+Also returns `Cache-Control: no-store` so clients always get a fresh
+auth check.
+
+**Use case example:** Evidence Courier's "Test Connection" button now
+logs in via `POST /login`, then calls `GET /api/whoami`. If `whoami`
+returns 200 with a matching email, credentials are confirmed valid —
+and the operator knows the connection works before trying to upload
+multi-gigabyte evidence files.
+
+### Technical changes
+
+- New handler: `internal/server/handlers_user.go:handleWhoAmI`
+- New route: `internal/server/server.go:/api/whoami` (requires auth)
+- Version: `6.2.7 BloodMoon 🌙` (single source of truth in `cmd/server/main.go`)
+
+### Upgrade notes
+
+- No database migration
+- No config changes
+- No breaking changes
+- Drop-in binary replacement
+
+---
+
 ## Version 6.1.8 BloodMoon (2025-12-12)
 
 ### Major Update: Advanced Pagination & File Management
