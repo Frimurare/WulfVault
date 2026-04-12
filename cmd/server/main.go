@@ -12,6 +12,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/auth"
@@ -23,7 +24,7 @@ import (
 )
 
 const (
-	Version = "6.2.3 BloodMoon 🌙"
+	Version = "6.2.7 BloodMoon 🌙"
 )
 
 var (
@@ -94,8 +95,11 @@ func main() {
 	// Load server URL from database first (highest priority)
 	// This allows admin panel settings to override environment variables
 	if dbServerURL, err := database.DB.GetConfigValue("server_url"); err == nil && dbServerURL != "" {
-		// Add port if it's stored separately
-		if dbPort, portErr := database.DB.GetConfigValue("port"); portErr == nil && dbPort != "" {
+		// Only append port for non-HTTPS URLs (HTTPS behind reverse proxy
+		// should not expose the internal port in generated links)
+		if strings.HasPrefix(dbServerURL, "https://") {
+			cfg.ServerURL = dbServerURL
+		} else if dbPort, portErr := database.DB.GetConfigValue("port"); portErr == nil && dbPort != "" {
 			cfg.ServerURL = dbServerURL + ":" + dbPort
 		} else {
 			cfg.ServerURL = dbServerURL + ":" + cfg.Port
@@ -171,8 +175,13 @@ func main() {
 	}
 	defer server.CloseSysMonitorLog()
 
-	// Start file expiration cleanup scheduler (runs every 6 hours)
-	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays)
+	// Start file expiration cleanup + reminder scheduler (runs every 6 hours)
+	// Reminders sent at halfway point and 1 day before expiration
+	publicURL := cfg.ServerURL
+	if publicURL == "" {
+		publicURL = fmt.Sprintf("http://localhost:%d", cfg.Port)
+	}
+	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays, publicURL)
 
 	// Start audit log cleanup scheduler (runs every 24 hours)
 	// Deletes logs older than AuditLogRetentionDays and maintains max size

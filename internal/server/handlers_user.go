@@ -31,6 +31,66 @@ func (s *Server) handleUserDashboard(w http.ResponseWriter, r *http.Request) {
 	s.renderUserDashboard(w, user)
 }
 
+// handleWhoAmI returns JSON with the currently authenticated user's info.
+// Designed for API clients (like Prudencia Evidence Courier) to reliably
+// verify that their session cookie is valid without any side effects.
+// Added in v6.2.7.
+//
+// GET /api/whoami
+//
+// Returns:
+//   200 { "authenticated": true, "id": 123, "email": "...", "name": "...",
+//         "role": "user", "storage_used_mb": 42, "storage_quota_mb": 1000,
+//         "server_version": "6.2.7", "two_factor_enabled": false }
+//   401 { "authenticated": false, "error": "Not authenticated" }
+//
+// No form data, no side effects, fast. Does NOT use the requireAuth
+// middleware because that middleware redirects unauthenticated browser
+// requests to /login (HTTP 303). API clients need a proper JSON 401.
+func (s *Server) handleWhoAmI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+
+	// Manually resolve the session since this handler is NOT wrapped in requireAuth.
+	// We must return JSON 401 instead of the HTML redirect that requireAuth does.
+	_, err := r.Cookie("session")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"authenticated": false,
+			"error":         "Not authenticated",
+		})
+		return
+	}
+	user, err := s.getUserFromSession(r)
+	if err != nil || user == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"authenticated": false,
+			"error":         "Session expired or invalid",
+		})
+		return
+	}
+
+	role := "user"
+	if user.IsAdmin() {
+		role = "admin"
+	}
+
+	response := map[string]interface{}{
+		"authenticated":      true,
+		"id":                 user.Id,
+		"email":              user.Email,
+		"name":               user.Name,
+		"role":               role,
+		"storage_used_mb":    user.StorageUsedMB,
+		"storage_quota_mb":   user.StorageQuotaMB,
+		"server_version":     s.config.Version,
+		"two_factor_enabled": user.TOTPEnabled,
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 // handleUserFiles returns the user's files as JSON
 func (s *Server) handleUserFiles(w http.ResponseWriter, r *http.Request) {
 	user, ok := userFromContext(r.Context())
@@ -944,7 +1004,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             <label for="expireDate">📅 Expiration Date</label>
                             <input type="date" id="expireDate" name="expire_date">
                             <label style="margin-top: 8px;">
-                                <input type="checkbox" id="unlimitedTime" name="unlimited_time"> Never expire (by time)
+                                <input type="checkbox" id="unlimitedTime" name="unlimited_time" checked> Never expire (by time)
                             </label>
                         </div>
 
@@ -952,7 +1012,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
                             <label for="downloadsLimit">⬇️ Download Limit</label>
                             <input type="number" id="downloadsLimit" name="downloads_limit" min="1" value="10">
                             <label style="margin-top: 8px;">
-                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads"> Unlimited downloads
+                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads" checked> Unlimited downloads
                             </label>
                         </div>
                     </div>
@@ -976,7 +1036,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
 
                     <div class="form-group">
                         <label>
-                            <input type="checkbox" id="requireAuth" name="require_auth" checked>
+                            <input type="checkbox" id="requireAuth" name="require_auth">
                             🔒 Require recipient authentication (email + password)
                         </label>
                     </div>

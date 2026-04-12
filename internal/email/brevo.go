@@ -135,10 +135,10 @@ func (bp *BrevoProvider) SendFileDownloadNotification(file *database.FileInfo, d
 }
 
 // SendSplashLinkEmail skickar splash link via e-post
-func (bp *BrevoProvider) SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message string) error {
+func (bp *BrevoProvider) SendSplashLinkEmail(to, splashLink string, file *database.FileInfo, message, senderEmail string) error {
 	subject := "Delad fil: " + file.Name
-	htmlBody := GenerateSplashLinkHTML(splashLink, file, message)
-	textBody := GenerateSplashLinkText(splashLink, file, message)
+	htmlBody := GenerateSplashLinkHTML(splashLink, file, message, senderEmail)
+	textBody := GenerateSplashLinkText(splashLink, file, message, senderEmail)
 
 	return bp.SendEmail(to, subject, htmlBody, textBody)
 }

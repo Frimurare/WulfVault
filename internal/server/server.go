@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -100,6 +101,7 @@ func (s *Server) Start() error {
 	log.Println("✅ Chunked upload endpoints initialized")
 
 	mux.HandleFunc("/files", s.requireAuth(s.handleUserFiles))
+	mux.HandleFunc("/api/whoami", s.handleWhoAmI) // Does its own auth check, returns JSON 401
 	mux.HandleFunc("/file/delete", s.requireAuth(s.handleFileDelete))
 	mux.HandleFunc("/file/edit", s.requireAuth(s.handleFileEdit))
 	mux.HandleFunc("/file/downloads", s.requireAuth(s.handleFileDownloadHistory))
@@ -377,7 +379,8 @@ func (s *Server) getPublicURL() string {
 	port := s.config.Port
 
 	// If port is standard (80 for http, 443 for https), don't add it
-	if port == "80" || port == "443" {
+	// Also skip port for HTTPS URLs behind reverse proxy
+	if port == "80" || port == "443" || strings.HasPrefix(serverURL, "https://") {
 		return serverURL
 	}
 

@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 6.1.9 BloodMoon 🌙** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 6.2.7 BloodMoon 🌙** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
 
@@ -508,6 +508,7 @@ Create upload request links for:
 WulfVault provides a **complete REST API** for automation, integrations, and third-party applications.
 
 **Available APIs:**
+- **Session Verification** - `GET /api/whoami` — check session validity (v6.2.7+)
 - **User Management** - Create, read, update, delete users; manage storage quotas
 - **File Management** - Upload, download, delete files; manage metadata and passwords
 - **Download Accounts** - Manage download-only user accounts
@@ -520,6 +521,11 @@ WulfVault provides a **complete REST API** for automation, integrations, and thi
 **Example API calls:**
 
 ```bash
+# Verify session (added in v6.2.7)
+curl -b cookies.txt https://wulfvault.example.com/api/whoami
+# → 200 { "authenticated": true, "email": "...", "id": 123, ... }
+# → 401 { "authenticated": false, "error": "Not authenticated" }
+
 # List all users (admin only)
 curl -b cookies.txt http://localhost:4949/api/v1/users
 
