@@ -60,61 +60,33 @@ func sendReminder(file *database.FileInfo, serverURL string, urgent bool) {
 		urgencyText = "URGENT — Last day"
 	}
 
-	subject := fmt.Sprintf("[Prudencia] %s: File '%s' expires in %d day(s)", urgencyText, file.Name, daysLeft)
+	subject := fmt.Sprintf("[WulfVault] %s: File '%s' expires in %d day(s)", urgencyText, file.Name, daysLeft)
 
 	splashLink := serverURL + "/s/" + file.Id
 	downloadLink := serverURL + "/d/" + file.Id
 
-	// Use Prudencia brand colors
-	bannerBg := "#fefce8"
-	bannerBorder := "#d97706"
-	bannerTextColor := "#1a2a32"
-	if urgent {
-		bannerBg = "#fef2f2"
-		bannerBorder = "#b91c1c"
-		bannerTextColor = "#b91c1c"
-	}
-
-	urgencyMsg := fmt.Sprintf("Your file will be <strong>permanently deleted in %d day(s)</strong>.", daysLeft)
-	if urgent {
-		urgencyMsg = fmt.Sprintf("<strong>URGENT:</strong> Your file expires <strong>tomorrow</strong> and will be permanently deleted!")
-	}
-
-	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f7f8;">
-<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f4f7f8;padding:30px 0;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.12);">
-<tr><td style="background-color:#004155;padding:35px 30px 25px 30px;text-align:center;">
-<h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">File Expiration Reminder</h1>
-<p style="color:#5f828c;margin:8px 0 0 0;font-size:13px;">Action Required</p>
-</td></tr>
-<tr><td style="padding:30px;">
-<div style="background-color:%s;border-left:4px solid %s;padding:16px 20px;margin:0 0 20px 0;border-radius:6px;">
-<p style="margin:0;color:%s;font-size:14px;">%s</p>
-</div>
-<div style="background:#f4f7f8;border:1px solid #dce4e6;border-left:4px solid #5f828c;border-radius:8px;overflow:hidden;margin:20px 0;">
-<table width="100%%" cellpadding="0" cellspacing="0">
-<tr><td style="padding:10px 15px;color:#5f828c;font-size:13px;font-weight:600;border-bottom:1px solid #eef2f3;">Filename</td><td style="padding:10px 15px;color:#1a2a32;font-size:13px;border-bottom:1px solid #eef2f3;">%s</td></tr>
-<tr><td style="padding:10px 15px;color:#5f828c;font-size:13px;font-weight:600;border-bottom:1px solid #eef2f3;">Size</td><td style="padding:10px 15px;color:#1a2a32;font-size:13px;border-bottom:1px solid #eef2f3;">%s</td></tr>
-<tr><td style="padding:10px 15px;color:#5f828c;font-size:13px;font-weight:600;border-bottom:1px solid #eef2f3;">Expires</td><td style="padding:10px 15px;color:#1a2a32;font-size:13px;border-bottom:1px solid #eef2f3;">%s</td></tr>
-<tr><td style="padding:10px 15px;color:#5f828c;font-size:13px;font-weight:600;border-bottom:1px solid #eef2f3;">Downloads</td><td style="padding:10px 15px;color:#1a2a32;font-size:13px;border-bottom:1px solid #eef2f3;">%d</td></tr>
-%s
-</table></div>
-<table width="100%%" cellpadding="0" cellspacing="0" style="margin:25px 0;">
-<tr><td align="center">
-<a href="%s" style="display:inline-block;background-color:#004155;color:#ffffff;padding:14px 40px;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.5px;box-shadow:0 4px 12px rgba(0,65,85,0.3);">DOWNLOAD NOW</a>
-</td></tr></table>
-</td></tr>
-<tr><td style="background-color:#323e48;padding:25px 30px;text-align:center;">
-<p style="margin:0 0 5px 0;color:#5f828c;font-size:11px;">Prudencia Security &middot; Secure File Transfer</p>
-<p style="margin:0;color:#5f828c;font-size:10px;opacity:0.7;">This is an automated message. Do not reply to this email.</p>
-</td></tr>
-</table></td></tr></table></body></html>`,
-		bannerBg, bannerBorder, bannerTextColor, urgencyMsg,
+	htmlBody := fmt.Sprintf(`
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: %s;">%s — File Expiration Notice</h2>
+			<p>The following shared file will be <strong>permanently deleted in %d day(s)</strong>:</p>
+			<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid %s;">
+				<p><strong>Filename:</strong> %s</p>
+				<p><strong>Size:</strong> %s</p>
+				<p><strong>Expires:</strong> %s</p>
+				<p><strong>Downloads:</strong> %d</p>
+			</div>
+			%s
+			<div style="margin: 30px 0;">
+				<a href="%s" style="background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Download Now Before It Expires</a>
+			</div>
+			<hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+			<p style="color: #999; font-size: 12px;">This is an automated expiration reminder from WulfVault Secure File Transfer.</p>
+		</div>
+	`,
+		getUrgencyColor(urgent), urgencyText, daysLeft,
+		getUrgencyColor(urgent),
 		file.Name, file.Size, file.ExpireAtString, file.DownloadCount,
-		getCommentRow(file.Comment),
+		getCommentHTML(file.Comment),
 		splashLink)
 
 	textBody := fmt.Sprintf(`%s — File Expiration Notice
@@ -129,7 +101,7 @@ Downloads: %d
 Download now: %s
 
 ---
-Prudencia Security — Secure File Transfer
+This is an automated expiration reminder from WulfVault Secure File Transfer.
 `,
 		urgencyText, daysLeft,
 		file.Name, file.Size, file.ExpireAtString, file.DownloadCount,
@@ -144,6 +116,8 @@ Prudencia Security — Secure File Transfer
 			log.Printf("Reminder: Sent to owner %s for file %s (%d days left)", owner.Email, file.Name, daysLeft)
 		}
 	}
+
+	// TODO: Send to original recipient if tracked (requires storing send_to_email in FileInfo)
 }
 
 func sendReminderEmail(to, subject, htmlBody, textBody string) error {
@@ -162,11 +136,18 @@ func daysUntilExpiry(file *database.FileInfo) int {
 	return int(time.Until(expireTime).Hours() / 24)
 }
 
-func getCommentRow(comment string) string {
+func getUrgencyColor(urgent bool) string {
+	if urgent {
+		return "#dc3545" // red
+	}
+	return "#ffc107" // yellow
+}
+
+func getCommentHTML(comment string) string {
 	if comment == "" {
 		return ""
 	}
-	return fmt.Sprintf(`<tr><td style="padding:10px 15px;color:#5f828c;font-size:13px;font-weight:600;border-bottom:1px solid #eef2f3;">Description</td><td style="padding:10px 15px;color:#1a2a32;font-size:13px;border-bottom:1px solid #eef2f3;">%s</td></tr>`, comment)
+	return fmt.Sprintf(`<p><strong>Description:</strong> %s</p>`, comment)
 }
 
 func getCommentText(comment string) string {

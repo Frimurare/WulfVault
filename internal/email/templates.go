@@ -13,141 +13,69 @@ import (
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
-// ---------------------------------------------------------------------------
-// Prudencia brand constants
-// ---------------------------------------------------------------------------
-
-const (
-	brandPrimary   = "#004155" // Dark teal — headers, CTA buttons
-	brandSecondary = "#5f828c" // Muted teal — accents, borders, secondary text
-	brandDark      = "#323e48" // Dark charcoal — card backgrounds, footer
-	brandWhite     = "#ffffff"
-	brandLightBg   = "#f4f7f8" // Very light teal-grey for page background
-	brandCardBg    = "#ffffff"
-	brandTextDark  = "#1a2a32"
-	brandTextMuted = "#5f828c"
-	brandSuccess   = "#0d9488" // Teal-green for success states
-	brandWarning   = "#d97706" // Amber for warnings
-	brandDanger    = "#b91c1c" // Red for danger/deletion
-)
-
-// ServerURL is the public base URL of the WulfVault instance.
-// Set at startup (e.g. "https://wulfvault.prudcloud.se").
-// Used by email templates to build absolute image URLs.
-var ServerURL string
-
-// prudenciaLogoPath is the path to the hosted Prudencia logotype (white on transparent).
-// Hosted as a static file on the WulfVault server so all email clients can
-// render it reliably (base64 data URIs get stripped by Microsoft Graph relay).
-var prudenciaLogoPath = "/static/img/prudencia_logo.png"
-
-// prudenciaLogoImg returns an <img> tag referencing the hosted Prudencia logotype.
-// serverURL is the public base URL (e.g. "https://wulfvault.prudcloud.se").
-func prudenciaLogoImg() string {
-	src := prudenciaLogoPath
-	if ServerURL != "" {
-		src = ServerURL + prudenciaLogoPath
-	}
-	return fmt.Sprintf(`<img src="%s" alt="Prudencia Security" width="200" height="117" style="display:block;margin:0 auto 45px auto;" />`, src)
-}
-
-// emailHeader returns the standard Prudencia email header
-func emailHeader(title, subtitle string) string {
-	return fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:%s;">
-<table width="100%%" cellpadding="0" cellspacing="0" style="background-color:%s;padding:30px 0;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background-color:%s;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.12);">
-<!-- Header -->
-<tr><td style="background-color:%s;padding:35px 30px 25px 30px;text-align:center;">
-%s
-<h1 style="color:%s;margin:0;font-size:22px;font-weight:700;letter-spacing:0.5px;">%s</h1>
-<p style="color:%s;margin:8px 0 0 0;font-size:13px;letter-spacing:0.5px;">%s</p>
-</td></tr>`,
-		brandLightBg, brandLightBg, brandCardBg,
-		brandPrimary, prudenciaLogoImg(),
-		brandWhite, title,
-		brandSecondary, subtitle)
-}
-
-// emailFooter returns the standard Prudencia email footer
-func emailFooter() string {
-	return fmt.Sprintf(`<!-- Footer -->
-<tr><td style="background-color:%s;padding:25px 30px;text-align:center;">
-<p style="margin:0 0 5px 0;color:%s;font-size:11px;letter-spacing:0.5px;">Prudencia Security &middot; Secure File Transfer</p>
-<p style="margin:0;color:%s;font-size:10px;opacity:0.7;">This is an automated message. Do not reply to this email.</p>
-</td></tr>
-</table></td></tr></table></body></html>`, brandDark, brandSecondary, brandSecondary)
-}
-
-// ctaButton returns a styled CTA button
-func ctaButton(text, href, bgColor string) string {
-	if bgColor == "" {
-		bgColor = brandPrimary
-	}
-	return fmt.Sprintf(`<table width="100%%" cellpadding="0" cellspacing="0" style="margin:25px 0;">
-<tr><td align="center">
-<a href="%s" style="display:inline-block;background-color:%s;color:#ffffff !important;padding:16px 45px;text-decoration:none;border-radius:8px;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:2px solid %s;">%s</a>
-</td></tr></table>`, href, bgColor, bgColor, text)
-}
-
-// infoRow returns a key-value row for file info tables
-func infoRow(label, value string) string {
-	return fmt.Sprintf(`<tr>
-<td style="padding:10px 15px;color:%s;font-size:13px;font-weight:600;white-space:nowrap;border-bottom:1px solid #eef2f3;">%s</td>
-<td style="padding:10px 15px;color:%s;font-size:13px;border-bottom:1px solid #eef2f3;">%s</td>
-</tr>`, brandSecondary, label, brandTextDark, value)
-}
-
-// fileInfoTable returns a styled file info card
-func fileInfoTable(rows string) string {
-	return fmt.Sprintf(`<div style="background:%s;border:1px solid #dce4e6;border-left:4px solid %s;border-radius:8px;overflow:hidden;margin:20px 0;">
-<table width="100%%" cellpadding="0" cellspacing="0">%s</table>
-</div>`, brandLightBg, brandSecondary, rows)
-}
-
-// statusBanner returns a colored banner for status messages
-func statusBanner(text, bgColor, textColor, borderColor string) string {
-	return fmt.Sprintf(`<div style="background-color:%s;border-left:4px solid %s;padding:16px 20px;margin:20px 0;border-radius:6px;">
-<p style="margin:0;color:%s;font-size:14px;">%s</p>
-</div>`, bgColor, borderColor, textColor, text)
-}
-
-// ---------------------------------------------------------------------------
-// Upload notification (file uploaded via file request)
-// ---------------------------------------------------------------------------
-
+// GenerateUploadNotificationHTML skapar HTML-version av uppladdningsnotifiering
 func GenerateUploadNotificationHTML(request *models.FileRequest, file *database.FileInfo, uploaderIP, serverURL string) string {
 	uploadTime := time.Unix(file.UploadDate, 0).Format("2006-01-02 15:04:05")
 
-	return emailHeader("New File Uploaded", "Upload Notification") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-%s
-%s
-%s
-<p style="text-align:center;color:%s;font-size:12px;margin-top:5px;">Or go directly to: <code style="background:#eef2f3;padding:2px 6px;border-radius:3px;font-size:11px;">%s/dashboard</code></p>
-</td></tr>`,
-			statusBanner(
-				fmt.Sprintf(`<strong>Good news!</strong> Someone has uploaded a file via your request: <strong>%s</strong>`, request.Title),
-				"#e6f5f0", brandSuccess, brandSuccess,
-			),
-			fileInfoTable(
-				infoRow("Filename", file.Name)+
-					infoRow("Size", file.Size)+
-					infoRow("Uploaded", uploadTime)+
-					infoRow("IP Address", uploaderIP),
-			),
-			ctaButton("VIEW IN DASHBOARD", serverURL+"/dashboard", ""),
-			brandTextMuted, serverURL,
-		) +
-		emailFooter()
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header { background: #2563eb; color: white; padding: 20px; border-radius: 5px 5px 0 0; text-align: center; }
+		.header h2 { margin: 0; }
+		.content { background: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+		.file-info { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #2563eb; }
+		.file-info p { margin: 5px 0; }
+		.button {
+			display: inline-block;
+			padding: 12px 24px;
+			background: #28a745;
+			color: white;
+			text-decoration: none;
+			border-radius: 5px;
+			margin: 20px 0;
+		}
+		.footer { margin-top: 20px; font-size: 12px; color: #666; text-align: center; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h2>✓ New File Uploaded</h2>
+		</div>
+		<div class="content">
+			<p>Someone has uploaded a file via your upload request:</p>
+
+			<div class="file-info">
+				<p><strong>Request:</strong> %s</p>
+				<p><strong>Filename:</strong> %s</p>
+				<p><strong>Size:</strong> %s</p>
+				<p><strong>Uploaded:</strong> %s</p>
+				<p><strong>IP Address:</strong> %s</p>
+			</div>
+
+			<a href="%s/dashboard" class="button">View in Dashboard</a>
+
+			<div class="footer">
+				<p>The file is now available in your dashboard and can be downloaded.</p>
+				<p>This is an automated message from WulfVault.</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
+`, request.Title, file.Name, file.Size, uploadTime, uploaderIP, serverURL)
 }
 
+// GenerateUploadNotificationText skapar text-version av uppladdningsnotifiering
 func GenerateUploadNotificationText(request *models.FileRequest, file *database.FileInfo, uploaderIP, serverURL string) string {
 	uploadTime := time.Unix(file.UploadDate, 0).Format("2006-01-02 15:04:05")
-	return fmt.Sprintf(`New File Uploaded
+
+	return fmt.Sprintf(`New File Uploaded!
 
 Someone has uploaded a file via your upload request:
 
@@ -161,100 +89,184 @@ Log in to view and download the file:
 %s/dashboard
 
 ---
-Prudencia Security — Secure File Transfer
+This is an automated message from WulfVault.
 `, request.Title, file.Name, file.Size, uploadTime, uploaderIP, serverURL)
 }
 
-// ---------------------------------------------------------------------------
-// Download notification (someone downloaded your file)
-// ---------------------------------------------------------------------------
-
+// GenerateDownloadNotificationHTML skapar HTML-version av nedladdningsnotifiering
 func GenerateDownloadNotificationHTML(file *database.FileInfo, downloaderIP, serverURL string) string {
 	downloadTime := time.Now().Format("2006-01-02 15:04:05")
 
-	return emailHeader("File Downloaded", "Download Notification") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-%s
-%s
-%s
-</td></tr>`,
-			statusBanner(
-				`<strong>Good news!</strong> Someone has downloaded your file. Here are the details:`,
-				"#e6f5f0", brandSuccess, brandSuccess,
-			),
-			fileInfoTable(
-				infoRow("Filename", file.Name)+
-					infoRow("Size", file.Size)+
-					infoRow("Downloaded", downloadTime)+
-					infoRow("IP Address", downloaderIP)+
-					infoRow("Downloads remaining", getDownloadsRemainingText(file)),
-			),
-			ctaButton("VIEW IN DASHBOARD", serverURL+"/dashboard", ""),
-		) +
-		emailFooter()
-}
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif;">
+	<table width="100%%" cellpadding="0" cellspacing="0" style="background-color: #f0f0f0; padding: 20px 0;">
+		<tr>
+			<td align="center">
+				<table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+					<!-- Header -->
+					<tr>
+						<td style="background-color: #1e3a5f; padding: 30px; text-align: center;">
+							<h1 style="color: #ffffff; margin: 0; font-size: 24px;">⬇️ File Downloaded</h1>
+							<p style="color: #a0c4e8; margin: 10px 0 0 0; font-size: 14px;">Download Notification</p>
+						</td>
+					</tr>
 
-func GenerateDownloadNotificationText(file *database.FileInfo, downloaderIP, serverURL string) string {
-	downloadTime := time.Now().Format("2006-01-02 15:04:05")
-	return fmt.Sprintf(`Your file has been downloaded!
+					<!-- Main Content -->
+					<tr>
+						<td style="padding: 40px 30px;">
+							<!-- What is this -->
+							<div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin-bottom: 25px;">
+								<p style="margin: 0; color: #065f46; font-size: 16px;">
+									<strong>Good news!</strong><br>
+									Someone has downloaded your file. Here are the details:
+								</p>
+							</div>
 
-Someone has downloaded one of your files:
+							<!-- File Info Box -->
+							<div style="background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+								<h3 style="margin: 0 0 15px 0; color: #1e3a5f; font-size: 18px;">📄 %s</h3>
+								<table width="100%%" cellpadding="0" cellspacing="0">
+									<tr>
+										<td style="padding: 8px 0; color: #64748b; font-size: 14px;"><strong>Size:</strong></td>
+										<td style="padding: 8px 0; color: #334155; font-size: 14px;">%s</td>
+									</tr>
+									<tr>
+										<td style="padding: 8px 0; color: #64748b; font-size: 14px;"><strong>Downloaded:</strong></td>
+										<td style="padding: 8px 0; color: #334155; font-size: 14px;">%s</td>
+									</tr>
+									<tr>
+										<td style="padding: 8px 0; color: #64748b; font-size: 14px;"><strong>IP Address:</strong></td>
+										<td style="padding: 8px 0; color: #334155; font-size: 14px;">%s</td>
+									</tr>
+									<tr>
+										<td style="padding: 8px 0; color: #64748b; font-size: 14px;"><strong>Downloads remaining:</strong></td>
+										<td style="padding: 8px 0; color: #334155; font-size: 14px;">%s</td>
+									</tr>
+								</table>
+							</div>
 
-Filename: %s
-Size: %s
-Downloaded: %s
-IP Address: %s
-Downloads remaining: %s
+							<!-- Dashboard Button -->
+							<table width="100%%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+								<tr>
+									<td align="center">
+										<a href="%s/dashboard" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; border: 3px solid #1d4ed8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);">
+											VIEW IN DASHBOARD
+										</a>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
 
-Log in to see details:
-%s/dashboard
-
----
-Prudencia Security — Secure File Transfer
+					<!-- Footer -->
+					<tr>
+						<td style="background-color: #1e3a5f; padding: 20px; text-align: center;">
+							<p style="margin: 0; color: #a0c4e8; font-size: 12px;">
+								This is an automated download notification from WulfVault
+							</p>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>
 `, file.Name, file.Size, downloadTime, downloaderIP, getDownloadsRemainingText(file), serverURL)
 }
 
-// ---------------------------------------------------------------------------
-// Splash link email (file shared with someone — THE main customer-facing email)
-// ---------------------------------------------------------------------------
+// GenerateDownloadNotificationText skapar text-version av nedladdningsnotifiering
+func GenerateDownloadNotificationText(file *database.FileInfo, downloaderIP, serverURL string) string {
+	downloadTime := time.Now().Format("2006-01-02 15:04:05")
 
-func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message, senderEmail string) string {
-	senderBlock := ""
-	if senderEmail != "" {
-		senderBlock = fmt.Sprintf(`<div style="background:%s;border-radius:8px;padding:14px 20px;margin:0 0 20px 0;">
-<p style="margin:0;color:%s;font-size:13px;"><strong style="color:%s;">Sent by:</strong> %s</p>
-</div>`, brandLightBg, brandTextDark, brandSecondary, senderEmail)
-	}
+	return fmt.Sprintf(`Din fil har laddats ner!
 
-	messageBlock := ""
-	if message != "" {
-		messageBlock = fmt.Sprintf(`<div style="background:#fefce8;border-left:4px solid %s;padding:16px 20px;margin:0 0 20px 0;border-radius:6px;">
-<p style="margin:0 0 5px 0;color:%s;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Message</p>
-<p style="margin:0;color:%s;font-size:14px;">%s</p>
-</div>`, brandWarning, brandSecondary, brandTextDark, message)
-	}
+Någon har laddat ner en av dina filer:
 
-	return emailHeader("A file has been shared with you", "Secure File Transfer") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-%s
-%s
-%s
-%s
-<p style="text-align:center;color:%s;font-size:11px;margin-top:15px;">Or copy this link:<br/>
-<code style="background:#eef2f3;padding:4px 8px;border-radius:4px;font-size:11px;word-break:break-all;color:%s;">%s</code></p>
-</td></tr>`,
-			senderBlock,
-			messageBlock,
-			fileInfoTable(
-				infoRow("Filename", file.Name)+
-					infoRow("Size", file.Size),
-			),
-			ctaButton("DOWNLOAD FILE", splashLink, brandPrimary),
-			brandTextMuted, brandTextDark, splashLink,
-		) +
-		emailFooter()
+Filnamn: %s
+Storlek: %s
+Nedladdad: %s
+IP-adress: %s
+Nedladdningar kvar: %s
+
+Logga in för att se detaljer:
+%s/dashboard
+
+---
+Detta är ett automatiskt meddelande från WulfVault.
+`, file.Name, file.Size, downloadTime, downloaderIP, getDownloadsRemainingText(file), serverURL)
 }
 
+// GenerateSplashLinkHTML skapar HTML-version av splash link e-post
+func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message, senderEmail string) string {
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header { background: #2563eb; color: white; padding: 20px; border-radius: 5px 5px 0 0; text-align: center; }
+		.header h2 { margin: 0; }
+		.content { background: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+		.message-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; }
+		.file-info { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #2563eb; }
+		.file-info p { margin: 5px 0; }
+		.button {
+			display: inline-block;
+			padding: 12px 24px;
+			background: #28a745;
+			color: white !important;
+			text-decoration: none;
+			border-radius: 5px;
+			margin: 20px 0;
+			font-weight: bold;
+		}
+		.link-text { font-size: 12px; color: #666; word-break: break-all; margin-top: 10px; }
+		.footer { margin-top: 20px; font-size: 12px; color: #666; text-align: center; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h2>📎 A file has been shared with you</h2>
+		</div>
+		<div class="content">
+			%s
+
+			%s
+
+			<div class="file-info">
+				<p><strong>Filename:</strong> %s</p>
+				<p><strong>Size:</strong> %s</p>
+			</div>
+
+			<center>
+				<a href="%s" class="button">📥 Download file</a>
+			</center>
+
+			<div class="link-text">
+				Or copy this link:<br/>
+				<code>%s</code>
+			</div>
+
+			<div class="footer">
+				<p>This is an automated message from WulfVault Secure File Transfer.</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
+`, getSenderHTML(senderEmail), getMessageHTML(message), file.Name, file.Size, splashLink, splashLink)
+}
+
+// GenerateSplashLinkText skapar text-version av splash link e-post
 func GenerateSplashLinkText(splashLink string, file *database.FileInfo, message, senderEmail string) string {
 	senderLine := ""
 	if senderEmail != "" {
@@ -269,97 +281,254 @@ Size: %s
 Download: %s
 
 ---
-Prudencia Security — Secure File Transfer
+This is an automated message from WulfVault Secure File Transfer.
 `, senderLine, getMessageText(message), file.Name, file.Size, splashLink)
 }
 
-// ---------------------------------------------------------------------------
-// Account deletion (GDPR)
-// ---------------------------------------------------------------------------
+// Helper-funktioner
 
-func GenerateAccountDeletionHTML(accountName string) string {
-	return emailHeader("Account Deleted", "GDPR Compliance") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-<div style="text-align:center;margin:0 0 20px 0;">
-<div style="width:60px;height:60px;background:#e6f5f0;border-radius:50%%;display:inline-flex;align-items:center;justify-content:center;font-size:28px;line-height:60px;">&#10003;</div>
-</div>
-<p style="color:%s;font-size:15px;">Hi %s,</p>
-<p style="color:%s;font-size:14px;">This is a confirmation that your download account has been deleted from our system in accordance with GDPR.</p>
-%s
-<p style="color:%s;font-size:14px;">We respect your right to erasure under GDPR and confirm that all your personal information has been handled in accordance with data protection regulations.</p>
-</td></tr>`,
-			brandTextDark, accountName,
-			brandTextDark,
-			statusBanner(
-				`<strong>What happened:</strong><br/>
-&bull; Your personal information has been permanently anonymized<br/>
-&bull; You can no longer download files with this account<br/>
-&bull; To download files again you must register a new account`,
-				"#fef2f2", brandDanger, brandDanger,
-			),
-			brandTextDark,
-		) +
-		emailFooter()
+func getDownloadsRemainingText(file *database.FileInfo) string {
+	if file.UnlimitedDownloads {
+		return "Obegränsat"
+	}
+	if file.DownloadsRemaining <= 0 {
+		return "0 (ingen kan ladda ner filen längre)"
+	}
+	return fmt.Sprintf("%d", file.DownloadsRemaining)
 }
 
-func GenerateAccountDeletionText(accountName string) string {
-	return fmt.Sprintf(`Account Deleted — GDPR Compliance
+func getSenderHTML(senderEmail string) string {
+	if senderEmail == "" {
+		return ""
+	}
+	return fmt.Sprintf(`<div class="file-info"><p><strong>Sent by:</strong> %s</p></div>`, senderEmail)
+}
 
-Hi %s,
+func getMessageHTML(message string) string {
+	if message == "" {
+		return ""
+	}
+	return fmt.Sprintf(`<div class="message-box"><strong>Message:</strong><br/>%s</div>`, message)
+}
 
-This is a confirmation that your download account has been deleted from our system in accordance with GDPR.
+func getMessageText(message string) string {
+	if message == "" {
+		return ""
+	}
+	return fmt.Sprintf("Meddelande: %s\n\n", message)
+}
 
-What happened:
-- Your personal information has been permanently anonymized
-- You can no longer download files with this account
-- To download files again you must register a new account
+// GenerateAccountDeletionHTML skapar HTML-version av bekräftelse på kontoradering
+func GenerateAccountDeletionHTML(accountName string) string {
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header { background: #c53030; color: white; padding: 20px; border-radius: 5px 5px 0 0; text-align: center; }
+		.header h2 { margin: 0; }
+		.content { background: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+		.info-box { background: #fff5f5; border-left: 4px solid #c53030; padding: 15px; margin: 15px 0; }
+		.info-box p { margin: 5px 0; }
+		.footer { margin-top: 20px; font-size: 12px; color: #666; text-align: center; }
+		.checkmark {
+			width: 60px;
+			height: 60px;
+			background: #d4edda;
+			border-radius: 50%%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin: 20px auto;
+			font-size: 32px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h2>✓ Ditt konto har raderats</h2>
+		</div>
+		<div class="content">
+			<div class="checkmark">✓</div>
 
-We respect your right to erasure under GDPR.
+			<p>Hej %s,</p>
 
----
-Prudencia Security — Secure File Transfer
+			<p>Detta är en bekräftelse på att ditt nedladdningskonto har raderats från vårt system enligt GDPR.</p>
+
+			<div class="info-box">
+				<p><strong>Vad har hänt:</strong></p>
+				<ul>
+					<li>Din personliga information har anonymiserats permanent</li>
+					<li>Du kan inte längre ladda ner filer med detta konto</li>
+					<li>Om du vill ladda ner filer igen måste du registrera ett nytt konto</li>
+				</ul>
+			</div>
+
+			<p>Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.</p>
+
+			<div class="footer">
+				<p>Detta är ett automatiskt meddelande från WulfVault.</p>
+				<p>Om du har frågor, vänligen kontakta oss.</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
 `, accountName)
 }
 
-// ---------------------------------------------------------------------------
-// Welcome email (new user account)
-// ---------------------------------------------------------------------------
+// GenerateAccountDeletionText skapar text-version av bekräftelse på kontoradering
+func GenerateAccountDeletionText(accountName string) string {
+	return fmt.Sprintf(`Ditt konto har raderats
 
+Hej %s,
+
+Detta är en bekräftelse på att ditt nedladdningskonto har raderats från vårt system enligt GDPR.
+
+Vad har hänt:
+- Din personliga information har anonymiserats permanent
+- Du kan inte längre ladda ner filer med detta konto
+- Om du vill ladda ner filer igen måste du registrera ett nytt konto
+
+Vi respekterar din rätt till radering enligt GDPR och bekräftar att all din personliga information har hanterats i enlighet med dataskyddsförordningen.
+
+---
+Detta är ett automatiskt meddelande från WulfVault.
+Om du har frågor, vänligen kontakta oss.
+`, accountName)
+}
+
+// SendWelcomeEmail sends a welcome email to newly created users with password setup link
 func SendWelcomeEmail(email, resetToken, serverURL, companyName, adminName, adminEmail string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
-	subject := fmt.Sprintf("Welcome to %s — Set Your Password", companyName)
 
-	htmlBody := emailHeader(fmt.Sprintf("Welcome to %s!", companyName), "Your account has been created") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-%s
-<p style="color:%s;font-size:14px;">To get started, you need to set your password and log in to your account.</p>
-<div style="background:%s;border:2px solid %s;border-radius:10px;padding:25px;margin:25px 0;text-align:center;">
-<h2 style="color:%s;margin:0 0 10px 0;font-size:18px;">Set Your Password</h2>
-<p style="color:%s;margin:0 0 20px 0;font-size:14px;">Click the button below to create your password and access your account.</p>
-%s
-<p style="font-size:12px;color:%s;margin:15px 0 0 0;">This link is valid for 1 hour</p>
-</div>
-%s
-<p style="text-align:center;color:%s;font-size:11px;margin-top:20px;">If the button doesn't work, copy and paste this link:<br/>
-<code style="background:#eef2f3;padding:4px 8px;border-radius:4px;font-size:10px;word-break:break-all;">%s</code></p>
-</td></tr>`,
-			statusBanner(
-				fmt.Sprintf(`<strong>Congratulations!</strong> <strong>%s</strong> (%s) has added you to <strong>%s</strong>. You can now share, receive, and request files securely.`, adminName, adminEmail, companyName),
-				"#e6f5f0", brandSuccess, brandSuccess,
-			),
-			brandTextDark,
-			brandCardBg, brandSecondary,
-			brandPrimary, brandTextDark,
-			ctaButton("SET PASSWORD &amp; LOGIN", resetLink, ""),
-			brandTextMuted,
-			fileInfoTable(infoRow("Your Login Email", email)),
-			brandTextMuted, resetLink,
-		) +
-		emailFooter()
+	subject := fmt.Sprintf("Welcome to %s - Set Your Password", companyName)
+
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header {
+			background: #2563eb;
+			color: white;
+			padding: 35px;
+			border-radius: 10px 10px 0 0;
+			text-align: center;
+		}
+		.header h1 { margin: 0; font-size: 32px; }
+		.header p { margin: 10px 0 0 0; opacity: 0.9; }
+		.content {
+			background: #f9f9f9;
+			padding: 30px;
+			border-radius: 0 0 10px 10px;
+		}
+		.welcome-box {
+			background: #d4edda;
+			border-left: 4px solid #28a745;
+			padding: 20px;
+			margin: 20px 0;
+			border-radius: 5px;
+		}
+		.welcome-box h2 {
+			color: #155724;
+			margin-top: 0;
+		}
+		.setup-box {
+			background: white;
+			padding: 30px;
+			margin: 25px 0;
+			border-radius: 8px;
+			border: 2px solid #2563eb;
+			text-align: center;
+		}
+		.button {
+			display: inline-block;
+			padding: 18px 50px;
+			background: #2563eb;
+			color: white !important;
+			text-decoration: none;
+			border-radius: 8px;
+			margin: 20px 0;
+			font-weight: bold;
+			font-size: 18px;
+		}
+		.footer {
+			margin-top: 30px;
+			padding-top: 20px;
+			border-top: 2px solid #ddd;
+			font-size: 12px;
+			color: #666;
+			text-align: center;
+		}
+		.info-box {
+			background: #e3f2fd;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+			border-left: 4px solid #2196f3;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🎉 Welcome to %s!</h1>
+			<p>Your account has been created</p>
+		</div>
+
+		<div class="content">
+			<div class="welcome-box">
+				<h2>Congratulations!</h2>
+				<p><strong>%s</strong> (%s) has added you to <strong>%s</strong>. You can now share, receive, and request both small and huge files securely.</p>
+			</div>
+
+			<p>To get started, you need to set your password and log in to your account.</p>
+
+			<div class="setup-box">
+				<h2 style="color: #2563eb; margin-bottom: 15px;">Set Your Password</h2>
+				<p style="margin-bottom: 25px;">Click the button below to create your password and access your account.</p>
+
+				<a href="%s" class="button">SET PASSWORD &amp; LOGIN</a>
+
+				<p style="font-size: 13px; color: #999; margin-top: 20px;">
+					This link is valid for 1 hour
+				</p>
+			</div>
+
+			<div class="info-box">
+				<p style="margin: 0;"><strong>📧 Your Login Email:</strong></p>
+				<p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">%s</p>
+			</div>
+
+			<p style="text-align: center; color: #666; margin-top: 30px;">
+				If the button doesn't work, copy and paste this link into your browser:
+			</p>
+			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">
+				%s
+			</p>
+		</div>
+
+		<div class="footer">
+			<p>This is an automated message from %s.</p>
+			<p>Do not reply to this email.</p>
+		</div>
+	</div>
+</body>
+</html>`, companyName, adminName, adminEmail, companyName, resetLink, email, resetLink, companyName)
 
 	textBody := fmt.Sprintf(`Welcome to %s!
 
-%s (%s) has added you to %s. You can now share, receive, and request files securely.
+Congratulations! %s (%s) has added you to %s. You can now share, receive, and request both small and huge files securely.
+
+To get started, you need to set your password and log in to your account.
 
 Your login email: %s
 
@@ -369,52 +538,142 @@ Set your password by visiting this link:
 This link is valid for 1 hour.
 
 ---
-Prudencia Security — Secure File Transfer
-`, companyName, adminName, adminEmail, companyName, email, resetLink)
+This is an automated message from %s.
+Do not reply to this email.`, companyName, adminName, adminEmail, companyName, email, resetLink, companyName)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {
 		return err
 	}
+
 	return provider.SendEmail(email, subject, htmlBody, textBody)
 }
 
-// ---------------------------------------------------------------------------
-// Team invitation email
-// ---------------------------------------------------------------------------
-
+// SendTeamInvitationEmail sends an invitation email when a user is added to a team
 func SendTeamInvitationEmail(email, teamName, serverURL, companyName string) error {
-	subject := fmt.Sprintf("Welcome to team %s — %s", teamName, companyName)
+	subject := fmt.Sprintf("Welcome to teamshare group %s in the %s fileshare", teamName, companyName)
 
-	htmlBody := emailHeader(fmt.Sprintf("Welcome to Team: %s", teamName), "You've been added to a collaborative team") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-%s
-<p style="color:%s;font-size:14px;">As a team member, you can now:</p>
-<div style="margin:15px 0 25px 0;padding:0 0 0 10px;">
-<p style="color:%s;font-size:14px;margin:8px 0;line-height:1.6;">&#128193; Access all files shared with the team<br/>
-&#11014;&#65039; Upload files to share with team members<br/>
-&#128101; Collaborate with other team members<br/>
-&#128274; Securely transfer files within your team</p>
-</div>
-%s
-%s
-<p style="text-align:center;color:%s;font-size:11px;margin-top:20px;">Or go directly to: <code style="background:#eef2f3;padding:2px 6px;border-radius:3px;font-size:10px;">%s/login</code></p>
-</td></tr>`,
-			statusBanner(
-				fmt.Sprintf(`<strong>Congratulations!</strong> You have been added to the team <strong>"%s"</strong> in the <strong>%s</strong> file sharing platform.`, teamName, companyName),
-				"#e6f5f0", brandSuccess, brandSuccess,
-			),
-			brandTextDark,
-			brandTextDark,
-			fileInfoTable(infoRow("Your Login Email", email)),
-			ctaButton("LOG IN TO YOUR TEAM", serverURL+"/login", ""),
-			brandTextMuted, serverURL,
-		) +
-		emailFooter()
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header {
+			background: #2563eb;
+			color: white;
+			padding: 35px;
+			border-radius: 10px 10px 0 0;
+			text-align: center;
+		}
+		.header h1 { margin: 0; font-size: 32px; }
+		.header p { margin: 10px 0 0 0; opacity: 0.9; }
+		.content {
+			background: #f9f9f9;
+			padding: 30px;
+			border-radius: 0 0 10px 10px;
+		}
+		.team-box {
+			background: #d4edda;
+			border-left: 4px solid #28a745;
+			padding: 20px;
+			margin: 20px 0;
+			border-radius: 5px;
+		}
+		.team-box h2 {
+			color: #155724;
+			margin-top: 0;
+		}
+		.login-box {
+			background: white;
+			padding: 30px;
+			margin: 25px 0;
+			border-radius: 8px;
+			border: 2px solid #2563eb;
+			text-align: center;
+		}
+		.button {
+			display: inline-block;
+			padding: 18px 50px;
+			background: #2563eb;
+			color: white !important;
+			text-decoration: none;
+			border-radius: 8px;
+			margin: 20px 0;
+			font-weight: bold;
+			font-size: 18px;
+		}
+		.footer {
+			margin-top: 30px;
+			padding-top: 20px;
+			border-top: 2px solid #ddd;
+			font-size: 12px;
+			color: #666;
+			text-align: center;
+		}
+		.info-box {
+			background: #e3f2fd;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+			border-left: 4px solid #2196f3;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🎉 Welcome to Team: %s</h1>
+			<p>You've been added to a collaborative team</p>
+		</div>
 
-	textBody := fmt.Sprintf(`Welcome to team %s — %s
+		<div class="content">
+			<div class="team-box">
+				<h2>Congratulations!</h2>
+				<p>You have been added to the teamshare group <strong>"%s"</strong> in the <strong>%s</strong> fileshare platform.</p>
+			</div>
 
-You have been added to the team "%s" in the %s file sharing platform.
+			<p>As a team member, you can now:</p>
+			<ul>
+				<li>📁 Access all files shared with the team</li>
+				<li>⬆️ Upload files to share with team members</li>
+				<li>👥 Collaborate with other team members</li>
+				<li>🔒 Securely transfer files within your team</li>
+			</ul>
+
+			<div class="login-box">
+				<h2 style="color: #2563eb; margin-bottom: 15px;">Get Started</h2>
+				<p style="margin-bottom: 25px;">Click the button below to log in and access your team workspace.</p>
+
+				<a href="%s/login" class="button">LOG IN TO YOUR TEAM</a>
+			</div>
+
+			<div class="info-box">
+				<p style="margin: 0;"><strong>📧 Your Login Email:</strong></p>
+				<p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">%s</p>
+			</div>
+
+			<p style="text-align: center; color: #666; margin-top: 30px;">
+				If the button doesn't work, copy and paste this link into your browser:
+			</p>
+			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">
+				%s/login
+			</p>
+		</div>
+
+		<div class="footer">
+			<p>This is an automated message from %s.</p>
+			<p>Do not reply to this email.</p>
+		</div>
+	</div>
+</body>
+</html>`, teamName, teamName, companyName, serverURL, email, serverURL, companyName)
+
+	textBody := fmt.Sprintf(`Welcome to teamshare group %s in the %s fileshare
+
+Congratulations! You have been added to the teamshare group "%s" in the %s fileshare platform.
 
 As a team member, you can now:
 - Access all files shared with the team
@@ -427,155 +686,197 @@ Your login email: %s
 Log in here: %s/login
 
 ---
-Prudencia Security — Secure File Transfer
-`, teamName, companyName, teamName, companyName, email, serverURL)
+This is an automated message from %s.
+Do not reply to this email.`, teamName, companyName, teamName, companyName, email, serverURL, companyName)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {
 		return err
 	}
+
 	return provider.SendEmail(email, subject, htmlBody, textBody)
 }
 
-// ---------------------------------------------------------------------------
-// Password reset email
-// ---------------------------------------------------------------------------
-
+// SendPasswordResetEmail sends a password reset email with a humoristic/ironic tone
 func SendPasswordResetEmail(email, resetToken, serverURL string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", serverURL, resetToken)
-	subject := "Password Reset Request"
 
-	htmlBody := emailHeader("Password Reset", "Security Notification") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
+	subject := "Glömt lösenordet... igen? 🤔"
+
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header { 
+			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+			color: white; 
+			padding: 30px; 
+			border-radius: 10px 10px 0 0; 
+			text-align: center; 
+		}
+		.header h1 { margin: 0; font-size: 28px; }
+		.header p { margin: 10px 0 0 0; opacity: 0.9; }
+		.content { 
+			background: #f9f9f9; 
+			padding: 30px; 
+			border-radius: 0 0 10px 10px; 
+		}
+		.message-box {
+			background: #fff3cd;
+			border-left: 4px solid #ffc107;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+		}
+		.reset-box {
+			background: white;
+			padding: 25px;
+			margin: 25px 0;
+			border-radius: 8px;
+			border: 2px solid #667eea;
+			text-align: center;
+		}
+		.reset-box h2 {
+			color: #667eea;
+			margin-top: 0;
+		}
+		.button {
+			display: inline-block;
+			padding: 15px 35px;
+			background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+			color: white;
+			text-decoration: none;
+			border-radius: 25px;
+			margin: 20px 0;
+			font-weight: bold;
+			font-size: 16px;
+			transition: transform 0.2s;
+		}
+		.button:hover {
+			transform: scale(1.05);
+		}
+		.tips {
+			background: #e3f2fd;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+			border-left: 4px solid #2196f3;
+		}
+		.tips h3 {
+			margin-top: 0;
+			color: #1976d2;
+		}
+		.footer { 
+			margin-top: 30px; 
+			padding-top: 20px;
+			border-top: 2px solid #ddd;
+			font-size: 12px; 
+			color: #666; 
+			text-align: center; 
+		}
+		.warning {
+			background: #ffebee;
+			border-left: 4px solid #f44336;
+			padding: 15px;
+			margin: 20px 0;
+			border-radius: 5px;
+			color: #c62828;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>🔐 Återställ Lösenord</h1>
+			<p>Vi har alla varit där...</p>
+		</div>
+
+		<div class="content">
+			<div class="message-box">
+				<p style="margin: 0;"><strong>Hej där!</strong></p>
+				<p style="margin: 10px 0 0 0;">
+					Vi fick en förfrågan om att återställa lösenordet för ditt konto. 
+					Ingen panik – det händer de bästa av oss! 
+					(Fast kanske inte <em>lika</em> ofta... 😉)
+				</p>
+			</div>
+
+			<div class="reset-box">
+				<h2>Återställ Ditt Lösenord</h2>
+				<p>Klicka på knappen nedan för att skapa ett nytt lösenord.</p>
+				<p style="font-size: 14px; color: #666;">
+					(Och kanske... skriva upp det den här gången? 📝)
+				</p>
+				
+				<a href="%s" class="button">Återställ Lösenord</a>
+				
+				<p style="font-size: 13px; color: #999; margin-top: 20px;">
+					Länken är giltig i 1 timme
+				</p>
+			</div>
+
+			<div class="tips">
+				<h3>💡 Pro Tips för Framtiden:</h3>
+				<ul style="margin: 10px 0; padding-left: 20px;">
+					<li>Använd en lösenordshanterare (typ LastPass, 1Password, Bitwarden)</li>
+					<li>Gör lösenord unika för varje sajt</li>
+					<li>Tänk på en mening och ta första bokstaven från varje ord</li>
+					<li>Eller bara... skriv upp det någonstans säkert? 🤷</li>
+				</ul>
+			</div>
+
+			<div class="warning">
+				<p style="margin: 0;"><strong>⚠️ Viktig information:</strong></p>
+				<ul style="margin: 10px 0 0 0; padding-left: 20px;">
+					<li>Om du INTE begärde denna återställning – ignorera detta mail</li>
+					<li>Dela ALDRIG denna länk med någon annan</li>
+					<li>Vi frågar ALDRIG efter ditt lösenord via email</li>
+				</ul>
+			</div>
+
+			<p style="text-align: center; color: #666; margin-top: 30px;">
+				Fungerar inte knappen? Kopiera och klistra in denna länk i din webbläsare:
+			</p>
+			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">
+				%s
+			</p>
+		</div>
+
+		<div class="footer">
+			<p>Detta är ett automatiskt meddelande från WulfVault.</p>
+			<p>Svara inte på detta mail.</p>
+		</div>
+	</div>
+</body>
+</html>`, resetLink, resetLink)
+
+	textBody := fmt.Sprintf(`Återställ Ditt Lösenord
+
+Hej!
+
+Vi fick en förfrågan om att återställa lösenordet för ditt konto.
+
+Klicka på länken nedan för att återställa ditt lösenord:
 %s
-<div style="background:%s;border:2px solid %s;border-radius:10px;padding:25px;margin:25px 0;text-align:center;">
-<h2 style="color:%s;margin:0 0 10px 0;font-size:18px;">Reset Your Password</h2>
-<p style="color:%s;margin:0 0 20px 0;font-size:14px;">Click the button below to create a new password.</p>
-%s
-<p style="font-size:12px;color:%s;margin:15px 0 0 0;">This link is valid for 1 hour</p>
-</div>
-%s
-<p style="text-align:center;color:%s;font-size:11px;margin-top:20px;">If the button doesn't work, copy and paste this link:<br/>
-<code style="background:#eef2f3;padding:4px 8px;border-radius:4px;font-size:10px;word-break:break-all;">%s</code></p>
-</td></tr>`,
-			statusBanner(
-				`A password reset has been requested for your account. If you did not request this, please ignore this email.`,
-				"#fefce8", brandWarning, brandWarning,
-			),
-			brandCardBg, brandSecondary,
-			brandPrimary, brandTextDark,
-			ctaButton("RESET PASSWORD", resetLink, ""),
-			brandTextMuted,
-			statusBanner(
-				`<strong>Security reminder:</strong><br/>
-&bull; Never share this link with anyone<br/>
-&bull; We will never ask for your password via email<br/>
-&bull; If you didn't request this reset, ignore this email`,
-				"#fef2f2", brandDanger, brandDanger,
-			),
-			brandTextMuted, resetLink,
-		) +
-		emailFooter()
 
-	textBody := fmt.Sprintf(`Password Reset Request
+Länken är giltig i 1 timme.
 
-A password reset has been requested for your account.
+Om du inte begärde denna återställning, ignorera detta mail.
 
-Click the link below to reset your password:
-%s
-
-This link is valid for 1 hour.
-
-Security reminder:
-- Never share this link with anyone
-- We will never ask for your password via email
-- If you didn't request this reset, ignore this email
+Tips: Använd gärna en lösenordshanterare för att slippa detta i framtiden! 😊
 
 ---
-Prudencia Security — Secure File Transfer
-`, resetLink)
+Detta är ett automatiskt meddelande från WulfVault.
+Svara inte på detta mail.`, resetLink)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {
 		return err
 	}
+
 	return provider.SendEmail(email, subject, htmlBody, textBody)
-}
-
-// ---------------------------------------------------------------------------
-// Expiration reminder email (used by cleanup/reminders.go)
-// ---------------------------------------------------------------------------
-
-// GenerateExpirationReminderHTML creates a branded expiration reminder email
-func GenerateExpirationReminderHTML(fileName, fileSize, splashLink string, daysLeft int, urgent bool) string {
-	urgencyText := fmt.Sprintf("Your file will expire in <strong>%d days</strong>.", daysLeft)
-	bannerBg := "#fefce8"
-	bannerBorder := brandWarning
-	bannerText := brandTextDark
-	if urgent {
-		urgencyText = fmt.Sprintf("<strong>URGENT:</strong> Your file expires <strong>tomorrow</strong>!")
-		bannerBg = "#fef2f2"
-		bannerBorder = brandDanger
-		bannerText = brandDanger
-	}
-
-	return emailHeader("File Expiration Reminder", "Action Required") +
-		fmt.Sprintf(`<tr><td style="padding:30px;">
-%s
-%s
-%s
-<p style="text-align:center;color:%s;font-size:12px;margin-top:10px;">Download or re-share the file before it expires.</p>
-</td></tr>`,
-			statusBanner(urgencyText, bannerBg, bannerText, bannerBorder),
-			fileInfoTable(
-				infoRow("Filename", fileName)+
-					infoRow("Size", fileSize)+
-					infoRow("Expires in", fmt.Sprintf("%d day(s)", daysLeft)),
-			),
-			ctaButton("VIEW FILE", splashLink, brandPrimary),
-			brandTextMuted,
-		) +
-		emailFooter()
-}
-
-// GenerateExpirationReminderText creates a plain text expiration reminder
-func GenerateExpirationReminderText(fileName, fileSize, splashLink string, daysLeft int, urgent bool) string {
-	prefix := ""
-	if urgent {
-		prefix = "URGENT: "
-	}
-	return fmt.Sprintf(`%sFile Expiration Reminder
-
-Your file will expire in %d day(s):
-
-Filename: %s
-Size: %s
-
-Download or re-share the file before it expires:
-%s
-
----
-Prudencia Security — Secure File Transfer
-`, prefix, daysLeft, fileName, fileSize, splashLink)
-}
-
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
-
-func getDownloadsRemainingText(file *database.FileInfo) string {
-	if file.UnlimitedDownloads {
-		return "Unlimited"
-	}
-	if file.DownloadsRemaining <= 0 {
-		return "0 (no more downloads available)"
-	}
-	return fmt.Sprintf("%d", file.DownloadsRemaining)
-}
-
-func getMessageText(message string) string {
-	if message == "" {
-		return ""
-	}
-	return fmt.Sprintf("Message: %s\n\n", message)
 }
