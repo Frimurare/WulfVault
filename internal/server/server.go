@@ -17,7 +17,6 @@ import (
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/config"
 	"github.com/Frimurare/WulfVault/internal/database"
-	"github.com/Frimurare/WulfVault/internal/email"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -209,7 +208,6 @@ func (s *Server) Start() error {
 		IdleTimeout:       120 * time.Second,      // Keep-alive timeout
 	}
 
-	email.ServerURL = s.config.ServerURL
 	log.Printf("🚀 Server starting on %s", addr)
 	log.Printf("📍 Server URL: %s", s.config.ServerURL)
 	return server.ListenAndServe()
