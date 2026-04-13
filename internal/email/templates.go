@@ -48,7 +48,7 @@ func prudenciaLogoImg() string {
 	if ServerURL != "" {
 		src = ServerURL + prudenciaLogoPath
 	}
-	return fmt.Sprintf(`<img src="%s" alt="Prudencia Security" width="200" height="117" style="display:block;margin:0 auto 15px auto;" />`, src)
+	return fmt.Sprintf(`<img src="%s" alt="Prudencia Security" width="200" height="117" style="display:block;margin:0 auto 45px auto;" />`, src)
 }
 
 // emailHeader returns the standard Prudencia email header
@@ -89,8 +89,8 @@ func ctaButton(text, href, bgColor string) string {
 	}
 	return fmt.Sprintf(`<table width="100%%" cellpadding="0" cellspacing="0" style="margin:25px 0;">
 <tr><td align="center">
-<a href="%s" style="display:inline-block;background-color:%s;color:#ffffff;padding:14px 40px;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.5px;box-shadow:0 4px 12px rgba(0,65,85,0.3);">%s</a>
-</td></tr></table>`, href, bgColor, text)
+<a href="%s" style="display:inline-block;background-color:%s;color:#ffffff !important;padding:16px 45px;text-decoration:none;border-radius:8px;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:2px solid %s;">%s</a>
+</td></tr></table>`, href, bgColor, bgColor, text)
 }
 
 // infoRow returns a key-value row for file info tables
@@ -249,7 +249,7 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message,
 				infoRow("Filename", file.Name)+
 					infoRow("Size", file.Size),
 			),
-			ctaButton("DOWNLOAD FILE", splashLink, brandSuccess),
+			ctaButton("DOWNLOAD FILE", splashLink, brandPrimary),
 			brandTextMuted, brandTextDark, splashLink,
 		) +
 		emailFooter()
