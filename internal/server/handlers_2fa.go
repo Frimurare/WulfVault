@@ -241,6 +241,16 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 	// Get pending user ID from temporary cookie
 	cookie, err := r.Cookie("totp_pending")
 	if err != nil {
+		// Race fallback: if a concurrent submit already established a session,
+		// don't bounce the user back to /login — send them to the dashboard.
+		if existingUser, sessErr := s.getUserFromSession(r); sessErr == nil {
+			if existingUser.IsAdmin() {
+				http.Redirect(w, r, "/admin", http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+			}
+			return
+		}
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -514,10 +524,28 @@ func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, err
             }
         });
 
+        // Submit-once guard: prevent the auto-submit + manual click race
+        // that double-POSTs /2fa/verify and bounces the user to /login.
+        let submitting = false;
+        function lockSubmit(form) {
+            if (submitting) return false;
+            submitting = true;
+            form.querySelectorAll('button[type=submit]').forEach(b => b.disabled = true);
+            return true;
+        }
+        totpForm.addEventListener('submit', (e) => {
+            if (!lockSubmit(totpForm)) { e.preventDefault(); }
+        });
+        backupForm.addEventListener('submit', (e) => {
+            if (!lockSubmit(backupForm)) { e.preventDefault(); }
+        });
+
         // Auto-submit when 6 digits are entered
         document.getElementById('code').addEventListener('input', (e) => {
             if (e.target.value.length === 6) {
-                setTimeout(() => totpForm.submit(), 100);
+                setTimeout(() => {
+                    if (lockSubmit(totpForm)) { totpForm.submit(); }
+                }, 100);
             }
         });
     </script>
