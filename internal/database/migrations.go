@@ -45,6 +45,16 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Add Mailgun-specific columns to EmailProviderConfig (v6.2.9, issue #30)
+	// Without these, GetActiveProvider scan fails on fresh installs because
+	// the Go struct expects MailgunDomain / MailgunRegion to exist.
+	if err := d.addColumnIfNotExists("EmailProviderConfig", "MailgunDomain", "TEXT"); err != nil {
+		return err
+	}
+	if err := d.addColumnIfNotExists("EmailProviderConfig", "MailgunRegion", "TEXT DEFAULT 'us'"); err != nil {
+		return err
+	}
+
 	log.Println("Database migrations completed successfully")
 	return nil
 }

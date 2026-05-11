@@ -135,6 +135,9 @@ CREATE TABLE IF NOT EXISTS Configuration (
 );
 
 -- Email Provider Configuration table (stores email settings)
+-- Note: ApiKeyEncrypted holds the encrypted API key for ALL non-SMTP
+-- providers (Mailgun, SendGrid, Brevo, Resend). MailgunDomain and
+-- MailgunRegion are Mailgun-specific routing fields.
 CREATE TABLE IF NOT EXISTS EmailProviderConfig (
 	Id INTEGER PRIMARY KEY AUTOINCREMENT,
 	Provider TEXT NOT NULL UNIQUE,
@@ -147,6 +150,8 @@ CREATE TABLE IF NOT EXISTS EmailProviderConfig (
 	SMTPUseTLS INTEGER DEFAULT 1,
 	FromEmail TEXT NOT NULL,
 	FromName TEXT,
+	MailgunDomain TEXT,
+	MailgunRegion TEXT DEFAULT 'us',
 	CreatedAt INTEGER NOT NULL,
 	UpdatedAt INTEGER NOT NULL
 );
