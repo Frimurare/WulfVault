@@ -5,6 +5,71 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.9] - BloodMoon 🌙 - 2026-05-11
+
+### Fixed
+
+- **SMTP/email-provider test fails on fresh installs with
+  `SQL logic error: no such column: MailgunDomain`** (#30)
+
+  The Mailgun-related columns `MailgunDomain` and `MailgunRegion`
+  are referenced in `internal/email/email.go` and
+  `internal/server/handlers_email.go`, but were missing from the
+  `EmailProviderConfig` table in fresh installs — they weren't in
+  `internal/database/schema.go`'s `CREATE TABLE` statement and no
+  `addColumnIfNotExists` migration added them on upgrade.
+
+  Symptoms: on a fresh Docker install, configuring any email
+  provider (SMTP, Mailgun, etc.) and clicking *Test connection*
+  returned `400 Bad Request` with the log line
+  `GetActiveProvider scan error: SQL logic error: no such column:
+  MailgunDomain (1)`.
+
+  Note: `MailgunKey` is **not** a separate column — the Mailgun
+  API key is stored in the generic `ApiKeyEncrypted` field that
+  the rest of the codebase already uses for every provider.
+
+  Fix:
+  - `internal/database/schema.go` — `MailgunDomain TEXT` and
+    `MailgunRegion TEXT DEFAULT 'us'` added to the
+    `EmailProviderConfig` `CREATE TABLE`.
+  - `internal/database/migrations.go` — two
+    `addColumnIfNotExists` calls so existing installs get the
+    columns added on next start without losing data.
+
+  Thanks to @axedoardo for the detailed report and the manual
+  workaround.
+
+## [6.2.8] - BloodMoon 🌙 - 2026-05-11
+
+### Fixed
+
+- **2FA verify bounces user back to /login on first attempt**
+
+  The TOTP verify form auto-submitted 100 ms after the 6th digit
+  was entered (`input` event) **and** also on button click /
+  Enter. Pasting a 6-digit code from an authenticator app or
+  pressing Enter quickly produced two near-simultaneous POSTs to
+  `/2fa/verify`. The first cleared the `totp_pending` cookie,
+  created a session, and `303`'d to `/admin`; the second arrived
+  without `totp_pending` and `303`'d to `/login`. The browser
+  followed the second redirect — and the user ended up on the
+  login page even though a valid session had been created in the
+  database.
+
+  This is the bug behind *"I have to log in 2-3 times before I
+  get in"*.
+
+  Fix:
+  - **Client** — a submit-once guard locks both `totp-form` and
+    `backup-form` after the first submit and disables the verify
+    button, so neither the timer-driven submit nor a manual click
+    can race.
+  - **Server** — if `/2fa/verify` is hit without `totp_pending`
+    but the user already holds a valid session cookie (concurrent
+    winner case), redirect to `/admin` or `/dashboard` instead of
+    `/login`.
+
 ## [6.2.7] - BloodMoon 🌙 - 2026-04-11
 
 ### Added
