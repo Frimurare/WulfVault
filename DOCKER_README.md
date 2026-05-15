@@ -200,6 +200,19 @@ The v6.2 series shipped a series of email-pipeline fixes and added a
 dedicated session-verification endpoint for API integrations such as
 Prudencia Evidence Courier.
 
+### v6.2.9 — Mailgun column migration on fresh installs
+
+Fresh installs without an existing database failed to create the
+Mailgun-related columns during schema bootstrap. The migration is now
+idempotent and runs cleanly on both new and existing databases.
+
+### v6.2.8 — 2FA double-submit race
+
+Closed a race condition where the 2FA verification form could be
+submitted twice in rapid succession and accept the second submission
+against an already-consumed TOTP code. The handler now locks the code
+the moment it is first verified.
+
 ### v6.2.7 — `GET /api/whoami` endpoint
 
 Dedicated JSON endpoint to verify a session cookie without side
