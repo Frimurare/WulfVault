@@ -186,25 +186,88 @@ labels:
 
 ### Tags
 
-- `latest` - Latest stable release (currently v6.1.9)
-- `v6.1.9` - Specific version tag
-- `v6.x.x` - Major.minor.patch versions
+- `latest` - Latest stable release (currently `v6.2.9 BloodMoon 🌙`)
+- `v6.2.9`, `v6.2.7`, `v6.1.9`, ... — pin to a specific version
+- `vX.Y.Z` — semver tags
 
 ### Architecture
 
 Currently supports `amd64` (x86_64) architecture.
 
-## 📝 Version 6.1.9 BloodMoon 🌙
+## 📝 What's new in v6.2.x BloodMoon 🌙
 
-Latest release includes:
+The v6.2 series shipped a series of email-pipeline fixes and added a
+dedicated session-verification endpoint for API integrations such as
+Prudencia Evidence Courier.
 
-- **Advanced Pagination System** - File counter with "Showing X of Y files", configurable items per page (5-250)
-- **Team File Enhancements** - File descriptions visible in team files view with real-time search
-- **Login Improvements** - Fixed critical double-login bug where users had to login twice
-- **Keep Me Logged In Enhancement** - 30-day sessions exempt from inactivity timeout
-- **UI Fixes** - Red delete buttons in Admin Files, fixed button layout with long file notes
-- **Hourly Chunk Cleanup** - Automated cleanup of orphaned chunks every hour
-- **Extended Retry Logic** - 50 retry attempts (~7.5 minutes) for better upload reliability
+### v6.2.7 — `GET /api/whoami` endpoint
+
+Dedicated JSON endpoint to verify a session cookie without side
+effects:
+
+```json
+200 OK
+{
+  "authenticated": true,
+  "id": 123,
+  "email": "user@example.com",
+  "name": "User Name",
+  "role": "user",
+  "storage_used_mb": 42,
+  "storage_quota_mb": 1000,
+  "server_version": "6.2.7 BloodMoon 🌙",
+  "two_factor_enabled": false
+}
+
+401 Unauthorized
+{ "authenticated": false, "error": "Not authenticated" }
+```
+
+`Cache-Control: no-store` ensures fresh auth checks. Replaces the
+previous practice of probing `/login` or `/dashboard` and HTML-scraping
+the response. **Required by Prudencia Evidence Courier v1.0.6+.**
+
+### v6.2.6 — CRITICAL: web-UI uploads dropped notification emails for 4 months
+
+Files uploaded via the web dashboard between **v6.0.0 (December 2025)
+and v6.2.5** silently dropped recipient notification emails. Three
+issues conspired: `dashboard.js` never extracted `send_to_email` into
+upload metadata, the chunked-upload handler never had any
+email-sending code, and the SMTP provider required a password (which
+blocked dev servers like MailHog and IP-relay production setups). The
+legacy `POST /upload` endpoint was unaffected, which is why the bug
+remained hidden. **All web-UI installs running v6.0.0 - v6.2.5 should
+upgrade immediately.**
+
+### v6.2.5 — Expiration reminder emails
+
+Automatic reminders to file owners when their shares are about to
+expire: a halfway reminder (~2-3 days out on a 5-day share) and an
+urgent reminder 1 day before expiration with red urgency styling.
+Includes file name, size, current download count, and a direct
+download link. Runs every 6 hours via the cleanup scheduler.
+
+### v6.2.4 — Email sender info, comments, English templates
+
+Sender attribution and uploader comments now appear in download
+notification emails. English email templates added alongside the
+Swedish ones.
+
+### v6.2.0 → v6.2.3 — BloodMoon foundation
+
+The initial v6.2 line: hardened email pipeline, signed splash-link
+URLs for share previews, and admin-settings refinements.
+
+### v6.1.9 — Pagination + login fixes (December 2025)
+
+Advanced pagination (file counter with "Showing X of Y", 5-250 per
+page), team-file descriptions visible with real-time search, fix for
+the double-login bug, 30-day "keep me logged in" sessions exempt from
+inactivity timeout, hourly orphan-chunk cleanup, extended upload
+retry logic (50 attempts ≈ 7.5 minutes).
+
+For per-release detail see
+[CHANGELOG.md](https://github.com/Frimurare/WulfVault/blob/main/CHANGELOG.md).
 
 ## 🔍 System Requirements
 
@@ -240,6 +303,6 @@ Ulf Holmström (Frimurare)
 
 ---
 
-**Latest Version:** v6.0.2 BloodMoon 🌙
-**Last Updated:** December 2025
-**Image Size:** ~15MB compressed
+**Latest Version:** v6.2.9 BloodMoon 🌙
+**Last Updated:** 2026-05-11
+**Image Size:** ~14.5 MB compressed
