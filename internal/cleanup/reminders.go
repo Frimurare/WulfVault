@@ -13,32 +13,25 @@ import (
 	"github.com/Frimurare/WulfVault/internal/email"
 )
 
-// SendExpirationReminders checks for files about to expire and sends reminder emails.
-// Sends at two points: halfway through the expiration period, and 1 day before expiration.
-// Reminders go to BOTH the recipient (send_to_email) and the file owner.
+// SendExpirationReminders sends ONE expiration reminder per file, only to
+// files that have not yet been downloaded and have not already been
+// reminded. Triggered when a file is within 1 day of expiration — the
+// "last chance" window. This guarantees every file gets exactly one
+// reminder regardless of its total expiration period, and it stops
+// retransmissions on every 6 h cleanup tick.
+//
+// Behavior note: a file that has been downloaded at least once is
+// considered "delivered" and is silently skipped. The previous
+// implementation hammered both downloaded files and not-yet-downloaded
+// files with a reminder every 6 h, up to four times per day.
 func SendExpirationReminders(serverURL string) {
-	// Files expiring within 1 day — URGENT reminder
-	urgentFiles, err := database.DB.GetFilesExpiringInDays(1)
+	files, err := database.DB.GetFilesNeedingReminder(1)
 	if err != nil {
-		log.Printf("Reminder: Error getting urgent expiring files: %v", err)
-	} else {
-		for _, file := range urgentFiles {
-			sendReminder(file, serverURL, true)
-		}
+		log.Printf("Reminder: Error getting files needing reminder: %v", err)
+		return
 	}
-
-	// Files expiring within 3 days (for ~5 day expiration = roughly halfway)
-	halfwayFiles, err := database.DB.GetFilesExpiringInDays(3)
-	if err != nil {
-		log.Printf("Reminder: Error getting halfway expiring files: %v", err)
-	} else {
-		for _, file := range halfwayFiles {
-			// Don't double-send for files already in the 1-day window
-			daysLeft := daysUntilExpiry(file)
-			if daysLeft > 1 && daysLeft <= 3 {
-				sendReminder(file, serverURL, false)
-			}
-		}
+	for _, file := range files {
+		sendReminder(file, serverURL, true)
 	}
 }
 
@@ -109,11 +102,21 @@ This is an automated expiration reminder from WulfVault Secure File Transfer.
 		downloadLink)
 
 	// Send to file owner
+	sent := false
 	if owner != nil && owner.Email != "" {
 		if err := sendReminderEmail(owner.Email, subject, htmlBody, textBody); err != nil {
 			log.Printf("Reminder: Failed to send to owner %s: %v", owner.Email, err)
 		} else {
 			log.Printf("Reminder: Sent to owner %s for file %s (%d days left)", owner.Email, file.Name, daysLeft)
+			sent = true
+		}
+	}
+
+	// Stamp RemindedAt so this file is not picked up again. Only stamp on a
+	// successful send — a transient SMTP failure should retry on the next tick.
+	if sent {
+		if err := database.DB.MarkFileReminded(file.Id); err != nil {
+			log.Printf("Reminder: Failed to mark file %s as reminded: %v", file.Id, err)
 		}
 	}
 

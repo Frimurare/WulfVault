@@ -55,6 +55,14 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Add RemindedAt to Files (v6.2.10) — tracks whether an expiration reminder
+	// has already been sent for this file. Combined with the DownloadCount == 0
+	// check in cleanup/reminders.go this gives one reminder per file, only when
+	// it actually needs one.
+	if err := d.addColumnIfNotExists("Files", "RemindedAt", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+
 	log.Println("Database migrations completed successfully")
 	return nil
 }

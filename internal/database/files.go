@@ -170,6 +170,46 @@ func (d *Database) UpdateFileDownloadCount(fileId string) error {
 	return err
 }
 
+// GetFilesNeedingReminder returns files that:
+//   - expire within `days` days,
+//   - have never been downloaded (DownloadCount = 0),
+//   - have not yet received an expiration reminder (RemindedAt = 0).
+//
+// This is used by cleanup/reminders.go to send at most ONE reminder per
+// file, and only for files that actually need a nudge.
+func (d *Database) GetFilesNeedingReminder(days int) ([]*FileInfo, error) {
+	now := time.Now().Unix()
+	futureLimit := time.Now().Add(time.Duration(days*24) * time.Hour).Unix()
+
+	rows, err := d.db.Query(`
+		SELECT Id, Name, Size, SHA1, PasswordHash, FilePasswordPlain, HotlinkId, ContentType,
+		       AwsBucket, ExpireAtString, ExpireAt, PendingDeletion, SizeBytes,
+		       UploadDate, DownloadsRemaining, DownloadCount, UserId, Comment,
+		       UnlimitedDownloads, UnlimitedTime, RequireAuth, DeletedAt, DeletedBy
+		FROM Files
+		WHERE DeletedAt = 0
+		  AND UnlimitedTime = 0
+		  AND ExpireAt > ?
+		  AND ExpireAt <= ?
+		  AND DownloadCount = 0
+		  AND COALESCE(RemindedAt, 0) = 0`, now, futureLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanFiles(rows)
+}
+
+// MarkFileReminded stamps RemindedAt = now so the file will not receive
+// another expiration reminder. Called by cleanup/reminders.go after a
+// successful send.
+func (d *Database) MarkFileReminded(fileId string) error {
+	_, err := d.db.Exec(`UPDATE Files SET RemindedAt = ? WHERE Id = ?`,
+		time.Now().Unix(), fileId)
+	return err
+}
+
 // UpdateFileSettings updates a file's expiration and download settings
 func (d *Database) UpdateFileSettings(fileId string, downloadsRemaining int, expireAt int64, expireAtString string, unlimitedDownloads, unlimitedTime bool) error {
 	unlimitedDownloadsInt := 0

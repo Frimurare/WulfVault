@@ -5,6 +5,34 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.10] - BloodMoon 🌙 - 2026-05-18
+
+### Fixed
+
+- **Expiration reminder emails were sent for already-downloaded files
+  and re-sent up to four times per day for the same file.**
+
+  `cleanup.SendExpirationReminders` did not consider `DownloadCount`
+  when selecting reminder targets, so any file in the
+  "expiring within N days" window received a notification even if the
+  recipient had already pulled it down. The cleanup scheduler also
+  runs every 6 h and the existing query matched a sliding window
+  (`expiring within 1 day`), not an exact-day boundary, so a single
+  unread file could trigger up to four reminder emails on its last
+  day.
+
+  Fix:
+  - New `RemindedAt` column on `Files` (auto-migrated on upgrade,
+    in schema for fresh installs).
+  - New DB helpers `GetFilesNeedingReminder(days)` and
+    `MarkFileReminded(fileId)`.
+  - `SendExpirationReminders` now sends at most **one** reminder per
+    file, only when `DownloadCount = 0`, and only inside the
+    "last day before expiration" window. The owner is stamped as
+    reminded immediately after a successful send so subsequent
+    6 h ticks ignore the file. Transient SMTP failures do not stamp,
+    so they retry next tick.
+
 ## [6.2.9] - BloodMoon 🌙 - 2026-05-11
 
 ### Fixed
