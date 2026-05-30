@@ -1,6 +1,7 @@
 # Binaries
 sharecare
 wulfvault
+wulfvault_*
 *.exe
 *.dll
 *.so
