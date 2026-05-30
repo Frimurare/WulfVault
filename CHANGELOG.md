@@ -5,6 +5,71 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0] - Aurora - 2026-05-30
+
+Codename shift: leaving BloodMoon (werewolf motif) behind. **Aurora** = the
+light returning after a long night — fits the move from internal-only password
+accounts toward identity federation.
+
+### Added
+
+- **Microsoft Entra ID SSO foundation** (carried over from `v6.3.0-beta1`)
+  - OpenID Connect Authorization Code + PKCE flow against Entra ID
+  - `IdentityProvider` + `ExternalID` columns on `Users` (partial unique index)
+  - Settings UI at **Server → Identity Providers**, client secret encrypted
+    at rest with AES-256-GCM
+  - `entra_force_local_only` escape hatch hides the SSO button AND 404s the
+    callback even with SSO otherwise configured
+
+- **Entra ID invite flow** (new in 7.0)
+  - `/admin/users/create` grows an **Account type** radio: **Local** (password,
+    with optional 2FA, default) or **Entra ID (invite)**.
+  - Choosing Entra creates the row with `IdentityProvider="entra"`, empty
+    `ExternalID`, no password — and sends a dark-themed invite email linking
+    to `/login?invite=<email>`.
+  - The login page detects the `invite` query param, shows a banner, and
+    pre-fills the email field. The existing **Sign in with Microsoft** button
+    is the activation path.
+  - On the user's first sign-in, `ResolveOrProvisionUser` binds their Entra
+    `ExternalID` to the pre-created row (the "empty ExternalID heal" path —
+    step 3 in the resolver), so no manual admin step is needed.
+  - User list shows **Invite pending** for Entra users with empty `ExternalID`;
+    admins can re-send the invitation via a new endpoint
+    `POST /admin/users/resend-invite` (wired to a per-row "Resend invite"
+    link).
+  - New audit-log actions: `USER_CREATED_ENTRA_INVITE` and
+    `ENTRA_INVITE_RESENT`.
+
+- **`SendEntraInviteEmail`** template in `internal/email/templates.go` —
+  Sign-in-with-Microsoft button, dark-on-light branding, plain-text fallback.
+
+### Changed
+
+- Version bumped from `6.3.0-beta1 BloodMoon 🌙` to `7.0.0 Aurora`.
+- Login page's email input now accepts a `?invite=` query param to pre-fill
+  for invited users (cosmetic — no auth implication; the invite link is not
+  a credential).
+
+### Security
+
+- The invite link is **not a credential**. Activation requires a successful
+  sign-in against the configured Entra tenant. Stolen invite emails grant
+  nothing.
+- Local-account collision check in `ResolveOrProvisionUser` still applies —
+  inviting an email that already has a local account is rejected at the
+  admin layer with a clear error.
+- Evidence Courier compatibility contract preserved (verified live):
+  `/login` returns 200 on bad credentials (re-render); `/api/whoami` returns
+  401 (not 404); `/upload` and `/file/delete` return 3xx on unauth.
+
+### Upgrade notes
+
+- Drop in the new `wulfvault-linux-amd64` binary. The DB migration from
+  v6.2.x is additive (`IdentityProvider`, `ExternalID` columns); rollback
+  to v6.2.x is safe — old binaries simply ignore the new columns.
+- Tag: `v7.0.0-aurora-beta1`. Promoted to stable once the first real Entra
+  user has signed in successfully.
+
 ## [6.2.9] - BloodMoon 🌙 - 2026-05-11
 
 ### Fixed
