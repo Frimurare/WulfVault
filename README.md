@@ -1,6 +1,6 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 7.1.0 Aurora** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 7.1.1 Aurora** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
 > **What's new in 7.1 Aurora:** **Generic OpenID Connect** alongside Microsoft Entra ID. Sign-in works with Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC-compliant issuer — pick the provider type in *Identity Providers* and fill in an issuer URL + client ID/secret. SSO is purely additive: local password accounts (including break-glass and service accounts) always remain available. See [§ Single Sign-On (Aurora)](#-single-sign-on-aurora) below.
 
