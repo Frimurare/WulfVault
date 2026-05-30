@@ -7,6 +7,8 @@ package email
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
@@ -540,6 +542,126 @@ This link is valid for 1 hour.
 ---
 This is an automated message from %s.
 Do not reply to this email.`, companyName, adminName, adminEmail, companyName, email, resetLink, companyName)
+
+	provider, err := GetActiveProvider(database.DB)
+	if err != nil {
+		return err
+	}
+
+	return provider.SendEmail(email, subject, htmlBody, textBody)
+}
+
+// SendEntraInviteEmail sends an invitation to a user whose account was created
+// with IdentityProvider="entra" / "oidc". They click the link, land on /login
+// with email pre-filled, sign in with the configured SSO provider (Microsoft,
+// Google, Okta, etc), and ResolveOrProvisionUser binds the freshly issued
+// ExternalID to the pre-created row.
+//
+// providerDisplayName: human-readable provider name shown in subject and body
+// ("Microsoft", "Google", "SSO" — whatever the admin configured). Pass "" to
+// fall back to the generic "your SSO provider" wording. (Function name kept
+// for v7.0 caller compatibility; it is provider-agnostic since v7.1.)
+func SendEntraInviteEmail(email, name, providerDisplayName, serverURL, companyName, adminName, adminEmail string) error {
+	loginLink := fmt.Sprintf("%s/login?invite=%s", serverURL, url.QueryEscape(email))
+
+	displayName := name
+	if displayName == "" {
+		displayName = email
+	}
+
+	providerName := strings.TrimSpace(providerDisplayName)
+	if providerName == "" {
+		providerName = "your SSO provider"
+	}
+	// The 4-tile logo is Microsoft-specific. For non-Entra providers we omit it.
+	isEntra := strings.EqualFold(providerName, "Microsoft")
+	logoSpan := ""
+	if isEntra {
+		logoSpan = `<span class="ms-logo"></span>`
+	}
+
+	subject := fmt.Sprintf("You're invited to %s — sign in with %s", companyName, providerName)
+
+	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+		.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+		.header { background: #004155; color: white; padding: 35px; border-radius: 10px 10px 0 0; text-align: center; }
+		.header h1 { margin: 0; font-size: 28px; }
+		.header p { margin: 10px 0 0 0; opacity: 0.9; }
+		.content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+		.invite-box { background: #d4edda; border-left: 4px solid #28a745; padding: 20px; margin: 20px 0; border-radius: 5px; }
+		.invite-box h2 { color: #155724; margin-top: 0; }
+		.action-box { background: white; padding: 30px; margin: 25px 0; border-radius: 8px; border: 2px solid #004155; text-align: center; }
+		.button { display: inline-block; padding: 16px 40px; background: #2F2F2F; color: white !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; font-size: 16px; }
+		.ms-logo { display: inline-block; width: 16px; height: 16px; margin-right: 10px; vertical-align: middle; background:
+			linear-gradient(to right, #F25022 50%%, #7FBA00 50%%) 0 0/100%% 50%% no-repeat,
+			linear-gradient(to right, #00A4EF 50%%, #FFB900 50%%) 0 100%%/100%% 50%% no-repeat; }
+		.info-box { background: #e3f2fd; padding: 15px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #2196f3; }
+		.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>You're invited to %s</h1>
+			<p>Sign in with your %s account to get started</p>
+		</div>
+		<div class="content">
+			<div class="invite-box">
+				<h2>Hi %s,</h2>
+				<p><strong>%s</strong> (%s) has created an account for you on <strong>%s</strong>.</p>
+				<p>This account uses <strong>%s single sign-on</strong> — you'll use your existing %s credentials to sign in. No new password to remember.</p>
+			</div>
+
+			<div class="action-box">
+				<h2 style="color: #004155; margin-bottom: 15px;">Activate your account</h2>
+				<p style="margin-bottom: 25px;">Click below to sign in. You'll be redirected to %s to authenticate, then back here.</p>
+				<a href="%s" class="button">%sSign in with %s</a>
+				<p style="font-size: 13px; color: #999; margin-top: 20px;">First sign-in activates your account automatically.</p>
+			</div>
+
+			<div class="info-box">
+				<p style="margin: 0;"><strong>Your login email:</strong></p>
+				<p style="margin: 5px 0 0 0; font-size: 16px; font-weight: bold;">%s</p>
+			</div>
+
+			<p style="text-align: center; color: #666; margin-top: 30px;">If the button doesn't work, copy and paste this link into your browser:</p>
+			<p style="text-align: center; word-break: break-all; font-size: 12px; color: #999;">%s</p>
+		</div>
+		<div class="footer">
+			<p>This is an automated message from %s.</p>
+			<p>Do not reply to this email.</p>
+		</div>
+	</div>
+</body>
+</html>`,
+		companyName, providerName,
+		displayName, adminName, adminEmail, companyName, providerName, providerName,
+		providerName, loginLink, logoSpan, providerName,
+		email, loginLink, companyName)
+
+	textBody := fmt.Sprintf(`You're invited to %s
+
+Hi %s,
+
+%s (%s) has created an account for you on %s.
+
+This account uses %s single sign-on. You'll use your existing %s credentials — no new password to remember.
+
+Your login email: %s
+
+Activate your account by clicking this link and signing in with %s:
+%s
+
+First sign-in activates your account automatically.
+
+---
+This is an automated message from %s.
+Do not reply to this email.`, companyName, displayName, adminName, adminEmail, companyName, providerName, providerName, email, providerName, loginLink, companyName)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {

@@ -40,12 +40,21 @@ func (d *Database) CreateUser(user *models.User) error {
 		isActive = 0
 	}
 
+	// Default to "local" if caller didn't set it. ExternalID stays empty unless
+	// explicitly provided (e.g. by Entra auto-provisioning).
+	identityProvider := user.IdentityProvider
+	if identityProvider == "" {
+		identityProvider = "local"
+	}
+
 	result, err := d.db.Exec(`
 		INSERT INTO Users (Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		                   StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		                   StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive,
+		                   IdentityProvider, ExternalID)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		user.Name, user.Email, user.Password, user.Permissions, user.UserLevel, user.LastOnline,
 		resetPw, user.StorageQuotaMB, user.StorageUsedMB, user.CreatedAt, isActive,
+		identityProvider, user.ExternalID,
 	)
 	if err != nil {
 		return err
@@ -66,11 +75,13 @@ func (d *Database) GetUserByID(id int) (*models.User, error) {
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
 		FROM Users WHERE Id = ?`, id).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
+		&user.IdentityProvider, &user.ExternalID,
 	)
 
 	if err != nil {
@@ -93,11 +104,13 @@ func (d *Database) GetUserByEmail(email string) (*models.User, error) {
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
 		FROM Users WHERE Email = ?`, email).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
+		&user.IdentityProvider, &user.ExternalID,
 	)
 
 	if err != nil {
@@ -120,11 +133,13 @@ func (d *Database) GetUserByName(name string) (*models.User, error) {
 
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
-		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
 		FROM Users WHERE Name = ?`, name).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
+		&user.IdentityProvider, &user.ExternalID,
 	)
 
 	if err != nil {
@@ -477,6 +492,50 @@ func (d *Database) Get2FAAdoptionRate() (float64, error) {
 
 	adoption := float64(usersWithTOTP) / float64(totalUsers) * 100
 	return adoption, nil
+}
+
+// GetUserByExternalID retrieves a user by IdentityProvider + ExternalID.
+// Used by the Entra OIDC callback to resolve incoming claims to a stored user.
+// Returns nil + nil if not found (so callers can fall through to other lookups
+// without treating "not found" as an error).
+func (d *Database) GetUserByExternalID(provider, externalID string) (*models.User, error) {
+	if provider == "" || externalID == "" {
+		return nil, nil
+	}
+	user := &models.User{}
+	var resetPw, isActive, totpEnabled int
+
+	err := d.db.QueryRow(`
+		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
+		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
+		FROM Users
+		WHERE IdentityProvider = ? AND ExternalID = ?`, provider, externalID).Scan(
+		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
+		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
+		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
+		&user.IdentityProvider, &user.ExternalID,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	user.ResetPassword = resetPw == 1
+	user.IsActive = isActive == 1
+	user.TOTPEnabled = totpEnabled == 1
+	return user, nil
+}
+
+// SetUserExternalID attaches an external IdP subject to an existing user.
+// Used when an admin-pre-created Entra user signs in for the first time and
+// we need to bind the row to the actual OID claim.
+func (d *Database) SetUserExternalID(userID int, externalID string) error {
+	_, err := d.db.Exec(
+		"UPDATE Users SET ExternalID = ? WHERE Id = ?",
+		externalID, userID)
+	return err
 }
 
 // GetAverageBackupCodesRemaining returns the average number of backup codes remaining per user with 2FA enabled

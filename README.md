@@ -1,8 +1,10 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 6.2.7 BloodMoon 🌙** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 7.1.0 Aurora** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
-WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
+> **What's new in 7.1 Aurora:** **Generic OpenID Connect** alongside Microsoft Entra ID. Sign-in works with Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC-compliant issuer — pick the provider type in *Identity Providers* and fill in an issuer URL + client ID/secret. Carries over the v7.0 admin invite flow. See [§ Single Sign-On (Aurora)](#-single-sign-on-aurora) below.
+
+WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, **Microsoft Entra ID + Generic OpenID Connect SSO with invite-based provisioning**, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
@@ -168,6 +170,25 @@ WulfVault solves this by providing:
   - Perfect for debugging upload issues
   - Detailed metrics for system administrators
   - Accessible via Server → SysMonitor Logs
+
+### 🔑 Single Sign-On (Aurora)
+- **Two provider types** selectable in *Server → Identity Providers*:
+  - **Microsoft Entra ID (Azure AD)** — special-cased with multi-tenant aliases (`common` / `organizations` / `consumers`) and explicit `tid`-claim validation.
+  - **Generic OpenID Connect** (v7.1) — works with any OIDC-compliant issuer: Google Workspace, Okta, Keycloak, Authelia, Auth0, or your own IdP. Inline help in the admin UI lists the issuer URL pattern for each common provider.
+- **OpenID Connect Authorization Code + PKCE** flow under the hood (`coreos/go-oidc/v3`).
+- **Additive to local accounts** — break-glass and service accounts (e.g. Evidence Courier) keep using password sign-in. Each user is either `local` or `entra`; no silent binding.
+- **Admin invite flow (v7.0):**
+  - On `/admin/users/create`, choose **Account type: Entra ID (invite)**.
+  - System creates a user row pre-bound to SSO (`IdentityProvider="entra"`, empty `ExternalID`) and sends an email with a sign-in link.
+  - User clicks link → lands on `/login?invite=<email>` with the email field pre-filled and a "You've been invited" banner shown.
+  - User clicks **Sign in with {Provider}** → completes OIDC → returns and is automatically bound to the pre-created account (no manual admin step).
+- **Configurable provider display name** — the login button and invite emails say "Sign in with Microsoft" / "Sign in with Google" / "Sign in with SSO" — whatever you configure.
+- **Resend invite** — admin can re-send the invitation at any time from the user list (shows "Invite pending" until first sign-in).
+- **Auto-provisioning** (optional, per setting) for any sign-in within an allow-listed email domain.
+- **Admin escape hatch** `entra_force_local_only` hides the SSO button AND 404s the callback even when SSO is otherwise configured.
+- **Routes:** `/auth/oidc/{login,callback}` (v7.1 canonical). The legacy `/auth/entra/{login,callback}` paths still work, so existing Entra app registrations don't need their redirect URI updated.
+- **Configuration:** Client secret encrypted at rest with AES-256-GCM. One provider configured at a time per install.
+- **Tag:** `v7.1.0` — production-deployed; the customer-facing OIDC round-trip is verified live for Entra. First real-customer Generic OIDC sign-in is the next milestone.
 
 ### 🔐 Security & Authentication
 - **Two-Factor Authentication (2FA):**

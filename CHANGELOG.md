@@ -5,33 +5,120 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.2.10] - BloodMoon 🌙 - 2026-05-18
+## [7.1.0] - Aurora - 2026-05-30
 
-### Fixed
+Generic OpenID Connect support alongside Microsoft Entra ID. WulfVault is
+no longer tied to Microsoft for SSO — works with Google Workspace, Okta,
+Keycloak, Authelia, Auth0 or any OIDC-compliant issuer.
 
-- **Expiration reminder emails were sent for already-downloaded files
-  and re-sent up to four times per day for the same file.**
+### Added
 
-  `cleanup.SendExpirationReminders` did not consider `DownloadCount`
-  when selecting reminder targets, so any file in the
-  "expiring within N days" window received a notification even if the
-  recipient had already pulled it down. The cleanup scheduler also
-  runs every 6 h and the existing query matched a sliding window
-  (`expiring within 1 day`), not an exact-day boundary, so a single
-  unread file could trigger up to four reminder emails on its last
-  day.
+- **Generic OpenID Connect provider** — second option in the *Identity
+  Providers* admin page. Configure with issuer URL + client ID/secret;
+  no multi-tenant quirks, strict issuer matching.
+- **Provider type dropdown** with two options:
+  - *Microsoft Entra ID (Azure AD)* — special-cased multi-tenant aliases
+    (`common`/`organizations`/`consumers`) + `tid`-claim validation.
+  - *Generic OpenID Connect* — any OIDC-compliant provider.
+- **Configurable provider display name** — login button and invite email
+  subject/body use it ("Sign in with Microsoft", "Sign in with Google",
+  "Sign in with SSO"). Defaults: "Microsoft" for Entra, "SSO" for Generic.
+- **New canonical routes** `/auth/oidc/{login,callback}`. The legacy
+  `/auth/entra/{login,callback}` routes still work — existing Entra app
+  registrations don't need to update their redirect URI.
+- **Provider-aware login button** — Microsoft 4-tile logo for Entra,
+  neutral lock icon for Generic OIDC.
+- **Inline issuer help** in the admin UI listing common provider issuer
+  URLs (Google, Okta, Keycloak, Authelia, Auth0).
 
-  Fix:
-  - New `RemindedAt` column on `Files` (auto-migrated on upgrade,
-    in schema for fresh installs).
-  - New DB helpers `GetFilesNeedingReminder(days)` and
-    `MarkFileReminded(fileId)`.
-  - `SendExpirationReminders` now sends at most **one** reminder per
-    file, only when `DownloadCount = 0`, and only inside the
-    "last day before expiration" window. The owner is stamped as
-    reminded immediately after a successful send so subsequent
-    6 h ticks ignore the file. Transient SMTP failures do not stamp,
-    so they retry next tick.
+### Changed
+
+- Version bumped from `7.0.0` to `7.1.0`.
+- `EntraConfig` is now a type alias for `IdentityProviderConfig` — existing
+  callers compile unchanged. `LoadEntraConfig` / `SaveEntraConfig` kept as
+  back-compat shims.
+- SSO cookie path widened from `/auth/entra/` to `/auth/` so cookies
+  survive either route prefix.
+
+### Backwards compatibility
+
+- Installs that pre-date v7.1 default to `ProviderType=entra` on first
+  load — no migration needed, upgrade is silent.
+- New configuration keys (`entra_provider_type`,
+  `entra_provider_display_name`, `entra_generic_issuer_url`,
+  `entra_generic_scopes`) are written alongside existing keys. Old
+  binaries ignore them.
+- Database schema: no changes.
+
+### Upgrade
+
+Drop in `wulfvault-linux-amd64` from the release, restart. Rollback to
+v7.0 is binary-swap only.
+
+## [7.0.0] - Aurora - 2026-05-30
+
+Codename shift: leaving BloodMoon (werewolf motif) behind. **Aurora** = the
+light returning after a long night — fits the move from internal-only password
+accounts toward identity federation.
+
+### Added
+
+- **Microsoft Entra ID SSO foundation** (carried over from `v6.3.0-beta1`)
+  - OpenID Connect Authorization Code + PKCE flow against Entra ID
+  - `IdentityProvider` + `ExternalID` columns on `Users` (partial unique index)
+  - Settings UI at **Server → Identity Providers**, client secret encrypted
+    at rest with AES-256-GCM
+  - `entra_force_local_only` escape hatch hides the SSO button AND 404s the
+    callback even with SSO otherwise configured
+
+- **Entra ID invite flow** (new in 7.0)
+  - `/admin/users/create` grows an **Account type** radio: **Local** (password,
+    with optional 2FA, default) or **Entra ID (invite)**.
+  - Choosing Entra creates the row with `IdentityProvider="entra"`, empty
+    `ExternalID`, no password — and sends a dark-themed invite email linking
+    to `/login?invite=<email>`.
+  - The login page detects the `invite` query param, shows a banner, and
+    pre-fills the email field. The existing **Sign in with Microsoft** button
+    is the activation path.
+  - On the user's first sign-in, `ResolveOrProvisionUser` binds their Entra
+    `ExternalID` to the pre-created row (the "empty ExternalID heal" path —
+    step 3 in the resolver), so no manual admin step is needed.
+  - User list shows **Invite pending** for Entra users with empty `ExternalID`;
+    admins can re-send the invitation via a new endpoint
+    `POST /admin/users/resend-invite` (wired to a per-row "Resend invite"
+    link).
+  - New audit-log actions: `USER_CREATED_ENTRA_INVITE` and
+    `ENTRA_INVITE_RESENT`.
+
+- **`SendEntraInviteEmail`** template in `internal/email/templates.go` —
+  Sign-in-with-Microsoft button, dark-on-light branding, plain-text fallback.
+
+### Changed
+
+- Version bumped from `6.3.0-beta1 BloodMoon 🌙` to `7.0.0 Aurora`.
+- Login page's email input now accepts a `?invite=` query param to pre-fill
+  for invited users (cosmetic — no auth implication; the invite link is not
+  a credential).
+
+### Security
+
+- The invite link is **not a credential**. Activation requires a successful
+  sign-in against the configured Entra tenant. Stolen invite emails grant
+  nothing.
+- Local-account collision check in `ResolveOrProvisionUser` still applies —
+  inviting an email that already has a local account is rejected at the
+  admin layer with a clear error.
+- Evidence Courier compatibility contract preserved (verified live):
+  `/login` returns 200 on bad credentials (re-render); `/api/whoami` returns
+  401 (not 404); `/upload` and `/file/delete` return 3xx on unauth.
+
+### Upgrade notes
+
+- Drop in the new `wulfvault-linux-amd64` binary. The DB migration from
+  v6.2.x is additive (`IdentityProvider`, `ExternalID` columns); rollback
+  to v6.2.x is safe — old binaries simply ignore the new columns.
+- Tag: `v7.0.0-aurora-beta1`. Promoted to stable once the first real Entra
+  user has signed in successfully.
 
 ## [6.2.9] - BloodMoon 🌙 - 2026-05-11
 

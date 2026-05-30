@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -235,6 +236,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 // renderLoginPage renders the login page
 func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	inviteEmail := template.HTMLEscapeString(r.URL.Query().Get("invite"))
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -401,11 +403,30 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
 		html += `<div class="error">` + errorMsg + `</div>`
 	}
 
+	if inviteEmail != "" {
+		// Use the configured provider display name in the banner so the
+		// invitee sees the right brand ("Sign in with Google" etc).
+		bannerProvider := "your SSO provider"
+		if ssoCfg, err := auth.LoadIdentityProviderConfig(database.DB); err == nil && ssoCfg.ShouldShowSSOButton() {
+			bannerProvider = ssoCfg.EffectiveDisplayName()
+		}
+		html += `<div style="background: #e8f4f8; border: 1px solid #b3e0ed; color: #0c5460; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
+            <strong>You've been invited.</strong> Sign in with ` + template.HTMLEscapeString(bannerProvider) + ` below to activate your account.
+        </div>`
+	}
+
+	emailValueAttr := ""
+	emailAutofocus := " autofocus"
+	if inviteEmail != "" {
+		emailValueAttr = ` value="` + inviteEmail + `"`
+		emailAutofocus = "" // focus the Microsoft button area instead, since password is irrelevant for invited users
+	}
+
 	html += `
         <form method="POST" action="/login">
             <div class="form-group">
                 <label for="email">Email or Username</label>
-                <input type="text" id="email" name="email" required autofocus>
+                <input type="text" id="email" name="email"` + emailValueAttr + ` required` + emailAutofocus + `>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
@@ -416,7 +437,40 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
                 <label for="remember_me" style="margin: 0; font-weight: normal; cursor: pointer;">Keep me logged in (30 days)</label>
             </div>
             <button type="submit" class="btn">Login</button>
-        </form>
+        </form>`
+
+	// Render the SSO button only if a provider is enabled and not overridden
+	// by the local-only escape hatch. Logo + label adapt to the provider type:
+	// the Microsoft 4-tile for Entra, a neutral lock icon for Generic OIDC.
+	if ssoCfg, err := auth.LoadIdentityProviderConfig(database.DB); err == nil && ssoCfg.ShouldShowSSOButton() {
+		providerName := template.HTMLEscapeString(ssoCfg.EffectiveDisplayName())
+		var providerIcon string
+		if ssoCfg.IsEntra() {
+			providerIcon = `<svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="1"  y="1"  width="10" height="10" fill="#F35325"/>
+                <rect x="12" y="1"  width="10" height="10" fill="#81BC06"/>
+                <rect x="1"  y="12" width="10" height="10" fill="#05A6F0"/>
+                <rect x="12" y="12" width="10" height="10" fill="#FFBA08"/>
+            </svg>`
+		} else {
+			providerIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>`
+		}
+		html += `
+        <div style="display:flex; align-items:center; margin: 20px 0 16px; color:#999; font-size:12px;">
+            <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+            <div style="padding: 0 12px;">OR</div>
+            <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+        </div>
+        <a href="/auth/oidc/login" style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:12px; background:white; color:#1f1f1f; border:1px solid #d2d2d2; border-radius:6px; font-size:14px; font-weight:600; text-decoration:none; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+            ` + providerIcon + `
+            Sign in with ` + providerName + `
+        </a>`
+	}
+
+	html += `
         <div style="text-align: center; margin-top: 15px;">
             <a href="/forgot-password" style="color: ` + s.getPrimaryColor() + `; text-decoration: none; font-size: 14px;">Forgot Password?</a>
         </div>

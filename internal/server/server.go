@@ -61,7 +61,14 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/d/", s.handleDownload)
 	mux.HandleFunc("/health", s.handleHealth)
 
-	// 2FA routes
+	// SSO routes — /auth/entra/* are the original v7.0 paths, kept for any
+	// Entra app registrations already configured with that redirect URI.
+	// /auth/oidc/* are the v7.1 generic paths (Generic OIDC provider) and
+	// identical in behaviour.
+	mux.HandleFunc("/auth/entra/login", s.handleEntraLogin)
+	mux.HandleFunc("/auth/entra/callback", s.handleEntraCallback)
+	mux.HandleFunc("/auth/oidc/login", s.handleEntraLogin)
+	mux.HandleFunc("/auth/oidc/callback", s.handleEntraCallback)
 	mux.HandleFunc("/2fa/verify", s.handle2FAVerify)
 	mux.HandleFunc("/2fa/setup", s.requireAuth(s.handle2FASetup))
 	mux.HandleFunc("/2fa/enable", s.requireAuth(s.handle2FAEnable))
@@ -119,6 +126,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/users/create", s.requireAdmin(s.handleAdminUserCreate))
 	mux.HandleFunc("/admin/users/edit", s.requireAdmin(s.handleAdminUserEdit))
 	mux.HandleFunc("/admin/users/delete", s.requireAdmin(s.handleAdminUserDelete))
+	mux.HandleFunc("/admin/users/resend-invite", s.requireAdmin(s.handleAdminUserResendInvite))
 	mux.HandleFunc("/admin/download-accounts/toggle", s.requireAdmin(s.handleAdminToggleDownloadAccount))
 	mux.HandleFunc("/admin/download-accounts/create", s.requireAdmin(s.handleAdminCreateDownloadAccount))
 	mux.HandleFunc("/admin/download-accounts/edit", s.requireAdmin(s.handleAdminEditDownloadAccount))
@@ -132,6 +140,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
+	mux.HandleFunc("/admin/identity-providers", s.requireAdmin(s.handleAdminIdentityProviders))
 	mux.HandleFunc("/admin/teams", s.requireAdmin(s.handleAdminTeams))
 	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
 	mux.HandleFunc("/admin/audit-logs", s.requireAdmin(s.handleAdminAuditLogs))

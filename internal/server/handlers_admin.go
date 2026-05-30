@@ -345,10 +345,19 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	quotaMB, _ := strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
 	userLevel, _ := strconv.Atoi(r.FormValue("user_level"))
 	sendWelcomeEmail := r.FormValue("send_welcome_email") == "1"
+	accountType := r.FormValue("account_type") // "local" (default) or "entra"
 
 	// Validate
 	if name == "" || email == "" {
 		s.renderAdminUserForm(w, nil, "Name and email are required")
+		return
+	}
+
+	// Entra invite branch: create row with IdentityProvider=entra, empty ExternalID,
+	// no password, and send a sign-in invite. Resolver will bind the ExternalID on
+	// first sign-in (step 3 in ResolveOrProvisionUser).
+	if accountType == models.IdentityProviderEntra {
+		s.createEntraInvitedUser(w, r, name, email, quotaMB, userLevel)
 		return
 	}
 
@@ -454,6 +463,132 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+// createEntraInvitedUser creates a user row pre-bound to Entra SSO with no
+// password and no ExternalID yet, then sends an invitation email. On the
+// invitee's first sign-in via Microsoft, ResolveOrProvisionUser binds their
+// ExternalID to this row.
+func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, name, email string, quotaMB int64, userLevel int) {
+	cfg, _ := auth.LoadEntraConfig(database.DB)
+	if cfg == nil || !cfg.Enabled || cfg.ForceLocalOnly {
+		s.renderAdminUserForm(w, nil, "Entra ID is not enabled — configure it under Server → Identity Providers before sending invites.")
+		return
+	}
+
+	// Reject if an account with this email already exists.
+	if existing, _ := database.DB.GetUserByEmail(email); existing != nil {
+		s.renderAdminUserForm(w, nil, fmt.Sprintf("An account already exists for %s.", email))
+		return
+	}
+
+	newUser := &models.User{
+		Name:             name,
+		Email:            email,
+		Password:         "",
+		UserLevel:        models.UserRank(userLevel),
+		Permissions:      models.UserPermissionNone,
+		StorageQuotaMB:   quotaMB,
+		StorageUsedMB:    0,
+		IsActive:         true,
+		IdentityProvider: models.IdentityProviderEntra,
+		ExternalID:       "",
+	}
+	if newUser.UserLevel == models.UserLevelAdmin {
+		newUser.Permissions = models.UserPermissionAll
+	}
+
+	if err := database.DB.CreateUser(newUser); err != nil {
+		s.renderAdminUserForm(w, nil, "Failed to create user: "+err.Error())
+		return
+	}
+
+	admin, _ := userFromContext(r.Context())
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(admin.Id),
+		UserEmail:  admin.Email,
+		Action:     "USER_CREATED_ENTRA_INVITE",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", newUser.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"quota_mb\":%d,\"identity_provider\":\"entra\"}", newUser.Email, newUser.Name, newUser.UserLevel, newUser.StorageQuotaMB),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
+
+	if err := sendEntraInviteMail(s, admin, name, email); err != nil {
+		log.Printf("Failed to send Entra invite to %s: %v", email, err)
+		// User is created — admin can resend the invite from the user list.
+	} else {
+		log.Printf("Entra invite sent to %s (created by admin %s)", email, admin.Name)
+	}
+
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+// sendEntraInviteMail centralises the URL-correction + admin-context lookup
+// so both create-and-invite and resend-invite share the exact same send path.
+// v7.1: resolves the configured provider display name so the email mentions
+// the right brand (Microsoft / Google / Okta / etc).
+func sendEntraInviteMail(s *Server, admin *models.User, name, email string) error {
+	companyName := s.config.CompanyName
+	emailServerURL := s.config.ServerURL
+	if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
+		emailServerURL = "http://" + emailServerURL[8:]
+	}
+	providerName := ""
+	if ssoCfg, _ := auth.LoadIdentityProviderConfig(database.DB); ssoCfg != nil {
+		providerName = ssoCfg.EffectiveDisplayName()
+	}
+	return emailpkg.SendEntraInviteEmail(email, name, providerName, emailServerURL, companyName, admin.Name, admin.Email)
+}
+
+// handleAdminUserResendInvite re-sends the Entra invitation for a user who
+// already has IdentityProvider="entra" but has not yet completed their first
+// sign-in (ExternalID still empty).
+func (s *Server) handleAdminUserResendInvite(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID, _ := strconv.Atoi(r.FormValue("id"))
+	if userID == 0 {
+		s.sendError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	user, err := database.DB.GetUserByID(userID)
+	if err != nil || user == nil {
+		s.sendError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	if user.IdentityProvider != models.IdentityProviderEntra {
+		s.sendError(w, http.StatusBadRequest, "Resend invite is only for Entra ID users")
+		return
+	}
+
+	admin, _ := userFromContext(r.Context())
+	if err := sendEntraInviteMail(s, admin, user.Name, user.Email); err != nil {
+		s.sendError(w, http.StatusInternalServerError, "Failed to send invite: "+err.Error())
+		return
+	}
+
+	database.DB.LogAction(&database.AuditLogEntry{
+		UserID:     int64(admin.Id),
+		UserEmail:  admin.Email,
+		Action:     "ENTRA_INVITE_RESENT",
+		EntityType: "User",
+		EntityID:   fmt.Sprintf("%d", user.Id),
+		Details:    fmt.Sprintf("{\"email\":\"%s\"}", user.Email),
+		IPAddress:  getClientIP(r),
+		UserAgent:  r.UserAgent(),
+		Success:    true,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true,"message":"Invite resent"}`))
 }
 
 // handleAdminUserEdit edits a user
@@ -2192,6 +2327,17 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 		if !u.IsActive {
 			status = "Inactive"
 		}
+		// Entra-typed users with no ExternalID yet are invited but not activated.
+		if u.IsEntraAccount() && u.ExternalID == "" && u.IsActive {
+			status = `<span title="User has been invited but has not yet signed in via Microsoft" style="color: #b76b00; font-weight: 600;">Invite pending</span>`
+		} else if u.IsEntraAccount() {
+			status += ` <span title="Signs in via Microsoft Entra ID" style="font-size: 11px; color: #2563eb;">[Entra]</span>`
+		}
+
+		extraActions := ""
+		if u.IsEntraAccount() && u.ExternalID == "" {
+			extraActions = fmt.Sprintf(`<a href="#" onclick="resendInvite(%d); return false;" style="color: #b76b00;">Resend invite</a>`, u.Id)
+		}
 
 		html += fmt.Sprintf(`
                 <tr>
@@ -2203,10 +2349,11 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
                     <td data-label="Status">%s</td>
                     <td data-label="Actions" class="action-links">
                         <a href="/admin/users/edit?id=%d">Edit</a>
+                        %s
                         <a href="#" onclick="deleteUser(%d); return false;">Delete</a>
                     </td>
                 </tr>`,
-			u.Name, u.Email, levelBadge, u.StorageQuotaMB/1000, u.StorageUsedMB, status, u.Id, u.Id)
+			u.Name, u.Email, levelBadge, u.StorageQuotaMB/1000, u.StorageUsedMB, status, u.Id, extraActions, u.Id)
 	}
 
 	html += `
@@ -2404,6 +2551,25 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
             window.location.href = '/admin/users?' + params.toString();
         }
 
+        async function resendInvite(id) {
+            if (!confirm('Resend the Entra ID invite email to this user?')) return;
+            try {
+                const response = await fetch('/admin/users/resend-invite', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'id=' + id
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert('Invite re-sent.');
+                } else {
+                    alert('Failed to resend: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
         async function deleteUser(id) {
             if (!confirm('Are you sure you want to delete this user?\n\nIf you choose yes, the account will be deleted and all the user\'s uploaded files will be available in the trash for 5 days if not deleted manually.')) return;
 
@@ -2505,6 +2671,22 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 		userLevelVal = fmt.Sprintf("%d", user.UserLevel)
 	}
 
+	accountTypeBlock := ""
+	if !isEdit {
+		accountTypeBlock = `
+        <label>Account type:</label>
+        <div style="margin: 8px 0 16px 0;">
+            <label style="display: flex; align-items: center; cursor: pointer; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; margin-bottom: 6px;">
+                <input type="radio" name="account_type" value="local" checked onchange="toggleAccountType()" style="width: auto; margin-right: 10px;">
+                <span><strong>Local account</strong> — password sign-in (with optional 2FA)</span>
+            </label>
+            <label style="display: flex; align-items: center; cursor: pointer; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                <input type="radio" name="account_type" value="entra" onchange="toggleAccountType()" style="width: auto; margin-right: 10px;">
+                <span><strong>Entra ID (invite)</strong> — user signs in with their Microsoft work/school account. No password set here; an invite email is sent.</span>
+            </label>
+        </div>`
+	}
+
 	html += `
     <form method="POST" action="` + action + `" onsubmit="return validatePasswords()">
         <label>Name:</label>
@@ -2512,7 +2694,8 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 
         <label>Email:</label>
         <input type="email" name="email" value="` + emailVal + `" required>
-
+` + accountTypeBlock + `
+        <div id="local-account-fields">
         <label>Password` + func() string {
 		if isEdit {
 			return " (leave empty to keep current)"
@@ -2586,6 +2769,14 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 		}
 		return ""
 	}() + `
+        </div>
+
+        <div id="entra-info-fields" style="display: none;">
+            <div style="background: #e3f2fd; padding: 16px; border-radius: 6px; border-left: 4px solid #2196f3; margin: 12px 0;">
+                <p style="margin: 0 0 8px 0;"><strong>Entra ID invite flow</strong></p>
+                <p style="margin: 0; font-size: 14px; color: #555;">An invitation email will be sent to the address above. On first sign-in via Microsoft, the user's Entra identity is bound to this account automatically. No password is set here.</p>
+            </div>
+        </div>
 
         <br><br>
         <button type="submit">Save</button>
@@ -2603,9 +2794,28 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
             }
         }
 
+        function toggleAccountType() {
+            const entraRadio = document.querySelector('input[name="account_type"][value="entra"]');
+            const localFields = document.getElementById('local-account-fields');
+            const entraFields = document.getElementById('entra-info-fields');
+            if (!entraRadio || !localFields || !entraFields) return;
+            const isEntra = entraRadio.checked;
+            localFields.style.display = isEntra ? 'none' : '';
+            entraFields.style.display = isEntra ? '' : 'none';
+            // Make password fields non-required when Entra so the browser doesn't block submit
+            document.querySelectorAll('#local-account-fields input').forEach(i => {
+                if (isEntra) { i.removeAttribute('required'); }
+                else if (i.name === 'password' || i.id === 'password_confirm') { i.setAttribute('required', ''); }
+            });
+        }
+
         function validatePasswords() {` + func() string {
 		if !isEdit {
 			return `
+            const entraRadio = document.querySelector('input[name="account_type"][value="entra"]');
+            if (entraRadio && entraRadio.checked) {
+                return true; // Entra flow — no password to validate
+            }
             const password = document.getElementById('password').value;
             const passwordConfirm = document.getElementById('password_confirm').value;
             const errorDiv = document.getElementById('password-error');
