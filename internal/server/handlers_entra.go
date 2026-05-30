@@ -69,7 +69,7 @@ func (s *Server) handleEntraLogin(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     entraStateCookieName,
 		Value:    state,
-		Path:     "/auth/entra/",
+		Path:     "/auth/",
 		Expires:  expires,
 		MaxAge:   entraStateMaxAge,
 		HttpOnly: true,
@@ -79,7 +79,7 @@ func (s *Server) handleEntraLogin(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     entraPKCECookieName,
 		Value:    pkce.Verifier,
-		Path:     "/auth/entra/",
+		Path:     "/auth/",
 		Expires:  expires,
 		MaxAge:   entraStateMaxAge,
 		HttpOnly: true,
@@ -206,7 +206,7 @@ func clearEntraFlowCookies(w http.ResponseWriter, secure bool) {
 		http.SetCookie(w, &http.Cookie{
 			Name:     name,
 			Value:    "",
-			Path:     "/auth/entra/",
+			Path:     "/auth/",
 			MaxAge:   -1,
 			HttpOnly: true,
 			Secure:   secure,

@@ -61,9 +61,14 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/d/", s.handleDownload)
 	mux.HandleFunc("/health", s.handleHealth)
 
-	// 2FA routes
+	// SSO routes — /auth/entra/* are the original v7.0 paths, kept for any
+	// Entra app registrations already configured with that redirect URI.
+	// /auth/oidc/* are the v7.1 generic paths (Generic OIDC provider) and
+	// identical in behaviour.
 	mux.HandleFunc("/auth/entra/login", s.handleEntraLogin)
 	mux.HandleFunc("/auth/entra/callback", s.handleEntraCallback)
+	mux.HandleFunc("/auth/oidc/login", s.handleEntraLogin)
+	mux.HandleFunc("/auth/oidc/callback", s.handleEntraCallback)
 	mux.HandleFunc("/2fa/verify", s.handle2FAVerify)
 	mux.HandleFunc("/2fa/setup", s.requireAuth(s.handle2FASetup))
 	mux.HandleFunc("/2fa/enable", s.requireAuth(s.handle2FAEnable))
