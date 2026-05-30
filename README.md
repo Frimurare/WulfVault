@@ -900,6 +900,7 @@ See [NOTICE.md](NOTICE.md) for full attribution and license information.
 - **Issues:** https://github.com/Frimurare/WulfVault/issues
 - **Discussions:** https://github.com/Frimurare/WulfVault/discussions
 - **Documentation:** https://github.com/Frimurare/WulfVault/wiki
+- **Contact:** ulf@manvarg.se
 
 ---
 
