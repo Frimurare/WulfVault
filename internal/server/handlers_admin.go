@@ -472,7 +472,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, name, email string, quotaMB int64, userLevel int) {
 	cfg, _ := auth.LoadEntraConfig(database.DB)
 	if cfg == nil || !cfg.Enabled || cfg.ForceLocalOnly {
-		s.renderAdminUserForm(w, nil, "Entra ID is not enabled — configure it under Server → Identity Providers before sending invites.")
+		s.renderAdminUserForm(w, nil, "Single sign-on is not enabled — configure an identity provider under Server → Identity Providers before sending invites.")
 		return
 	}
 
@@ -565,7 +565,7 @@ func (s *Server) handleAdminUserResendInvite(w http.ResponseWriter, r *http.Requ
 	}
 
 	if user.IdentityProvider != models.IdentityProviderEntra {
-		s.sendError(w, http.StatusBadRequest, "Resend invite is only for Entra ID users")
+		s.sendError(w, http.StatusBadRequest, "Resend invite is only for SSO users")
 		return
 	}
 
@@ -1981,6 +1981,20 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 	userFilter *database.UserFilter, userCount int, dlFilter *database.DownloadAccountFilter, dlCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
+	// Resolve the configured SSO provider display name so the invited-user status
+	// badge and tooltip name the actual provider (Microsoft / Google / Okta / …)
+	// rather than always saying "Microsoft". SSO users are stored with
+	// IdentityProvider="entra" regardless of the underlying OIDC provider.
+	ssoName := "SSO"
+	if ssoCfg, _ := auth.LoadIdentityProviderConfig(database.DB); ssoCfg != nil {
+		ssoName = ssoCfg.EffectiveDisplayName()
+	}
+	ssoNameEsc := template.HTMLEscapeString(ssoName)
+	ssoBadge := ssoNameEsc
+	if len(ssoBadge) > 10 {
+		ssoBadge = "SSO"
+	}
+
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2327,11 +2341,11 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 		if !u.IsActive {
 			status = "Inactive"
 		}
-		// Entra-typed users with no ExternalID yet are invited but not activated.
+		// SSO-typed users with no ExternalID yet are invited but not activated.
 		if u.IsEntraAccount() && u.ExternalID == "" && u.IsActive {
-			status = `<span title="User has been invited but has not yet signed in via Microsoft" style="color: #b76b00; font-weight: 600;">Invite pending</span>`
+			status = `<span title="User has been invited but has not yet signed in via ` + ssoNameEsc + `" style="color: #b76b00; font-weight: 600;">Invite pending</span>`
 		} else if u.IsEntraAccount() {
-			status += ` <span title="Signs in via Microsoft Entra ID" style="font-size: 11px; color: #2563eb;">[Entra]</span>`
+			status += ` <span title="Signs in via ` + ssoNameEsc + `" style="font-size: 11px; color: #2563eb;">[` + ssoBadge + `]</span>`
 		}
 
 		extraActions := ""
@@ -2552,7 +2566,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
         }
 
         async function resendInvite(id) {
-            if (!confirm('Resend the Entra ID invite email to this user?')) return;
+            if (!confirm('Resend the SSO invite email to this user?')) return;
             try {
                 const response = await fetch('/admin/users/resend-invite', {
                     method: 'POST',
@@ -2671,6 +2685,31 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 		userLevelVal = fmt.Sprintf("%d", user.UserLevel)
 	}
 
+	// Resolve the configured SSO provider so the invite option is labelled for
+	// the actual provider (Microsoft Entra ID, Google, Okta, Keycloak, …) rather
+	// than always saying "Microsoft". The account_type value stays "entra" — it
+	// is the internal SSO-invite flag and is provider-agnostic; the resolver and
+	// invite email already adapt to the configured provider via EffectiveDisplayName.
+	ssoLabel := "SSO (invite)"
+	ssoHelp := "user signs in with their single sign-on account. No password set here; an invite email is sent."
+	ssoInfoTitle := "SSO invite flow"
+	ssoInfoBody := "An invitation email will be sent to the address above. On first sign-in, the user's identity is bound to this account automatically. No password is set here."
+	if ssoCfg, _ := auth.LoadIdentityProviderConfig(database.DB); ssoCfg != nil {
+		dn := ssoCfg.EffectiveDisplayName()
+		if ssoCfg.IsEntra() {
+			ssoLabel = "Entra ID (invite)"
+			ssoHelp = "user signs in with their Microsoft work/school account. No password set here; an invite email is sent."
+			ssoInfoTitle = "Entra ID invite flow"
+			ssoInfoBody = "An invitation email will be sent to the address above. On first sign-in via Microsoft, the user's Entra identity is bound to this account automatically. No password is set here."
+		} else {
+			esc := template.HTMLEscapeString(dn)
+			ssoLabel = esc + " (invite)"
+			ssoHelp = "user signs in with their " + esc + " account. No password set here; an invite email is sent."
+			ssoInfoTitle = esc + " invite flow"
+			ssoInfoBody = "An invitation email will be sent to the address above. On first sign-in via " + esc + ", the user's identity is bound to this account automatically. No password is set here."
+		}
+	}
+
 	accountTypeBlock := ""
 	if !isEdit {
 		accountTypeBlock = `
@@ -2682,7 +2721,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
             </label>
             <label style="display: flex; align-items: center; cursor: pointer; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
                 <input type="radio" name="account_type" value="entra" onchange="toggleAccountType()" style="width: auto; margin-right: 10px;">
-                <span><strong>Entra ID (invite)</strong> — user signs in with their Microsoft work/school account. No password set here; an invite email is sent.</span>
+                <span><strong>` + ssoLabel + `</strong> — ` + ssoHelp + `</span>
             </label>
         </div>`
 	}
@@ -2773,8 +2812,8 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 
         <div id="entra-info-fields" style="display: none;">
             <div style="background: #e3f2fd; padding: 16px; border-radius: 6px; border-left: 4px solid #2196f3; margin: 12px 0;">
-                <p style="margin: 0 0 8px 0;"><strong>Entra ID invite flow</strong></p>
-                <p style="margin: 0; font-size: 14px; color: #555;">An invitation email will be sent to the address above. On first sign-in via Microsoft, the user's Entra identity is bound to this account automatically. No password is set here.</p>
+                <p style="margin: 0 0 8px 0;"><strong>` + ssoInfoTitle + `</strong></p>
+                <p style="margin: 0; font-size: 14px; color: #555;">` + ssoInfoBody + `</p>
             </div>
         </div>
 

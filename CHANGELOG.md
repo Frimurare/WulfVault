@@ -5,6 +5,29 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.1] - Aurora - 2026-05-30
+
+Provider-aware invite UI. The "create user" admin form previously labelled the
+SSO invite option as "Entra ID / Microsoft" even when a generic OpenID Connect
+provider (Google, Okta, Keycloak, Authelia, Auth0) was configured — confusing
+admins who don't use Microsoft. The backend was already provider-agnostic; this
+release makes the UI match.
+
+### Changed
+
+- **Create-user form** — the SSO account-type option, its help text, and the
+  info panel now name the configured provider via its display name (e.g.
+  "Google (invite)") instead of hard-coding "Entra ID / Microsoft". Falls back
+  to "Entra ID" wording when the provider is Microsoft Entra, and a generic
+  "SSO (invite)" when no display name is set.
+- **User list** — the invited-user status badge and tooltip now read the
+  configured provider name (badge shows "[SSO]" for long names).
+- **Resend-invite dialog** and SSO guard/error messages are now provider-neutral
+  ("Single sign-on", "SSO invite") rather than Entra-specific.
+
+The internal `account_type=entra` flag and `IdentityProvider="entra"` storage
+value are unchanged — they are provider-agnostic SSO markers. No migration needed.
+
 ## [7.1.0] - Aurora - 2026-05-30
 
 Generic OpenID Connect support alongside Microsoft Entra ID. WulfVault is

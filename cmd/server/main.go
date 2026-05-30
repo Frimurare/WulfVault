@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	Version = "7.1.0 Aurora"
+	Version = "7.1.1 Aurora"
 )
 
 var (
