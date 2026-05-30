@@ -55,6 +55,22 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Identity provider columns for external SSO (v6.3.0, issue #29).
+	// IdentityProvider = "local" (default) or "entra". ExternalID stores the
+	// IdP subject (e.g. Entra OID) and must be unique when non-empty.
+	if err := d.addColumnIfNotExists("Users", "IdentityProvider", "TEXT NOT NULL DEFAULT 'local'"); err != nil {
+		return err
+	}
+	if err := d.addColumnIfNotExists("Users", "ExternalID", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	// Partial unique index: enforce uniqueness only when ExternalID is set.
+	// SQLite supports partial indexes natively.
+	if _, err := d.db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_external_id
+		ON Users(IdentityProvider, ExternalID) WHERE ExternalID != ''`); err != nil {
+		return err
+	}
+
 	log.Println("Database migrations completed successfully")
 	return nil
 }

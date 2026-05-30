@@ -62,6 +62,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/health", s.handleHealth)
 
 	// 2FA routes
+	mux.HandleFunc("/auth/entra/login", s.handleEntraLogin)
+	mux.HandleFunc("/auth/entra/callback", s.handleEntraCallback)
 	mux.HandleFunc("/2fa/verify", s.handle2FAVerify)
 	mux.HandleFunc("/2fa/setup", s.requireAuth(s.handle2FASetup))
 	mux.HandleFunc("/2fa/enable", s.requireAuth(s.handle2FAEnable))
@@ -132,6 +134,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/branding", s.requireAdmin(s.handleAdminBranding))
 	mux.HandleFunc("/admin/settings", s.requireAdmin(s.handleAdminSettings))
 	mux.HandleFunc("/admin/email-settings", s.requireAdmin(s.handleEmailSettings))
+	mux.HandleFunc("/admin/identity-providers", s.requireAdmin(s.handleAdminIdentityProviders))
 	mux.HandleFunc("/admin/teams", s.requireAdmin(s.handleAdminTeams))
 	mux.HandleFunc("/admin/reboot", s.requireAdmin(s.handleAdminReboot))
 	mux.HandleFunc("/admin/audit-logs", s.requireAdmin(s.handleAdminAuditLogs))

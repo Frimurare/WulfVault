@@ -1,8 +1,10 @@
 # WulfVault - Enterprise File Sharing Platform
 
-**Version 6.2.7 BloodMoon 🌙** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 6.3.0 BloodMoon 🌙** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
-WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, self-service password management, file request portals, and GDPR-compliant account deletion.
+> **For collaborating agents (SAM Claude / future Claude sessions):** read [`docs/HANDOFF_TO_SAM.md`](docs/HANDOFF_TO_SAM.md) **first**. It contains the design rationale, test status, deploy procedure, and known issues for the Entra ID SSO feature in this release.
+
+WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, **Microsoft Entra ID SSO**, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 

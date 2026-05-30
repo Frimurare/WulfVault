@@ -396,6 +396,7 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
                     <a href="/admin/settings">Server Settings</a>
                     <a href="/admin/branding">Branding</a>
                     <a href="/admin/email-settings">Email</a>
+                    <a href="/admin/identity-providers">Identity Providers</a>
                     <a href="/admin/audit-logs">Audit Logs</a>
                     <a href="/admin/server-logs">Server Logs</a>
                     <a href="/admin/sysmonitor-logs">SysMonitor Logs</a>

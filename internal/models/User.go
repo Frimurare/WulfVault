@@ -33,6 +33,24 @@ type User struct {
 	TOTPSecret     string         `json:"-" redis:"TOTPSecret"`                  // TOTP secret (never expose in JSON)
 	TOTPEnabled    bool           `json:"totpEnabled" redis:"TOTPEnabled"`       // Whether 2FA is enabled
 	BackupCodes    string         `json:"-" redis:"BackupCodes"`                 // Hashed backup codes (JSON array)
+	IdentityProvider string       `json:"identityProvider" redis:"IdentityProvider"` // "local" (default) or "entra"
+	ExternalID     string         `json:"-" redis:"ExternalID"`                  // External IdP subject (e.g. Entra OID); unique when non-empty
+}
+
+// IdentityProviderLocal is the default — user authenticates with password + optional TOTP
+const IdentityProviderLocal = "local"
+
+// IdentityProviderEntra means the user signs in via Microsoft Entra ID (OIDC)
+const IdentityProviderEntra = "entra"
+
+// IsLocalAccount returns true if the user authenticates with a local password
+func (u *User) IsLocalAccount() bool {
+	return u.IdentityProvider == "" || u.IdentityProvider == IdentityProviderLocal
+}
+
+// IsEntraAccount returns true if the user authenticates via Entra ID
+func (u *User) IsEntraAccount() bool {
+	return u.IdentityProvider == IdentityProviderEntra
 }
 
 // GetReadableDate returns the date as YYYY-MM-DD HH:MM

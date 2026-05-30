@@ -416,7 +416,30 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
                 <label for="remember_me" style="margin: 0; font-weight: normal; cursor: pointer;">Keep me logged in (30 days)</label>
             </div>
             <button type="submit" class="btn">Login</button>
-        </form>
+        </form>`
+
+	// Render the SSO button only if Entra is enabled and not overridden by
+	// the local-only escape hatch. LoadEntraConfig failure should not break
+	// the login page — fall back to local-only rendering.
+	if entraCfg, err := auth.LoadEntraConfig(database.DB); err == nil && entraCfg.ShouldShowSSOButton() {
+		html += `
+        <div style="display:flex; align-items:center; margin: 20px 0 16px; color:#999; font-size:12px;">
+            <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+            <div style="padding: 0 12px;">OR</div>
+            <div style="flex:1; height:1px; background:#e5e7eb;"></div>
+        </div>
+        <a href="/auth/entra/login" style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:12px; background:white; color:#1f1f1f; border:1px solid #d2d2d2; border-radius:6px; font-size:14px; font-weight:600; text-decoration:none; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+            <svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="1"  y="1"  width="10" height="10" fill="#F35325"/>
+                <rect x="12" y="1"  width="10" height="10" fill="#81BC06"/>
+                <rect x="1"  y="12" width="10" height="10" fill="#05A6F0"/>
+                <rect x="12" y="12" width="10" height="10" fill="#FFBA08"/>
+            </svg>
+            Sign in with Microsoft
+        </a>`
+	}
+
+	html += `
         <div style="text-align: center; margin-top: 15px;">
             <a href="/forgot-password" style="color: ` + s.getPrimaryColor() + `; text-decoration: none; font-size: 14px;">Forgot Password?</a>
         </div>
