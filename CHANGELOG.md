@@ -5,6 +5,56 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.0] - Aurora - 2026-05-30
+
+Generic OpenID Connect support alongside Microsoft Entra ID. WulfVault is
+no longer tied to Microsoft for SSO — works with Google Workspace, Okta,
+Keycloak, Authelia, Auth0 or any OIDC-compliant issuer.
+
+### Added
+
+- **Generic OpenID Connect provider** — second option in the *Identity
+  Providers* admin page. Configure with issuer URL + client ID/secret;
+  no multi-tenant quirks, strict issuer matching.
+- **Provider type dropdown** with two options:
+  - *Microsoft Entra ID (Azure AD)* — special-cased multi-tenant aliases
+    (`common`/`organizations`/`consumers`) + `tid`-claim validation.
+  - *Generic OpenID Connect* — any OIDC-compliant provider.
+- **Configurable provider display name** — login button and invite email
+  subject/body use it ("Sign in with Microsoft", "Sign in with Google",
+  "Sign in with SSO"). Defaults: "Microsoft" for Entra, "SSO" for Generic.
+- **New canonical routes** `/auth/oidc/{login,callback}`. The legacy
+  `/auth/entra/{login,callback}` routes still work — existing Entra app
+  registrations don't need to update their redirect URI.
+- **Provider-aware login button** — Microsoft 4-tile logo for Entra,
+  neutral lock icon for Generic OIDC.
+- **Inline issuer help** in the admin UI listing common provider issuer
+  URLs (Google, Okta, Keycloak, Authelia, Auth0).
+
+### Changed
+
+- Version bumped from `7.0.0` to `7.1.0`.
+- `EntraConfig` is now a type alias for `IdentityProviderConfig` — existing
+  callers compile unchanged. `LoadEntraConfig` / `SaveEntraConfig` kept as
+  back-compat shims.
+- SSO cookie path widened from `/auth/entra/` to `/auth/` so cookies
+  survive either route prefix.
+
+### Backwards compatibility
+
+- Installs that pre-date v7.1 default to `ProviderType=entra` on first
+  load — no migration needed, upgrade is silent.
+- New configuration keys (`entra_provider_type`,
+  `entra_provider_display_name`, `entra_generic_issuer_url`,
+  `entra_generic_scopes`) are written alongside existing keys. Old
+  binaries ignore them.
+- Database schema: no changes.
+
+### Upgrade
+
+Drop in `wulfvault-linux-amd64` from the release, restart. Rollback to
+v7.0 is binary-swap only.
+
 ## [7.0.0] - Aurora - 2026-05-30
 
 Codename shift: leaving BloodMoon (werewolf motif) behind. **Aurora** = the

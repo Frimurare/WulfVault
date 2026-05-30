@@ -74,17 +74,35 @@ func (c *EntraClaims) ExternalIdentifier() string {
 	return strings.TrimSpace(c.Subject)
 }
 
-// BuildEntraProvider constructs an EntraProvider from the current configuration.
-// Returns Enabled=false if SSO is disabled, force-local is set, or required fields
-// are missing — caller can short-circuit to a 404 without leaking config state.
+// BuildEntraProvider constructs an SSO provider from the current configuration.
+// Despite the name (kept for git continuity), this function handles both
+// Entra ID and Generic OIDC providers based on cfg.EffectiveProviderType().
 //
-// ctx should be a request-scoped context; OIDC discovery is performed synchronously.
+// Returns Enabled=false if SSO is disabled, force-local is set, or required
+// fields are missing — caller can short-circuit to a 404 without leaking
+// config state.
+//
+// ctx should be a request-scoped context; OIDC discovery is performed
+// synchronously.
 func BuildEntraProvider(ctx context.Context, cfg *EntraConfig) (*EntraProvider, error) {
 	if cfg == nil || !cfg.ShouldShowSSOButton() {
 		return &EntraProvider{Enabled: false}, nil
 	}
-	if cfg.TenantID == "" || cfg.ClientID == "" || cfg.ClientSecret == "" {
-		return &EntraProvider{Enabled: false}, errors.New("entra: tenant_id, client_id and client_secret all required")
+	if cfg.ClientID == "" || cfg.ClientSecret == "" {
+		return &EntraProvider{Enabled: false}, errors.New("oidc: client_id and client_secret are required")
+	}
+
+	if cfg.IsGenericOIDC() {
+		return buildGenericOIDCProvider(ctx, cfg)
+	}
+	return buildEntraOIDCProvider(ctx, cfg)
+}
+
+// buildEntraOIDCProvider handles Microsoft-specific multi-tenant aliases
+// (common / organizations / consumers) and tid-claim validation.
+func buildEntraOIDCProvider(ctx context.Context, cfg *EntraConfig) (*EntraProvider, error) {
+	if cfg.TenantID == "" {
+		return &EntraProvider{Enabled: false}, errors.New("entra: tenant_id is required")
 	}
 
 	issuer := "https://login.microsoftonline.com/" + cfg.TenantID + "/v2.0"
@@ -102,17 +120,12 @@ func BuildEntraProvider(ctx context.Context, cfg *EntraConfig) (*EntraProvider, 
 		discoveryCtx = oidc.InsecureIssuerURLContext(ctx, issuer)
 	}
 
-	// Discovery: fetches /.well-known/openid-configuration and JWKS.
-	// go-oidc caches keys internally with auto-refresh on signature failures.
 	provider, err := oidc.NewProvider(discoveryCtx, issuer)
 	if err != nil {
 		return &EntraProvider{Enabled: false}, fmt.Errorf("entra: oidc discovery failed for tenant %s: %w", cfg.TenantID, err)
 	}
 
 	verifierCfg := &oidc.Config{ClientID: cfg.ClientID}
-	// For multi-tenant aliases the per-token issuer differs from the
-	// discovery issuer — skip the library check and rely on our explicit
-	// `tid` validation downstream.
 	if t == "common" || t == "organizations" || t == "consumers" {
 		verifierCfg.SkipIssuerCheck = true
 	}
@@ -123,10 +136,40 @@ func BuildEntraProvider(ctx context.Context, cfg *EntraConfig) (*EntraProvider, 
 		ClientSecret: cfg.ClientSecret,
 		Endpoint:     provider.Endpoint(),
 		RedirectURL:  cfg.RedirectURI,
-		// openid + profile + email is the minimum for identity resolution.
-		// Add "offline_access" if/when we want refresh tokens; we don't yet
-		// because Entra is consulted only at login, not on every request.
-		Scopes: []string{oidc.ScopeOpenID, "profile", "email"},
+		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
+	}
+
+	return &EntraProvider{
+		Enabled:  true,
+		Config:   cfg,
+		OAuth2:   oauth2Cfg,
+		Verifier: verifier,
+		Provider: provider,
+	}, nil
+}
+
+// buildGenericOIDCProvider handles any OIDC-compliant provider (Google,
+// Okta, Keycloak, Authelia, etc). Uses cfg.IssuerURL directly with strict
+// issuer matching — no multi-tenant quirks.
+func buildGenericOIDCProvider(ctx context.Context, cfg *EntraConfig) (*EntraProvider, error) {
+	issuer := strings.TrimRight(strings.TrimSpace(cfg.IssuerURL), "/")
+	if issuer == "" {
+		return &EntraProvider{Enabled: false}, errors.New("oidc: issuer_url is required for generic OIDC")
+	}
+
+	provider, err := oidc.NewProvider(ctx, issuer)
+	if err != nil {
+		return &EntraProvider{Enabled: false}, fmt.Errorf("oidc: discovery failed for issuer %s: %w", issuer, err)
+	}
+
+	verifier := provider.Verifier(&oidc.Config{ClientID: cfg.ClientID})
+
+	oauth2Cfg := &oauth2.Config{
+		ClientID:     cfg.ClientID,
+		ClientSecret: cfg.ClientSecret,
+		Endpoint:     provider.Endpoint(),
+		RedirectURL:  cfg.RedirectURI,
+		Scopes:       cfg.EffectiveScopes(),
 	}
 
 	return &EntraProvider{
@@ -217,10 +260,11 @@ func (p *EntraProvider) ExchangeCode(ctx context.Context, code, codeVerifier str
 		return nil, fmt.Errorf("entra: failed to parse id_token claims: %w", err)
 	}
 
-	// Defense-in-depth: verify the token's tenant matches the configured tenant.
-	// Microsoft already does this via the issuer check inside Verifier, but
-	// belt-and-braces protects against a future config/provider mix-up.
-	if p.Config.TenantID != "" && claims.TenantID != "" && claims.TenantID != p.Config.TenantID {
+	// Defense-in-depth tenant validation — only meaningful for Entra. Generic
+	// OIDC providers have no `tid` claim. For Entra: belt-and-braces against
+	// a future config/provider mix-up; Microsoft already enforces this via
+	// the issuer check inside Verifier.
+	if p.Config.IsEntra() && p.Config.TenantID != "" && claims.TenantID != "" && claims.TenantID != p.Config.TenantID {
 		return nil, fmt.Errorf("entra: tenant mismatch: got %s, expected %s", claims.TenantID, p.Config.TenantID)
 	}
 
