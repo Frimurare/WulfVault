@@ -8,6 +8,7 @@ package email
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
@@ -551,10 +552,16 @@ Do not reply to this email.`, companyName, adminName, adminEmail, companyName, e
 }
 
 // SendEntraInviteEmail sends an invitation to a user whose account was created
-// with IdentityProvider="entra". They click the link, land on /login with email
-// pre-filled, sign in with Microsoft, and ResolveOrProvisionUser binds the
-// freshly issued ExternalID to the pre-created row.
-func SendEntraInviteEmail(email, name, serverURL, companyName, adminName, adminEmail string) error {
+// with IdentityProvider="entra" / "oidc". They click the link, land on /login
+// with email pre-filled, sign in with the configured SSO provider (Microsoft,
+// Google, Okta, etc), and ResolveOrProvisionUser binds the freshly issued
+// ExternalID to the pre-created row.
+//
+// providerDisplayName: human-readable provider name shown in subject and body
+// ("Microsoft", "Google", "SSO" — whatever the admin configured). Pass "" to
+// fall back to the generic "your SSO provider" wording. (Function name kept
+// for v7.0 caller compatibility; it is provider-agnostic since v7.1.)
+func SendEntraInviteEmail(email, name, providerDisplayName, serverURL, companyName, adminName, adminEmail string) error {
 	loginLink := fmt.Sprintf("%s/login?invite=%s", serverURL, url.QueryEscape(email))
 
 	displayName := name
@@ -562,7 +569,18 @@ func SendEntraInviteEmail(email, name, serverURL, companyName, adminName, adminE
 		displayName = email
 	}
 
-	subject := fmt.Sprintf("You're invited to %s — sign in with Microsoft", companyName)
+	providerName := strings.TrimSpace(providerDisplayName)
+	if providerName == "" {
+		providerName = "your SSO provider"
+	}
+	// The 4-tile logo is Microsoft-specific. For non-Entra providers we omit it.
+	isEntra := strings.EqualFold(providerName, "Microsoft")
+	logoSpan := ""
+	if isEntra {
+		logoSpan = `<span class="ms-logo"></span>`
+	}
+
+	subject := fmt.Sprintf("You're invited to %s — sign in with %s", companyName, providerName)
 
 	htmlBody := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -590,19 +608,19 @@ func SendEntraInviteEmail(email, name, serverURL, companyName, adminName, adminE
 	<div class="container">
 		<div class="header">
 			<h1>You're invited to %s</h1>
-			<p>Sign in with your Microsoft account to get started</p>
+			<p>Sign in with your %s account to get started</p>
 		</div>
 		<div class="content">
 			<div class="invite-box">
 				<h2>Hi %s,</h2>
 				<p><strong>%s</strong> (%s) has created an account for you on <strong>%s</strong>.</p>
-				<p>This account uses <strong>Microsoft Entra ID</strong> (single sign-on) — you'll use your existing Microsoft work or school account to sign in. No new password to remember.</p>
+				<p>This account uses <strong>%s single sign-on</strong> — you'll use your existing %s credentials to sign in. No new password to remember.</p>
 			</div>
 
 			<div class="action-box">
 				<h2 style="color: #004155; margin-bottom: 15px;">Activate your account</h2>
-				<p style="margin-bottom: 25px;">Click below to sign in. You'll be redirected to Microsoft to authenticate, then back here.</p>
-				<a href="%s" class="button"><span class="ms-logo"></span>Sign in with Microsoft</a>
+				<p style="margin-bottom: 25px;">Click below to sign in. You'll be redirected to %s to authenticate, then back here.</p>
+				<a href="%s" class="button">%sSign in with %s</a>
 				<p style="font-size: 13px; color: #999; margin-top: 20px;">First sign-in activates your account automatically.</p>
 			</div>
 
@@ -620,7 +638,11 @@ func SendEntraInviteEmail(email, name, serverURL, companyName, adminName, adminE
 		</div>
 	</div>
 </body>
-</html>`, companyName, displayName, adminName, adminEmail, companyName, loginLink, email, loginLink, companyName)
+</html>`,
+		companyName, providerName,
+		displayName, adminName, adminEmail, companyName, providerName, providerName,
+		providerName, loginLink, logoSpan, providerName,
+		email, loginLink, companyName)
 
 	textBody := fmt.Sprintf(`You're invited to %s
 
@@ -628,18 +650,18 @@ Hi %s,
 
 %s (%s) has created an account for you on %s.
 
-This account uses Microsoft Entra ID (single sign-on). You'll use your existing Microsoft work or school account — no new password to remember.
+This account uses %s single sign-on. You'll use your existing %s credentials — no new password to remember.
 
 Your login email: %s
 
-Activate your account by clicking this link and signing in with Microsoft:
+Activate your account by clicking this link and signing in with %s:
 %s
 
 First sign-in activates your account automatically.
 
 ---
 This is an automated message from %s.
-Do not reply to this email.`, companyName, displayName, adminName, adminEmail, companyName, email, loginLink, companyName)
+Do not reply to this email.`, companyName, displayName, adminName, adminEmail, companyName, providerName, providerName, email, providerName, loginLink, companyName)
 
 	provider, err := GetActiveProvider(database.DB)
 	if err != nil {

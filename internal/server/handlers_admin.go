@@ -528,13 +528,19 @@ func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, 
 
 // sendEntraInviteMail centralises the URL-correction + admin-context lookup
 // so both create-and-invite and resend-invite share the exact same send path.
+// v7.1: resolves the configured provider display name so the email mentions
+// the right brand (Microsoft / Google / Okta / etc).
 func sendEntraInviteMail(s *Server, admin *models.User, name, email string) error {
 	companyName := s.config.CompanyName
 	emailServerURL := s.config.ServerURL
 	if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
 		emailServerURL = "http://" + emailServerURL[8:]
 	}
-	return emailpkg.SendEntraInviteEmail(email, name, emailServerURL, companyName, admin.Name, admin.Email)
+	providerName := ""
+	if ssoCfg, _ := auth.LoadIdentityProviderConfig(database.DB); ssoCfg != nil {
+		providerName = ssoCfg.EffectiveDisplayName()
+	}
+	return emailpkg.SendEntraInviteEmail(email, name, providerName, emailServerURL, companyName, admin.Name, admin.Email)
 }
 
 // handleAdminUserResendInvite re-sends the Entra invitation for a user who
