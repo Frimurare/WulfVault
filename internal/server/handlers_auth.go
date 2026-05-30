@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -235,6 +236,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 // renderLoginPage renders the login page
 func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	inviteEmail := template.HTMLEscapeString(r.URL.Query().Get("invite"))
 	html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -401,11 +403,24 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
 		html += `<div class="error">` + errorMsg + `</div>`
 	}
 
+	if inviteEmail != "" {
+		html += `<div style="background: #e8f4f8; border: 1px solid #b3e0ed; color: #0c5460; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
+            <strong>You've been invited.</strong> Sign in with Microsoft below to activate your account.
+        </div>`
+	}
+
+	emailValueAttr := ""
+	emailAutofocus := " autofocus"
+	if inviteEmail != "" {
+		emailValueAttr = ` value="` + inviteEmail + `"`
+		emailAutofocus = "" // focus the Microsoft button area instead, since password is irrelevant for invited users
+	}
+
 	html += `
         <form method="POST" action="/login">
             <div class="form-group">
                 <label for="email">Email or Username</label>
-                <input type="text" id="email" name="email" required autofocus>
+                <input type="text" id="email" name="email"` + emailValueAttr + ` required` + emailAutofocus + `>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
