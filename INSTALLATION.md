@@ -1,6 +1,7 @@
 # WulfVault - Installation Guide
 
-Complete guide to installing and deploying WulfVault file sharing system.
+Complete guide to installing and deploying the WulfVault file sharing system
+(v7.1.0 "Aurora").
 
 ## Quick Start (Docker - Recommended)
 
@@ -171,8 +172,8 @@ certbot --nginx -d files.yourdomain.com
 ## Manual Installation (Binary)
 
 ### Prerequisites
-- Go 1.21+
-- SQLite3
+- Go 1.23+ (matches the Docker build image)
+- SQLite (pure-Go `modernc.org/sqlite` driver, bundled — no separate install needed)
 - Linux/Windows/macOS
 
 ### Build from Source
@@ -245,35 +246,32 @@ certbot --nginx -d files.yourdomain.com
 | `UPLOADS_DIR` | File storage directory | `./uploads` |
 | `ADMIN_EMAIL` | Initial admin email | `admin@localhost` |
 | `ADMIN_PASSWORD` | Initial admin password | Random (shown at setup) |
-| `MAX_FILE_SIZE_MB` | Maximum upload size (MB) | `2000` |
-| `DEFAULT_QUOTA_MB` | Default user quota (MB) | `5000` |
+> Process startup reads `PORT`, `DATA_DIR`, `UPLOADS_DIR`, `SERVER_URL`,
+> `ADMIN_EMAIL`, and `ADMIN_PASSWORD` (see `cmd/server/main.go`). Limits such as
+> maximum upload size and default per-user quota, plus branding, SMTP, retention,
+> and SSO, are configured in the admin UI under **Settings** and stored in the
+> database — they are not environment variables.
 
-### Configuration File
+> The SQLite database is always created as `wulfvault.db` inside the data
+> directory (`DATA_DIR`). Secrets (OIDC client secret, email API keys) are
+> encrypted at rest with AES-256-GCM using a per-install master key stored in
+> the Configuration table on first run — back up the database to preserve it.
 
-Located at `data/config.json`:
+### Single Sign-On (SSO)
 
-```json
-{
-  "serverUrl": "http://localhost:8080",
-  "port": "8080",
-  "dataDir": "./data",
-  "uploadsDir": "./uploads",
-  "maxFileSizeMB": 2000,
-  "defaultQuotaMB": 5000,
-  "saveIp": false,
-  "branding": {
-    "companyName": "WulfVault",
-    "primaryColor": "#0066CC",
-    "secondaryColor": "#333333",
-    "logoPath": "",
-    "logoBase64": "",
-    "faviconPath": "",
-    "footerText": "Secure File Sharing",
-    "welcomeMessage": "Welcome to WulfVault - Secure File Sharing",
-    "customCSS": ""
-  }
-}
-```
+Entra ID / OIDC single sign-on is **not** configured via environment variables.
+An administrator sets it up in the web UI under **Settings → Identity
+Providers**. See [docs/ENTRA_ID_SSO_SETUP.md](docs/ENTRA_ID_SSO_SETUP.md) and
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+
+### Application Settings
+
+Beyond the startup environment variables above, all application settings
+(upload limits, default quota, branding, SMTP/email, retention windows, and
+SSO) are managed at runtime through the admin **Settings** UI and persisted in
+the database (`wulfvault.db`). There is no hand-edited config file to maintain.
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full reference.
 
 ---
 

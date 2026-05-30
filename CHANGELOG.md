@@ -31,6 +31,13 @@ Keycloak, Authelia, Auth0 or any OIDC-compliant issuer.
 - **Inline issuer help** in the admin UI listing common provider issuer
   URLs (Google, Okta, Keycloak, Authelia, Auth0).
 
+### Notes
+
+- **Download accounts are unaffected by SSO.** Recipient-facing download
+  accounts remain local password credentials regardless of whether an
+  identity provider is configured — they never authenticate against the
+  external IdP. SSO governs interactive staff/admin login only.
+
 ### Changed
 
 - Version bumped from `7.0.0` to `7.1.0`.
@@ -108,7 +115,7 @@ accounts toward identity federation.
 - Local-account collision check in `ResolveOrProvisionUser` still applies —
   inviting an email that already has a local account is rejected at the
   admin layer with a clear error.
-- Evidence Courier compatibility contract preserved (verified live):
+- API-client compatibility contract preserved (verified live):
   `/login` returns 200 on bad credentials (re-render); `/api/whoami` returns
   401 (not 404); `/upload` and `/file/delete` return 3xx on unauth.
 

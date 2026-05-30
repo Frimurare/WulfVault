@@ -1,4 +1,4 @@
-# WulfVault User Guide v6.1.9 BloodMoon 🌙
+# WulfVault User Guide v7.1.0 Aurora 🌅
 
 **Complete Guide for Administrators and Users**
 
@@ -18,10 +18,11 @@
 10. [Branding & Customization](#branding--customization)
 11. [Email Configuration](#email-configuration)
 12. [Logging & Monitoring](#logging--monitoring)
-13. [Security Features](#security-features)
-14. [File Request Portals](#file-request-portals)
-15. [Troubleshooting](#troubleshooting)
-16. [Best Practices](#best-practices)
+13. [Single Sign-On (SSO)](#single-sign-on-sso)
+14. [Security Features](#security-features)
+15. [File Request Portals](#file-request-portals)
+16. [Troubleshooting](#troubleshooting)
+17. [Best Practices](#best-practices)
 
 ---
 
@@ -43,6 +44,7 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
 - ✅ **Download tracking** - Know exactly who downloaded what and when
 - ✅ **Audit logging** - Comprehensive audit trail for compliance (GDPR, SOC 2)
 - ✅ **Two-Factor Authentication** - TOTP-based security
+- ✅ **Single Sign-On (SSO)** - Microsoft Entra ID (Azure AD) and Generic OpenID Connect (Google, Okta, Keycloak, Authelia, Auth0, etc.)
 - ✅ **Email integration** - SMTP or Brevo for sending links
 - ✅ **Branding** - Custom logo, colors, company name
 - ✅ **File requests** - Create upload portals for receiving files
@@ -71,14 +73,56 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
    https://files.yourdomain.com
    ```
 
-2. **Default Admin Credentials** (first-time setup only):
-   - Email: `admin@wulfvault.local`
-   - Password: `WulfVaultAdmin2024!`
+2. **First Admin Account** (created automatically on first start):
+   - On the very first launch (when no users exist) WulfVault creates a single
+     super-admin account.
+   - The email defaults to `admin@localhost`, or whatever you set via the
+     `ADMIN_EMAIL` environment variable.
+   - The password is taken from the `ADMIN_PASSWORD` environment variable. If you
+     do **not** set `ADMIN_PASSWORD`, a random password is generated and printed
+     **once** to the server log/console at startup — copy it immediately.
+   - Best practice: set both `ADMIN_EMAIL` and `ADMIN_PASSWORD` before first start
+     so you control the credentials.
 
 3. **⚠️ CRITICAL SECURITY STEP:**
    - Immediately go to Settings → Change Password
    - Choose a strong, unique password
    - Never share admin credentials
+
+### Signing In
+
+WulfVault supports two sign-in mechanisms. Local accounts are always available
+as the primary mechanism and as a break-glass fallback; Single Sign-On is
+optional and configured by an administrator.
+
+#### Local Account (Email + Password)
+
+1. Go to the login page (`/login`)
+2. Enter your email and password
+3. If Two-Factor Authentication is enabled, enter your 6-digit code (or a backup code)
+
+#### Single Sign-On (Microsoft / OIDC)
+
+If your administrator has enabled SSO, the login page shows an extra
+**"Sign in with …"** button (for example "Sign in with Microsoft").
+
+1. Click the **Sign in with …** button on the login page
+2. You are redirected to your identity provider (Microsoft Entra ID, Google,
+   Okta, Keycloak, etc.) to authenticate
+3. After successful authentication you are redirected back to WulfVault and
+   signed in automatically — admins land on `/admin`, regular users on `/dashboard`
+
+**Notes for users:**
+- SSO uses your existing corporate/organization identity — no separate WulfVault
+  password is needed for SSO accounts.
+- The first time you sign in via SSO, an account may be created automatically
+  (if your admin enabled auto-provisioning and your email domain is allowed).
+- If the SSO button is missing, your administrator has either not configured SSO
+  or has enforced **local accounts only** (see below).
+
+> **Download recipients do not use SSO.** People who only receive files use a
+> separate, password-based **Download Account** that works without any SSO or
+> external identity provider. See the [Download Account Guide](#download-account-guide).
 
 ### User Interface Overview
 
@@ -389,7 +433,7 @@ environment:
 docker logs wulfvault
 
 # Output shows:
-# WulfVault File Sharing System v4.3.4
+# WulfVault File Sharing System v7.1.0 Aurora
 # Server starting on :8080
 # Server URL: https://files.yourdomain.com
 ```
@@ -629,6 +673,14 @@ Recipient clicks link → Creates account → Downloads file
 
 ## Download Account Guide
 
+> **Download Accounts work without SSO or any external identity provider.**
+> They are simple, self-service, email + password accounts created for
+> recipients of authenticated downloads. A recipient never needs a Microsoft
+> account, corporate SSO, or an eID to receive files — they just set a password
+> the first time they access a file that requires authentication. This is
+> separate from the staff sign-in options (local password or SSO) described in
+> [Signing In](#signing-in) and [Single Sign-On (SSO)](#single-sign-on-sso).
+
 ### For Recipients: First-Time Download
 
 1. **Receive download link** via email or other channel
@@ -710,6 +762,7 @@ The Admin Dashboard provides system-wide visibility and control.
 - **Branding** - Customize appearance
 - **Settings** - System configuration
 - **Email Settings** - Configure email providers
+- **Identity Providers** - Configure SSO (Microsoft Entra ID / Generic OIDC) or force local-only accounts
 
 ### Quick Actions
 
@@ -1497,6 +1550,98 @@ SysMonitor logging is designed for minimal performance impact:
 
 ---
 
+## Single Sign-On (SSO)
+
+WulfVault can delegate sign-in to an external identity provider so users log in
+with their existing organization accounts. Two provider types are supported:
+
+- **Microsoft Entra ID (Azure AD)** — special-cased with multi-tenant aliases
+  (`common`, `organizations`, `consumers`) and tenant validation.
+- **Generic OpenID Connect (OIDC)** — works with any OIDC-compliant provider,
+  including Google Workspace, Okta, Keycloak, Authelia, and Auth0.
+
+The SSO flow uses OAuth 2.0 Authorization Code with PKCE and verifies the ID
+token signature against the provider. WulfVault only uses SSO to establish
+identity at sign-in; it does not request delegated API access.
+
+> **Local accounts always remain available** as the primary mechanism and as a
+> break-glass fallback — enabling SSO does not disable password login.
+
+### Configuring SSO
+
+**Access:** Admin → Settings → **Identity Providers** (`/admin/identity-providers`)
+
+1. **Provider type** — choose *Microsoft Entra ID* or *Generic OpenID Connect*.
+   The form shows only the fields relevant to your choice.
+2. **Enable SSO** — turn the feature on.
+3. **Provider display name** (optional) — text shown on the login button
+   ("Sign in with …") and in invite emails. Defaults to "Microsoft" for Entra
+   and "SSO" for Generic OIDC.
+4. **Redirect URI** — must match exactly what is registered at the provider.
+   The default (canonical) path is:
+   ```
+   https://your-instance/auth/oidc/callback
+   ```
+   The legacy path `https://your-instance/auth/entra/callback` also works for
+   existing Entra installs.
+5. **Client ID / Client Secret** — from your provider's app registration. The
+   secret is stored encrypted at rest; leave the secret field blank when saving
+   to keep the existing value.
+6. **Provider-specific field:**
+   - **Entra ID:** *Tenant ID* (Directory ID, or `common` / `organizations` /
+     `consumers` for multi-tenant apps).
+   - **Generic OIDC:** *Issuer URL* (the URL whose
+     `/.well-known/openid-configuration` describes the provider, e.g.
+     `https://accounts.google.com`). Optionally override *Scopes*
+     (default `openid email profile`).
+7. **Provisioning:**
+   - **Auto-provision new users on first sign-in** — when enabled, a WulfVault
+     account is created automatically the first time someone signs in via SSO.
+   - **Default role for new users** — *User* or *Admin* (SuperAdmin cannot be
+     auto-assigned).
+   - **Allowed email domains** — comma-separated allow-list. Leave empty to
+     accept any domain returned by the provider.
+8. Click **Save Settings**.
+
+#### Microsoft Entra ID — quick app registration
+
+1. In **Entra ID → App registrations**, register a new application.
+2. Add a **Web** redirect URI matching the value shown in WulfVault.
+3. Under **Certificates & secrets**, create a client secret and copy its
+   **Value** (not the secret ID).
+4. Note the **Application (client) ID** and **Directory (tenant) ID**.
+5. Paste these into the Identity Providers form and save.
+
+### Forcing Local Accounts Only
+
+Administrators can hard-disable SSO with the **"Force local accounts only"**
+option on the Identity Providers page.
+
+- It **overrides** the "Enable SSO" checkbox.
+- The "Sign in with …" button is **hidden** on the login page.
+- Any SSO callback is **rejected** (the `/auth/...` routes return Not Found).
+
+Use this to guarantee that only password-based local accounts can sign in — for
+example during incident response, or in environments where external IdP login is
+not permitted.
+
+### How SSO Identities Map to Accounts
+
+- An SSO user is stored with an *identity provider* of `entra` (or the configured
+  OIDC provider) and a stable external identifier (the Entra OID, or the OIDC
+  `sub` claim).
+- WulfVault matches the verified email/UPN from the provider to an existing
+  account, or — if auto-provisioning is on and the domain is allowed — creates a
+  new one with the configured default role.
+- SSO sign-in events are recorded in the audit log
+  (`ENTRA_LOGIN_SUCCESS`, `ENTRA_USER_PROVISIONED`, `ENTRA_USER_BOUND`,
+  `ENTRA_LOGIN_REJECTED`).
+
+> **Download Accounts are unaffected by SSO.** They are always password-based and
+> work even when SSO is the only option configured for staff users.
+
+---
+
 ## Security Features
 
 ### Two-Factor Authentication (2FA)
@@ -1685,6 +1830,14 @@ Recipients can:
    - Try backup code
    - Ensure phone time is correct (TOTP is time-based)
    - Contact admin if locked out
+
+5. **SSO ("Sign in with …") issues:**
+   - If the SSO button is missing, your admin has not enabled SSO or has forced
+     local accounts only — use email + password instead.
+   - "Sign-in state did not match" / "took too long": start again from the login
+     page and make sure cookies are enabled.
+   - "Rejected the account": your email domain may not be on the allowed list, or
+     auto-provisioning is off and no account exists yet — contact your admin.
 
 #### Upload Fails
 
@@ -2015,7 +2168,7 @@ Server logs display HTTP status codes to indicate the outcome of requests. Under
 
 ---
 
-**WulfVault v4.3.4**
+**WulfVault v7.1.0 Aurora**
 **Copyright © 2025 Ulf Holmström (Frimurare)**
 **Licensed under AGPL-3.0**
 

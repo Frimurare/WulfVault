@@ -2,9 +2,9 @@
 
 **Version 7.1.0 Aurora** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
 
-> **What's new in 7.1 Aurora:** **Generic OpenID Connect** alongside Microsoft Entra ID. Sign-in works with Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC-compliant issuer — pick the provider type in *Identity Providers* and fill in an issuer URL + client ID/secret. Carries over the v7.0 admin invite flow. See [§ Single Sign-On (Aurora)](#-single-sign-on-aurora) below.
+> **What's new in 7.1 Aurora:** **Generic OpenID Connect** alongside Microsoft Entra ID. Sign-in works with Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC-compliant issuer — pick the provider type in *Identity Providers* and fill in an issuer URL + client ID/secret. SSO is purely additive: local password accounts (including break-glass and service accounts) always remain available. See [§ Single Sign-On (Aurora)](#-single-sign-on-aurora) below.
 
-WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, **Microsoft Entra ID + Generic OpenID Connect SSO with invite-based provisioning**, self-service password management, file request portals, and GDPR-compliant account deletion.
+WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, **Microsoft Entra ID + Generic OpenID Connect SSO (additive to local accounts)**, self-service password management, file request portals, and GDPR-compliant account deletion.
 
 **Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
 
@@ -176,19 +176,15 @@ WulfVault solves this by providing:
   - **Microsoft Entra ID (Azure AD)** — special-cased with multi-tenant aliases (`common` / `organizations` / `consumers`) and explicit `tid`-claim validation.
   - **Generic OpenID Connect** (v7.1) — works with any OIDC-compliant issuer: Google Workspace, Okta, Keycloak, Authelia, Auth0, or your own IdP. Inline help in the admin UI lists the issuer URL pattern for each common provider.
 - **OpenID Connect Authorization Code + PKCE** flow under the hood (`coreos/go-oidc/v3`).
-- **Additive to local accounts** — break-glass and service accounts (e.g. Evidence Courier) keep using password sign-in. Each user is either `local` or `entra`; no silent binding.
-- **Admin invite flow (v7.0):**
-  - On `/admin/users/create`, choose **Account type: Entra ID (invite)**.
-  - System creates a user row pre-bound to SSO (`IdentityProvider="entra"`, empty `ExternalID`) and sends an email with a sign-in link.
-  - User clicks link → lands on `/login?invite=<email>` with the email field pre-filled and a "You've been invited" banner shown.
-  - User clicks **Sign in with {Provider}** → completes OIDC → returns and is automatically bound to the pre-created account (no manual admin step).
-- **Configurable provider display name** — the login button and invite emails say "Sign in with Microsoft" / "Sign in with Google" / "Sign in with SSO" — whatever you configure.
-- **Resend invite** — admin can re-send the invitation at any time from the user list (shows "Invite pending" until first sign-in).
-- **Auto-provisioning** (optional, per setting) for any sign-in within an allow-listed email domain.
-- **Admin escape hatch** `entra_force_local_only` hides the SSO button AND 404s the callback even when SSO is otherwise configured.
-- **Routes:** `/auth/oidc/{login,callback}` (v7.1 canonical). The legacy `/auth/entra/{login,callback}` paths still work, so existing Entra app registrations don't need their redirect URI updated.
-- **Configuration:** Client secret encrypted at rest with AES-256-GCM. One provider configured at a time per install.
-- **Tag:** `v7.1.0` — production-deployed; the customer-facing OIDC round-trip is verified live for Entra. First real-customer Generic OIDC sign-in is the next milestone.
+- **Additive to local accounts** — break-glass and service accounts keep using password sign-in. Every user is either a `local` (password) account or an SSO account; a local password account is never silently re-bound to an external IdP.
+- **Account provisioning** — two ways a user gets an SSO-backed account:
+  - **Pre-created by an admin** — create the user in *Admin → Users* as an SSO account (no local password). On their first successful sign-in, WulfVault binds the external identity (`ExternalID`) to that pre-created row automatically — no further admin step.
+  - **Auto-provisioning** (optional, per setting) — any first-time sign-in whose email domain is on the allow-list creates a user automatically with the configured default role.
+- **Configurable provider display name** — the login button reads "Sign in with Microsoft" / "Sign in with Google" / "Sign in with SSO" — whatever you configure (defaults to "Microsoft" for Entra, "SSO" for Generic OIDC).
+- **Domain allow-list** — restrict sign-in to one or more email domains; empty = any account from the provider is accepted.
+- **Admin escape hatch** `entra_force_local_only` hides the SSO button AND rejects the callback (404) even when SSO is otherwise configured — forces local-only authentication.
+- **Routes:** `/auth/oidc/{login,callback}` (v7.1 canonical) and the legacy `/auth/entra/{login,callback}` paths both work, so existing Entra app registrations don't need their redirect URI updated.
+- **Configuration:** Client secret encrypted at rest with AES-256-GCM. One provider configured at a time per install. Tenant validation (`tid` claim) is enforced for Entra.
 
 ### 🔐 Security & Authentication
 - **Two-Factor Authentication (2FA):**
@@ -320,14 +316,20 @@ WulfVault solves this by providing:
 1. **Download and start WulfVault** (see installation methods below)
 
 2. **Initial admin credentials:**
-   - **Email:** `admin@wulfvault.local`
-   - **Password:** `WulfVaultAdmin2024!`
+   On first run (when no users exist) WulfVault creates a super-admin from the
+   `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables. If they are not set,
+   the email defaults to `admin@localhost` and a **random password is generated
+   and printed once to the server logs** — copy it from the startup output.
 
-   **⚠️ IMPORTANT:** Change the admin password immediately after first login!
+   ```bash
+   ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD='choose-a-strong-password' ./wulfvault
+   ```
+
+   **⚠️ IMPORTANT:** If you used a generated password, change it immediately after first login.
 
 3. **Login to admin panel:**
    - Navigate to `http://your-server:8080/admin`
-   - Use the default credentials above
+   - Use the credentials from step 2
    - Go to Settings and change your password
 
 4. **Configure your instance:**
@@ -414,8 +416,10 @@ go build -o wulfvault cmd/server/main.go
 ```
 
 **Default credentials on first run:**
-- Email: `admin@wulfvault.local`
-- Password: `WulfVaultAdmin2024!`
+- Email: from `ADMIN_EMAIL` (defaults to `admin@localhost`)
+- Password: from `ADMIN_PASSWORD`, or a random password printed to the server logs if unset
+
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first launch to choose your own credentials.
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including Proxmox LXC, reverse proxy configuration, and SSL setup.
 
@@ -435,6 +439,8 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including 
 | `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` (5 GB) |
 | `SESSION_TIMEOUT_HOURS` | Session expiration time | `24` |
 | `TRASH_RETENTION_DAYS` | Days to keep deleted files | `5` |
+| `ADMIN_EMAIL` | Email for the auto-created admin (first run only) | `admin@localhost` |
+| `ADMIN_PASSWORD` | Password for the auto-created admin (first run only) | random (printed to logs) |
 
 ### Admin Settings (Web UI)
 
@@ -526,41 +532,42 @@ Create upload request links for:
 
 ## API
 
-WulfVault provides a **complete REST API** for automation, integrations, and third-party applications.
+WulfVault is primarily a **server-rendered web application**, but it also exposes a JSON **REST API** under `/api/v1/*` for automation and integrations.
 
 **Available APIs:**
-- **Session Verification** - `GET /api/whoami` — check session validity (v6.2.7+)
-- **User Management** - Create, read, update, delete users; manage storage quotas
-- **File Management** - Upload, download, delete files; manage metadata and passwords
-- **Download Accounts** - Manage download-only user accounts
-- **File Requests** - Create and manage upload request portals
-- **Trash Management** - List, restore, and permanently delete files
-- **Teams** - Manage teams, members, and file sharing
-- **Email** - Configure email settings and send file links
-- **Admin/System** - System statistics, branding, and settings
+- **Session Verification** - `GET /api/whoami` — check session validity (added in v6.2.7). Used by integrations such as the Evidence Courier exporter.
+- **User Management** - Create, read, update, delete users; manage storage quotas (`/api/v1/users`)
+- **File Management** - Upload, download, list files (`/api/v1/files`, `/api/v1/upload`, `/api/v1/download/`)
+- **Download Accounts** - Manage download-only accounts (`/api/v1/download-accounts`)
+- **File Requests** - Manage upload request portals (`/api/v1/file-requests`)
+- **Trash Management** - List, restore, permanently delete files (`/api/v1/trash`)
+- **Admin/System** - System statistics, branding, settings (`/api/v1/admin/stats`, `/api/v1/admin/branding`, `/api/v1/admin/settings`)
+- **Logs** - Audit, server and sysmonitor logs, with CSV export (`/api/v1/admin/audit-logs`, etc.)
 
-**Example API calls:**
+Teams are managed via the `/api/teams/*` and `/api/admin/teams/*` endpoints.
+
+**Example API calls** (default port `8080`; adjust to your deployment):
 
 ```bash
 # Verify session (added in v6.2.7)
 curl -b cookies.txt https://wulfvault.example.com/api/whoami
-# → 200 { "authenticated": true, "email": "...", "id": 123, ... }
+# → 200 { "authenticated": true, "id": 123, "email": "...", "name": "...", "role": "user", ... }
 # → 401 { "authenticated": false, "error": "Not authenticated" }
 
 # List all users (admin only)
-curl -b cookies.txt http://localhost:4949/api/v1/users
+curl -b cookies.txt http://localhost:8080/api/v1/users
 
 # Upload a file
 curl -b cookies.txt -F "file=@document.pdf" \
-  http://localhost:4949/api/v1/upload
+  http://localhost:8080/api/v1/upload
 
-# Get system statistics
-curl -b cookies.txt http://localhost:4949/api/v1/admin/stats
+# Get system statistics (admin only)
+curl -b cookies.txt http://localhost:8080/api/v1/admin/stats
 ```
 
-**Authentication:** API requests use session-based authentication via cookies.
+**Authentication:** API requests use session-based authentication via cookies (the `session` cookie set at login).
 
-**Full documentation:** See [API.md](docs/API.md) for complete endpoint reference, request/response examples, and code samples in Python, JavaScript, and cURL.
+**Full documentation:** See [API.md](docs/API.md) for complete endpoint reference and examples.
 
 ---
 
@@ -597,7 +604,7 @@ WulfVault is designed with **privacy-by-design** and **privacy-by-default** prin
 ### Built-in GDPR Features
 
 #### User Rights Implementation
-- ✅ **Right of Access (Art. 15)** - Users can export all their data via `/api/v1/user/export-data`
+- ✅ **Right of Access (Art. 15)** - Users can export all their data from `/settings/account` ("Export My Data")
 - ✅ **Right to Rectification (Art. 16)** - Users can update their profile and password via settings
 - ✅ **Right to Erasure (Art. 17)** - Account deletion with GDPR-compliant soft deletion at `/settings/delete-account`
 - ✅ **Right to Data Portability (Art. 20)** - JSON export of all personal data
@@ -821,9 +828,10 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment and autostart instruc
 
 ### Can't login with default credentials
 
-Make sure you're using:
-- Email: `admin@wulfvault.local`
-- Password: `WulfVaultAdmin2024!`
+The first-run admin account uses the `ADMIN_EMAIL` / `ADMIN_PASSWORD` environment
+variables. If you didn't set them, the email is `admin@localhost` and the password
+was randomly generated and printed to the server logs on first startup — check those
+logs for the generated password.
 
 If it still doesn't work, check the server logs for initialization errors.
 

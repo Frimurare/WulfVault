@@ -1,12 +1,14 @@
 # WulfVault REST API Documentation
 
-**Version:** 6.1.8
+**Version:** 7.1.0 Aurora
 
 WulfVault provides a comprehensive REST API for managing users, files, teams, and system settings. This documentation covers all available endpoints, authentication methods, and usage examples.
 
 ## Table of Contents
 
 - [Authentication](#authentication)
+- [Single Sign-On (SSO / OIDC)](#single-sign-on-sso--oidc)
+- [Integration / Identity (`/api/whoami`)](#integration--identity)
 - [User Management API](#user-management-api)
 - [File Management API](#file-management-api)
 - [Download Accounts API](#download-accounts-api)
@@ -15,6 +17,8 @@ WulfVault provides a comprehensive REST API for managing users, files, teams, an
 - [Teams API](#teams-api)
 - [Email API](#email-api)
 - [Admin/System API](#adminsystem-api)
+- [Audit & Logging API](#audit--logging-api)
+- [GDPR Compliance API](#gdpr-compliance-api)
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
 
@@ -26,23 +30,152 @@ WulfVault uses session-based authentication via cookies. To authenticate API req
 2. The server sets a `session` cookie that's automatically included in subsequent requests
 3. For programmatic access, include the session cookie in your requests
 
+Two authenticated principals exist:
+
+- **User accounts** — full web/admin users (the `session` cookie covers all
+  `/api/v1/*`, `/api/teams/*`, `/upload`, `/files`, admin routes, etc.).
+- **Download accounts** — limited recipients with their own session
+  (`/download/*` routes). They authenticate the same way but only reach the
+  download-portal endpoints.
+
 ### Example: Login and API Call
 
 ```bash
 # Login and save cookies
-curl -c cookies.txt -X POST http://localhost:4949/login \
+curl -c cookies.txt -X POST http://localhost:8080/login \
   -d "email=admin@wulfvault.local" \
   -d "password=your_password"
 
 # Use the session cookie for API calls
-curl -b cookies.txt http://localhost:4949/api/v1/users
+curl -b cookies.txt http://localhost:8080/api/v1/users
 ```
 
 ### Authorization Levels
 
 - **Public**: No authentication required
-- **Authenticated**: Requires valid session cookie
-- **Admin**: Requires valid session cookie + admin privileges
+- **Authenticated**: Requires valid user session cookie
+- **Download account**: Requires a valid download-account session cookie
+- **Admin**: Requires valid user session cookie + admin privileges
+
+## Single Sign-On (SSO / OIDC)
+
+Since v7.0 WulfVault supports external single sign-on via OpenID Connect.
+v7.1 ("Aurora") generalises this from Microsoft-only to **any OIDC-compliant
+provider** (Microsoft Entra ID, Google Workspace, Okta, Keycloak, Authelia,
+Auth0, …). SSO is configured by an admin under **Server → Identity Providers**
+(see [Update Identity Provider Settings](#update-identity-provider-settings)).
+
+Local password accounts always remain available as the primary mechanism and
+as a break-glass fallback. The SSO sign-in button only appears on `/login`
+when SSO is enabled and `force_local_only` is off.
+
+### SSO Login (start flow)
+
+```http
+GET /auth/oidc/login
+GET /auth/entra/login   # legacy alias, identical behaviour
+```
+
+**Authorization:** Public
+**Behaviour:** Generates a PKCE pair + CSRF `state`, sets short-lived
+`entra_state` / `entra_pkce` cookies (path `/auth/`, 10 min), then `303`
+redirects to the provider's authorize endpoint. Returns **404** if SSO is
+disabled or `force_local_only` is set.
+
+> The `/auth/entra/*` paths are the original v7.0 routes, kept so existing
+> Entra app registrations don't have to change their redirect URI. The
+> `/auth/oidc/*` paths are the v7.1 canonical routes and are byte-for-byte
+> equivalent.
+
+### SSO Callback (finish flow)
+
+```http
+GET /auth/oidc/callback?code={code}&state={state}
+GET /auth/entra/callback?code={code}&state={state}   # legacy alias
+```
+
+**Authorization:** Public (validated by `state` + PKCE + ID-token verification)
+**Behaviour:** Validates `state` against the cookie, exchanges the code,
+verifies the ID token, then resolves/provisions the user and creates a 24-hour
+`session` cookie. On success `303` redirects to `/admin` (admins) or
+`/dashboard`. On any error it renders a branded HTML error page (HTTP 400).
+Returns **404** if SSO is disabled or `force_local_only` is set.
+
+Audit-log actions emitted: `ENTRA_LOGIN_SUCCESS`, `ENTRA_USER_PROVISIONED`,
+`ENTRA_USER_BOUND`, `ENTRA_LOGIN_REJECTED`.
+
+### Invite-based provisioning
+
+Admins can pre-create an SSO (Entra/OIDC) user via
+[Create User](#create-user) with an invite account type; this sends an invite
+email pointing to `/login?invite=<email>`. The invite is **not a credential**
+— activation requires a successful sign-in against the configured provider.
+Use [Resend Invite](#resend-invite) to re-send it.
+
+## Integration / Identity
+
+Endpoints intended for companion products and automation. The **Evidence
+Courier** companion product (and any similar integration) uses `/api/whoami`
+to verify credentials and discover the account type before uploading.
+
+### Who Am I
+
+```http
+GET /api/whoami
+```
+
+**Authorization:** Public endpoint that performs its own session check against
+the user `session` cookie — returns JSON either way (it never 404s, so
+integrations can safely probe it). It resolves **user accounts**; download
+accounts are not reported here.
+
+**Response (authenticated user, HTTP 200):**
+
+```json
+{
+  "authenticated": true,
+  "id": 42,
+  "email": "user@example.com",
+  "name": "Jane Doe",
+  "role": "user",
+  "storage_used_mb": 42,
+  "storage_quota_mb": 1000,
+  "server_version": "7.1.0 Aurora",
+  "two_factor_enabled": false
+}
+```
+
+`role` is `"admin"` for admin/super-admin users, otherwise `"user"`.
+
+**Response (no / expired session, HTTP 401):**
+
+```json
+{
+  "authenticated": false,
+  "error": "Not authenticated"
+}
+```
+
+> Integration auth contract (verified live and guarded by the changelog):
+> `/login` returns **200** on bad credentials (re-renders the form);
+> `/api/whoami` returns **401** (never 404) when unauthenticated; `/upload`
+> and `/file/delete` return **3xx** redirects when unauthenticated.
+
+### Health Check
+
+```http
+GET /health
+```
+
+**Authorization:** Public
+**Response (HTTP 200):**
+
+```json
+{
+  "status": "healthy",
+  "version": "7.1.0 Aurora"
+}
+```
 
 ## User Management API
 
@@ -442,6 +575,61 @@ POST /api/v1/upload
   "splashUrl": "https://vault.example.com/s/abc123xyz"
 }
 ```
+
+> `/api/v1/upload` (and the equivalent `/upload`) is the single-request legacy
+> endpoint and remains fully supported for API clients and integrations. For
+> very large files the web UI uses the chunked upload endpoints below.
+
+### Chunked Upload
+
+Three-step resumable upload for large files. All three steps require an
+authenticated user session.
+
+**1. Initialise**
+
+```http
+POST /api/upload/init
+```
+
+**Authorization:** Authenticated
+**Content-Type:** application/json
+**Request Body:**
+
+```json
+{
+  "filename": "big-video.mkv",
+  "total_size": 5368709120,
+  "metadata": { "send_to_email": "recipient@example.com" }
+}
+```
+
+**Response:**
+
+```json
+{
+  "upload_id": "generated-upload-id"
+}
+```
+
+**2. Upload each chunk**
+
+```http
+POST /api/upload/chunk?upload_id={id}&chunk_index={n}
+```
+
+**Authorization:** Authenticated
+**Query Parameters:** `upload_id`, `chunk_index` (0-based)
+**Body:** raw bytes of the chunk
+
+**3. Complete**
+
+```http
+POST /api/upload/complete?upload_id={id}
+```
+
+**Authorization:** Authenticated
+**Query Parameters:** `upload_id` — reassembles the chunks into the final file
+and (if `metadata.send_to_email` was provided at init) sends the notification.
 
 ### Download File
 
@@ -1241,6 +1429,56 @@ PUT /api/v1/files/{id}
 }
 ```
 
+### Identity Providers (SSO) Settings
+
+Admin UI + form handler for external SSO configuration (Microsoft Entra ID or
+Generic OIDC). New in v7.0, generalised to any OIDC provider in v7.1. This is a
+server-rendered admin page, not a JSON API.
+
+```http
+GET  /admin/identity-providers
+POST /admin/identity-providers
+```
+
+**Authorization:** Admin
+**Content type:** HTML page (GET) / `application/x-www-form-urlencoded` (POST).
+
+**POST form fields:**
+
+| Field | Description |
+|-------|-------------|
+| `provider_type` | `entra` or `generic_oidc` |
+| `enabled` | `on` to enable SSO |
+| `force_local_only` | `on` to hide the SSO button and 404 the callback |
+| `provider_display_name` | Button/email label (e.g. "Microsoft", "Google", "SSO") |
+| `tenant_id` | Entra tenant ID (or `common`/`organizations`/`consumers`) |
+| `issuer_url` | OIDC issuer URL (Generic OIDC only) |
+| `scopes` | Space-separated OIDC scopes (Generic OIDC; default `openid email profile`) |
+| `client_id` | OAuth/OIDC client ID |
+| `client_secret` | Client secret (stored encrypted; blank = keep existing) |
+| `redirect_uri` | Must match the provider registration; defaults to `<server>/auth/oidc/callback` |
+| `auto_provision` | `on` to create users on first sign-in |
+| `default_role` | `2`=User, `1`=Admin (SuperAdmin cannot be auto-assigned) |
+| `allowed_domains` | Comma-separated allowed email domains (empty = any) |
+
+Emits audit-log action `IDENTITY_PROVIDER_UPDATED`.
+
+### Resend Invite
+
+Re-sends the SSO invite email to a pending Entra/OIDC user (one with no bound
+external identity yet).
+
+```http
+POST /admin/users/resend-invite
+```
+
+**Authorization:** Admin
+**Content-Type:** application/x-www-form-urlencoded
+**Form Fields:**
+- `id`: numeric user ID of the pending invite user (Entra-provider users only)
+
+**Response:** success/error JSON. Emits audit-log action `ENTRA_INVITE_RESENT`.
+
 ### Get System Settings
 
 ```http
@@ -1255,7 +1493,7 @@ GET /api/v1/admin/settings
   "success": true,
   "settings": {
     "serverUrl": "https://vault.example.com",
-    "port": "4949",
+    "port": "8080",
     "companyName": "WulfVault",
     "maxUploadSizeMB": 5120,
     "defaultQuotaMB": 10240,
@@ -1349,10 +1587,10 @@ login_data = {
     'email': 'admin@wulfvault.local',
     'password': 'your_password'
 }
-session.post('http://localhost:4949/login', data=login_data)
+session.post('http://localhost:8080/login', data=login_data)
 
 # List users
-response = session.get('http://localhost:4949/api/v1/users')
+response = session.get('http://localhost:8080/api/v1/users')
 users = response.json()
 print(f"Total users: {users['count']}")
 
@@ -1365,7 +1603,7 @@ new_user = {
     'storageQuotaMB': 10240,
     'isActive': True
 }
-response = session.post('http://localhost:4949/api/v1/users', json=new_user)
+response = session.post('http://localhost:8080/api/v1/users', json=new_user)
 print(response.json())
 
 # Upload file
@@ -1374,7 +1612,7 @@ data = {
     'requireAuth': 'true',
     'downloadsRemaining': '100'
 }
-response = session.post('http://localhost:4949/api/v1/upload', files=files, data=data)
+response = session.post('http://localhost:8080/api/v1/upload', files=files, data=data)
 print(response.json())
 ```
 
@@ -1385,7 +1623,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 
-const BASE_URL = 'http://localhost:4949';
+const BASE_URL = 'http://localhost:8080';
 const axiosInstance = axios.create({
   withCredentials: true,
   baseURL: BASE_URL
@@ -1452,15 +1690,15 @@ async function uploadFile(filePath) {
 #!/bin/bash
 
 # Login and save cookies
-curl -c cookies.txt -X POST http://localhost:4949/login \
+curl -c cookies.txt -X POST http://localhost:8080/login \
   -d "email=admin@wulfvault.local" \
   -d "password=your_password"
 
 # List users
-curl -b cookies.txt http://localhost:4949/api/v1/users | jq
+curl -b cookies.txt http://localhost:8080/api/v1/users | jq
 
 # Create user
-curl -b cookies.txt -X POST http://localhost:4949/api/v1/users \
+curl -b cookies.txt -X POST http://localhost:8080/api/v1/users \
   -H "Content-Type: application/json" \
   -d '{
     "name": "API User",
@@ -1472,13 +1710,13 @@ curl -b cookies.txt -X POST http://localhost:4949/api/v1/users \
   }' | jq
 
 # Upload file
-curl -b cookies.txt -X POST http://localhost:4949/api/v1/upload \
+curl -b cookies.txt -X POST http://localhost:8080/api/v1/upload \
   -F "file=@document.pdf" \
   -F "requireAuth=true" \
   -F "downloadsRemaining=100" | jq
 
 # Get system stats
-curl -b cookies.txt http://localhost:4949/api/v1/admin/stats | jq
+curl -b cookies.txt http://localhost:8080/api/v1/admin/stats | jq
 ```
 
 ## Support
@@ -1486,6 +1724,7 @@ curl -b cookies.txt http://localhost:4949/api/v1/admin/stats | jq
 For issues, questions, or feature requests, please visit:
 - GitHub: https://github.com/Frimurare/WulfVault
 - Documentation: See README.md and USER_GUIDE.md
+- Email: ulf@manvarg.se
 
 ## License
 
