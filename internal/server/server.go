@@ -121,6 +121,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/admin/users/create", s.requireAdmin(s.handleAdminUserCreate))
 	mux.HandleFunc("/admin/users/edit", s.requireAdmin(s.handleAdminUserEdit))
 	mux.HandleFunc("/admin/users/delete", s.requireAdmin(s.handleAdminUserDelete))
+	mux.HandleFunc("/admin/users/resend-invite", s.requireAdmin(s.handleAdminUserResendInvite))
 	mux.HandleFunc("/admin/download-accounts/toggle", s.requireAdmin(s.handleAdminToggleDownloadAccount))
 	mux.HandleFunc("/admin/download-accounts/create", s.requireAdmin(s.handleAdminCreateDownloadAccount))
 	mux.HandleFunc("/admin/download-accounts/edit", s.requireAdmin(s.handleAdminEditDownloadAccount))
