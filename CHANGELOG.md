@@ -191,7 +191,7 @@ accounts toward identity federation.
 
 - **`GET /api/whoami` — dedicated session verification endpoint**
   New JSON endpoint for API clients and integrations (notably
-  Prudencia Evidence Courier) to reliably verify that a session
+  external API client) to reliably verify that a session
   cookie is valid, without any side effects.
 
   Before this endpoint existed, clients had to probe `/login` or
@@ -233,7 +233,7 @@ accounts toward identity federation.
 
 ### 🚨 CRITICAL BUGFIX — Web UI uploads dropped notification emails for 4 months
 
-For ~4 months (since v6.0.0 in December 2025), files uploaded via the WulfVault **web UI dashboard** never triggered notification emails to recipients. The legacy `POST /upload` endpoint (used by API clients like Prudencia Evidence Courier) continued to work correctly, which is why the bug remained hidden.
+For ~4 months (since v6.0.0 in December 2025), files uploaded via the WulfVault **web UI dashboard** never triggered notification emails to recipients. The legacy `POST /upload` endpoint (used by API clients like external API client) continued to work correctly, which is why the bug remained hidden.
 
 **Three separate issues conspired to cause this:**
 

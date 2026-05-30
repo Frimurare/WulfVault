@@ -1035,7 +1035,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
             <h2 id="modalTitle">Create Team</h2>
             <div class="form-group">
                 <label for="teamName">Team Name *</label>
-                <input type="text" id="teamName" placeholder="e.g., Prudencia" required>
+                <input type="text" id="teamName" placeholder="e.g., Engineering" required>
             </div>
             <div class="form-group">
                 <label for="teamDescription">Description</label>

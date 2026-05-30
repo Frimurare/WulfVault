@@ -50,8 +50,8 @@ Set-Cookie: session=...; Expires=Mon, 15 Dec 2025; HttpOnly; SameSite=Lax
   "users": [
     {
       "id": 3,
-      "name": "Ulf Holmström Admin",
-      "email": "ulf@example.com",
+      "name": "Test Admin",
+      "email": "admin@example.com",
       "permissions": 255,
       "userLevel": 1,
       "storageQuotaMB": 250000,
@@ -303,7 +303,7 @@ Current API is versioned as `/api/v1/` which is excellent practice. Continue thi
 ## Test Credentials Used
 
 ```
-Email: ulf@example.com
+Email: admin@example.com
 Role: Admin (UserLevel 1)
 Permissions: 255 (Full)
 ```

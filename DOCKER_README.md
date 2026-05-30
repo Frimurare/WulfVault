@@ -198,7 +198,7 @@ Currently supports `amd64` (x86_64) architecture.
 
 The v6.2 series shipped a series of email-pipeline fixes and added a
 dedicated session-verification endpoint for API integrations such as
-Prudencia Evidence Courier.
+external API client.
 
 ### v6.2.9 — Mailgun column migration on fresh installs
 
@@ -238,7 +238,7 @@ effects:
 
 `Cache-Control: no-store` ensures fresh auth checks. Replaces the
 previous practice of probing `/login` or `/dashboard` and HTML-scraping
-the response. **Required by Prudencia Evidence Courier v1.0.6+.**
+the response. **Required by external API client v1.0.6+.**
 
 ### v6.2.6 — CRITICAL: web-UI uploads dropped notification emails for 4 months
 

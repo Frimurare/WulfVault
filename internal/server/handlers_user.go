@@ -32,7 +32,7 @@ func (s *Server) handleUserDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleWhoAmI returns JSON with the currently authenticated user's info.
-// Designed for API clients (like Prudencia Evidence Courier) to reliably
+// Designed for API clients (like external API client) to reliably
 // verify that their session cookie is valid without any side effects.
 // Added in v6.2.7.
 //

@@ -322,7 +322,7 @@ func (s *Server) renderIdentityProviders(w http.ResponseWriter, success, errMsg 
                     </div>
                     <div class="form-group">
                         <label for="allowed_domains">Allowed email domains</label>
-                        <input type="text" id="allowed_domains" name="allowed_domains" value="` + esc(allowedDomainsStr) + `" placeholder="contoso.com, example.com">
+                        <input type="text" id="allowed_domains" name="allowed_domains" value="` + esc(allowedDomainsStr) + `" placeholder="example.com, partner.example.com">
                         <div class="help">Comma-separated. Empty = any tenant member allowed.</div>
                     </div>
                 </div>

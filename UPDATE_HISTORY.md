@@ -9,7 +9,7 @@ This document tracks major updates and feature releases for WulfVault.
 ### New API Endpoint: `GET /api/whoami`
 
 Added a dedicated JSON endpoint for session verification, designed for
-programmatic API clients such as the Prudencia Evidence Courier Smart
+programmatic API clients such as the external API client Smart
 Client plugin.
 
 Before `/api/whoami`, clients that wanted to verify a session cookie had
