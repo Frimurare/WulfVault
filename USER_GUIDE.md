@@ -39,7 +39,7 @@ WulfVault is a professional-grade, self-hosted file sharing platform designed fo
 
 ### Key Features Overview
 
-- ✅ **Large file support** - Up to 5GB+ per file (configurable)
+- ✅ **Large file support** - No practical per-file size limit, fully configurable (chunked uploads)
 - ✅ **Multi-user system** - Admins, users, and download accounts
 - ✅ **Download tracking** - Know exactly who downloaded what and when
 - ✅ **Audit logging** - Comprehensive audit trail for compliance (GDPR, SOC 2)
@@ -164,7 +164,7 @@ All configuration can be set via environment variables. These are the primary wa
 | `PORT` | Port the server listens on | `8080` | ✅ Yes |
 | `DATA_DIR` | Directory for database storage | `./data` | ✅ Yes |
 | `UPLOADS_DIR` | Directory for uploaded files | `./uploads` | ✅ Yes |
-| `MAX_FILE_SIZE_MB` | Maximum file size in megabytes | `2000` (2 GB) | ❌ No* |
+| `MAX_FILE_SIZE_MB` | Maximum file size in megabytes | `5000` (5 GB) | ❌ No* |
 | `DEFAULT_QUOTA_MB` | Default storage quota for new users | `5000` (5 GB) | ❌ No* |
 | `SESSION_TIMEOUT_HOURS` | Session expiration time in hours | `24` | ✅ Yes |
 | `TRASH_RETENTION_DAYS` | Days to keep deleted files in trash | `5` | ❌ No* |
@@ -234,7 +234,7 @@ services:
       PORT: 8080
       DATA_DIR: /data
       UPLOADS_DIR: /data
-      MAX_FILE_SIZE_MB: 2000          # 2 GB default
+      MAX_FILE_SIZE_MB: 5000          # 5 GB default (no practical upper limit)
       DEFAULT_QUOTA_MB: 5000          # 5 GB default per user
       SESSION_TIMEOUT_HOURS: 24       # 24 hours default
       TRASH_RETENTION_DAYS: 5         # 5 days default
@@ -1846,7 +1846,7 @@ Recipients can:
 **Solutions:**
 1. **Check file size:**
    - Must be under configured limit
-   - Default: 2GB, configurable to 5GB+
+   - Default: 5 GB, configurable with no practical upper limit
 
 2. **Check quota:**
    - Dashboard shows quota usage
@@ -2080,8 +2080,8 @@ Server logs display HTTP status codes to indicate the outcome of requests. Under
 ### File Size Limits
 
 **Default Configuration:**
-- Maximum file size: **2000 MB (2 GB)** - Configurable via `MAX_FILE_SIZE_MB` environment variable
-- Maximum upload size: **2000 MB (2 GB)** - Can be increased up to 5GB+ (tested with large video files)
+- Maximum file size: **5000 MB (5 GB)** default - Configurable via `MAX_FILE_SIZE_MB` environment variable, no practical upper limit
+- Maximum upload size: **5000 MB (5 GB)** default - Configurable with no practical upper limit (chunked uploads, tested with large video surveillance files)
 - Default user quota: **5000 MB (5 GB)** - Configurable per user by admin
 - Total storage: Based on individual user quotas
 

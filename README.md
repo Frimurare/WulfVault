@@ -23,7 +23,7 @@ WulfVault solves this by providing:
 - No per-transfer costs or user limits
 - Complete download tracking with email addresses and timestamps
 - Customizable storage quotas per user
-- Support for files up to 15GB+ (configurable)
+- Support for very large files - no practical size limit, fully configurable
 
 ---
 
@@ -31,7 +31,7 @@ WulfVault solves this by providing:
 
 ### 🚀 File Sharing & Transfer
 - **Drag-and-drop upload interface** - Modern, intuitive file upload experience
-- **Large file support** - Files up to 15GB+ (configurable, tested with video surveillance footage)
+- **Large file support** - No practical upper size limit, fully configurable (chunked uploads, tested with multi-gigabyte video surveillance footage)
 - **Custom chunked upload system (v6.0+):**
   - Automatic file splitting into 25MB chunks for optimal performance (v6.1.0+)
   - Built-in retry logic with exponential backoff (up to 50 attempts per chunk, ~7.5 minutes total) (v6.1.4+)
@@ -435,7 +435,7 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including 
 | `PORT` | Server port | `8080` |
 | `DATA_DIR` | Data directory for database | `./data` |
 | `UPLOADS_DIR` | Directory for uploaded files | `./uploads` |
-| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `2000` (2 GB) |
+| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `5000` (5 GB) |
 | `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` (5 GB) |
 | `SESSION_TIMEOUT_HOURS` | Session expiration time | `24` |
 | `TRASH_RETENTION_DAYS` | Days to keep deleted files | `5` |
@@ -448,7 +448,7 @@ After logging in as admin, configure:
 - **Branding** - Logo, colors, company name
 - **Storage Quotas** - Set custom limits per user (default: 5 GB per user)
 - **Trash Retention** - How long deleted files are kept (default: 5 days, range: 1-365 days)
-- **File Size Limits** - Maximum upload size (default: 2 GB, configurable up to 5GB+)
+- **File Size Limits** - Maximum upload size (default: 5 GB, configurable with no practical upper limit)
 - **Session Timeout** - Login session duration (default: 24 hours)
 - **IP Logging** - Enable/disable IP address tracking (default: disabled)
 
