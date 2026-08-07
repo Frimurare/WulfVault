@@ -444,13 +444,9 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 			// Get branding info
 			companyName := s.config.CompanyName
 
-			// Fix server URL - ensure it uses http:// if running on port 8080 without SSL
+			// The configured server URL is used as-is; the link in the email
+			// must keep the scheme the operator configured.
 			emailServerURL := s.config.ServerURL
-			// Replace https:// with http:// if present (since we don't have SSL on port 8080)
-			if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
-				emailServerURL = "http://" + emailServerURL[8:]
-				log.Printf("Corrected server URL from HTTPS to HTTP for email: %s", emailServerURL)
-			}
 
 			// Send welcome email with admin info
 			if err := emailpkg.SendWelcomeEmail(email, resetToken, emailServerURL, companyName, admin.Name, admin.Email); err != nil {
@@ -532,10 +528,9 @@ func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, 
 // the right brand (Microsoft / Google / Okta / etc).
 func sendEntraInviteMail(s *Server, admin *models.User, name, email string) error {
 	companyName := s.config.CompanyName
+	// The configured server URL is used as-is; the link in the email must keep
+	// the scheme the operator configured.
 	emailServerURL := s.config.ServerURL
-	if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
-		emailServerURL = "http://" + emailServerURL[8:]
-	}
 	providerName := ""
 	if ssoCfg, _ := auth.LoadIdentityProviderConfig(database.DB); ssoCfg != nil {
 		providerName = ssoCfg.EffectiveDisplayName()
