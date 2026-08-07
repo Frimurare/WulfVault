@@ -296,12 +296,18 @@ Test these endpoints before launch:
 GET /api/v1/user/export-data
 Expected: JSON file with all user data
 
-# Test account deletion
-POST /api/v1/gdpr/delete-account
+# Test account deletion (download account, self-service)
+POST /download/delete-account
+Form field: confirmation=DELETE
 Expected: Account soft-deleted and anonymized
 
-# Test audit log export
-GET /api/v1/audit-logs/export
+# Test account deletion (regular user, self-service)
+POST /settings/delete-account
+Form field: confirmation=DELETE
+Expected: Account soft-deleted and anonymized
+
+# Test audit log export (admin only)
+GET /api/v1/admin/audit-logs/export
 Expected: CSV file with activity log
 ```
 

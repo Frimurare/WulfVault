@@ -160,7 +160,7 @@ We retain your personal data only as long as necessary for the purposes outlined
 
 | Data Type | Retention Period | Reason |
 |-----------|------------------|--------|
-| **Account Information** | Until account deletion + 30 days | Contractual necessity, fraud prevention |
+| **Account Information** | Until account deletion + 90 days | Contractual necessity, fraud prevention |
 | **Uploaded Files** | Until you delete them or account is deleted | Service provision |
 | **Audit Logs** | [90 days / YOUR CONFIGURED PERIOD] | Security, compliance, legal defense |
 | **Deleted Accounts** | Email anonymized, audit trail preserved | GDPR compliance (soft deletion) |
@@ -174,7 +174,7 @@ When you delete your account:
 1. Your email is anonymized (replaced with `deleted-user-[ID]@deleted.local`)
 2. Your files are permanently deleted
 3. Your audit trail is preserved (anonymized) for compliance
-4. Your account cannot be recovered after 30 days
+4. Your account cannot be recovered after 90 days
 
 ---
 
@@ -380,7 +380,7 @@ Technical implementation of GDPR-compliant account deletion:
 3. **File Deletion:** All uploaded files permanently removed
 4. **Share Link Invalidation:** All share links disabled
 5. **Audit Trail Preservation:** Activity logs preserved (anonymized) for legal compliance
-6. **Irreversible After:** 30 days (permanent purge from backups)
+6. **Irreversible After:** 90 days (a daily cleanup job permanently removes accounts that have been soft-deleted for 90 days or more)
 
 ---
 

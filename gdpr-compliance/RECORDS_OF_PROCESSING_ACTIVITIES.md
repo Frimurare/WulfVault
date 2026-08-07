@@ -114,11 +114,11 @@ If Yes, safeguards:
 
 ### 1.5 Retention Period
 
-**Retention:** Until account deletion + 30 days for backup purge
+**Retention:** Until account deletion + 90 days before the permanent purge
 
 **Justification:** Contractual necessity (service provision) and fraud prevention
 
-**Deletion Method:** Soft deletion (email anonymized, account marked deleted) via `SoftDeleteUser` function. Permanent deletion after 30 days.
+**Deletion Method:** Soft deletion (email anonymized, account marked deleted) via `SoftDeleteUser` function. Permanent deletion after 90 days, performed by a daily cleanup job.
 
 ### 1.6 Technical and Organizational Measures
 

@@ -42,8 +42,8 @@ WulfVault solves this by providing:
   - Large visual feedback: "UPLOADING - X%" with green success animation at 100%
   - 150 entertaining upload one-liners with 💾 emoji to keep you engaged
 - **Two sharing modes:**
-  - **Authenticated downloads (DEFAULT)** - Recipients create secure download accounts (email + password) - **Checked by default for enhanced security**
-  - **Direct download links** - Optional: uncheck RequireAuth for quick sharing without authentication
+  - **Direct download links (DEFAULT)** - The "require authentication" checkbox is **unchecked by default**, so recipients can download straight from the link
+  - **Authenticated downloads** - Tick "require authentication" at upload time and recipients must create a secure download account (email + password) before they can download
 - **Password-protected files** - Add extra security layer with password protection per file
 - **Expiring shares** - Auto-delete after X downloads or Y days (or both)
 - **Custom expiration settings** - Flexible download limits (1-999) and date-based expiration
@@ -195,10 +195,13 @@ WulfVault solves this by providing:
 - **Password security:**
   - bcrypt hashing with cost factor 12
   - Self-service password change for all user types
-  - Password reset via email with secure tokens (24-hour expiration)
+  - Password reset via email with secure tokens (1-hour expiration)
   - Minimum password length enforcement (8 characters)
 - **Session management:**
-  - Secure session cookies with automatic expiration (24 hours configurable)
+  - Secure session cookies with automatic expiration (24 hours)
+  - Automatic logout after 10 minutes of inactivity
+  - Inactivity timeout is suspended while an upload or download is running, so long transfers are never interrupted
+  - Optional "Remember Me" login creates a 30-day session that is exempt from the inactivity timeout
   - SameSite cookies for CSRF protection
   - Secure logout with session invalidation
 - **File access control:**
@@ -577,7 +580,8 @@ curl -b cookies.txt http://localhost:8080/api/v1/admin/stats
 
 - Passwords hashed with bcrypt (cost factor 12)
 - Secure random hash generation for download links (128-bit entropy)
-- Session tokens with automatic expiration (24 hours)
+- Session tokens with automatic expiration (24 hours, or 30 days with "Remember Me")
+- Automatic logout after 10 minutes of inactivity (not applied during an active transfer or to "Remember Me" sessions)
 - CSRF protection via SameSite cookies
 - Files stored outside web root with access control
 - IP address logging for all downloads
@@ -616,7 +620,7 @@ WulfVault is designed with **privacy-by-design** and **privacy-by-default** prin
 - ⚠️ **Encryption at Rest** - Not built-in; use OS-level disk encryption (LUKS, BitLocker, FileVault)
 - ✅ **Password Security** - bcrypt hashing (cost factor 12, never plaintext)
 - ✅ **2FA Support** - TOTP-based two-factor authentication
-- ✅ **Session Security** - HttpOnly, Secure, SameSite cookies with 24-hour timeout
+- ✅ **Session Security** - HttpOnly, Secure, SameSite cookies with 24-hour lifetime and a 10-minute inactivity timeout ("Remember Me" sessions last 30 days without the inactivity timeout)
 - ✅ **Data Minimization** - Only necessary data collected, no tracking or analytics
 - ✅ **IP Logging** - Optional (disabled by default for privacy)
 
@@ -721,7 +725,7 @@ The `COOKIE_CONSENT_BANNER.html` template is provided for organizations that add
 - Legal obligation (6(1)(c)) - Audit compliance
 
 **Data Retention:**
-- User accounts: Until deletion (soft delete with 30-day grace period)
+- User accounts: Until deletion (soft delete with 90-day grace period)
 - Audit logs: Configurable (90 days default, 1-3650 days available)
 - Deleted files: 5 days in trash (configurable)
 - Backups: [Configure based on your policy]

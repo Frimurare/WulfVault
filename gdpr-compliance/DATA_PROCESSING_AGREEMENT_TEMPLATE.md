@@ -207,7 +207,7 @@ The Processor shall:
 **Assist the Controller** in responding to Data Subject requests:
 - Right of access (Article 15) - Via `/api/v1/user/export-data` endpoint
 - Right to rectification (Article 16) - Via user settings interface
-- Right to erasure (Article 17) - Via `/api/v1/gdpr/delete-account` endpoint
+- Right to erasure (Article 17) - Via the `/settings/delete-account` endpoint (system users) and `/download/delete-account` (download accounts)
 - Right to data portability (Article 20) - JSON/CSV export available
 - Right to restrict processing (Article 18) - Manual intervention by Processor
 - Right to object (Article 21) - Manual intervention by Processor

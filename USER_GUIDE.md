@@ -1702,7 +1702,7 @@ not permitted.
 1. **User forgot password:**
    - Click "Forgot Password" on login
    - Enter email address
-   - Receive reset email (valid 24 hours)
+   - Receive reset email (valid 1 hour)
    - Click link in email
    - Set new password
 
@@ -1713,7 +1713,10 @@ not permitted.
 ### Session Security
 
 **Session Features:**
-- **Auto-expiration:** 24 hours (default, configurable via `SESSION_TIMEOUT_HOURS`)
+- **Auto-expiration:** 24 hours after login
+- **Inactivity timeout:** 10 minutes — you are logged out automatically after 10 minutes without activity
+- **Transfer exception:** The inactivity timeout is suspended while an upload or download is running, so long transfers are never cut off
+- **"Remember Me":** Ticking "Remember Me" at login creates a 30-day session that is not subject to the inactivity timeout
 - **Secure cookies:** HttpOnly, SameSite protection
 - **CSRF protection:** All forms protected
 - **Session cleanup:** Expired sessions automatically removed every hour
