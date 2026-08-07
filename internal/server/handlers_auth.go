@@ -172,7 +172,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 		http.SetCookie(w, &http.Cookie{
 			Name:     "download_session",
-			Value:    sessionCookieValue(downloadAccountScope, sessionEmail),
+			Value:    accountSessionValue(sessionEmail, rememberMe),
 			Path:     "/",
 			Expires:  time.Now().Add(sessionDuration),
 			HttpOnly: true,

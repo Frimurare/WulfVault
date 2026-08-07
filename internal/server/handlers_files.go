@@ -724,7 +724,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		log.Printf("✅ Global download_session cookie set for: %s", sessionEmail)
 		http.SetCookie(w, &http.Cookie{
 			Name:     "download_session",
-			Value:    sessionCookieValue(downloadAccountScope, sessionEmail),
+			Value:    accountSessionValue(sessionEmail, false),
 			Path:     "/",
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,

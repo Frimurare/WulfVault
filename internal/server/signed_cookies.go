@@ -94,3 +94,35 @@ func sessionCookieEmail(scope, value string) string {
 	}
 	return email
 }
+
+// accountSessionValue builds the signed value of the site-wide
+// download_session cookie: "email|flag|mac", where flag is "r" for a
+// Remember-Me login and "s" for a standard one. The flag is covered by the
+// MAC, so a client cannot upgrade its own session to Remember-Me.
+func accountSessionValue(email string, remember bool) string {
+	flag := "s"
+	if remember {
+		flag = "r"
+	}
+	mac := cookieMAC("session", downloadAccountScope, flag, email)
+	if mac == "" {
+		return ""
+	}
+	return email + "|" + flag + "|" + mac
+}
+
+// accountSessionEmail verifies a download_session value and returns the email
+// and whether the session was issued as Remember-Me. Returns "" when the
+// value was not issued by this server.
+func accountSessionEmail(value string) (string, bool) {
+	parts := strings.SplitN(value, "|", 3)
+	if len(parts) != 3 {
+		return "", false
+	}
+	email, flag, mac := parts[0], parts[1], parts[2]
+	want := cookieMAC("session", downloadAccountScope, flag, email)
+	if want == "" || !hmac.Equal([]byte(mac), []byte(want)) {
+		return "", false
+	}
+	return email, flag == "r"
+}

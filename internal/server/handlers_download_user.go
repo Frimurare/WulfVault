@@ -33,9 +33,10 @@ func (s *Server) requireDownloadAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Check for inactivity timeout (10 minutes), but only if no active transfer
-		// Use email as session identifier for download accounts
-		if !s.hasActiveTransfer(cookie.Value) {
+		// Check for inactivity timeout (10 minutes), but only if no active
+		// transfer. Remember-Me sessions are exempt, matching requireAuth.
+		_, rememberedSession := accountSessionEmail(cookie.Value)
+		if !s.hasActiveTransfer(cookie.Value) && !rememberedSession {
 			timeSinceLastActivity := time.Since(time.Unix(account.LastUsed, 0))
 			if timeSinceLastActivity > auth.InactivityTimeout {
 				// Force logout due to inactivity
@@ -50,6 +51,9 @@ func (s *Server) requireDownloadAuth(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
+
+		// Any authenticated request counts as activity
+		database.DB.TouchDownloadAccount(account.Id)
 
 		// Store account in context
 		r = r.WithContext(contextWithDownloadAccount(r.Context(), account))

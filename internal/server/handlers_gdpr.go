@@ -100,8 +100,8 @@ func (s *Server) getDownloadAccountFromSession(r *http.Request) (*models.Downloa
 		return nil, http.ErrNoCookie
 	}
 
-	// The cookie value is "email|mac", issued at login
-	email := sessionCookieEmail(downloadAccountScope, cookie.Value)
+	// The cookie value is "email|flag|mac", issued at login
+	email, _ := accountSessionEmail(cookie.Value)
 	if email == "" {
 		log.Printf("DEBUG: download_session cookie failed signature check")
 		return nil, http.ErrNoCookie

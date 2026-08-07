@@ -127,6 +127,16 @@ func (d *Database) UpdateDownloadAccount(account *models.DownloadAccount) error 
 	return err
 }
 
+// TouchDownloadAccount updates the activity timestamp without counting a
+// download, so plain dashboard activity keeps the session alive.
+func (d *Database) TouchDownloadAccount(id int) error {
+	_, err := d.db.Exec(`
+		UPDATE DownloadAccounts SET LastUsed = ? WHERE Id = ?`,
+		time.Now().Unix(), id,
+	)
+	return err
+}
+
 // UpdateDownloadAccountLastUsed updates the last used timestamp and increments download count
 func (d *Database) UpdateDownloadAccountLastUsed(id int) error {
 	_, err := d.db.Exec(`
