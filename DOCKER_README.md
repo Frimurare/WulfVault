@@ -129,8 +129,8 @@ docker logs wulfvault | grep "Admin Password"
 
 ## 🔐 Security Features
 
-- **Password Hashing** - Argon2id for secure password storage
-- **Session Management** - Secure session handling with configurable timeouts
+- **Password Hashing** - bcrypt (cost factor 12) for secure password storage
+- **Session Management** - Secure session handling with a 24-hour session lifetime and a 10-minute inactivity timeout
 - **2FA Support** - TOTP-based two-factor authentication
 - **SSO** - Entra ID / OIDC with PKCE; client secret encrypted at rest
 - **Audit Logging** - Complete audit trail of all actions

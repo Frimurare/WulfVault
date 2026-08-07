@@ -18,6 +18,26 @@
     var PROGRESS_PREFIX = 'wulfvault.download.';
 
     // ------------------------------------------------------------------
+    // Translations
+    //
+    // The splash page writes window.WV_DOWNLOAD_I18N before this file loads.
+    // Every string below carries its English original as a fallback, so the
+    // download still works word for word when the object is missing - on a
+    // cached page, for instance, or if the server sends nothing at all.
+    // ------------------------------------------------------------------
+
+    function t(name, fallback, values) {
+        var catalog = window.WV_DOWNLOAD_I18N;
+        var text = (catalog && typeof catalog[name] === 'string' && catalog[name]) || fallback;
+        if (values) {
+            Object.keys(values).forEach(function (placeholder) {
+                text = text.split('{{' + placeholder + '}}').join(values[placeholder]);
+            });
+        }
+        return text;
+    }
+
+    // ------------------------------------------------------------------
     // Streaming SHA-256
     //
     // Web Crypto has no incremental digest API - crypto.subtle.digest() wants
@@ -432,7 +452,7 @@
             'font-size: clamp(32px, 9vw, 72px)', 'font-weight: bold', 'color: #2563eb',
             'margin-bottom: 24px', 'text-shadow: 0 0 20px rgba(37, 99, 235, 0.5)',
             'animation: wvPulse 2s ease-in-out infinite', 'line-height: 1.1'
-        ].join(';'), 'DOWNLOADING - 0%');
+        ].join(';'), t('downloading', 'DOWNLOADING - {{percent}}%', { percent: 0 }));
         status.id = 'downloadStatusText';
 
         var fileName = element('div', 'font-size: clamp(16px, 4vw, 24px); color: #e5e7eb; margin-bottom: 20px; font-weight: 500; word-break: break-word;', name);
@@ -453,7 +473,7 @@
         ].join(';'));
         barFill.id = 'downloadProgressBarFill';
 
-        var speed = element('div', 'font-size: clamp(13px, 3.2vw, 16px); color: #9ca3af; margin-top: 16px;', 'Calculating speed...');
+        var speed = element('div', 'font-size: clamp(13px, 3.2vw, 16px); color: #9ca3af; margin-top: 16px;', t('calculatingSpeed', 'Calculating speed...'));
         speed.id = 'downloadSpeedInfo';
 
         var notice = element('div', 'font-size: 14px; color: #fbbf24; margin-top: 14px; font-weight: 600; display: none;');
@@ -684,8 +704,8 @@
 
         try {
             if (sink.written > 0) {
-                setStatus('RESUMING...');
-                setSpeedText('Checking ' + formatFileSize(sink.written) + ' already downloaded...');
+                setStatus(t('resuming', 'RESUMING...'));
+                setSpeedText(t('checkingExisting', 'Checking {{size}} already downloaded...', { size: formatFileSize(sink.written) }));
                 if (hashUsable) {
                     await sink.readBack(function (bytes) { hasher.update(bytes); });
                 }
@@ -699,7 +719,7 @@
             while (offset < total) {
                 var size = Math.min(chunkSize, total - offset);
                 var chunk = await fetchChunkWithRetry(config.apiBase, offset, size, function (attempt) {
-                    setNotice('Connection interrupted - retry attempt ' + attempt + ' of ' + MAX_RETRIES + '...');
+                    setNotice(t('retrying', 'Connection interrupted - retry attempt {{attempt}} of {{max}}...', { attempt: attempt, max: MAX_RETRIES }));
                 });
                 setNotice('');
 
@@ -721,14 +741,17 @@
                 }
 
                 var percent = total > 0 ? Math.floor((offset / total) * 100) : 100;
-                setStatus('DOWNLOADING - ' + percent + '%');
+                setStatus(t('downloading', 'DOWNLOADING - {{percent}}%', { percent: percent }));
                 setBar(percent);
                 var sizeInfo = document.getElementById('downloadSizeInfo');
                 if (sizeInfo) {
                     sizeInfo.textContent = formatFileSize(offset) + ' / ' + formatFileSize(total);
                 }
                 if (averageSpeed > 0) {
-                    setSpeedText('Speed: ' + formatFileSize(averageSpeed) + '/s | ETA: ' + formatTime((total - offset) / averageSpeed));
+                    setSpeedText(t('speedEta', 'Speed: {{speed}}/s | ETA: {{eta}}', {
+                        speed: formatFileSize(averageSpeed),
+                        eta: formatTime((total - offset) / averageSpeed)
+                    }));
                 }
 
                 writeProgress({
@@ -743,9 +766,9 @@
                 });
             }
 
-            setStatus('VERIFYING...', '#3b82f6');
+            setStatus(t('verifying', 'VERIFYING...'), '#3b82f6');
             setBar(100);
-            setSpeedText('Assembling and checking the file...');
+            setSpeedText(t('assembling', 'Assembling and checking the file...'));
 
             var blob = await sink.finish();
             sink = null;
@@ -762,14 +785,14 @@
             if (sink) {
                 await sink.abort();
             }
-            setStatus('DOWNLOAD FAILED', '#ef4444');
+            setStatus(t('failed', 'DOWNLOAD FAILED'), '#ef4444');
             setBar(100, 'linear-gradient(90deg, #ef4444, #dc2626)');
-            setSpeedText(err && err.message ? err.message : 'Unknown error', '#fca5a5');
+            setSpeedText(err && err.message ? err.message : t('unknownError', 'Unknown error'), '#fca5a5');
             setNotice('');
-            addAction('Use the direct link instead', '#2563eb', function () {
+            addAction(t('useDirectLink', 'Use the direct link instead'), '#2563eb', function () {
                 window.location.href = config.directUrl;
             });
-            addAction('Close', '#ef4444', closeOverlay);
+            addAction(t('close', 'Close'), '#ef4444', closeOverlay);
         } finally {
             window.removeEventListener('beforeunload', beforeUnload);
         }
@@ -791,17 +814,20 @@
         setBar(100, 'linear-gradient(90deg, #10b981, #059669)');
 
         if (!hashUsable || !serverDigest) {
-            setStatus('DOWNLOAD COMPLETE', '#10b981');
-            setSpeedText('Downloaded ' + formatFileSize(info.size_bytes) + '. Checksum verification was not available in this browser.', '#fbbf24');
+            setStatus(t('complete', 'DOWNLOAD COMPLETE'), '#10b981');
+            setSpeedText(t('noChecksum', 'Downloaded {{size}}. Checksum verification was not available in this browser.', {
+                size: formatFileSize(info.size_bytes)
+            }), '#fbbf24');
         } else if (localDigest === serverDigest) {
-            setStatus('DOWNLOAD COMPLETE', '#10b981');
-            setSpeedText('SHA-256 verified: ' + localDigest, '#10b981');
+            setStatus(t('complete', 'DOWNLOAD COMPLETE'), '#10b981');
+            setSpeedText(t('checksumOk', 'SHA-256 verified: {{digest}}', { digest: localDigest }), '#10b981');
         } else {
-            setStatus('VERIFICATION FAILED', '#ef4444');
+            setStatus(t('checksumFailed', 'VERIFICATION FAILED'), '#ef4444');
             setBar(100, 'linear-gradient(90deg, #ef4444, #dc2626)');
             setSpeedText(
-                'The downloaded file does not match the server checksum and may be corrupt. Do not use it.\n' +
-                'Server: ' + serverDigest + '\nDownloaded: ' + localDigest,
+                t('checksumMismatch', 'The downloaded file does not match the server checksum and may be corrupt. Do not use it.') + '\n' +
+                t('serverDigest', 'Server') + ': ' + serverDigest + '\n' +
+                t('localDigest', 'Downloaded') + ': ' + localDigest,
                 '#fca5a5'
             );
             var speedEl = document.getElementById('downloadSpeedInfo');
@@ -809,10 +835,10 @@
                 speedEl.style.whiteSpace = 'pre-wrap';
                 speedEl.style.wordBreak = 'break-all';
             }
-            addAction('Try again', '#2563eb', function () { window.location.reload(); });
+            addAction(t('tryAgain', 'Try again'), '#2563eb', function () { window.location.reload(); });
         }
 
-        addAction('Close', '#4b5563', closeOverlay);
+        addAction(t('close', 'Close'), '#4b5563', closeOverlay);
     }
 
     // ------------------------------------------------------------------
@@ -867,7 +893,7 @@
                     var percent = Math.floor((resumeFrom.bytesDone / info.size_bytes) * 100);
                     var label = button.querySelector('[data-download-label]');
                     if (label) {
-                        label.textContent = 'Resume Download (' + percent + '%)';
+                        label.textContent = t('resumeButton', 'Resume download ({{percent}}%)', { percent: percent });
                     }
                 }
 

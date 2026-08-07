@@ -559,20 +559,35 @@ POST /api/v1/upload
 **Authorization:** Authenticated
 **Content-Type:** multipart/form-data
 **Form Fields:**
-- `file`: The file to upload
-- `requireAuth`: Boolean (optional)
-- `downloadsRemaining`: Integer (optional, default: 100)
-- `expireAt`: Unix timestamp (optional)
-- `password`: String (optional)
+- `file`: The file to upload (required)
+- `require_auth`: `"true"` to require a download account (optional, default: off)
+- `downloads_limit`: Integer (optional, default: 10)
+- `unlimited_downloads`: `"true"` to ignore the download limit (optional)
+- `expire_date`: Date in `YYYY-MM-DD` format (optional)
+- `unlimited_time`: `"true"` to disable expiration (optional)
+- `file_password`: String (optional, password-protects the file)
+- `file_comment`: String (optional, description shown with the file)
+- `send_to_email`: String (optional, emails the download link to this address)
+- `team_ids[]`: Integer, repeatable (optional, shares the file with these teams)
+
+**Note:** Boolean fields are read as the literal string `"true"`; any other value
+counts as false.
 
 **Response:**
 
 ```json
 {
   "success": true,
-  "fileId": "abc123xyz",
-  "downloadUrl": "https://vault.example.com/d/abc123xyz",
-  "splashUrl": "https://vault.example.com/s/abc123xyz"
+  "file_id": "abc123xyz",
+  "file_name": "document.pdf",
+  "share_url": "https://vault.example.com/s/abc123xyz",
+  "download_url": "https://vault.example.com/d/abc123xyz",
+  "size": 1048576,
+  "size_formatted": "1.0 MB",
+  "expire_at": "2024-01-15 23:59",
+  "downloads_limit": 100,
+  "require_auth": true,
+  "has_password": false
 }
 ```
 
@@ -1140,11 +1155,18 @@ POST /api/v1/admin/branding
 
 ```json
 {
-  "branding_company_name": "My Company",
-  "branding_primary_color": "#2563eb",
-  "branding_secondary_color": "#1e40af"
+  "companyName": "My Company",
+  "primaryColor": "#2563eb",
+  "secondaryColor": "#1e40af",
+  "logoUrl": "/static/uploads/logo.png"
 }
 ```
+
+> The request body uses camelCase field names (`companyName`, `primaryColor`,
+> `secondaryColor`, `logoUrl`) — not the snake_case config keys returned by
+> `GET /api/v1/admin/branding`. All four values are written on every request, so
+> always send the complete set: any field you omit is stored as an empty string
+> and that part of the branding is cleared.
 
 **Response:**
 
@@ -1609,8 +1631,8 @@ print(response.json())
 # Upload file
 files = {'file': open('document.pdf', 'rb')}
 data = {
-    'requireAuth': 'true',
-    'downloadsRemaining': '100'
+    'require_auth': 'true',
+    'downloads_limit': '100'
 }
 response = session.post('http://localhost:8080/api/v1/upload', files=files, data=data)
 print(response.json())
@@ -1664,8 +1686,8 @@ async function createUser() {
 async function uploadFile(filePath) {
   const form = new FormData();
   form.append('file', fs.createReadStream(filePath));
-  form.append('requireAuth', 'true');
-  form.append('downloadsRemaining', '100');
+  form.append('require_auth', 'true');
+  form.append('downloads_limit', '100');
 
   const response = await axiosInstance.post('/api/v1/upload', form, {
     headers: form.getHeaders()
@@ -1712,8 +1734,8 @@ curl -b cookies.txt -X POST http://localhost:8080/api/v1/users \
 # Upload file
 curl -b cookies.txt -X POST http://localhost:8080/api/v1/upload \
   -F "file=@document.pdf" \
-  -F "requireAuth=true" \
-  -F "downloadsRemaining=100" | jq
+  -F "require_auth=true" \
+  -F "downloads_limit=100" | jq
 
 # Get system stats
 curl -b cookies.txt http://localhost:8080/api/v1/admin/stats | jq

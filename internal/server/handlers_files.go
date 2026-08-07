@@ -8,6 +8,7 @@ package server
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"html"
 	"html/template"
@@ -23,6 +24,7 @@ import (
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -259,6 +261,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Warning: Could not share file to team %d: %v", teamId, err)
 		} else {
 			log.Printf("File %s shared with team %d by user %d", fileID, teamId, user.Id)
+			s.audit.LogFileSharedWithTeam(user, fileID, header.Filename, int64(teamId), teamName(teamId), r)
 		}
 	}
 
@@ -307,6 +310,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 						%s
 						%s
 					</div>
+					%s
 					<div style="margin: 30px 0;">
 						<a href="%s" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View & Download File</a>
 					</div>
@@ -330,6 +334,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 					}
 					return ""
 				}(),
+				email.AuthInstructionsHTML(requireAuth),
 				splashLink, downloadLink, downloadLink)
 
 			senderText := ""
@@ -346,7 +351,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 %s%sFile: %s
 Size: %s
 %s%s
-
+%s
 View and download here: %s
 
 Direct download link: %s
@@ -367,6 +372,7 @@ This file was sent via WulfVault Secure File Transfer.`,
 					}
 					return ""
 				}(),
+				email.AuthInstructionsText(requireAuth),
 				splashLink, downloadLink)
 
 			provider, err := email.GetActiveProvider(database.DB)
@@ -422,20 +428,22 @@ func (s *Server) handleSplashPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tr := s.tr(r)
+
 	// Check if file has expired
 	if !fileInfo.UnlimitedTime && fileInfo.ExpireAt > 0 && time.Now().Unix() > fileInfo.ExpireAt {
-		s.renderSplashPageExpired(w, fileInfo)
+		s.renderSplashPageExpired(w, tr, fileInfo)
 		return
 	}
 
 	// Check if download limit is reached
 	if !fileInfo.UnlimitedDownloads && fileInfo.DownloadsRemaining <= 0 {
-		s.renderSplashPageExpired(w, fileInfo)
+		s.renderSplashPageExpired(w, tr, fileInfo)
 		return
 	}
 
 	// Render splash page
-	s.renderSplashPage(w, fileInfo)
+	s.renderSplashPage(w, tr, fileInfo)
 }
 
 // handleDownload handles file download
@@ -515,22 +523,24 @@ func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.
 		return
 	}
 
+	tr := s.tr(r)
+
 	// Check if password provided via POST
 	if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err != nil {
-			s.renderPasswordPromptPage(w, fileInfo, "Invalid form data")
+			s.renderPasswordPromptPage(w, tr, fileInfo, tr.T("splash.error_invalid_form"))
 			return
 		}
 
 		providedPassword := r.FormValue("file_password")
 		if providedPassword == "" {
-			s.renderPasswordPromptPage(w, fileInfo, "Password required")
+			s.renderPasswordPromptPage(w, tr, fileInfo, tr.T("splash.error_password_required"))
 			return
 		}
 
 		// Verify password
 		if providedPassword != fileInfo.FilePasswordPlain {
-			s.renderPasswordPromptPage(w, fileInfo, "Incorrect password")
+			s.renderPasswordPromptPage(w, tr, fileInfo, tr.T("splash.password_wrong"))
 			return
 		}
 
@@ -566,7 +576,7 @@ func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.
 	}
 
 	// Show password prompt page
-	s.renderPasswordPromptPage(w, fileInfo, "")
+	s.renderPasswordPromptPage(w, tr, fileInfo, "")
 }
 
 // handleAuthenticatedDownload handles downloads that require authentication
@@ -602,13 +612,15 @@ func (s *Server) handleAuthenticatedDownload(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Show download auth page
-	s.renderDownloadAuthPage(w, fileInfo, "")
+	s.renderDownloadAuthPage(w, s.tr(r), fileInfo, "")
 }
 
 // handleDownloadAccountCreation handles creation of download account
 func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo) {
+	tr := s.tr(r)
+
 	if err := r.ParseForm(); err != nil {
-		s.renderDownloadAuthPage(w, fileInfo, "Invalid form data")
+		s.renderDownloadAuthPage(w, tr, fileInfo, tr.T("splash.error_invalid_form"))
 		return
 	}
 
@@ -617,7 +629,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	password := r.FormValue("password")
 
 	if email == "" || password == "" {
-		s.renderDownloadAuthPage(w, fileInfo, "Email and password required")
+		s.renderDownloadAuthPage(w, tr, fileInfo, tr.T("splash.error_email_password_required"))
 		return
 	}
 
@@ -626,7 +638,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	if err == nil {
 		// User exists as regular user/admin - verify password
 		if !auth.CheckPasswordHash(password, regularUser.Password) {
-			s.renderDownloadAuthPage(w, fileInfo, "Invalid credentials")
+			s.renderDownloadAuthPage(w, tr, fileInfo, tr.T("splash.error_invalid_credentials"))
 			return
 		}
 
@@ -637,7 +649,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		sessionToken, err := auth.CreateSession(regularUser.Id) // Uses default duration
 		if err != nil {
 			log.Printf("Warning: Could not create session for user: %v", err)
-			s.renderDownloadAuthPage(w, fileInfo, "Authentication failed")
+			s.renderDownloadAuthPage(w, tr, fileInfo, tr.T("splash.error_auth_failed"))
 			return
 		}
 
@@ -663,12 +675,12 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		// Create new download account - name is required for new accounts
 		if name == "" {
-			s.renderDownloadAuthPage(w, fileInfo, "Name is required for new accounts")
+			s.renderDownloadAuthPage(w, tr, fileInfo, tr.T("splash.error_name_required"))
 			return
 		}
 		account, err = createDownloadAccount(name, email, password)
 		if err != nil {
-			s.renderDownloadAuthPage(w, fileInfo, "Failed to create account: "+err.Error())
+			s.renderDownloadAuthPage(w, tr, fileInfo, tr.TH("splash.error_account_creation_failed", "error", err.Error()))
 			return
 		}
 		isNewAccount = true
@@ -690,7 +702,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	} else {
 		// Verify password for existing download account
 		if !checkDownloadPassword(password, account.Password) {
-			s.renderDownloadAuthPage(w, fileInfo, "Invalid credentials")
+			s.renderDownloadAuthPage(w, tr, fileInfo, tr.T("splash.error_invalid_credentials"))
 			return
 		}
 	}
@@ -950,16 +962,16 @@ func getDownloaderInfo(account *models.DownloadAccount, ip string) string {
 }
 
 // renderPasswordPromptPage renders the password prompt page for password-protected files
-func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *database.FileInfo, errorMsg string) {
+func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, tr *i18n.Translator, fileInfo *database.FileInfo, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Password Required - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("splash.password_page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1082,25 +1094,25 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
 
 	// Add comment if present (moved to top as it's important)
 	if fileInfo.Comment != "" {
-		html += `<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid ` + s.getPrimaryColor() + `; border-radius: 4px; color: #555;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
+		html += `<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid ` + s.getPrimaryColor() + `; border-radius: 4px; color: #555;"><strong>💬 ` + tr.T("splash.note_label") + `</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
 	}
 
-	html += `<p><strong>Size:</strong> ` + fileInfo.Size + `</p>
-            <p><strong>Downloads:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
+	html += `<p><strong>` + tr.T("splash.file_size") + `:</strong> ` + fileInfo.Size + `</p>
+            <p><strong>` + tr.T("splash.downloads") + `:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
 
 	if !fileInfo.UnlimitedDownloads {
-		html += `<p><strong>Remaining:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>`
+		html += `<p><strong>` + tr.T("splash.remaining") + `:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>`
 	}
 
 	if fileInfo.ExpireAtString != "" {
-		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
+		html += `<p><strong>` + tr.T("splash.expires_label") + `:</strong> ` + fileInfo.ExpireAtString + `</p>`
 	}
 
 	html += `
         </div>
 
         <div class="info">
-            🔐 This file is password protected. Please enter the password to download.
+            🔐 ` + tr.T("splash.password_prompt_info") + `
         </div>`
 
 	if errorMsg != "" {
@@ -1111,12 +1123,12 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
         <div class="password-section">
             <form method="POST">
                 <div class="form-group">
-                    <label for="file_password">Password</label>
+                    <label for="file_password">` + tr.T("splash.password_label") + `</label>
                     <input type="password" id="file_password" name="file_password" required autofocus>
                 </div>
                 <button type="submit" class="btn">
                     <span style="font-size: 18px; margin-right: 8px;">🔓</span>
-                    <span style="font-size: 16px; font-weight: 700;">Unlock & Download</span>
+                    <span style="font-size: 16px; font-weight: 700;">` + tr.T("splash.password_submit") + `</span>
                 </button>
             </form>
         </div>
@@ -1132,16 +1144,16 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, fileInfo *datab
 }
 
 // renderDownloadAuthPage renders the download authentication page
-func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *database.FileInfo, errorMsg string) {
+func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, tr *i18n.Translator, fileInfo *database.FileInfo, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Download File - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("splash.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1264,25 +1276,25 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
 
 	// Add comment if present (moved to top as it's important)
 	if fileInfo.Comment != "" {
-		html += `<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid ` + s.getPrimaryColor() + `; border-radius: 4px; color: #555;"><strong>💬 Note:</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
+		html += `<p style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-left: 3px solid ` + s.getPrimaryColor() + `; border-radius: 4px; color: #555;"><strong>💬 ` + tr.T("splash.note_label") + `</strong> ` + template.HTMLEscapeString(fileInfo.Comment) + `</p>`
 	}
 
-	html += `<p><strong>Size:</strong> ` + fileInfo.Size + `</p>
-            <p><strong>Downloads:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
+	html += `<p><strong>` + tr.T("splash.file_size") + `:</strong> ` + fileInfo.Size + `</p>
+            <p><strong>` + tr.T("splash.downloads") + `:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>`
 
 	if !fileInfo.UnlimitedDownloads {
-		html += `<p><strong>Remaining:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>`
+		html += `<p><strong>` + tr.T("splash.remaining") + `:</strong> ` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>`
 	}
 
 	if fileInfo.ExpireAtString != "" {
-		html += `<p><strong>Expires:</strong> ` + fileInfo.ExpireAtString + `</p>`
+		html += `<p><strong>` + tr.T("splash.expires_label") + `:</strong> ` + fileInfo.ExpireAtString + `</p>`
 	}
 
 	html += `
         </div>
 
         <div class="info">
-            🔒 This file requires authentication. Create an account or login to download.
+            🔒 ` + tr.T("splash.auth_required_info") + `
         </div>`
 
 	if errorMsg != "" {
@@ -1291,29 +1303,29 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
 
 	html += `
         <div class="auth-section">
-            <h3>Create Account / Login</h3>
+            <h3>` + tr.T("splash.auth_heading") + `</h3>
             <form method="POST">
                 <div class="form-group">
-                    <label for="name">Name</label>
-                    <input type="text" id="name" name="name" required autofocus placeholder="Your name">
+                    <label for="name">` + tr.T("splash.name_label") + `</label>
+                    <input type="text" id="name" name="name" required autofocus placeholder="` + template.HTMLEscapeString(tr.T("splash.name_placeholder")) + `">
                     <p style="font-size: 12px; color: #999; margin-top: 4px;">
-                        Required for new accounts only
+                        ` + tr.T("splash.name_hint") + `
                     </p>
                 </div>
                 <div class="form-group">
-                    <label for="email">Email</label>
+                    <label for="email">` + tr.T("splash.email_label") + `</label>
                     <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <label for="password">` + tr.T("splash.password_label") + `</label>
                     <input type="password" id="password" name="password" required minlength="4">
                     <p style="font-size: 12px; color: #999; margin-top: 4px;">
-                        New user? Your account will be created automatically
+                        ` + tr.T("splash.password_hint") + `
                     </p>
                 </div>
                 <button type="submit" class="btn">
                     <span style="font-size: 18px; margin-right: 8px;">🔓</span>
-                    <span style="font-size: 16px; font-weight: 700;">Login / Create Account & Download</span>
+                    <span style="font-size: 16px; font-weight: 700;">` + tr.T("splash.auth_submit") + `</span>
                 </button>
             </form>
         </div>
@@ -1328,8 +1340,54 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, fileInfo *databas
 	w.Write([]byte(html))
 }
 
+// chunkedDownloadI18NKeys lists the catalogue keys that web/static/js/chunked-download.js
+// looks up at runtime. The JavaScript name on the left is what the script asks
+// for; the key on the right is where the text comes from.
+var chunkedDownloadI18NKeys = map[string]string{
+	"downloading":      "splash.dl_downloading",
+	"calculatingSpeed": "splash.dl_calculating_speed",
+	"resuming":         "splash.dl_resuming",
+	"checkingExisting": "splash.dl_checking_existing",
+	"retrying":         "splash.dl_retrying",
+	"speedEta":         "splash.dl_speed_eta",
+	"verifying":        "splash.dl_verifying",
+	"assembling":       "splash.dl_assembling",
+	"failed":           "splash.dl_failed",
+	"unknownError":     "splash.dl_unknown_error",
+	"useDirectLink":    "splash.dl_use_direct_link",
+	"close":            "splash.dl_close",
+	"tryAgain":         "splash.dl_try_again",
+	"complete":         "splash.dl_complete",
+	"noChecksum":       "splash.dl_no_checksum",
+	"checksumOk":       "splash.dl_checksum_ok",
+	"checksumFailed":   "splash.dl_checksum_failed",
+	"checksumMismatch": "splash.dl_checksum_mismatch",
+	"serverDigest":     "splash.dl_server_digest",
+	"localDigest":      "splash.dl_local_digest",
+	"resumeButton":     "splash.dl_resume_button",
+}
+
+// chunkedDownloadI18NJSON renders the strings of chunked-download.js as a JSON
+// object literal. The script keeps an English fallback for every key, so a
+// missing or malformed object only costs the translation, never the download.
+func chunkedDownloadI18NJSON(tr *i18n.Translator) string {
+	values := make(map[string]string, len(chunkedDownloadI18NKeys))
+	for name, key := range chunkedDownloadI18NKeys {
+		values[name] = tr.T(key)
+	}
+
+	// json.Marshal escapes <, > and &, so the literal cannot break out of the
+	// surrounding <script> element.
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		log.Printf("Warning: Could not encode download translations: %v", err)
+		return "{}"
+	}
+	return string(encoded)
+}
+
 // renderSplashPage renders the splash page with download button
-func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.FileInfo) {
+func (s *Server) renderSplashPage(w http.ResponseWriter, tr *i18n.Translator, fileInfo *database.FileInfo) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get branding config
@@ -1345,12 +1403,12 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 	poem := models.GetPoemOfTheDay()
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Download File - ` + companyName + `</title>
+    <title>` + tr.T("splash.page_title") + ` - ` + companyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1506,7 +1564,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 	if fileInfo.Comment != "" {
 		html += `
         <div style="margin: 25px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid ` + primaryColor + `; border-radius: 8px; text-align: left;">
-            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">💬 Note from sender</h3>
+            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">💬 ` + tr.T("splash.note_from_sender") + `</h3>
             <p style="color: #555; font-size: 15px; line-height: 1.6;">` + template.HTMLEscapeString(fileInfo.Comment) + `</p>
         </div>`
 	}
@@ -1514,18 +1572,18 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 	html += `
         <div class="file-details">
             <div class="detail-item">
-                <h3>File Size</h3>
+                <h3>` + tr.T("splash.file_size") + `</h3>
                 <p>` + fileInfo.Size + `</p>
             </div>
             <div class="detail-item">
-                <h3>Downloads</h3>
+                <h3>` + tr.T("splash.downloads") + `</h3>
                 <p>` + fmt.Sprintf("%d", fileInfo.DownloadCount) + `</p>
             </div>`
 
 	if !fileInfo.UnlimitedDownloads {
 		html += `
             <div class="detail-item">
-                <h3>Remaining</h3>
+                <h3>` + tr.T("splash.remaining") + `</h3>
                 <p>` + fmt.Sprintf("%d", fileInfo.DownloadsRemaining) + `</p>
             </div>`
 	}
@@ -1533,7 +1591,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 	if fileInfo.ExpireAtString != "" && !fileInfo.UnlimitedTime {
 		html += `
             <div class="detail-item">
-                <h3>Expires</h3>
+                <h3>` + tr.T("splash.expires_label") + `</h3>
                 <p style="font-size: 14px;">` + fileInfo.ExpireAtString + `</p>
             </div>`
 	}
@@ -1542,13 +1600,13 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
         </div>`
 
 	if fileInfo.RequireAuth {
-		html += `<div class="badge">🔒 Authentication Required</div>`
+		html += `<div class="badge">🔒 ` + tr.T("splash.auth_required_badge") + `</div>`
 	}
 
 	// Add Poem of the Day section
 	html += `
         <div class="poem-section">
-            <div class="poem-title">📖 While waiting, here is Poem of the Day</div>
+            <div class="poem-title">📖 ` + tr.T("splash.poem_title") + `</div>
             <div class="poem-text">` + poem.Text + `</div>
             <div class="poem-author">— ` + poem.Author + `</div>
         </div>
@@ -1558,13 +1616,16 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
            data-api-base="/api/v1/download/` + template.HTMLEscapeString(fileInfo.Id) + `"
            data-direct-url="/d/` + template.HTMLEscapeString(fileInfo.Id) + `">
             <span style="font-size: 24px; margin-right: 10px;">⬇️</span>
-            <span style="font-size: 20px; font-weight: 700;" data-download-label>Download File</span>
+            <span style="font-size: 20px; font-weight: 700;" data-download-label>` + tr.T("splash.download_button") + `</span>
         </a>
 
         <div class="footer">
-            Powered by ` + companyName + `
+            ` + tr.TH("splash.powered_by", "company", companyName) + `
         </div>
     </div>
+    <script>
+        window.WV_DOWNLOAD_I18N = ` + chunkedDownloadI18NJSON(tr) + `;
+    </script>
     <script src="/static/js/chunked-download.js" defer></script>
 </body>
 </html>`
@@ -1573,7 +1634,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
 }
 
 // renderSplashPageExpired renders expired file splash page
-func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *database.FileInfo) {
+func (s *Server) renderSplashPageExpired(w http.ResponseWriter, tr *i18n.Translator, fileInfo *database.FileInfo) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get branding config
@@ -1584,12 +1645,12 @@ func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *databa
 	logoData := brandingConfig["branding_logo"]
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>File Expired - ` + companyName + `</title>
+    <title>` + tr.T("splash.expired_title") + ` - ` + companyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1659,11 +1720,11 @@ func (s *Server) renderSplashPageExpired(w http.ResponseWriter, fileInfo *databa
 
         <div class="expired-icon">⏰</div>
 
-        <h2>File No Longer Available</h2>
-        <p>This file has expired and is no longer available for download.</p>
+        <h2>` + tr.T("splash.expired_title") + `</h2>
+        <p>` + tr.T("splash.expired_body") + `</p>
 
         <div class="footer">
-            Powered by ` + companyName + `
+            ` + tr.TH("splash.powered_by", "company", companyName) + `
         </div>
     </div>
 </body>

@@ -6,6 +6,8 @@
 package server
 
 import (
+	"bytes"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -132,5 +134,58 @@ func TestAdminUserEditAuditsActivationChanges(t *testing.T) {
 
 	if entries := auditEntries(t, database.ActionUserActivated); len(entries) != 1 {
 		t.Errorf("got %d USER_ACTIVATED entries after an unrelated edit, want 1", len(entries))
+	}
+}
+
+func TestUploadSharingWithTeamIsAudited(t *testing.T) {
+	dir := t.TempDir()
+	if err := database.Initialize(dir); err != nil {
+		t.Fatalf("Initialize database: %v", err)
+	}
+	s := New(&config.Config{ServerURL: "https://vault.example.com", UploadsDir: dir})
+
+	user := &models.User{Name: "Uploader", Email: "uploader@example.com", Password: "hash", IsActive: true, StorageQuotaMB: 1024}
+	if err := database.DB.CreateUser(user); err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
+
+	// CreateTeam enrols the creator as a member, so the upload is allowed to
+	// share with this team.
+	team := &models.Team{Name: "Finance", CreatedBy: user.Id, IsActive: true}
+	if err := database.DB.CreateTeam(team); err != nil {
+		t.Fatalf("CreateTeam: %v", err)
+	}
+
+	var body bytes.Buffer
+	form := multipart.NewWriter(&body)
+	part, err := form.CreateFormFile("file", "report.pdf")
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	part.Write([]byte("wulfvault"))
+	form.WriteField("team_ids[]", strconv.Itoa(team.Id))
+	form.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/upload", &body)
+	req.Header.Set("Content-Type", form.FormDataContentType())
+	req = req.WithContext(contextWithUser(req.Context(), user))
+
+	rec := httptest.NewRecorder()
+	s.handleUpload(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("upload status = %d, want %d (body: %s)", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	entries := auditEntries(t, database.ActionFileSharedWithTeam)
+	if len(entries) != 1 {
+		t.Fatalf("got %d FILE_SHARED_WITH_TEAM entries, want 1", len(entries))
+	}
+	if entries[0].UserEmail != user.Email {
+		t.Errorf("actor = %q, want %q", entries[0].UserEmail, user.Email)
+	}
+	for _, marker := range []string{`"file_name":"report.pdf"`, `"team_name":"Finance"`} {
+		if !strings.Contains(entries[0].Details, marker) {
+			t.Errorf("details %q is missing %q", entries[0].Details, marker)
+		}
 	}
 }
