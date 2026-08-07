@@ -80,6 +80,9 @@ Upgrading is strongly recommended.
   configured, producing broken links in emails on default installations.
 - An inactivity logout now shows a message on the login page instead of
   redirecting silently.
+- Databases upgraded from older versions were missing the `RemindedAt`
+  column, so expiry reminders were never sent and the scheduler logged an
+  SQL error on every run.
 - Documentation corrected against the code: password-reset validity (1 hour),
   hashing algorithm (bcrypt), permanent-deletion grace period (90 days), the
   10-minute inactivity timeout, GDPR self-service routes, and the API examples
