@@ -474,10 +474,12 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	if isDirect && fileInfo.RequireAuth {
 		cookie, err := r.Cookie("download_session_" + fileInfo.Id)
 		if err == nil {
-			account, err := database.DB.GetDownloadAccountByEmail(cookie.Value)
-			if err == nil && account.IsActive {
-				s.performDownload(w, r, fileInfo, account)
-				return
+			if email := sessionCookieEmail(fileInfo.Id, cookie.Value); email != "" {
+				account, err := database.DB.GetDownloadAccountByEmail(email)
+				if err == nil && account.IsActive {
+					s.performDownload(w, r, fileInfo, account)
+					return
+				}
 			}
 		}
 	}
@@ -502,7 +504,7 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.Request, fileInfo *database.FileInfo) {
 	// Check if password has been verified (via session cookie)
 	cookie, err := r.Cookie("password_verified_" + fileInfo.Id)
-	if err == nil && cookie.Value == "true" {
+	if err == nil && verifyPasswordProof(fileInfo.Id, cookie.Value) {
 		// Password already verified, check if also requires auth
 		if fileInfo.RequireAuth {
 			s.handleAuthenticatedDownload(w, r, fileInfo)
@@ -535,8 +537,18 @@ func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.
 		// Password correct, set session cookie
 		http.SetCookie(w, &http.Cookie{
 			Name:     "password_verified_" + fileInfo.Id,
-			Value:    "true",
+			Value:    passwordProofValue(fileInfo.Id),
 			Path:     "/d/" + fileInfo.Id,
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		// Same proof, scoped to the chunked download API
+		http.SetCookie(w, &http.Cookie{
+			Name:     "password_verified_" + fileInfo.Id,
+			Value:    passwordProofValue(fileInfo.Id),
+			Path:     downloadAPICookiePath(fileInfo.Id),
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
@@ -573,11 +585,13 @@ func (s *Server) handleAuthenticatedDownload(w http.ResponseWriter, r *http.Requ
 	cookie, err := r.Cookie("download_session_" + fileInfo.Id)
 	if err == nil {
 		// User has session, check if valid
-		account, err := database.DB.GetDownloadAccountByEmail(cookie.Value)
-		if err == nil && account.IsActive {
-			// Valid session, perform download
-			s.performDownload(w, r, fileInfo, account)
-			return
+		if email := sessionCookieEmail(fileInfo.Id, cookie.Value); email != "" {
+			account, err := database.DB.GetDownloadAccountByEmail(email)
+			if err == nil && account.IsActive {
+				// Valid session, perform download
+				s.performDownload(w, r, fileInfo, account)
+				return
+			}
 		}
 	}
 
@@ -684,8 +698,18 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 	// Set file-specific download session cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "download_session_" + fileInfo.Id,
-		Value:    email,
+		Value:    sessionCookieValue(fileInfo.Id, email),
 		Path:     "/d/" + fileInfo.Id,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	// Same session, scoped to the chunked download API
+	http.SetCookie(w, &http.Cookie{
+		Name:     "download_session_" + fileInfo.Id,
+		Value:    sessionCookieValue(fileInfo.Id, email),
+		Path:     downloadAPICookiePath(fileInfo.Id),
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
@@ -700,7 +724,7 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		log.Printf("✅ Global download_session cookie set for: %s", sessionEmail)
 		http.SetCookie(w, &http.Cookie{
 			Name:     "download_session",
-			Value:    sessionEmail,
+			Value:    accountSessionValue(sessionEmail, false),
 			Path:     "/",
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
@@ -1530,15 +1554,19 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
             <div class="poem-author">— ` + poem.Author + `</div>
         </div>
 
-        <a href="` + downloadURL + `" class="download-btn">
+        <a href="` + downloadURL + `" class="download-btn" id="wvDownloadButton"
+           data-file-id="` + template.HTMLEscapeString(fileInfo.Id) + `"
+           data-api-base="/api/v1/download/` + template.HTMLEscapeString(fileInfo.Id) + `"
+           data-direct-url="/d/` + template.HTMLEscapeString(fileInfo.Id) + `">
             <span style="font-size: 24px; margin-right: 10px;">⬇️</span>
-            <span style="font-size: 20px; font-weight: 700;">Download File</span>
+            <span style="font-size: 20px; font-weight: 700;" data-download-label>Download File</span>
         </a>
 
         <div class="footer">
             Powered by ` + companyName + `
         </div>
     </div>
+    <script src="/static/js/chunked-download.js" defer></script>
 </body>
 </html>`
 
