@@ -8,6 +8,7 @@ package server
 import (
 	"bufio"
 	"fmt"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ type SysMonitorLogEntry struct {
 
 // handleAdminSysMonitorLogs renders the sysmonitor logs page
 func (s *Server) handleAdminSysMonitorLogs(w http.ResponseWriter, r *http.Request) {
-	s.renderAdminSysMonitorLogsPage(w)
+	s.renderAdminSysMonitorLogsPage(w, s.tr(r))
 }
 
 // handleAPIGetSysMonitorLogs returns sysmonitor logs with filtering and pagination
@@ -168,7 +169,7 @@ func (s *Server) serializeSysMonitorLogEntries(entries []SysMonitorLogEntry) str
 }
 
 // renderAdminSysMonitorLogsPage renders the sysmonitor logs UI (simplified version of server logs)
-func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter) {
+func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter, tr *i18n.Translator) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	companyName := s.config.CompanyName
@@ -176,7 +177,7 @@ func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter) {
 		companyName = "WulfVault"
 	}
 
-	headerHTML := s.getAdminHeaderHTML("SysMonitor Logs")
+	headerHTML := s.getAdminHeaderHTML("SysMonitor Logs", tr)
 	faviconHTML := s.getFaviconHTML()
 
 	html := `<!DOCTYPE html>

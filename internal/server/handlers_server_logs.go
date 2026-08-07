@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,22 +20,22 @@ import (
 
 // ServerLogEntry represents a parsed server log entry
 type ServerLogEntry struct {
-	Timestamp   int64  `json:"timestamp"`
-	Level       string `json:"level"`        // success, warning, error, info
-	StatusCode  int    `json:"status_code"`
-	Method      string `json:"method"`
-	Path        string `json:"path"`
-	Duration    string `json:"duration"`
-	RequestSize string `json:"request_size"`
+	Timestamp    int64  `json:"timestamp"`
+	Level        string `json:"level"` // success, warning, error, info
+	StatusCode   int    `json:"status_code"`
+	Method       string `json:"method"`
+	Path         string `json:"path"`
+	Duration     string `json:"duration"`
+	RequestSize  string `json:"request_size"`
 	ResponseSize string `json:"response_size"`
-	IP          string `json:"ip"`
-	UserAgent   string `json:"user_agent"`
-	RawLog      string `json:"raw_log"`
+	IP           string `json:"ip"`
+	UserAgent    string `json:"user_agent"`
+	RawLog       string `json:"raw_log"`
 }
 
 // handleAdminServerLogs renders the server logs page
 func (s *Server) handleAdminServerLogs(w http.ResponseWriter, r *http.Request) {
-	s.renderAdminServerLogsPage(w)
+	s.renderAdminServerLogsPage(w, s.tr(r))
 }
 
 // handleAPIGetServerLogs returns server logs with filtering and pagination
@@ -194,9 +195,9 @@ func (s *Server) parseServerLogs(filePath, searchTerm, levelFilter string, start
 		// Include: HTTP requests, upload events (📤 📦 ✅ UPLOAD), and system events
 		isHTTPLog := entry.StatusCode != 0 && entry.Method != ""
 		isUploadLog := strings.Contains(line, "UPLOAD STARTED") ||
-		              strings.Contains(line, "UPLOAD COMPLETED") ||
-		              strings.Contains(line, "UPLOAD ABANDONED") ||
-		              strings.Contains(line, "Upload progress:")
+			strings.Contains(line, "UPLOAD COMPLETED") ||
+			strings.Contains(line, "UPLOAD ABANDONED") ||
+			strings.Contains(line, "Upload progress:")
 
 		if !isHTTPLog && !isUploadLog {
 			continue
@@ -277,7 +278,7 @@ func (s *Server) parseLogLine(line string) ServerLogEntry {
 	} else if strings.Contains(line, "❌") {
 		entry.Level = "error"
 	} else if strings.Contains(line, "📝") || strings.Contains(line, "🚀") ||
-	          strings.Contains(line, "📤") || strings.Contains(line, "UPLOAD STARTED") {
+		strings.Contains(line, "📤") || strings.Contains(line, "UPLOAD STARTED") {
 		entry.Level = "info"
 	} else if strings.Contains(line, "📦") || strings.Contains(line, "Upload progress:") {
 		entry.Level = "info"
@@ -289,7 +290,7 @@ func (s *Server) parseLogLine(line string) ServerLogEntry {
 		startIdx := strings.Index(line, "[")
 		endIdx := strings.Index(line, "]")
 		if startIdx != -1 && endIdx != -1 && endIdx > startIdx {
-			if code, err := strconv.Atoi(line[startIdx+1:endIdx]); err == nil {
+			if code, err := strconv.Atoi(line[startIdx+1 : endIdx]); err == nil {
 				entry.StatusCode = code
 			}
 		}
@@ -365,8 +366,9 @@ func (s *Server) escapeJSON(str string) string {
 	str = strings.ReplaceAll(str, "\t", "\\t")
 	return str
 }
+
 // renderAdminServerLogsPage renders the server logs page with inline HTML
-func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter) {
+func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter, tr *i18n.Translator) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	companyName := s.config.CompanyName
@@ -374,7 +376,7 @@ func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter) {
 		companyName = "WulfVault"
 	}
 
-	headerHTML := s.getAdminHeaderHTML("Server Logs")
+	headerHTML := s.getAdminHeaderHTML("Server Logs", tr)
 	faviconHTML := s.getFaviconHTML()
 
 	html := `<!DOCTYPE html>

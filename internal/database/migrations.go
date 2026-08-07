@@ -102,6 +102,13 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Per-user interface language (v7.2.0, issue #33). Empty means "follow the
+	// server default", which is what every existing row gets, so upgrading an
+	// installation changes nothing until a user picks a language.
+	if err := d.addColumnIfNotExists("Users", "Language", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+
 	// Rewrite rows anonymized by earlier versions, which stored the real
 	// address inside the placeholder and in OriginalEmail.
 	if err := d.rewriteLegacyAnonymizedRows(); err != nil {

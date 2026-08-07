@@ -17,6 +17,7 @@ import (
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/config"
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -54,8 +55,12 @@ func (s *Server) Start() error {
 	// Load branding configuration
 	s.loadBrandingConfig()
 
+	// Load the server-wide default language
+	s.loadLanguageConfig()
+
 	// Public routes
 	mux.HandleFunc("/", s.handleHome)
+	mux.HandleFunc("/lang", s.handleSetLanguage)
 	mux.HandleFunc("/login", s.handleLogin)
 	mux.HandleFunc("/logout", s.handleLogout)
 	mux.HandleFunc("/forgot-password", s.handleForgotPassword)
@@ -216,10 +221,10 @@ func (s *Server) Start() error {
 	addr := ":" + s.config.Port
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           loggingMiddleware(mux), // Use the new enhanced logging middleware
-		ReadHeaderTimeout: 60 * time.Second,       // Time to read request headers only (not body)
-		WriteTimeout:      8 * time.Hour,          // Extended for very large file uploads on slow connections (up to 8 hours)
-		IdleTimeout:       120 * time.Second,      // Keep-alive timeout
+		Handler:           loggingMiddleware(i18n.Middleware(mux)), // Request logging, then per-request language
+		ReadHeaderTimeout: 60 * time.Second,                        // Time to read request headers only (not body)
+		WriteTimeout:      8 * time.Hour,                           // Extended for very large file uploads on slow connections (up to 8 hours)
+		IdleTimeout:       120 * time.Second,                       // Keep-alive timeout
 	}
 
 	log.Printf("🚀 Server starting on %s", addr)
@@ -273,6 +278,9 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		// Store user in context (simple approach: we'll pass it via request context)
 		r = r.WithContext(contextWithUser(r.Context(), user))
+		// The profile language outranks the cookie/browser choice made by the
+		// i18n middleware; an empty setting leaves that choice in place.
+		r = i18n.WithUserLanguage(r, user.Language)
 		next(w, r)
 	}
 }
@@ -321,6 +329,7 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		r = r.WithContext(contextWithUser(r.Context(), user))
+		r = i18n.WithUserLanguage(r, user.Language)
 		next(w, r)
 	}
 }

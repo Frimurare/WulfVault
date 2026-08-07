@@ -17,7 +17,7 @@ import (
 // handleForgotPassword shows the forgot password page or handles the request
 func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		s.renderForgotPasswordPage(w, "")
+		s.renderForgotPasswordPage(w, r, "", false)
 		return
 	}
 
@@ -28,13 +28,13 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderForgotPasswordPage(w, "Invalid form data")
+		s.renderForgotPasswordPage(w, r, "forgot.error.invalid_form", false)
 		return
 	}
 
 	emailAddress := r.FormValue("email")
 	if emailAddress == "" {
-		s.renderForgotPasswordPage(w, "Email is required")
+		s.renderForgotPasswordPage(w, r, "forgot.error.email_required", false)
 		return
 	}
 
@@ -59,14 +59,14 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Always show the same message for security (don't reveal if email exists)
-	successMessage := "If you have an account, a password reset email has been sent!"
+	const sentMessageKey = "forgot.sent"
 
 	// If account exists, create token and send email
 	if accountExists {
 		token, err := database.DB.CreatePasswordResetToken(emailAddress, accountType)
 		if err != nil {
 			log.Printf("Failed to create reset token: %v", err)
-			s.renderForgotPasswordPage(w, successMessage)
+			s.renderForgotPasswordPage(w, r, sentMessageKey, true)
 			return
 		}
 
@@ -82,14 +82,14 @@ func (s *Server) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Always show success message
-	s.renderForgotPasswordPage(w, "SUCCESS:"+successMessage)
+	s.renderForgotPasswordPage(w, r, sentMessageKey, true)
 }
 
 // handleResetPassword shows the reset password page or handles the reset
 func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		s.renderResetPasswordPage(w, "", "Invalid reset link")
+		s.renderResetPasswordPage(w, r, "", "reset.error.invalid_link")
 		return
 	}
 
@@ -97,10 +97,10 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		// Verify token is valid
 		_, err := database.DB.GetPasswordResetToken(token)
 		if err != nil {
-			s.renderResetPasswordPage(w, "", "Invalid or expired reset link")
+			s.renderResetPasswordPage(w, r, "", "reset.error.expired_link")
 			return
 		}
-		s.renderResetPasswordPage(w, token, "")
+		s.renderResetPasswordPage(w, r, token, "")
 		return
 	}
 
@@ -111,7 +111,7 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderResetPasswordPage(w, token, "Invalid form data")
+		s.renderResetPasswordPage(w, r, token, "reset.error.invalid_form")
 		return
 	}
 
@@ -120,24 +120,24 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Validate passwords
 	if password == "" || confirmPassword == "" {
-		s.renderResetPasswordPage(w, token, "Both password fields are required")
+		s.renderResetPasswordPage(w, r, token, "reset.error.both_required")
 		return
 	}
 
 	if len(password) < 6 {
-		s.renderResetPasswordPage(w, token, "Password must be at least 6 characters")
+		s.renderResetPasswordPage(w, r, token, "reset.error.too_short")
 		return
 	}
 
 	if password != confirmPassword {
-		s.renderResetPasswordPage(w, token, "Passwords do not match")
+		s.renderResetPasswordPage(w, r, token, "reset.error.mismatch")
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := auth.HashPassword(password)
 	if err != nil {
-		s.renderResetPasswordPage(w, token, "Failed to process password")
+		s.renderResetPasswordPage(w, r, token, "reset.error.process_failed")
 		return
 	}
 
@@ -145,36 +145,38 @@ func (s *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	err = database.DB.ResetPasswordWithToken(token, hashedPassword)
 	if err != nil {
 		log.Printf("Failed to reset password: %v", err)
-		s.renderResetPasswordPage(w, token, "Failed to reset password. The link may be expired or already used.")
+		s.renderResetPasswordPage(w, r, token, "reset.error.reset_failed")
 		return
 	}
 
 	log.Printf("Password reset successful for token: %s", token)
 
 	// Show success page
-	s.renderPasswordResetSuccessPage(w)
+	s.renderPasswordResetSuccessPage(w, r)
 }
 
-// renderForgotPasswordPage renders the forgot password form
-func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, message string) {
+// renderForgotPasswordPage renders the forgot password form. messageKey is an
+// i18n key; success decides whether it is shown as a confirmation or an error.
+func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, r *http.Request, messageKey string, success bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tr := s.tr(r)
 
 	messageHTML := ""
-	if message != "" {
-		if len(message) > 8 && message[:8] == "SUCCESS:" {
-			messageHTML = `<div class="success-message">` + message[8:] + `</div>`
-		} else {
-			messageHTML = `<div class="error-message">` + message + `</div>`
+	if messageKey != "" {
+		class := "error-message"
+		if success {
+			class = "success-message"
 		}
+		messageHTML = `<div class="` + class + `">` + tr.T(messageKey) + `</div>`
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Glömt Lösenord - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("forgot.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -289,28 +291,29 @@ func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, message string)
     </style>
 </head>
 <body>
+    ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="logo">
-            <h1>🔐 Glömt Lösenord?</h1>
+            <h1>🔐 ` + tr.T("forgot.title") + `</h1>
             <p>` + s.config.CompanyName + `</p>
         </div>
 
         ` + messageHTML + `
 
         <div class="info-box">
-            <p>Ange din e-postadress så skickar vi dig en länk för att återställa ditt lösenord.</p>
+            <p>` + tr.T("forgot.info") + `</p>
         </div>
 
         <form method="POST" action="/forgot-password">
             <div class="form-group">
-                <label for="email">E-postadress</label>
+                <label for="email">` + tr.T("forgot.email_label") + `</label>
                 <input type="email" id="email" name="email" required autofocus>
             </div>
-            <button type="submit" class="btn">Skicka Återställningslänk</button>
+            <button type="submit" class="btn">` + tr.T("forgot.submit") + `</button>
         </form>
 
         <div class="back-link">
-            <a href="/login">← Tillbaka till inloggning</a>
+            <a href="/login">← ` + tr.T("forgot.back_to_login") + `</a>
         </div>
     </div>
 </body>
@@ -319,23 +322,25 @@ func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, message string)
 	w.Write([]byte(html))
 }
 
-// renderResetPasswordPage renders the reset password form with password visibility toggle
-func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg string) {
+// renderResetPasswordPage renders the reset password form with password
+// visibility toggle. errorKey is an i18n key rather than finished text.
+func (s *Server) renderResetPasswordPage(w http.ResponseWriter, r *http.Request, token, errorKey string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tr := s.tr(r)
 
 	errorHTML := ""
-	if errorMsg != "" {
-		errorHTML = `<div class="error-message">` + errorMsg + `</div>`
+	if errorKey != "" {
+		errorHTML = `<div class="error-message">` + tr.T(errorKey) + `</div>`
 	}
 
 	// If no token, show error page
 	if token == "" {
 		html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="author" content="Ulf Holmström">
-    <title>Felaktig Länk - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("reset.invalid_page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -375,12 +380,13 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
     </style>
 </head>
 <body>
+    ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="error-icon">⚠️</div>
-        <h1>Felaktig Återställningslänk</h1>
-        <p>` + errorMsg + `</p>
-        <p>Länken kan vara utgången eller felaktig. Försök begära en ny återställningslänk.</p>
-        <a href="/forgot-password" class="btn">Begär Ny Länk</a>
+        <h1>` + tr.T("reset.invalid_title") + `</h1>
+        <p>` + tr.T(errorKey) + `</p>
+        <p>` + tr.T("reset.invalid_body") + `</p>
+        <a href="/forgot-password" class="btn">` + tr.T("reset.request_new_link") + `</a>
     </div>
 </body>
 </html>`
@@ -389,12 +395,12 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Återställ Lösenord - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("reset.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -513,12 +519,12 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
             const confirmPassword = document.getElementById('confirm_password').value;
 
             if (password.length < 6) {
-                alert('Lösenordet måste vara minst 6 tecken långt');
+                alert('` + tr.T("reset.js_too_short") + `');
                 return false;
             }
 
             if (password !== confirmPassword) {
-                alert('Lösenorden matchar inte!');
+                alert('` + tr.T("reset.js_mismatch") + `');
                 return false;
             }
 
@@ -527,24 +533,25 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
     </script>
 </head>
 <body>
+    ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="logo">
-            <h1>🔐 Nytt Lösenord</h1>
+            <h1>🔐 ` + tr.T("reset.title") + `</h1>
             <p>` + s.config.CompanyName + `</p>
         </div>
 
         ` + errorHTML + `
 
         <div class="info-box">
-            <p><strong>Tips:</strong></p>
-            <p>• Minst 6 tecken</p>
-            <p>• Håll in ögat-ikonen för att se lösenordet</p>
-            <p>• Se till att båda fälten matchar</p>
+            <p><strong>` + tr.T("reset.tips_heading") + `</strong></p>
+            <p>• ` + tr.T("reset.tip_min_length") + `</p>
+            <p>• ` + tr.T("reset.tip_eye") + `</p>
+            <p>• ` + tr.T("reset.tip_match") + `</p>
         </div>
 
         <form method="POST" action="/reset-password?token=` + token + `" onsubmit="return validateForm()">
             <div class="form-group">
-                <label for="password">Nytt Lösenord</label>
+                <label for="password">` + tr.T("reset.new_password") + `</label>
                 <input type="password" id="password" name="password" required minlength="6" autofocus>
                 <span class="password-toggle" id="password_icon"
                       onmousedown="togglePassword('password')"
@@ -552,14 +559,14 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
                       onmouseleave="if(document.getElementById('password').type === 'text') togglePassword('password')">👁️</span>
             </div>
             <div class="form-group">
-                <label for="confirm_password">Bekräfta Nytt Lösenord</label>
+                <label for="confirm_password">` + tr.T("reset.confirm_password") + `</label>
                 <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
                 <span class="password-toggle" id="confirm_password_icon"
                       onmousedown="togglePassword('confirm_password')"
                       onmouseup="togglePassword('confirm_password')"
                       onmouseleave="if(document.getElementById('confirm_password').type === 'text') togglePassword('confirm_password')">👁️</span>
             </div>
-            <button type="submit" class="btn">Återställ Lösenord</button>
+            <button type="submit" class="btn">` + tr.T("reset.submit") + `</button>
         </form>
     </div>
 </body>
@@ -569,16 +576,17 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, token, errorMsg 
 }
 
 // renderPasswordResetSuccessPage shows success after password reset
-func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter) {
+func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tr := s.tr(r)
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Lösenord Återställt - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("reset.success_page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -643,15 +651,16 @@ func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter) {
     </script>
 </head>
 <body>
+    ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="success-icon">✓</div>
-        <h1>Lösenord Återställt!</h1>
-        <p>Ditt lösenord har uppdaterats framgångsrikt.</p>
-        <p>Du kan nu logga in med ditt nya lösenord.</p>
+        <h1>` + tr.T("reset.success_title") + `</h1>
+        <p>` + tr.T("reset.success_body") + `</p>
+        <p>` + tr.T("reset.success_hint") + `</p>
         <p style="font-size: 14px; color: #999; margin-top: 20px;">
-            Du omdirigeras automatiskt till inloggningssidan om 5 sekunder...
+            ` + tr.T("reset.success_redirect") + `
         </p>
-        <a href="/login" class="btn">Logga In Nu</a>
+        <a href="/login" class="btn">` + tr.T("reset.success_login_now") + `</a>
     </div>
 </body>
 </html>`

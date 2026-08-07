@@ -16,22 +16,23 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // EmailConfigRequest represents a request for email configuration
 type EmailConfigRequest struct {
-	Provider       string `json:"provider"`       // "brevo", "smtp", "mailgun", "sendgrid", or "resend"
-	ApiKey         string `json:"apiKey"`         // For Brevo, Mailgun, SendGrid, and Resend
-	SMTPHost       string `json:"smtpHost"`       // For SMTP
-	SMTPPort       int    `json:"smtpPort"`       // For SMTP
-	SMTPUsername   string `json:"smtpUsername"`   // For SMTP
-	SMTPPassword   string `json:"smtpPassword"`   // For SMTP
-	SMTPUseTLS     bool   `json:"smtpUseTLS"`     // For SMTP
-	MailgunDomain  string `json:"mailgunDomain"`  // For Mailgun
-	MailgunRegion  string `json:"mailgunRegion"`  // For Mailgun (default "us")
-	FromEmail      string `json:"fromEmail"`      // Common
-	FromName       string `json:"fromName"`       // Common
+	Provider      string `json:"provider"`      // "brevo", "smtp", "mailgun", "sendgrid", or "resend"
+	ApiKey        string `json:"apiKey"`        // For Brevo, Mailgun, SendGrid, and Resend
+	SMTPHost      string `json:"smtpHost"`      // For SMTP
+	SMTPPort      int    `json:"smtpPort"`      // For SMTP
+	SMTPUsername  string `json:"smtpUsername"`  // For SMTP
+	SMTPPassword  string `json:"smtpPassword"`  // For SMTP
+	SMTPUseTLS    bool   `json:"smtpUseTLS"`    // For SMTP
+	MailgunDomain string `json:"mailgunDomain"` // For Mailgun
+	MailgunRegion string `json:"mailgunRegion"` // For Mailgun (default "us")
+	FromEmail     string `json:"fromEmail"`     // Common
+	FromName      string `json:"fromName"`      // Common
 }
 
 // handleEmailConfigure handles configuration of email settings
@@ -738,11 +739,11 @@ func (s *Server) handleEmailSettings(w http.ResponseWriter, r *http.Request) {
 	resendConfigured = (err == nil && resendFromEmail != "")
 
 	// Render page
-	s.renderEmailSettingsPage(w, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName)
+	s.renderEmailSettingsPage(w, s.tr(r), brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName)
 }
 
 // renderEmailSettingsPage renders the email settings page
-func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive bool, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName string) {
+func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, tr *i18n.Translator, brevoConfigured, smtpConfigured, mailgunConfigured, sendgridConfigured, resendConfigured, isBrevoActive, isSMTPActive, isMailgunActive, isSendGridActive, isResendActive bool, brevoFromEmail, smtpFromEmail, mailgunFromEmail, sendgridFromEmail, resendFromEmail, brevoFromName, smtpFromName, mailgunFromName, sendgridFromName, resendFromName string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	activeTab := "resend"
@@ -1134,7 +1135,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
 
     <div class="container">
         <div class="settings-card">
@@ -1201,11 +1202,11 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 
                 <button type="submit" class="btn-primary">Save Resend Settings</button>
                 ` + func() string {
-			if resendConfigured && !isResendActive {
-				return `<button type="button" class="btn-activate" id="activate-resend">🚀 Make Resend Active</button>`
-			}
-			return ""
-		}() + `
+		if resendConfigured && !isResendActive {
+			return `<button type="button" class="btn-activate" id="activate-resend">🚀 Make Resend Active</button>`
+		}
+		return ""
+	}() + `
             </form>
         </div>
 
@@ -1246,11 +1247,11 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 
                 <button type="submit" class="btn-primary">Save Brevo Settings</button>
                 ` + func() string {
-			if brevoConfigured && !isBrevoActive {
-				return `<button type="button" class="btn-activate" id="activate-brevo">🚀 Make Brevo Active</button>`
-			}
-			return ""
-		}() + `
+		if brevoConfigured && !isBrevoActive {
+			return `<button type="button" class="btn-activate" id="activate-brevo">🚀 Make Brevo Active</button>`
+		}
+		return ""
+	}() + `
             </form>
         </div>
 
@@ -1313,13 +1314,13 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 
                 <div class="form-group checkbox-group">
                     <input type="checkbox" id="smtp-use-tls" ` + func() string {
-			var useTLS sql.NullInt64
-			database.DB.QueryRow("SELECT SMTPUseTLS FROM EmailProviderConfig WHERE Provider = 'smtp'").Scan(&useTLS)
-			if useTLS.Valid && useTLS.Int64 == 1 {
-				return "checked"
-			}
-			return ""
-		}() + `>
+		var useTLS sql.NullInt64
+		database.DB.QueryRow("SELECT SMTPUseTLS FROM EmailProviderConfig WHERE Provider = 'smtp'").Scan(&useTLS)
+		if useTLS.Valid && useTLS.Int64 == 1 {
+			return "checked"
+		}
+		return ""
+	}() + `>
                     <label for="smtp-use-tls" style="margin-bottom: 0;">Use TLS/STARTTLS</label>
                 </div>
 
@@ -1330,11 +1331,11 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 
                 <button type="submit" class="btn-primary">Save SMTP Settings</button>
                 ` + func() string {
-			if smtpConfigured && !isSMTPActive {
-				return `<button type="button" class="btn-activate" id="activate-smtp">🚀 Make SMTP Active</button>`
-			}
-			return ""
-		}() + `
+		if smtpConfigured && !isSMTPActive {
+			return `<button type="button" class="btn-activate" id="activate-smtp">🚀 Make SMTP Active</button>`
+		}
+		return ""
+	}() + `
             </form>
         </div>
 
@@ -1363,19 +1364,19 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
                     <label>Region *</label>
                     <select id="mailgun-region" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                         <option value="us" ` + func() string {
-			region := getMailgunRegion()
-			if region == "" || region == "us" {
-				return "selected"
-			}
-			return ""
-		}() + `>US (api.mailgun.net)</option>
+		region := getMailgunRegion()
+		if region == "" || region == "us" {
+			return "selected"
+		}
+		return ""
+	}() + `>US (api.mailgun.net)</option>
                         <option value="eu" ` + func() string {
-			region := getMailgunRegion()
-			if region == "eu" {
-				return "selected"
-			}
-			return ""
-		}() + `>EU (api.eu.mailgun.net)</option>
+		region := getMailgunRegion()
+		if region == "eu" {
+			return "selected"
+		}
+		return ""
+	}() + `>EU (api.eu.mailgun.net)</option>
                     </select>
                     <small>Choose based on where your Mailgun domain is registered.</small>
                 </div>
@@ -1405,11 +1406,11 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, brevoConfigured,
 
                 <button type="submit" class="btn-primary">Save Mailgun Settings</button>
                 ` + func() string {
-			if mailgunConfigured && !isMailgunActive {
-				return `<button type="button" class="btn-activate" id="activate-mailgun">🚀 Make Mailgun Active</button>`
-			}
-			return ""
-		}() + `
+		if mailgunConfigured && !isMailgunActive {
+			return `<button type="button" class="btn-activate" id="activate-mailgun">🚀 Make Mailgun Active</button>`
+		}
+		return ""
+	}() + `
             </form>
         </div>
 

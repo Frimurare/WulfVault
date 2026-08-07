@@ -12,6 +12,7 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -29,11 +30,11 @@ func (s *Server) handleUserSettings(w http.ResponseWriter, r *http.Request) {
 		backupCodesCount, _ = database.DB.GetRemainingBackupCodesCount(user.Id)
 	}
 
-	s.renderUserSettingsPage(w, user, backupCodesCount)
+	s.renderUserSettingsPage(w, s.tr(r), user, backupCodesCount)
 }
 
 // renderUserSettingsPage renders the user settings page
-func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User, backupCodesCount int) {
+func (s *Server) renderUserSettingsPage(w http.ResponseWriter, tr *i18n.Translator, user *models.User, backupCodesCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	totpStatusBadge := ""
@@ -57,7 +58,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -301,10 +302,21 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
                 padding: 5px;
             }
         }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
-    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
+    ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
     <div class="container">
         <div class="card">
             <h2>Account Settings</h2>
@@ -320,6 +332,24 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
                 <div class="setting-info">
                     <h3>Username</h3>
                     <p>` + user.Name + `</p>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>` + tr.T("settings.language_heading") + `</h3>
+                    <p>` + tr.T("settings.language_description") + `</p>
+                </div>
+                <div>
+                    <form method="GET" action="/lang" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="hidden" name="return" value="/settings">
+                        <label for="language" class="sr-only">` + tr.T("settings.language_label") + `</label>
+                        <select id="language" name="lang" style="padding: 9px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">` +
+		languageSelectOptionsHTML(tr, user.Language, true) + `</select>
+                        <button type="submit" style="background: ` + s.getPrimaryColor() + `; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                            ` + tr.T("settings.language_save") + `
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

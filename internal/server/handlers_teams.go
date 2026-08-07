@@ -16,6 +16,7 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -46,7 +47,7 @@ func (s *Server) handleAdminTeams(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	s.renderAdminTeams(w, teamInfos)
+	s.renderAdminTeams(w, s.tr(r), teamInfos)
 }
 
 // handleAPITeamCreate creates a new team (Admin only)
@@ -563,7 +564,7 @@ func (s *Server) handleUserTeams(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s.renderTeamFiles(w, user, team)
+		s.renderTeamFiles(w, s.tr(r), user, team)
 		return
 	}
 
@@ -575,7 +576,7 @@ func (s *Server) handleUserTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.renderUserTeams(w, user, teams)
+	s.renderUserTeams(w, s.tr(r), user, teams)
 }
 
 // handleAPITeamFiles returns all files shared with a team
@@ -692,7 +693,7 @@ func (s *Server) handleAPIFileTeams(w http.ResponseWriter, r *http.Request) {
 }
 
 // renderAdminTeams renders the admin teams management page
-func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
+func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, teams []struct {
 	*models.Team
 	MemberCount int
 }) {
@@ -979,7 +980,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <div class="actions">
             <h2>📁 Manage Teams</h2>
@@ -1324,7 +1325,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, teams []struct {
 }
 
 // renderUserTeams renders the user teams page with dashboard-style UI
-func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams []*models.TeamWithMembers) {
+func (s *Server) renderUserTeams(w http.ResponseWriter, tr *i18n.Translator, user *models.User, teams []*models.TeamWithMembers) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
@@ -1453,7 +1454,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
     </style>
 </head>
 <body>
-    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
+    ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
 
     <div class="container">
         <div class="page-header">
@@ -1519,7 +1520,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, user *models.User, teams
 }
 
 // renderTeamFiles displays all files shared with a specific team using dashboard-style list
-func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team *models.Team) {
+func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, user *models.User, team *models.Team) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get team files
@@ -1687,7 +1688,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, user *models.User, team 
     </style>
 </head>
 <body>
-    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
+    ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
 
     <div class="container">
         <div class="page-header">

@@ -7,6 +7,7 @@ package server
 
 import (
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -16,14 +17,14 @@ func (s *Server) getFaviconHTML() string {
 }
 
 // getAdminHeaderHTML returns branded header HTML for admin pages (compatibility wrapper)
-func (s *Server) getAdminHeaderHTML(pageTitle string) string {
+func (s *Server) getAdminHeaderHTML(pageTitle string, tr *i18n.Translator) string {
 	// Create a dummy admin user for header rendering
 	user := &models.User{UserLevel: models.UserLevelAdmin}
-	return s.getHeaderHTML(user, true)
+	return s.getHeaderHTML(user, true, tr)
 }
 
 // getDownloadUserHeaderHTML returns branded header HTML for download user pages
-func (s *Server) getDownloadUserHeaderHTML() string {
+func (s *Server) getDownloadUserHeaderHTML(tr *i18n.Translator) string {
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 	logoData := brandingConfig["branding_logo"]
 
@@ -83,7 +84,7 @@ func (s *Server) getDownloadUserHeaderHTML() string {
                 padding: 6px 12px !important;
                 font-size: 14px !important;
             }
-        }`
+        }` + languageSwitcherCSS
 
 	headerHTML := `
     <div class="header">
@@ -100,9 +101,10 @@ func (s *Server) getDownloadUserHeaderHTML() string {
 	headerHTML += `
         </div>
         <nav>
-            <a href="/download/dashboard">Dashboard</a>
-            <a href="/download/account-settings">Account Settings</a>
-            <a href="/download/logout" style="margin-left: auto;">Logout</a>
+            <a href="/download/dashboard">` + tr.T("nav.dashboard") + `</a>
+            <a href="/download/account-settings">` + tr.T("nav.account_settings") + `</a>
+            <a href="/download/logout" style="margin-left: auto;">` + tr.T("nav.logout") + `</a>
+            ` + s.getLanguageSwitcherHTML(tr) + `
             <span>v` + s.config.Version + `</span>
         </nav>
     </div>`
@@ -112,7 +114,8 @@ func (s *Server) getDownloadUserHeaderHTML() string {
 
 // getHeaderHTML generates consistent header HTML for all pages
 // forAdmin: true shows admin navigation, false shows user navigation
-func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
+// tr supplies the language for the navigation labels and the flag switcher
+func (s *Server) getHeaderHTML(user *models.User, forAdmin bool, tr *i18n.Translator) string {
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 	logoData := brandingConfig["branding_logo"]
 
@@ -351,7 +354,7 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
                 background: rgba(255, 255, 255, 0.1) !important;
                 color: white !important;
             }
-        }`
+        }` + languageSwitcherCSS
 
 	headerHTML := `
     <div class="header">
@@ -367,7 +370,7 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
 
 	headerHTML += `
         </div>
-        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <button class="hamburger" aria-label="` + tr.T("nav.toggle") + `" aria-expanded="false">
             <span></span>
             <span></span>
             <span></span>
@@ -378,40 +381,42 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
 	if user.IsAdmin() && forAdmin {
 		// Full admin navigation
 		headerHTML += `
-            <a href="/admin">Admin Dashboard</a>
-            <a href="/dashboard">My Files</a>
-            <a href="/admin/users">Users</a>
-            <a href="/admin/teams">Teams</a>
+            <a href="/admin">` + tr.T("nav.admin_dashboard") + `</a>
+            <a href="/dashboard">` + tr.T("nav.my_files") + `</a>
+            <a href="/admin/users">` + tr.T("nav.users") + `</a>
+            <a href="/admin/teams">` + tr.T("nav.teams") + `</a>
             <div class="dropdown">
-                <a class="dropdown-toggle">Files</a>
+                <a class="dropdown-toggle">` + tr.T("nav.files") + `</a>
                 <div class="dropdown-content">
-                    <a href="/admin/files">All Files</a>
-                    <a href="/admin/duplicates">Duplicate Files</a>
-                    <a href="/admin/trash">Trash</a>
+                    <a href="/admin/files">` + tr.T("nav.all_files") + `</a>
+                    <a href="/admin/duplicates">` + tr.T("nav.duplicate_files") + `</a>
+                    <a href="/admin/trash">` + tr.T("nav.trash") + `</a>
                 </div>
             </div>
             <div class="dropdown">
-                <a class="dropdown-toggle">Server</a>
+                <a class="dropdown-toggle">` + tr.T("nav.server") + `</a>
                 <div class="dropdown-content">
-                    <a href="/admin/settings">Server Settings</a>
-                    <a href="/admin/branding">Branding</a>
-                    <a href="/admin/email-settings">Email</a>
-                    <a href="/admin/identity-providers">Identity Providers</a>
-                    <a href="/admin/audit-logs">Audit Logs</a>
-                    <a href="/admin/server-logs">Server Logs</a>
-                    <a href="/admin/sysmonitor-logs">SysMonitor Logs</a>
+                    <a href="/admin/settings">` + tr.T("nav.server_settings") + `</a>
+                    <a href="/admin/branding">` + tr.T("nav.branding") + `</a>
+                    <a href="/admin/email-settings">` + tr.T("nav.email") + `</a>
+                    <a href="/admin/identity-providers">` + tr.T("nav.identity_providers") + `</a>
+                    <a href="/admin/audit-logs">` + tr.T("nav.audit_logs") + `</a>
+                    <a href="/admin/server-logs">` + tr.T("nav.server_logs") + `</a>
+                    <a href="/admin/sysmonitor-logs">` + tr.T("nav.sysmonitor_logs") + `</a>
                 </div>
             </div>
-            <a href="/settings">My Account</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <a href="/settings">` + tr.T("nav.my_account") + `</a>
+            <a href="/logout" style="margin-left: auto;">` + tr.T("nav.logout") + `</a>
+            ` + s.getLanguageSwitcherHTML(tr) + `
             <span>v` + s.config.Version + `</span>`
 	} else {
 		// Regular user navigation
 		headerHTML += `
-            <a href="/dashboard">Dashboard</a>
-            <a href="/teams">Teams</a>
-            <a href="/settings">Settings</a>
-            <a href="/logout" style="margin-left: auto;">Logout</a>
+            <a href="/dashboard">` + tr.T("nav.dashboard") + `</a>
+            <a href="/teams">` + tr.T("nav.teams") + `</a>
+            <a href="/settings">` + tr.T("nav.settings") + `</a>
+            <a href="/logout" style="margin-left: auto;">` + tr.T("nav.logout") + `</a>
+            ` + s.getLanguageSwitcherHTML(tr) + `
             <span>v` + s.config.Version + `</span>`
 	}
 
@@ -463,4 +468,3 @@ func (s *Server) getHeaderHTML(user *models.User, forAdmin bool) string {
 
 	return `<link rel="stylesheet" href="/static/css/style.css"><style>` + headerCSS + `</style>` + headerHTML
 }
-
