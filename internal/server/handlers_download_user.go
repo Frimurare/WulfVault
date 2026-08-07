@@ -92,7 +92,7 @@ func (s *Server) handleDownloadChangePassword(w http.ResponseWriter, r *http.Req
 	}
 
 	if r.Method == http.MethodGet {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "", false)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (s *Server) handleDownloadChangePassword(w http.ResponseWriter, r *http.Req
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Invalid form data")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.error.invalid_form", false)
 		return
 	}
 
@@ -113,39 +113,39 @@ func (s *Server) handleDownloadChangePassword(w http.ResponseWriter, r *http.Req
 
 	// Validate current password
 	if !auth.CheckPasswordHash(currentPassword, account.Password) {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Current password is incorrect")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.error.wrong_current", false)
 		return
 	}
 
 	// Validate new password
 	if newPassword == "" || len(newPassword) < 6 {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "New password must be at least 6 characters")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.error.too_short", false)
 		return
 	}
 
 	if newPassword != confirmPassword {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Passwords do not match")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.error.mismatch", false)
 		return
 	}
 
 	// Hash new password
 	hashedPassword, err := auth.HashPassword(newPassword)
 	if err != nil {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Failed to hash password")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.error.hash_failed", false)
 		return
 	}
 
 	// Update password
 	account.Password = hashedPassword
 	if err := database.DB.UpdateDownloadAccount(account); err != nil {
-		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Failed to update password")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.error.update_failed", false)
 		return
 	}
 
 	log.Printf("Password changed for download account: %s", account.Email)
 
 	// Redirect back to dashboard with success message
-	s.renderDownloadChangePasswordPage(w, s.tr(r), account, "SUCCESS:Password changed successfully!")
+	s.renderDownloadChangePasswordPage(w, s.tr(r), account, "dlaccount.password_changed", true)
 }
 
 // handleDownloadLogout logs out a download user
@@ -224,12 +224,12 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>My Downloads - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("dlaccount.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -335,34 +335,34 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 
     <div class="container">
         <div class="account-info">
-            <h2>Account Information</h2>
+            <h2>` + tr.T("dlaccount.account_info") + `</h2>
             <div class="info-grid">
                 <div class="info-item">
-                    <strong>NAME</strong>
+                    <strong>` + tr.T("dlaccount.name") + `</strong>
                     <span>` + account.Name + `</span>
                 </div>
                 <div class="info-item">
-                    <strong>EMAIL</strong>
+                    <strong>` + tr.T("dlaccount.email") + `</strong>
                     <span>` + account.Email + `</span>
                 </div>
                 <div class="info-item">
-                    <strong>DOWNLOADS</strong>
+                    <strong>` + tr.T("dlaccount.downloads") + `</strong>
                     <span>` + strconv.Itoa(account.DownloadCount) + `</span>
                 </div>
                 <div class="info-item">
-                    <strong>LAST USED</strong>
+                    <strong>` + tr.T("dlaccount.last_used") + `</strong>
                     <span>` + account.GetLastUsedDate() + `</span>
                 </div>
             </div>
         </div>
 
-        <h2 style="margin-bottom: 20px; color: #333;">📁 Available Files</h2>
+        <h2 style="margin-bottom: 20px; color: #333;">📁 ` + tr.T("dlaccount.available_files") + `</h2>
         <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 40px;">`
 
 	if len(accessibleFiles) == 0 {
 		html += `
             <div style="text-align: center; padding: 40px; color: #999;">
-                No files available
+                ` + tr.T("dlaccount.no_files") + `
             </div>`
 	} else {
 		html += `
@@ -371,29 +371,29 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 			// Calculate expiration info
 			expiryInfo := ""
 			if file.UnlimitedTime {
-				expiryInfo = "Never expires"
+				expiryInfo = tr.T("dlaccount.never_expires")
 			} else {
 				expiryTime := time.Unix(file.ExpireAt, 0)
 				timeLeft := time.Until(expiryTime)
 				if timeLeft > 24*time.Hour {
 					daysLeft := int(timeLeft.Hours() / 24)
-					expiryInfo = fmt.Sprintf("Expires in %d days", daysLeft)
+					expiryInfo = tr.T("dlaccount.expires_in_days", "days", strconv.Itoa(daysLeft))
 				} else if timeLeft > time.Hour {
 					hoursLeft := int(timeLeft.Hours())
-					expiryInfo = fmt.Sprintf("Expires in %d hours", hoursLeft)
+					expiryInfo = tr.T("dlaccount.expires_in_hours", "hours", strconv.Itoa(hoursLeft))
 				} else if timeLeft > 0 {
-					expiryInfo = "Expires soon"
+					expiryInfo = tr.T("dlaccount.expires_soon")
 				} else {
-					expiryInfo = "Expired"
+					expiryInfo = tr.T("common.expired")
 				}
 			}
 
 			// Download limit info
 			downloadInfo := ""
 			if file.UnlimitedDownloads {
-				downloadInfo = "Unlimited downloads"
+				downloadInfo = tr.T("dlaccount.unlimited_downloads")
 			} else {
-				downloadInfo = fmt.Sprintf("%d downloads remaining", file.DownloadsRemaining)
+				downloadInfo = tr.T("dlaccount.downloads_remaining", "count", strconv.Itoa(file.DownloadsRemaining))
 			}
 
 			html += fmt.Sprintf(`
@@ -403,7 +403,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
                         <p style="font-size: 14px; color: #666; margin: 4px 0;">%s • %s • %s</p>
                     </div>
                     <div style="flex-shrink: 0; margin-left: 20px;">
-                        <a href="/d/%s" class="btn btn-primary" style="padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500; transition: all 0.3s; display: inline-block; background: %s; color: white;">⬇️ Download</a>
+                        <a href="/d/%s" class="btn btn-primary" style="padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500; transition: all 0.3s; display: inline-block; background: %s; color: white;">⬇️ %s</a>
                     </div>
                 </div>`,
 				s.getPrimaryColor(),
@@ -412,7 +412,8 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 				expiryInfo,
 				downloadInfo,
 				file.Id,
-				s.getPrimaryColor())
+				s.getPrimaryColor(),
+				tr.T("dlaccount.download_button"))
 		}
 		html += `
             </div>`
@@ -421,13 +422,13 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 	html += `
         </div>
 
-        <h2 style="margin-bottom: 20px; color: #333;">📜 Download History</h2>
+        <h2 style="margin-bottom: 20px; color: #333;">📜 ` + tr.T("dlaccount.history") + `</h2>
         <table>
             <thead>
                 <tr>
-                    <th>File Name</th>
-                    <th>Downloaded At</th>
-                    <th>Size</th>
+                    <th>` + tr.T("dlaccount.col_file_name") + `</th>
+                    <th>` + tr.T("dlaccount.col_downloaded_at") + `</th>
+                    <th>` + tr.T("dlaccount.col_size") + `</th>
                 </tr>
             </thead>
             <tbody>`
@@ -436,7 +437,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 		html += `
                 <tr>
                     <td colspan="3" style="text-align: center; padding: 40px; color: #999;">
-                        No downloads yet
+                        ` + tr.T("dlaccount.no_downloads") + `
                     </td>
                 </tr>`
 	} else {
@@ -444,10 +445,13 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 			sizeStr := fmt.Sprintf("%.2f MB", float64(log.FileSize)/(1024*1024))
 			html += fmt.Sprintf(`
                 <tr>
-                    <td data-label="File Name">%s</td>
-                    <td data-label="Downloaded At">%s</td>
-                    <td data-label="Size">%s</td>
-                </tr>`, log.FileName, log.GetReadableDownloadDate(), sizeStr)
+                    <td data-label="%s">%s</td>
+                    <td data-label="%s">%s</td>
+                    <td data-label="%s">%s</td>
+                </tr>`,
+				tr.T("dlaccount.col_file_name"), template.HTMLEscapeString(log.FileName),
+				tr.T("dlaccount.col_downloaded_at"), log.GetReadableDownloadDate(),
+				tr.T("dlaccount.col_size"), sizeStr)
 		}
 	}
 
@@ -468,25 +472,25 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 }
 
 // renderDownloadChangePasswordPage renders the password change page
-func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, message string) {
+func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, messageKey string, success bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	messageHTML := ""
-	if message != "" {
-		if len(message) > 8 && message[:8] == "SUCCESS:" {
-			messageHTML = `<div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">` + message[8:] + `</div>`
-		} else {
-			messageHTML = `<div style="background: #fee; border: 1px solid #c33; color: #c33; padding: 15px; border-radius: 5px; margin-bottom: 20px;">` + message + `</div>`
+	if messageKey != "" {
+		style := `background: #fee; border: 1px solid #c33; color: #c33;`
+		if success {
+			style = `background: #d4edda; border: 1px solid #c3e6cb; color: #155724;`
 		}
+		messageHTML = `<div style="` + style + ` padding: 15px; border-radius: 5px; margin-bottom: 20px;">` + tr.T(messageKey) + `</div>`
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Change Password - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("dlaccount.change_password_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -558,18 +562,18 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, tr *i18
             ` + messageHTML + `
             <form method="POST" action="/download/change-password">
                 <div class="form-group">
-                    <label>Current Password</label>
+                    <label>` + tr.T("dlaccount.current_password") + `</label>
                     <input type="password" name="current_password" required>
                 </div>
                 <div class="form-group">
-                    <label>New Password</label>
+                    <label>` + tr.T("dlaccount.new_password") + `</label>
                     <input type="password" name="new_password" required minlength="6">
                 </div>
                 <div class="form-group">
-                    <label>Confirm New Password</label>
+                    <label>` + tr.T("dlaccount.confirm_password") + `</label>
                     <input type="password" name="confirm_password" required minlength="6">
                 </div>
-                <button type="submit" class="btn btn-primary">Change Password</button>
+                <button type="submit" class="btn btn-primary">` + tr.T("dlaccount.change_password_submit") + `</button>
             </form>
         </div>
     </div>
