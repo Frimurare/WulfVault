@@ -542,6 +542,16 @@ func (s *Server) handlePasswordProtectedDownload(w http.ResponseWriter, r *http.
 			SameSite: http.SameSiteStrictMode,
 		})
 
+		// Same proof, scoped to the chunked download API
+		http.SetCookie(w, &http.Cookie{
+			Name:     "password_verified_" + fileInfo.Id,
+			Value:    "true",
+			Path:     downloadAPICookiePath(fileInfo.Id),
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
 		// Check if also requires authentication
 		if fileInfo.RequireAuth {
 			s.handleAuthenticatedDownload(w, r, fileInfo)
@@ -686,6 +696,16 @@ func (s *Server) handleDownloadAccountCreation(w http.ResponseWriter, r *http.Re
 		Name:     "download_session_" + fileInfo.Id,
 		Value:    email,
 		Path:     "/d/" + fileInfo.Id,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	// Same session, scoped to the chunked download API
+	http.SetCookie(w, &http.Cookie{
+		Name:     "download_session_" + fileInfo.Id,
+		Value:    email,
+		Path:     downloadAPICookiePath(fileInfo.Id),
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,

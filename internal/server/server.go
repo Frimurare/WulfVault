@@ -177,7 +177,9 @@ func (s *Server) Start() error {
 	// API routes (legacy)
 	mux.HandleFunc("/api/v1/upload", s.requireAuth(s.handleAPIUpload))
 	mux.HandleFunc("/api/v1/files", s.requireAuth(s.handleAPIFiles))
-	mux.HandleFunc("/api/v1/download/", s.handleAPIDownload)
+	// /api/v1/download/<id> keeps its old behaviour; /info, /chunk and /verify
+	// are the chunked download API.
+	mux.HandleFunc("/api/v1/download/", s.handleAPIDownloadRoutes)
 
 	// User Management REST API (Admin only)
 	mux.HandleFunc("/api/v1/users/", s.requireAdmin(s.handleRESTUserRoutes))
