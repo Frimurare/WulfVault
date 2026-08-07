@@ -15,6 +15,7 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -79,7 +80,7 @@ func (s *Server) handleDownloadDashboard(w http.ResponseWriter, r *http.Request)
 		accessibleFiles = []*database.FileInfo{}
 	}
 
-	s.renderDownloadDashboard(w, account, downloadLogs, accessibleFiles)
+	s.renderDownloadDashboard(w, s.tr(r), account, downloadLogs, accessibleFiles)
 }
 
 // handleDownloadChangePassword allows download users to change their password
@@ -91,7 +92,7 @@ func (s *Server) handleDownloadChangePassword(w http.ResponseWriter, r *http.Req
 	}
 
 	if r.Method == http.MethodGet {
-		s.renderDownloadChangePasswordPage(w, account, "")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "")
 		return
 	}
 
@@ -102,7 +103,7 @@ func (s *Server) handleDownloadChangePassword(w http.ResponseWriter, r *http.Req
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderDownloadChangePasswordPage(w, account, "Invalid form data")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Invalid form data")
 		return
 	}
 
@@ -112,39 +113,39 @@ func (s *Server) handleDownloadChangePassword(w http.ResponseWriter, r *http.Req
 
 	// Validate current password
 	if !auth.CheckPasswordHash(currentPassword, account.Password) {
-		s.renderDownloadChangePasswordPage(w, account, "Current password is incorrect")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Current password is incorrect")
 		return
 	}
 
 	// Validate new password
 	if newPassword == "" || len(newPassword) < 6 {
-		s.renderDownloadChangePasswordPage(w, account, "New password must be at least 6 characters")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "New password must be at least 6 characters")
 		return
 	}
 
 	if newPassword != confirmPassword {
-		s.renderDownloadChangePasswordPage(w, account, "Passwords do not match")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Passwords do not match")
 		return
 	}
 
 	// Hash new password
 	hashedPassword, err := auth.HashPassword(newPassword)
 	if err != nil {
-		s.renderDownloadChangePasswordPage(w, account, "Failed to hash password")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Failed to hash password")
 		return
 	}
 
 	// Update password
 	account.Password = hashedPassword
 	if err := database.DB.UpdateDownloadAccount(account); err != nil {
-		s.renderDownloadChangePasswordPage(w, account, "Failed to update password")
+		s.renderDownloadChangePasswordPage(w, s.tr(r), account, "Failed to update password")
 		return
 	}
 
 	log.Printf("Password changed for download account: %s", account.Email)
 
 	// Redirect back to dashboard with success message
-	s.renderDownloadChangePasswordPage(w, account, "SUCCESS:Password changed successfully!")
+	s.renderDownloadChangePasswordPage(w, s.tr(r), account, "SUCCESS:Password changed successfully!")
 }
 
 // handleDownloadLogout logs out a download user
@@ -219,7 +220,7 @@ func (s *Server) handleDownloadAccountDeleteSelf(w http.ResponseWriter, r *http.
 }
 
 // renderDownloadDashboard renders the download user dashboard
-func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.DownloadAccount, downloadLogs []*models.DownloadLog, accessibleFiles []*database.FileInfo) {
+func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, downloadLogs []*models.DownloadLog, accessibleFiles []*database.FileInfo) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
@@ -330,7 +331,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
     </style>
 </head>
 <body>
-    ` + s.getDownloadUserHeaderHTML() + `
+    ` + s.getDownloadUserHeaderHTML(tr) + `
 
     <div class="container">
         <div class="account-info">
@@ -467,7 +468,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, account *models.
 }
 
 // renderDownloadChangePasswordPage renders the password change page
-func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account *models.DownloadAccount, message string) {
+func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, message string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	messageHTML := ""
@@ -550,7 +551,7 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, account
     </style>
 </head>
 <body>
-    ` + s.getDownloadUserHeaderHTML() + `
+    ` + s.getDownloadUserHeaderHTML(tr) + `
 
     <div class="container">
         <div class="card">

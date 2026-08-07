@@ -18,12 +18,13 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 func (s *Server) handleAdminIdentityProviders(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		s.renderIdentityProviders(w, "", "")
+		s.renderIdentityProviders(w, s.tr(r), "", "")
 		return
 	}
 	if r.Method != http.MethodPost {
@@ -32,7 +33,7 @@ func (s *Server) handleAdminIdentityProviders(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := r.ParseForm(); err != nil {
-		s.renderIdentityProviders(w, "", "Failed to parse form: "+err.Error())
+		s.renderIdentityProviders(w, s.tr(r), "", "Failed to parse form: "+err.Error())
 		return
 	}
 
@@ -71,21 +72,21 @@ func (s *Server) handleAdminIdentityProviders(w http.ResponseWriter, r *http.Req
 
 	if cfg.Enabled && !cfg.ForceLocalOnly {
 		if cfg.ClientID == "" {
-			s.renderIdentityProviders(w, "", "Client ID is required when SSO is enabled.")
+			s.renderIdentityProviders(w, s.tr(r), "", "Client ID is required when SSO is enabled.")
 			return
 		}
 		if cfg.IsEntra() && cfg.TenantID == "" {
-			s.renderIdentityProviders(w, "", "Tenant ID is required for Microsoft Entra ID.")
+			s.renderIdentityProviders(w, s.tr(r), "", "Tenant ID is required for Microsoft Entra ID.")
 			return
 		}
 		if cfg.IsGenericOIDC() && cfg.IssuerURL == "" {
-			s.renderIdentityProviders(w, "", "Issuer URL is required for Generic OIDC.")
+			s.renderIdentityProviders(w, s.tr(r), "", "Issuer URL is required for Generic OIDC.")
 			return
 		}
 	}
 
 	if err := auth.SaveIdentityProviderConfig(database.DB, cfg); err != nil {
-		s.renderIdentityProviders(w, "", "Save failed: "+err.Error())
+		s.renderIdentityProviders(w, s.tr(r), "", "Save failed: "+err.Error())
 		return
 	}
 
@@ -108,10 +109,10 @@ func (s *Server) handleAdminIdentityProviders(w http.ResponseWriter, r *http.Req
 		Success:   true,
 	})
 
-	s.renderIdentityProviders(w, "Identity provider settings saved.", "")
+	s.renderIdentityProviders(w, s.tr(r), "Identity provider settings saved.", "")
 }
 
-func (s *Server) renderIdentityProviders(w http.ResponseWriter, success, errMsg string) {
+func (s *Server) renderIdentityProviders(w http.ResponseWriter, tr *i18n.Translator, success, errMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	cfg, loadErr := auth.LoadIdentityProviderConfig(database.DB)
@@ -204,7 +205,7 @@ func (s *Server) renderIdentityProviders(w http.ResponseWriter, success, errMsg 
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <h2>Identity Providers</h2>
         <p class="lead">Configure external single sign-on. Local accounts always remain available as the primary mechanism and as a break-glass fallback.</p>

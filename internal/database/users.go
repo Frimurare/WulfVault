@@ -76,12 +76,12 @@ func (d *Database) GetUserByID(id int) (*models.User, error) {
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
-		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users WHERE Id = ?`, id).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
-		&user.IdentityProvider, &user.ExternalID,
+		&user.IdentityProvider, &user.ExternalID, &user.Language,
 	)
 
 	if err != nil {
@@ -105,12 +105,12 @@ func (d *Database) GetUserByEmail(email string) (*models.User, error) {
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
-		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users WHERE Email = ?`, email).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
-		&user.IdentityProvider, &user.ExternalID,
+		&user.IdentityProvider, &user.ExternalID, &user.Language,
 	)
 
 	if err != nil {
@@ -134,12 +134,12 @@ func (d *Database) GetUserByName(name string) (*models.User, error) {
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
-		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users WHERE Name = ?`, name).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
-		&user.IdentityProvider, &user.ExternalID,
+		&user.IdentityProvider, &user.ExternalID, &user.Language,
 	)
 
 	if err != nil {
@@ -329,6 +329,15 @@ func (d *Database) UpdateUser(user *models.User) error {
 	return err
 }
 
+// UpdateUserLanguage stores the user's preferred interface language. An empty
+// string means "follow the server default" and is a valid value.
+// This is deliberately a separate statement instead of a column in UpdateUser,
+// so that admin forms which do not know about the language cannot blank it out.
+func (d *Database) UpdateUserLanguage(id int, language string) error {
+	_, err := d.db.Exec("UPDATE Users SET Language = ? WHERE Id = ?", language, id)
+	return err
+}
+
 // UpdateUserLastOnline updates the last online timestamp
 func (d *Database) UpdateUserLastOnline(id int) error {
 	_, err := d.db.Exec("UPDATE Users SET LastOnline = ? WHERE Id = ?", time.Now().Unix(), id)
@@ -508,13 +517,13 @@ func (d *Database) GetUserByExternalID(provider, externalID string) (*models.Use
 	err := d.db.QueryRow(`
 		SELECT Id, Name, Email, Password, Permissions, Userlevel, LastOnline, ResetPassword,
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
-		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,'')
+		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users
 		WHERE IdentityProvider = ? AND ExternalID = ?`, provider, externalID).Scan(
 		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
-		&user.IdentityProvider, &user.ExternalID,
+		&user.IdentityProvider, &user.ExternalID, &user.Language,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

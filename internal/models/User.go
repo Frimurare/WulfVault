@@ -35,6 +35,7 @@ type User struct {
 	BackupCodes    string         `json:"-" redis:"BackupCodes"`                 // Hashed backup codes (JSON array)
 	IdentityProvider string       `json:"identityProvider" redis:"IdentityProvider"` // "local" (default) or "entra"
 	ExternalID     string         `json:"-" redis:"ExternalID"`                  // External IdP subject (e.g. Entra OID); unique when non-empty
+	Language       string         `json:"language" redis:"Language"`             // UI language ("en", "sv"); empty = follow server default
 }
 
 // IdentityProviderLocal is the default — user authenticates with password + optional TOTP

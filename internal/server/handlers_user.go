@@ -17,6 +17,7 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -28,7 +29,7 @@ func (s *Server) handleUserDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.renderUserDashboard(w, user)
+	s.renderUserDashboard(w, s.tr(r), user)
 }
 
 // handleWhoAmI returns JSON with the currently authenticated user's info.
@@ -39,10 +40,11 @@ func (s *Server) handleUserDashboard(w http.ResponseWriter, r *http.Request) {
 // GET /api/whoami
 //
 // Returns:
-//   200 { "authenticated": true, "id": 123, "email": "...", "name": "...",
-//         "role": "user", "storage_used_mb": 42, "storage_quota_mb": 1000,
-//         "server_version": "6.2.7", "two_factor_enabled": false }
-//   401 { "authenticated": false, "error": "Not authenticated" }
+//
+//	200 { "authenticated": true, "id": 123, "email": "...", "name": "...",
+//	      "role": "user", "storage_used_mb": 42, "storage_quota_mb": 1000,
+//	      "server_version": "6.2.7", "two_factor_enabled": false }
+//	401 { "authenticated": false, "error": "Not authenticated" }
 //
 // No form data, no side effects, fast. Does NOT use the requireAuth
 // middleware because that middleware redirects unauthenticated browser
@@ -554,9 +556,9 @@ This is an automated message from %s`,
 		EntityType: database.EntityFile,
 		EntityID:   fileInfo.Id,
 		Details: database.CreateAuditDetails(map[string]interface{}{
-			"recipient":  request.Recipient,
-			"file_name":  fileInfo.Name,
-			"file_size":  fileInfo.SizeBytes,
+			"recipient":   request.Recipient,
+			"file_name":   fileInfo.Name,
+			"file_size":   fileInfo.SizeBytes,
 			"has_message": request.Message != "",
 		}),
 		IPAddress: r.RemoteAddr,
@@ -572,7 +574,7 @@ This is an automated message from %s`,
 }
 
 // renderUserDashboard renders the user dashboard HTML
-func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{}) {
+func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator, userModel interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	user := userModel.(*models.User)
@@ -949,7 +951,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, userModel interface{
     </style>
 </head>
 <body data-user-id="` + fmt.Sprintf("%d", user.Id) + `">
-    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
+    ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
     <div class="container">
         <div class="joke-section">
             <div class="joke-title">💡 File Sharing Wisdom</div>

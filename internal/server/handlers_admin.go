@@ -26,6 +26,7 @@ import (
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/database"
 	emailpkg "github.com/Frimurare/WulfVault/internal/email"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -209,7 +210,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	// Find duplicate files
 	duplicateFiles := s.findDuplicateFiles()
 
-	s.renderAdminDashboard(w, user, totalUsers, activeUsers, totalDownloads, downloadsToday,
+	s.renderAdminDashboard(w, s.tr(r), user, totalUsers, activeUsers, totalDownloads, downloadsToday,
 		bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear,
 		bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear,
 		usersAdded, usersRemoved, userGrowth,
@@ -318,13 +319,13 @@ func (s *Server) handleAdminUsers(w http.ResponseWriter, r *http.Request) {
 		downloadCount = 0
 	}
 
-	s.renderAdminUsers(w, users, downloadAccounts, userFilter, userCount, downloadFilter, downloadCount)
+	s.renderAdminUsers(w, s.tr(r), users, downloadAccounts, userFilter, userCount, downloadFilter, downloadCount)
 }
 
 // handleAdminUserCreate creates a new user
 func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		s.renderAdminUserForm(w, nil, "")
+		s.renderAdminUserForm(w, s.tr(r), nil, "")
 		return
 	}
 
@@ -335,7 +336,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderAdminUserForm(w, nil, "Invalid form data")
+		s.renderAdminUserForm(w, s.tr(r), nil, "Invalid form data")
 		return
 	}
 
@@ -349,7 +350,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	// Validate
 	if name == "" || email == "" {
-		s.renderAdminUserForm(w, nil, "Name and email are required")
+		s.renderAdminUserForm(w, s.tr(r), nil, "Name and email are required")
 		return
 	}
 
@@ -363,7 +364,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	// If not sending welcome email, password is required
 	if !sendWelcomeEmail && password == "" {
-		s.renderAdminUserForm(w, nil, "Password is required (or check 'Send welcome email')")
+		s.renderAdminUserForm(w, s.tr(r), nil, "Password is required (or check 'Send welcome email')")
 		return
 	}
 
@@ -373,19 +374,19 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 		// Generate temporary random password that will be replaced via email
 		tempBytes := make([]byte, 32)
 		if _, err := rand.Read(tempBytes); err != nil {
-			s.renderAdminUserForm(w, nil, "Failed to generate temporary password")
+			s.renderAdminUserForm(w, s.tr(r), nil, "Failed to generate temporary password")
 			return
 		}
 		tempPassword := hex.EncodeToString(tempBytes)
 		password, err = auth.HashPassword(tempPassword)
 		if err != nil {
-			s.renderAdminUserForm(w, nil, "Failed to generate temporary password")
+			s.renderAdminUserForm(w, s.tr(r), nil, "Failed to generate temporary password")
 			return
 		}
 	} else {
 		password, err = auth.HashPassword(password)
 		if err != nil {
-			s.renderAdminUserForm(w, nil, "Failed to hash password")
+			s.renderAdminUserForm(w, s.tr(r), nil, "Failed to hash password")
 			return
 		}
 	}
@@ -408,7 +409,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := database.DB.CreateUser(newUser); err != nil {
-		s.renderAdminUserForm(w, nil, "Failed to create user: "+err.Error())
+		s.renderAdminUserForm(w, s.tr(r), nil, "Failed to create user: "+err.Error())
 		return
 	}
 
@@ -472,13 +473,13 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, name, email string, quotaMB int64, userLevel int) {
 	cfg, _ := auth.LoadEntraConfig(database.DB)
 	if cfg == nil || !cfg.Enabled || cfg.ForceLocalOnly {
-		s.renderAdminUserForm(w, nil, "Single sign-on is not enabled — configure an identity provider under Server → Identity Providers before sending invites.")
+		s.renderAdminUserForm(w, s.tr(r), nil, "Single sign-on is not enabled — configure an identity provider under Server → Identity Providers before sending invites.")
 		return
 	}
 
 	// Reject if an account with this email already exists.
 	if existing, _ := database.DB.GetUserByEmail(email); existing != nil {
-		s.renderAdminUserForm(w, nil, fmt.Sprintf("An account already exists for %s.", email))
+		s.renderAdminUserForm(w, s.tr(r), nil, fmt.Sprintf("An account already exists for %s.", email))
 		return
 	}
 
@@ -499,7 +500,7 @@ func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, 
 	}
 
 	if err := database.DB.CreateUser(newUser); err != nil {
-		s.renderAdminUserForm(w, nil, "Failed to create user: "+err.Error())
+		s.renderAdminUserForm(w, s.tr(r), nil, "Failed to create user: "+err.Error())
 		return
 	}
 
@@ -606,7 +607,7 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet {
-		s.renderAdminUserForm(w, existingUser, "")
+		s.renderAdminUserForm(w, s.tr(r), existingUser, "")
 		return
 	}
 
@@ -617,7 +618,7 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderAdminUserForm(w, existingUser, "Invalid form data")
+		s.renderAdminUserForm(w, s.tr(r), existingUser, "Invalid form data")
 		return
 	}
 
@@ -632,14 +633,14 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 	if newPassword != "" {
 		hashedPassword, err := auth.HashPassword(newPassword)
 		if err != nil {
-			s.renderAdminUserForm(w, existingUser, "Failed to hash password")
+			s.renderAdminUserForm(w, s.tr(r), existingUser, "Failed to hash password")
 			return
 		}
 		existingUser.Password = hashedPassword
 	}
 
 	if err := database.DB.UpdateUser(existingUser); err != nil {
-		s.renderAdminUserForm(w, existingUser, "Failed to update user: "+err.Error())
+		s.renderAdminUserForm(w, s.tr(r), existingUser, "Failed to update user: "+err.Error())
 		return
 	}
 
@@ -742,7 +743,7 @@ func (s *Server) handleAdminToggleDownloadAccount(w http.ResponseWriter, r *http
 // handleAdminCreateDownloadAccount creates a new download account
 func (s *Server) handleAdminCreateDownloadAccount(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		s.renderAdminDownloadAccountForm(w, nil, "")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), nil, "")
 		return
 	}
 
@@ -753,7 +754,7 @@ func (s *Server) handleAdminCreateDownloadAccount(w http.ResponseWriter, r *http
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderAdminDownloadAccountForm(w, nil, "Invalid form data")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), nil, "Invalid form data")
 		return
 	}
 
@@ -763,21 +764,21 @@ func (s *Server) handleAdminCreateDownloadAccount(w http.ResponseWriter, r *http
 
 	// Validate
 	if name == "" || email == "" || password == "" {
-		s.renderAdminDownloadAccountForm(w, nil, "All fields are required")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), nil, "All fields are required")
 		return
 	}
 
 	// Check if account already exists
 	existing, _ := database.DB.GetDownloadAccountByEmail(email)
 	if existing != nil {
-		s.renderAdminDownloadAccountForm(w, nil, "Account with this email already exists")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), nil, "Account with this email already exists")
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := auth.HashPassword(password)
 	if err != nil {
-		s.renderAdminDownloadAccountForm(w, nil, "Failed to hash password")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), nil, "Failed to hash password")
 		return
 	}
 
@@ -790,7 +791,7 @@ func (s *Server) handleAdminCreateDownloadAccount(w http.ResponseWriter, r *http
 	}
 
 	if err := database.DB.CreateDownloadAccount(account); err != nil {
-		s.renderAdminDownloadAccountForm(w, nil, "Failed to create account: "+err.Error())
+		s.renderAdminDownloadAccountForm(w, s.tr(r), nil, "Failed to create account: "+err.Error())
 		return
 	}
 
@@ -828,7 +829,7 @@ func (s *Server) handleAdminEditDownloadAccount(w http.ResponseWriter, r *http.R
 	}
 
 	if r.Method == http.MethodGet {
-		s.renderAdminDownloadAccountForm(w, existingAccount, "")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), existingAccount, "")
 		return
 	}
 
@@ -839,7 +840,7 @@ func (s *Server) handleAdminEditDownloadAccount(w http.ResponseWriter, r *http.R
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderAdminDownloadAccountForm(w, existingAccount, "Invalid form data")
+		s.renderAdminDownloadAccountForm(w, s.tr(r), existingAccount, "Invalid form data")
 		return
 	}
 
@@ -852,14 +853,14 @@ func (s *Server) handleAdminEditDownloadAccount(w http.ResponseWriter, r *http.R
 	if newPassword != "" {
 		hashedPassword, err := auth.HashPassword(newPassword)
 		if err != nil {
-			s.renderAdminDownloadAccountForm(w, existingAccount, "Failed to hash password")
+			s.renderAdminDownloadAccountForm(w, s.tr(r), existingAccount, "Failed to hash password")
 			return
 		}
 		existingAccount.Password = hashedPassword
 	}
 
 	if err := database.DB.UpdateDownloadAccount(existingAccount); err != nil {
-		s.renderAdminDownloadAccountForm(w, existingAccount, "Failed to update account: "+err.Error())
+		s.renderAdminDownloadAccountForm(w, s.tr(r), existingAccount, "Failed to update account: "+err.Error())
 		return
 	}
 
@@ -914,7 +915,7 @@ func (s *Server) handleAdminDeleteDownloadAccount(w http.ResponseWriter, r *http
 }
 
 // renderAdminDownloadAccountForm renders the download account form
-func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, account *models.DownloadAccount, errorMsg string) {
+func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	isEdit := account != nil
@@ -949,7 +950,7 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, account *
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <h2>` + title + `</h2>`
 
@@ -1016,7 +1017,7 @@ func (s *Server) handleAdminFiles(w http.ResponseWriter, r *http.Request) {
 		totalStorage += f.SizeBytes
 	}
 
-	s.renderAdminFiles(w, files, totalStorage)
+	s.renderAdminFiles(w, s.tr(r), files, totalStorage)
 }
 
 // handleAdminDuplicates shows duplicate files with pagination
@@ -1057,13 +1058,13 @@ func (s *Server) handleAdminDuplicates(w http.ResponseWriter, r *http.Request) {
 		paginatedFiles = allDuplicateFiles[offset:end]
 	}
 
-	s.renderAdminDuplicates(w, paginatedFiles, totalFiles, limit, offset, len(duplicateGroups))
+	s.renderAdminDuplicates(w, s.tr(r), paginatedFiles, totalFiles, limit, offset, len(duplicateGroups))
 }
 
 // handleAdminBranding handles branding settings
 func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		s.renderAdminBranding(w, "")
+		s.renderAdminBranding(w, s.tr(r), "")
 		return
 	}
 
@@ -1073,7 +1074,7 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10 MB max
-		s.renderAdminBranding(w, "Failed to parse form: "+err.Error())
+		s.renderAdminBranding(w, s.tr(r), "Failed to parse form: "+err.Error())
 		return
 	}
 
@@ -1091,7 +1092,7 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 		buf := make([]byte, 10<<20) // 10MB max
 		n, err := file.Read(buf)
 		if err != nil && err.Error() != "EOF" {
-			s.renderAdminBranding(w, "Failed to read logo file: "+err.Error())
+			s.renderAdminBranding(w, s.tr(r), "Failed to read logo file: "+err.Error())
 			return
 		}
 		// Convert to base64 data URL
@@ -1131,13 +1132,13 @@ func (s *Server) handleAdminBranding(w http.ResponseWriter, r *http.Request) {
 		ErrorMsg:   "",
 	})
 
-	s.renderAdminBranding(w, "Branding settings updated successfully!")
+	s.renderAdminBranding(w, s.tr(r), "Branding settings updated successfully!")
 }
 
 // handleAdminSettings handles general settings
 func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		s.renderAdminSettings(w, "")
+		s.renderAdminSettings(w, s.tr(r), "")
 		return
 	}
 
@@ -1148,7 +1149,7 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderAdminSettings(w, "Error: Invalid form data")
+		s.renderAdminSettings(w, s.tr(r), "Error: Invalid form data")
 		return
 	}
 
@@ -1173,20 +1174,20 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		// Validate port number
 		portNum, err := strconv.Atoi(port)
 		if err != nil || portNum < 1 || portNum > 65535 {
-			s.renderAdminSettings(w, "Error: Invalid port number (must be 1-65535)")
+			s.renderAdminSettings(w, s.tr(r), "Error: Invalid port number (must be 1-65535)")
 			return
 		}
 
 		// Warn if port < 1024 (requires root privileges)
 		if portNum < 1024 {
-			s.renderAdminSettings(w, "Warning: Ports below 1024 require root/administrator privileges. Change saved but may fail to bind.")
+			s.renderAdminSettings(w, s.tr(r), "Warning: Ports below 1024 require root/administrator privileges. Change saved but may fail to bind.")
 			// Still allow the change but show warning
 		}
 
 		// Update config.json file
 		if err := s.updateConfigJSON("port", port); err != nil {
 			log.Printf("Error updating config.json: %v", err)
-			s.renderAdminSettings(w, "Error: Failed to save port to config file")
+			s.renderAdminSettings(w, s.tr(r), "Error: Failed to save port to config file")
 			return
 		}
 
@@ -1262,9 +1263,9 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 
 	// Show appropriate success message
 	if portChanged {
-		s.renderAdminSettings(w, fmt.Sprintf("Port changed to %s. ⚠️ RESTART REQUIRED: Stop and start the server for changes to take effect.", port))
+		s.renderAdminSettings(w, s.tr(r), fmt.Sprintf("Port changed to %s. ⚠️ RESTART REQUIRED: Stop and start the server for changes to take effect.", port))
 	} else {
-		s.renderAdminSettings(w, "Settings updated successfully!")
+		s.renderAdminSettings(w, s.tr(r), "Settings updated successfully!")
 	}
 }
 
@@ -1276,7 +1277,7 @@ func (s *Server) handleAdminTrash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.renderAdminTrash(w, files)
+	s.renderAdminTrash(w, s.tr(r), files)
 }
 
 // handleAdminPermanentDelete permanently deletes a file
@@ -1466,7 +1467,7 @@ func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) 
 
 // getAdminHeaderHTML returns branded header HTML for admin pages
 
-func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
+func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
 	bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear int64,
 	bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear int64,
 	usersAdded, usersRemoved int, userGrowth float64,
@@ -1683,7 +1684,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
 
     <div class="main-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -1977,7 +1978,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, user *models.User, 
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, downloadAccounts []*models.DownloadAccount,
+func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, users []*models.User, downloadAccounts []*models.DownloadAccount,
 	userFilter *database.UserFilter, userCount int, dlFilter *database.DownloadAccountFilter, dlCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -2254,7 +2255,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <div class="actions">
             <h2>Manage Users</h2>
@@ -2637,7 +2638,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, users []*models.User, d
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, errorMsg string) {
+func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator, user *models.User, errorMsg string) {
 	// Simple form implementation
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -2667,7 +2668,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <h2>` + title + `</h2>`
 
@@ -2876,7 +2877,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, user *models.User, e
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileInfo, totalStorage int64) {
+func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, files []*database.FileInfo, totalStorage int64) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
@@ -3268,7 +3269,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <h2 style="margin-bottom: 20px;">All Files</h2>
 
@@ -3620,7 +3621,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, files []*database.FileI
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.FileInfo, totalFiles, limit, offset, duplicateGroups int) {
+func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translator, files []*database.FileInfo, totalFiles, limit, offset, duplicateGroups int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Calculate pagination
@@ -3837,7 +3838,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <h2 style="margin-bottom: 20px;">🔍 Duplicate Files</h2>
 
@@ -4024,7 +4025,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, files []*database.
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
+func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator, message string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get current branding config
@@ -4125,7 +4126,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <h2>Branding Settings</h2>`
 
@@ -4182,7 +4183,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, message string) {
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
+func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator, message string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	// Get current settings
@@ -4342,7 +4343,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <div class="card">
             <h2>System Settings</h2>`
@@ -4532,7 +4533,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, message string) {
 	w.Write([]byte(html))
 }
 
-func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileInfo) {
+func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, files []*database.FileInfo) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
@@ -4682,7 +4683,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, files []*database.FileI
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top: 30px;">
             <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`

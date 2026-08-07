@@ -14,11 +14,12 @@ import (
 	"time"
 
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 )
 
 // handleAdminAuditLogs displays the audit log admin page
 func (s *Server) handleAdminAuditLogs(w http.ResponseWriter, r *http.Request) {
-	s.renderAdminAuditLogsPage(w)
+	s.renderAdminAuditLogsPage(w, s.tr(r))
 }
 
 // handleAPIGetAuditLogs returns audit logs with filtering and pagination
@@ -190,7 +191,7 @@ func (s *Server) handleAPIExportAuditLogs(w http.ResponseWriter, r *http.Request
 }
 
 // renderAdminAuditLogsPage renders the audit logs admin page
-func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
+func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter, tr *i18n.Translator) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	companyName := s.config.CompanyName
@@ -646,7 +647,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter) {
     </style>
 </head>
 <body>
-    ` + s.getAdminHeaderHTML("") + `
+    ` + s.getAdminHeaderHTML("", tr) + `
 
     <div class="container">
         <div class="filters-card">

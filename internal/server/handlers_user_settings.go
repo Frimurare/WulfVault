@@ -12,6 +12,7 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/auth"
 	"github.com/Frimurare/WulfVault/internal/database"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 	"github.com/Frimurare/WulfVault/internal/models"
 )
 
@@ -29,11 +30,11 @@ func (s *Server) handleUserSettings(w http.ResponseWriter, r *http.Request) {
 		backupCodesCount, _ = database.DB.GetRemainingBackupCodesCount(user.Id)
 	}
 
-	s.renderUserSettingsPage(w, user, backupCodesCount)
+	s.renderUserSettingsPage(w, s.tr(r), user, backupCodesCount)
 }
 
 // renderUserSettingsPage renders the user settings page
-func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User, backupCodesCount int) {
+func (s *Server) renderUserSettingsPage(w http.ResponseWriter, tr *i18n.Translator, user *models.User, backupCodesCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	totpStatusBadge := ""
@@ -304,7 +305,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, user *models.User
     </style>
 </head>
 <body>
-    ` + s.getHeaderHTML(user, user.IsAdmin()) + `
+    ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
     <div class="container">
         <div class="card">
             <h2>Account Settings</h2>

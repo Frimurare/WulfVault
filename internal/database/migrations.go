@@ -71,6 +71,13 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Per-user interface language (v7.2.0, issue #33). Empty means "follow the
+	// server default", which is what every existing row gets, so upgrading an
+	// installation changes nothing until a user picks a language.
+	if err := d.addColumnIfNotExists("Users", "Language", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+
 	log.Println("Database migrations completed successfully")
 	return nil
 }
