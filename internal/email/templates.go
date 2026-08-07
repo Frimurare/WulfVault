@@ -249,6 +249,8 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message,
 				<p><strong>Size:</strong> %s</p>
 			</div>
 
+			%s
+
 			<center>
 				<a href="%s" class="button">📥 Download file</a>
 			</center>
@@ -265,7 +267,7 @@ func GenerateSplashLinkHTML(splashLink string, file *database.FileInfo, message,
 	</div>
 </body>
 </html>
-`, getSenderHTML(senderEmail), getMessageHTML(message), file.Name, file.Size, splashLink, splashLink)
+`, getSenderHTML(senderEmail), getMessageHTML(message), file.Name, file.Size, AuthInstructionsHTML(file.RequireAuth), splashLink, splashLink)
 }
 
 // GenerateSplashLinkText skapar text-version av splash link e-post
@@ -279,12 +281,12 @@ func GenerateSplashLinkText(splashLink string, file *database.FileInfo, message,
 %s%s
 Filename: %s
 Size: %s
-
+%s
 Download: %s
 
 ---
 This is an automated message from WulfVault Secure File Transfer.
-`, senderLine, getMessageText(message), file.Name, file.Size, splashLink)
+`, senderLine, getMessageText(message), file.Name, file.Size, AuthInstructionsText(file.RequireAuth), splashLink)
 }
 
 // Helper-funktioner
@@ -318,6 +320,70 @@ func getMessageText(message string) string {
 		return ""
 	}
 	return fmt.Sprintf("Meddelande: %s\n\n", message)
+}
+
+// AuthInstructionsHTML returns the block that explains to a recipient why they
+// have to confirm their email address before downloading. It is only rendered
+// when the file actually requires authentication - for a plain direct link it
+// returns an empty string and the email looks exactly as it did before.
+//
+// The block uses inline styles (no CSS classes) so it can be dropped into any
+// recipient email, including the ones that are assembled inline outside this
+// package.
+func AuthInstructionsHTML(requireAuth bool) string {
+	if !requireAuth {
+		return ""
+	}
+	return `<div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 15px 0; border-radius: 5px;">
+				<p style="margin: 0 0 10px 0; color: #1976d2; font-size: 16px;"><strong>🔒 You will be asked to confirm your email address</strong></p>
+				<p style="margin: 0 0 10px 0;">
+					The sender has protected this file, so we need to know that it reaches the right person
+					and no one else. That is why you confirm your email address before the download starts.
+					It takes less than a minute, and only the first time.
+				</p>
+				<p style="margin: 0 0 5px 0;"><strong>How it works</strong></p>
+				<ol style="margin: 0 0 10px 0; padding-left: 20px;">
+					<li>Open the download link in this email.</li>
+					<li>Enter the email address this message was sent to and choose a password of your own.</li>
+					<li>Download the file.</li>
+				</ol>
+				<p style="margin: 0;">
+					This gives the sender a record that the file was delivered to you, which is what data
+					protection rules such as the GDPR ask for. When you are done you can delete the account
+					right away in your account settings, or keep it if you expect more files from the same
+					sender. You will not receive newsletters, marketing or any other email from us.
+				</p>
+			</div>`
+}
+
+// AuthInstructionsText is the plain text counterpart of AuthInstructionsHTML.
+// It returns an empty string when no authentication is required, otherwise a
+// block padded with a blank line on each side, so it can be dropped straight
+// into an existing text body without disturbing its layout.
+func AuthInstructionsText(requireAuth bool) string {
+	if !requireAuth {
+		return ""
+	}
+	return `
+You will be asked to confirm your email address
+
+The sender has protected this file, so we need to know that it reaches the
+right person and no one else. That is why you confirm your email address
+before the download starts. It takes less than a minute, and only the first
+time.
+
+How it works:
+  1. Open the download link in this email.
+  2. Enter the email address this message was sent to and choose a password
+     of your own.
+  3. Download the file.
+
+This gives the sender a record that the file was delivered to you, which is
+what data protection rules such as the GDPR ask for. When you are done you
+can delete the account right away in your account settings, or keep it if you
+expect more files from the same sender. You will not receive newsletters,
+marketing or any other email from us.
+`
 }
 
 // GenerateAccountDeletionHTML skapar HTML-version av bekräftelse på kontoradering
