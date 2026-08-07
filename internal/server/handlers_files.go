@@ -309,6 +309,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 						%s
 						%s
 					</div>
+					%s
 					<div style="margin: 30px 0;">
 						<a href="%s" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">View & Download File</a>
 					</div>
@@ -332,6 +333,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 					}
 					return ""
 				}(),
+				email.AuthInstructionsHTML(requireAuth),
 				splashLink, downloadLink, downloadLink)
 
 			senderText := ""
@@ -348,7 +350,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 %s%sFile: %s
 Size: %s
 %s%s
-
+%s
 View and download here: %s
 
 Direct download link: %s
@@ -369,6 +371,7 @@ This file was sent via WulfVault Secure File Transfer.`,
 					}
 					return ""
 				}(),
+				email.AuthInstructionsText(requireAuth),
 				splashLink, downloadLink)
 
 			provider, err := email.GetActiveProvider(database.DB)
