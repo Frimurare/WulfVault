@@ -1550,15 +1550,19 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, fileInfo *database.File
             <div class="poem-author">— ` + poem.Author + `</div>
         </div>
 
-        <a href="` + downloadURL + `" class="download-btn">
+        <a href="` + downloadURL + `" class="download-btn" id="wvDownloadButton"
+           data-file-id="` + template.HTMLEscapeString(fileInfo.Id) + `"
+           data-api-base="/api/v1/download/` + template.HTMLEscapeString(fileInfo.Id) + `"
+           data-direct-url="/d/` + template.HTMLEscapeString(fileInfo.Id) + `">
             <span style="font-size: 24px; margin-right: 10px;">⬇️</span>
-            <span style="font-size: 20px; font-weight: 700;">Download File</span>
+            <span style="font-size: 20px; font-weight: 700;" data-download-label>Download File</span>
         </a>
 
         <div class="footer">
             Powered by ` + companyName + `
         </div>
     </div>
+    <script src="/static/js/chunked-download.js" defer></script>
 </body>
 </html>`
 
