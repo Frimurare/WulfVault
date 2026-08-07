@@ -179,7 +179,7 @@ func main() {
 	// Reminders sent at halfway point and 1 day before expiration
 	publicURL := cfg.ServerURL
 	if publicURL == "" {
-		publicURL = fmt.Sprintf("http://localhost:%d", cfg.Port)
+		publicURL = fmt.Sprintf("http://localhost:%s", cfg.Port)
 	}
 	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays, publicURL)
 
