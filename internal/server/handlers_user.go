@@ -210,6 +210,7 @@ func (s *Server) handleFileEdit(w http.ResponseWriter, r *http.Request) {
 					log.Printf("Warning: Failed to share file to team: %v", err)
 				} else {
 					log.Printf("File %s shared to team %d by user %d", fileInfo.Name, teamID, user.Id)
+					s.audit.LogFileSharedWithTeam(user, fileID, fileInfo.Name, int64(teamID), teamName(teamID), r)
 				}
 			} else {
 				log.Printf("Warning: User %d is not a member of team %d, skipping team share", user.Id, teamID)

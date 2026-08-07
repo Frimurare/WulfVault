@@ -621,6 +621,8 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	wasActive := existingUser.IsActive
+
 	existingUser.Name = r.FormValue("name")
 	existingUser.Email = r.FormValue("email")
 	existingUser.StorageQuotaMB, _ = strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
@@ -656,6 +658,16 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 		UserAgent:  r.UserAgent(),
 		Success:    true,
 	})
+
+	// Activation state changes get their own entry so they can be found
+	// without parsing the details of every update.
+	if admin != nil && wasActive != existingUser.IsActive {
+		if existingUser.IsActive {
+			s.audit.LogUserActivated(admin, int64(existingUser.Id), existingUser.Email, r)
+		} else {
+			s.audit.LogUserDeactivated(admin, int64(existingUser.Id), existingUser.Email, r)
+		}
+	}
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }

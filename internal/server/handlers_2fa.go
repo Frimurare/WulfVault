@@ -166,6 +166,8 @@ func (s *Server) handle2FAEnable(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
+	s.audit.Log2FAEnabled(user, r)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -218,6 +220,8 @@ func (s *Server) handle2FADisable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to disable 2FA", http.StatusInternalServerError)
 		return
 	}
+
+	s.audit.Log2FADisabled(user, r)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
