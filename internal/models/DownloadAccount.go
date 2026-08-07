@@ -22,7 +22,7 @@ type DownloadAccount struct {
 	IsActive      bool   `json:"isActive" redis:"IsActive"`
 	DeletedAt     int64  `json:"deletedAt" redis:"DeletedAt"`         // Unix timestamp, 0 = not deleted
 	DeletedBy     string `json:"deletedBy" redis:"DeletedBy"`         // "user", "admin", or "system"
-	OriginalEmail string `json:"originalEmail" redis:"OriginalEmail"` // Store original email before deletion
+	OriginalEmail string `json:"originalEmail" redis:"OriginalEmail"` // SHA-256 fingerprint of the address the row had before deletion
 }
 
 // DownloadLog tracks individual download events

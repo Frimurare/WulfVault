@@ -6,9 +6,40 @@
 package database
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 )
+
+// Placeholder address prefixes used when a row is anonymized. The row ID is
+// appended, which keeps the address unique per table without carrying any
+// personal data.
+const (
+	anonymizedUserPrefix     = "deleted-user"
+	anonymizedDownloadPrefix = "deleted-download"
+	anonymizedEmailDomain    = "@deleted.local"
+)
+
+// anonymizedEmail builds the placeholder address stored in the Email column of
+// a soft-deleted row.
+func anonymizedEmail(prefix string, id int) string {
+	return fmt.Sprintf("%s-%d%s", prefix, id, anonymizedEmailDomain)
+}
+
+// emailFingerprint returns a SHA-256 digest of a normalised address. It is
+// stored instead of the address itself so support can still answer "was this
+// the address?" without the address being readable in the database.
+func emailFingerprint(email string) string {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(email))
+	return hex.EncodeToString(sum[:])
+}
 
 // RunMigrations applies any pending database migrations
 func (d *Database) RunMigrations() error {
@@ -71,8 +102,107 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// Rewrite rows anonymized by earlier versions, which stored the real
+	// address inside the placeholder and in OriginalEmail.
+	if err := d.rewriteLegacyAnonymizedRows(); err != nil {
+		return err
+	}
+
 	log.Println("Database migrations completed successfully")
 	return nil
+}
+
+// rewriteLegacyAnonymizedRows converts rows anonymized by versions up to 7.1.1
+// to the current format. Those versions built the placeholder as
+// "deleted_user_<address>@deleted.local" and copied the address into
+// OriginalEmail, so the address remained readable. Rows already in the current
+// format do not match the patterns, which makes the migration idempotent and a
+// no-op on databases that never had such rows.
+func (d *Database) rewriteLegacyAnonymizedRows() error {
+	if err := d.rewriteLegacyAnonymized("Users", "deleted_user_", anonymizedUserPrefix); err != nil {
+		return err
+	}
+	if err := d.rewriteLegacyAnonymized("DownloadAccounts", "deleted_download_", anonymizedDownloadPrefix); err != nil {
+		return err
+	}
+	return d.rewriteLegacyAnonymizedDownloadLogs()
+}
+
+// rewriteLegacyAnonymized rewrites one table. GLOB is used instead of LIKE
+// because "_" is a wildcard in LIKE but a literal in GLOB.
+func (d *Database) rewriteLegacyAnonymized(table, legacyPrefix, prefix string) error {
+	rows, err := d.db.Query(
+		"SELECT Id, Email, COALESCE(OriginalEmail, '') FROM "+table+" WHERE Email GLOB ?",
+		legacyPrefix+"*"+anonymizedEmailDomain)
+	if err != nil {
+		return err
+	}
+
+	type legacyRow struct {
+		id            int
+		originalEmail string
+	}
+	var legacy []legacyRow
+	for rows.Next() {
+		var id int
+		var email, originalEmail string
+		if err := rows.Scan(&id, &email, &originalEmail); err != nil {
+			rows.Close()
+			return err
+		}
+		if extracted := legacyEmailFromPlaceholder(email, legacyPrefix); extracted != "" {
+			originalEmail = extracted
+		}
+		legacy = append(legacy, legacyRow{id: id, originalEmail: originalEmail})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+
+	for _, row := range legacy {
+		if _, err := d.db.Exec(
+			"UPDATE "+table+" SET Email = ?, OriginalEmail = ? WHERE Id = ?",
+			anonymizedEmail(prefix, row.id), emailFingerprint(row.originalEmail), row.id); err != nil {
+			return err
+		}
+	}
+
+	if len(legacy) > 0 {
+		log.Printf("Migration completed: re-anonymized %d legacy row(s) in %s", len(legacy), table)
+	}
+	return nil
+}
+
+// rewriteLegacyAnonymizedDownloadLogs cleans up download log rows that were
+// stamped with a legacy placeholder. Rows that still reference an account get
+// that account's current placeholder; orphaned rows have the address cleared.
+func (d *Database) rewriteLegacyAnonymizedDownloadLogs() error {
+	legacyMatch := `(Email GLOB 'deleted_download_*` + anonymizedEmailDomain +
+		`' OR Email GLOB 'deleted_user_*` + anonymizedEmailDomain + `')`
+
+	if _, err := d.db.Exec(`
+		UPDATE DownloadLogs
+		SET Email = '` + anonymizedDownloadPrefix + `-' || DownloadAccountId || '` + anonymizedEmailDomain + `'
+		WHERE DownloadAccountId IS NOT NULL AND ` + legacyMatch); err != nil {
+		return err
+	}
+
+	_, err := d.db.Exec(`
+		UPDATE DownloadLogs
+		SET Email = ''
+		WHERE DownloadAccountId IS NULL AND ` + legacyMatch)
+	return err
+}
+
+// legacyEmailFromPlaceholder recovers the address embedded in a legacy
+// placeholder, or "" if the value is not in that format.
+func legacyEmailFromPlaceholder(placeholder, legacyPrefix string) string {
+	if !strings.HasPrefix(placeholder, legacyPrefix) || !strings.HasSuffix(placeholder, anonymizedEmailDomain) {
+		return ""
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(placeholder, legacyPrefix), anonymizedEmailDomain)
 }
 
 // addColumnIfNotExists adds a column to a table if it doesn't already exist
@@ -111,14 +241,15 @@ func (d *Database) SoftDeleteUser(userId int, deletedBy string) error {
 		return nil
 	}
 
-	// Anonymize email but keep original
-	anonymizedEmail := "deleted_user_" + user.Email + "@deleted.local"
+	// Replace the address with a placeholder derived from the row ID, and keep
+	// only a fingerprint of the original so it cannot be read back.
+	placeholder := anonymizedEmail(anonymizedUserPrefix, userId)
 
 	_, err = d.db.Exec(`
 		UPDATE Users
 		SET Email = ?, OriginalEmail = ?, DeletedAt = ?, DeletedBy = ?, IsActive = 0
 		WHERE Id = ?`,
-		anonymizedEmail, user.Email, currentTimestamp(), deletedBy, userId)
+		placeholder, emailFingerprint(user.Email), currentTimestamp(), deletedBy, userId)
 
 	return err
 }
@@ -136,21 +267,22 @@ func (d *Database) SoftDeleteDownloadAccount(accountId int, deletedBy string) er
 		return nil
 	}
 
-	// Anonymize email but keep original
-	anonymizedEmail := "deleted_download_" + account.Email + "@deleted.local"
+	// Replace the address with a placeholder derived from the row ID, and keep
+	// only a fingerprint of the original so it cannot be read back.
+	placeholder := anonymizedEmail(anonymizedDownloadPrefix, accountId)
 
 	_, err = d.db.Exec(`
 		UPDATE DownloadAccounts
 		SET Email = ?, OriginalEmail = ?, DeletedAt = ?, DeletedBy = ?, IsActive = 0
 		WHERE Id = ?`,
-		anonymizedEmail, account.Email, currentTimestamp(), deletedBy, accountId)
+		placeholder, emailFingerprint(account.Email), currentTimestamp(), deletedBy, accountId)
 
 	// Also anonymize download logs
 	_, _ = d.db.Exec(`
 		UPDATE DownloadLogs
 		SET Email = ?
 		WHERE DownloadAccountId = ?`,
-		anonymizedEmail, accountId)
+		placeholder, accountId)
 
 	return err
 }
@@ -178,7 +310,7 @@ func (d *Database) PermanentlyDeleteOldUsers(daysOld int) (int, error) {
 		var id int
 		var email, originalEmail, deletedBy string
 		if err := rows.Scan(&id, &email, &originalEmail, &deletedBy); err == nil {
-			log.Printf("Permanently deleting user: ID=%d, OriginalEmail=%s, DeletedBy=%s", id, originalEmail, deletedBy)
+			log.Printf("Permanently deleting user: ID=%d, EmailFingerprint=%s, DeletedBy=%s", id, originalEmail, deletedBy)
 			deletedCount++
 		}
 	}
@@ -216,7 +348,7 @@ func (d *Database) PermanentlyDeleteOldDownloadAccounts(daysOld int) (int, error
 		var id int
 		var email, originalEmail, deletedBy string
 		if err := rows.Scan(&id, &email, &originalEmail, &deletedBy); err == nil {
-			log.Printf("Permanently deleting download account: ID=%d, OriginalEmail=%s, DeletedBy=%s", id, originalEmail, deletedBy)
+			log.Printf("Permanently deleting download account: ID=%d, EmailFingerprint=%s, DeletedBy=%s", id, originalEmail, deletedBy)
 			deletedCount++
 		}
 	}
