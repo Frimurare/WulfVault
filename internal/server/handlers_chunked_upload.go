@@ -343,6 +343,7 @@ func (s *Server) handleChunkedUploadComplete(w http.ResponseWriter, r *http.Requ
 				log.Printf("Warning: Could not share file to team %d: %v", teamId, err)
 			} else {
 				log.Printf("File %s shared to team %d by user %d", upload.Filename, teamId, user.Id)
+				s.audit.LogFileSharedWithTeam(user, uploadID, upload.Filename, int64(teamId), teamName(teamId), r)
 			}
 		}
 	}

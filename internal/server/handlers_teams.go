@@ -419,6 +419,16 @@ func (s *Server) handleAPITeamRemoveMember(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// teamName resolves a team name for audit entries. It returns an empty string
+// if the team cannot be read, so audit logging never blocks the request.
+func teamName(teamID int) string {
+	team, err := database.DB.GetTeamByID(teamID)
+	if err != nil || team == nil {
+		return ""
+	}
+	return team.Name
+}
+
 // handleAPIShareFileToTeam shares a file with a team
 func (s *Server) handleAPIShareFileToTeam(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -463,6 +473,8 @@ func (s *Server) handleAPIShareFileToTeam(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Error sharing file (file may already be shared)", http.StatusInternalServerError)
 		return
 	}
+
+	s.audit.LogFileSharedWithTeam(user, file.Id, file.Name, int64(req.TeamId), teamName(req.TeamId), r)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

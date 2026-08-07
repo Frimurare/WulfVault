@@ -6,9 +6,11 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"runtime/debug"
 	"strconv"
@@ -179,7 +181,7 @@ func main() {
 	// Reminders sent at halfway point and 1 day before expiration
 	publicURL := cfg.ServerURL
 	if publicURL == "" {
-		publicURL = fmt.Sprintf("http://localhost:%d", cfg.Port)
+		publicURL = fmt.Sprintf("http://localhost:%s", cfg.Port)
 	}
 	cleanup.StartCleanupScheduler(*uploadsDir, 6*time.Hour, cfg.TrashRetentionDays, publicURL)
 
@@ -289,7 +291,14 @@ func runSetup() error {
 
 	// Get admin credentials
 	adminEmail := getEnv("ADMIN_EMAIL", "admin@localhost")
-	adminPassword := getEnv("ADMIN_PASSWORD", generateRandomPassword())
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		generated, err := generateRandomPassword()
+		if err != nil {
+			return fmt.Errorf("failed to generate admin password: %w", err)
+		}
+		adminPassword = generated
+	}
 
 	// Hash password
 	hashedPassword, err := auth.HashPassword(adminPassword)
@@ -327,9 +336,30 @@ func runSetup() error {
 	return nil
 }
 
-func generateRandomPassword() string {
-	// Simple random password for demo
-	return fmt.Sprintf("admin-%d", time.Now().Unix())
+// passwordAlphabet omits characters that are easily confused when a password is
+// read off a console: 0/O, 1/l/I and similar.
+const passwordAlphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#%*-_=+"
+
+// passwordLength is the length of the generated initial admin password.
+const passwordLength = 24
+
+// generateRandomPassword returns a cryptographically random password. It fails
+// rather than falling back to a weaker source, so setup aborts if the system
+// cannot provide randomness.
+func generateRandomPassword() (string, error) {
+	alphabet := []byte(passwordAlphabet)
+	max := big.NewInt(int64(len(alphabet)))
+
+	password := make([]byte, passwordLength)
+	for i := range password {
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			return "", fmt.Errorf("secure random source unavailable: %w", err)
+		}
+		password[i] = alphabet[n.Int64()]
+	}
+
+	return string(password), nil
 }
 
 func getEnv(key, defaultValue string) string {

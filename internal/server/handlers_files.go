@@ -888,7 +888,6 @@ func (s *Server) handleAPIFiles(w http.ResponseWriter, r *http.Request) {
 			"unlimited_downloads": f.UnlimitedDownloads,
 			"unlimited_time":      f.UnlimitedTime,
 			"has_password":        f.FilePasswordPlain != "",
-			"file_password":       f.FilePasswordPlain,
 		})
 	}
 

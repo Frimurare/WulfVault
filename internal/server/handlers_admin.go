@@ -444,13 +444,9 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 			// Get branding info
 			companyName := s.config.CompanyName
 
-			// Fix server URL - ensure it uses http:// if running on port 8080 without SSL
+			// The configured server URL is used as-is; the link in the email
+			// must keep the scheme the operator configured.
 			emailServerURL := s.config.ServerURL
-			// Replace https:// with http:// if present (since we don't have SSL on port 8080)
-			if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
-				emailServerURL = "http://" + emailServerURL[8:]
-				log.Printf("Corrected server URL from HTTPS to HTTP for email: %s", emailServerURL)
-			}
 
 			// Send welcome email with admin info
 			if err := emailpkg.SendWelcomeEmail(email, resetToken, emailServerURL, companyName, admin.Name, admin.Email); err != nil {
@@ -532,10 +528,9 @@ func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, 
 // the right brand (Microsoft / Google / Okta / etc).
 func sendEntraInviteMail(s *Server, admin *models.User, name, email string) error {
 	companyName := s.config.CompanyName
+	// The configured server URL is used as-is; the link in the email must keep
+	// the scheme the operator configured.
 	emailServerURL := s.config.ServerURL
-	if len(emailServerURL) > 8 && emailServerURL[:8] == "https://" {
-		emailServerURL = "http://" + emailServerURL[8:]
-	}
 	providerName := ""
 	if ssoCfg, _ := auth.LoadIdentityProviderConfig(database.DB); ssoCfg != nil {
 		providerName = ssoCfg.EffectiveDisplayName()
@@ -621,6 +616,8 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	wasActive := existingUser.IsActive
+
 	existingUser.Name = r.FormValue("name")
 	existingUser.Email = r.FormValue("email")
 	existingUser.StorageQuotaMB, _ = strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
@@ -656,6 +653,16 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 		UserAgent:  r.UserAgent(),
 		Success:    true,
 	})
+
+	// Activation state changes get their own entry so they can be found
+	// without parsing the details of every update.
+	if admin != nil && wasActive != existingUser.IsActive {
+		if existingUser.IsActive {
+			s.audit.LogUserActivated(admin, int64(existingUser.Id), existingUser.Email, r)
+		} else {
+			s.audit.LogUserDeactivated(admin, int64(existingUser.Id), existingUser.Email, r)
+		}
+	}
 
 	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
 }

@@ -25,14 +25,17 @@ type Server struct {
 	templates        *template.Template
 	activeTransfers  map[string]bool // sessionId -> has active transfer
 	transfersMutex   sync.RWMutex
+	audit            *AuditLogger
 }
 
 // New creates a new web server instance
 func New(cfg *config.Config) *Server {
-	return &Server{
+	s := &Server{
 		config:          cfg,
 		activeTransfers: make(map[string]bool),
 	}
+	s.audit = NewAuditLogger(s)
+	return s
 }
 
 // Start starts the HTTP server

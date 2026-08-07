@@ -437,6 +437,8 @@ func (s *Server) handleAPIUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	wasActive := user.IsActive
+
 	// Update fields
 	user.Name = req.Name
 	user.Email = req.Email
@@ -475,6 +477,16 @@ func (s *Server) handleAPIUpdateUser(w http.ResponseWriter, r *http.Request) {
 		Success:    true,
 		ErrorMsg:   "",
 	})
+
+	// Activation state changes get their own entry so they can be found
+	// without parsing the details of every update.
+	if currentUser != nil && wasActive != user.IsActive {
+		if user.IsActive {
+			s.audit.LogUserActivated(currentUser, int64(user.Id), user.Email, r)
+		} else {
+			s.audit.LogUserDeactivated(currentUser, int64(user.Id), user.Email, r)
+		}
+	}
 
 	// Remove sensitive data
 	user.Password = ""
