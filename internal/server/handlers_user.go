@@ -650,13 +650,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 	storageUsedGB := fmt.Sprintf("%.1f", float64(storageUsed)/1000)
 	storageQuotaGB := fmt.Sprintf("%.1f", float64(storageQuota)/1000)
 
+	showPasswordLabel := "👁️ " + tr.T("dashboard.show_password")
+
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Dashboard - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("dashboard.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -954,123 +956,123 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
     <div class="container">
         <div class="joke-section">
-            <div class="joke-title">💡 File Sharing Wisdom</div>
+            <div class="joke-title">💡 ` + tr.T("dashboard.joke_heading") + `</div>
             <div class="joke-text">` + joke.Text + `</div>
         </div>
 
         <div class="stats">
             <div class="stat-card">
-                <h3>Storage Used</h3>
+                <h3>` + tr.T("dashboard.storage_used_heading") + `</h3>
                 <div class="value">` + storageUsedGB + ` GB</div>
                 <div class="progress">
                     <div class="progress-bar" style="width: ` + fmt.Sprintf("%d", storagePercent) + `%"></div>
                 </div>
-                <p style="margin-top: 8px; color: #999; font-size: 14px;">` + storageUsedGB + ` GB of ` + storageQuotaGB + ` GB</p>
+                <p style="margin-top: 8px; color: #999; font-size: 14px;">` + tr.T("dashboard.storage_of_gb", "used", storageUsedGB, "quota", storageQuotaGB) + `</p>
             </div>
             <div class="stat-card">
-                <h3>Active Files</h3>
+                <h3>` + tr.T("dashboard.active_files_heading") + `</h3>
                 <div class="value">` + fmt.Sprintf("%d", activeFileCount) + `</div>
             </div>
             <div class="stat-card">
-                <h3>Total Downloads</h3>
+                <h3>` + tr.T("dashboard.total_downloads_heading") + `</h3>
                 <div class="value">` + fmt.Sprintf("%d", totalDownloads) + `</div>
             </div>
         </div>
 
         <!-- Upload Form -->
         <div class="upload-section">
-            <h2 style="margin-bottom: 20px; color: #333;">Upload File</h2>
+            <h2 style="margin-bottom: 20px; color: #333;">` + tr.T("dashboard.upload_file_heading") + `</h2>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <h3>Drop files here or click to select</h3>
-                    <p>Maximum file size: 150 GB</p>
+                    <h3>` + tr.T("dashboard.drop_zone_heading") + `</h3>
+                    <p>` + tr.T("dashboard.max_file_size") + `</p>
                     <input type="file" id="fileInput" name="file">
                 </div>
 
                 <div class="upload-options" id="uploadOptions" style="display: none;">
-                    <h3 style="margin-bottom: 16px; color: #333;">Upload Settings</h3>
+                    <h3 style="margin-bottom: 16px; color: #333;">` + tr.T("dashboard.upload_settings_heading") + `</h3>
 
                     <div class="form-group" style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 2px solid #3b82f6; margin-bottom: 20px;">
-                        <label for="fileComment" style="color: #1d4ed8; font-weight: 600;">💬 Description/Note (optional but recommended)</label>
-                        <textarea id="fileComment" name="file_comment" rows="3" maxlength="1000" placeholder="Add a description or note about this file (e.g., what it contains, special instructions, password hints)" style="width: 100%; padding: 10px; border: 2px solid #93c5fd; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; margin-top: 8px;"></textarea>
+                        <label for="fileComment" style="color: #1d4ed8; font-weight: 600;">💬 ` + tr.T("dashboard.description_label_recommended") + `</label>
+                        <textarea id="fileComment" name="file_comment" rows="3" maxlength="1000" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.description_placeholder")) + `" style="width: 100%; padding: 10px; border: 2px solid #93c5fd; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; margin-top: 8px;"></textarea>
                         <p style="color: #1e40af; font-size: 12px; margin-top: 4px;">
-                            This message will be shown to recipients on the download page and included in email notifications (max 1000 characters)
+                            ` + tr.T("dashboard.description_help") + `
                         </p>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="expireDate">📅 Expiration Date</label>
+                            <label for="expireDate">📅 ` + tr.T("dashboard.expiration_date_label") + `</label>
                             <input type="date" id="expireDate" name="expire_date">
                             <label style="margin-top: 8px;">
-                                <input type="checkbox" id="unlimitedTime" name="unlimited_time" checked> Never expire (by time)
+                                <input type="checkbox" id="unlimitedTime" name="unlimited_time" checked> ` + tr.T("dashboard.never_expire_time_label") + `
                             </label>
                         </div>
 
                         <div class="form-group">
-                            <label for="downloadsLimit">⬇️ Download Limit</label>
+                            <label for="downloadsLimit">⬇️ ` + tr.T("dashboard.download_limit_label") + `</label>
                             <input type="number" id="downloadsLimit" name="downloads_limit" min="1" value="10">
                             <label style="margin-top: 8px;">
-                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads" checked> Unlimited downloads
+                                <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads" checked> ` + tr.T("dashboard.unlimited_downloads_label") + `
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>🔗 Link Type</label>
+                        <label>🔗 ` + tr.T("dashboard.link_type_label") + `</label>
                         <div style="display: flex; gap: 16px; margin-top: 8px;">
                             <label style="display: flex; align-items: center; gap: 8px;">
                                 <input type="radio" name="link_type" value="splash" checked>
-                                <span>Splash Page (recommended)</span>
+                                <span>` + tr.T("dashboard.splash_page_option") + `</span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 8px;">
                                 <input type="radio" name="link_type" value="direct">
-                                <span>Direct Download</span>
+                                <span>` + tr.T("dashboard.direct_download_option") + `</span>
                             </label>
                         </div>
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">
-                            Splash page shows branding and file info before download
+                            ` + tr.T("dashboard.splash_page_help") + `
                         </p>
                     </div>
 
                     <div class="form-group">
                         <label>
                             <input type="checkbox" id="requireAuth" name="require_auth">
-                            🔒 Require recipient authentication (email + password)
+                            🔒 ` + tr.T("dashboard.require_auth_label") + `
                         </label>
                     </div>
 
                     <div class="form-group">
                         <label>
                             <input type="checkbox" id="enablePassword" onchange="togglePasswordField()">
-                            🔐 Password protect this file
+                            🔐 ` + tr.T("dashboard.password_protect_label") + `
                         </label>
                         <div id="passwordFieldContainer" style="display: none; margin-top: 12px;">
-                            <input type="text" id="filePassword" name="file_password" placeholder="Enter password" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                            <input type="text" id="filePassword" name="file_password" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.password_placeholder")) + `" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
                             <p style="color: #666; font-size: 12px; margin-top: 4px;">
-                                Recipients will need this password to download the file
+                                ` + tr.T("dashboard.password_help") + `
                             </p>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="sendToEmail">📧 Send link to email (optional)</label>
-                        <input type="email" id="sendToEmail" name="send_to_email" placeholder="recipient@example.com" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <label for="sendToEmail">📧 ` + tr.T("dashboard.send_email_label") + `</label>
+                        <input type="email" id="sendToEmail" name="send_to_email" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">
-                            After upload, send the download link via email to this address
+                            ` + tr.T("dashboard.send_email_help") + `
                         </p>
                     </div>
 
                     <div class="form-group">
-                        <label>👥 Share with teams (optional)</label>
+                        <label>👥 ` + tr.T("dashboard.share_teams_label") + `</label>
                         <div id="teamSelectContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; padding: 12px; max-height: 150px; overflow-y: auto; background: #fafafa;">
-                            <div style="color: #999; font-style: italic;">Loading teams...</div>
+                            <div style="color: #999; font-style: italic;">` + tr.T("dashboard.loading_teams") + `</div>
                         </div>
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">
-                            Select one or more teams to share this file with immediately after upload
+                            ` + tr.T("dashboard.share_teams_help") + `
                         </p>
                     </div>
 
@@ -1092,7 +1094,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         margin-bottom: 15px;
                     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)'">
                         <span style="font-size: 32px;">📤</span>
-                        <span style="font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">Upload File</span>
+                        <span style="font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">` + tr.T("dashboard.upload_file_heading") + `</span>
                     </button>
                     <button type="button" onclick="resetUploadForm()" style="
                         display: flex;
@@ -1109,7 +1111,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
                         transition: all 0.3s ease;
                     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">
-                        ✖️ Cancel
+                        ✖️ ` + tr.T("common.cancel") + `
                     </button>
                 </div>
             </form>
@@ -1117,15 +1119,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
         <!-- File Request Section -->
         <div class="file-request-section" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px;">
-            <h2 style="margin-bottom: 16px; color: #333;">📥 Request Files from Others</h2>
-            <p style="color: #666; margin-bottom: 12px;">Create a link that allows others to upload files directly to you. Perfect for collecting files from clients or colleagues.</p>
+            <h2 style="margin-bottom: 16px; color: #333;">📥 ` + tr.T("dashboard.file_request_heading") + `</h2>
+            <p style="color: #666; margin-bottom: 12px;">` + tr.T("dashboard.file_request_description") + `</p>
             <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
                 <p style="color: #1976d2; font-size: 13px; margin: 0;">
-                    🔒 <strong>Security:</strong> Upload links automatically expire after 24 hours for your protection.
+                    🔒 ` + tr.T("dashboard.file_request_security_notice") + `
                 </p>
             </div>
             <button onclick="showCreateRequestModal()" style="padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                ➕ Create Upload Request
+                ➕ ` + tr.T("dashboard.create_upload_request") + `
             </button>
             <div id="requestsList" style="margin-top: 20px;"></div>
         </div>
@@ -1133,43 +1135,43 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         <!-- File Request Modal -->
         <div id="fileRequestModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
             <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-                <h2 style="margin-bottom: 24px; color: #333;">Create Upload Request</h2>
+                <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.create_upload_request") + `</h2>
                 <form id="fileRequestForm" onsubmit="submitFileRequest(event)">
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Title *</label>
-                        <input type="text" id="requestTitle" required placeholder="e.g., Upload Documents" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Short description of what you're requesting</p>
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_title_label") + `</label>
+                        <input type="text" id="requestTitle" required placeholder="` + template.HTMLEscapeString(tr.T("dashboard.request_title_placeholder")) + `" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">` + tr.T("dashboard.request_title_help") + `</p>
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Message (optional)</label>
-                        <textarea id="requestMessage" placeholder="Additional instructions for the uploader..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.message_optional_label") + `</label>
+                        <textarea id="requestMessage" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.request_message_placeholder")) + `" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
                     </div>
 
                     <div style="margin-bottom: 20px; padding: 14px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
                         <p style="color: #856404; font-size: 13px; margin: 0; line-height: 1.5;">
-                            ⏰ <strong>Security Notice:</strong> Upload links automatically expire after <strong>24 hours</strong> for your protection. Recipients must use the link within this timeframe.
+                            ⏰ ` + tr.T("dashboard.request_security_notice") + `
                         </p>
                     </div>
 
                     <div style="margin-bottom: 24px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">Max file size (GB)</label>
+                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_max_size_label") + `</label>
                         <input type="number" id="requestMaxSize" min="0.1" max="15" step="0.1" value="1" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                        <p style="color: #666; font-size: 12px; margin-top: 4px;">Maximum size per file (1-15 GB, default: 1 GB)</p>
+                        <p style="color: #666; font-size: 12px; margin-top: 4px;">` + tr.T("dashboard.request_max_size_help") + `</p>
                     </div>
 
                     <div style="margin-bottom: 24px; background: #fff9e6; padding: 16px; border-radius: 8px; border: 3px solid #ff9800;">
-                        <label style="display: block; margin-bottom: 8px; color: #e65100; font-weight: 700; font-size: 16px;">📧 Send upload request to email (optional)</label>
-                        <input type="email" id="requestRecipientEmail" placeholder="recipient@example.com" style="width: 100%; padding: 12px; border: 3px solid #ff9800; border-radius: 6px; font-size: 14px; background: white;">
-                        <p style="color: #e65100; font-size: 13px; margin-top: 8px; font-weight: 600;">Send the upload link directly to this email address</p>
+                        <label style="display: block; margin-bottom: 8px; color: #e65100; font-weight: 700; font-size: 16px;">📧 ` + tr.T("dashboard.request_recipient_email_label") + `</label>
+                        <input type="email" id="requestRecipientEmail" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 12px; border: 3px solid #ff9800; border-radius: 6px; font-size: 14px; background: white;">
+                        <p style="color: #e65100; font-size: 13px; margin-top: 8px; font-weight: 600;">` + tr.T("dashboard.request_recipient_email_help") + `</p>
                     </div>
 
                     <div style="display: flex; gap: 12px;">
                         <button type="submit" style="flex: 1; padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                            Create Request
+                            ` + tr.T("dashboard.create_request_button") + `
                         </button>
                         <button type="button" onclick="closeFileRequestModal()" style="flex: 1; padding: 12px 24px; background: #f5f5f5; color: #333; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                            Cancel
+                            ` + tr.T("common.cancel") + `
                         </button>
                     </div>
                 </form>
@@ -1178,13 +1180,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
         <div class="files-section">
             <div class="files-header">
-                <h2>My Files</h2>
+                <h2>` + tr.T("dashboard.my_files") + `</h2>
                 <div class="file-tabs" style="margin-top: 16px; display: flex; gap: 12px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; align-items: center;">
-                    <button class="file-tab active" onclick="filterFiles('all')" data-filter="all" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid ` + s.getPrimaryColor() + `; color: ` + s.getPrimaryColor() + `;">All Files</button>
-                    <button class="file-tab" onclick="filterFiles('my')" data-filter="my" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">My Files</button>
-                    <button class="file-tab" onclick="filterFiles('team')" data-filter="team" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">Team Files</button>
+                    <button class="file-tab active" onclick="filterFiles('all')" data-filter="all" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid ` + s.getPrimaryColor() + `; color: ` + s.getPrimaryColor() + `;">` + tr.T("dashboard.tab_all_files") + `</button>
+                    <button class="file-tab" onclick="filterFiles('my')" data-filter="my" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">` + tr.T("dashboard.my_files") + `</button>
+                    <button class="file-tab" onclick="filterFiles('team')" data-filter="team" style="background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; color: #666;">` + tr.T("dashboard.tab_team_files") + `</button>
                     <select id="teamFilter" onchange="filterByTeam(this.value)" style="display: none; margin-left: auto; padding: 6px 12px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 6px; font-size: 13px; background: white; cursor: pointer;">
-                        <option value="">All Teams</option>` + func() string {
+                        <option value="">` + tr.T("dashboard.all_teams_option") + `</option>` + func() string {
 		teamOptionsHTML := ""
 		for _, teamName := range uniqueTeamNames {
 			teamOptionsHTML += fmt.Sprintf(`<option value="%s">%s</option>`, template.HTMLEscapeString(teamName), template.HTMLEscapeString(teamName))
@@ -1195,35 +1197,35 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                 </div>
                 <!-- Search and Sort Controls -->
                 <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="fileSearch" placeholder="🔍 Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
+                    <input type="text" id="fileSearch" placeholder="🔍 ` + template.HTMLEscapeString(tr.T("dashboard.search_files_placeholder")) + `" onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
                     <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
-                        <option value="name-asc">📝 Name (A-Z)</option>
-                        <option value="name-desc">📝 Name (Z-A)</option>
-                        <option value="date-desc" selected>📅 Newest First</option>
-                        <option value="date-asc">📅 Oldest First</option>
-                        <option value="downloads-desc">📊 Most Downloads</option>
-                        <option value="downloads-asc">📊 Least Downloads</option>
-                        <option value="size-desc">📦 Largest First</option>
-                        <option value="size-asc">📦 Smallest First</option>
+                        <option value="name-asc">📝 ` + tr.T("dashboard.sort_name_asc") + `</option>
+                        <option value="name-desc">📝 ` + tr.T("dashboard.sort_name_desc") + `</option>
+                        <option value="date-desc" selected>📅 ` + tr.T("dashboard.sort_date_desc") + `</option>
+                        <option value="date-asc">📅 ` + tr.T("dashboard.sort_date_asc") + `</option>
+                        <option value="downloads-desc">📊 ` + tr.T("dashboard.sort_downloads_desc") + `</option>
+                        <option value="downloads-asc">📊 ` + tr.T("dashboard.sort_downloads_asc") + `</option>
+                        <option value="size-desc">📦 ` + tr.T("dashboard.sort_size_desc") + `</option>
+                        <option value="size-asc">📦 ` + tr.T("dashboard.sort_size_asc") + `</option>
                     </select>
                     <select id="perPageSelect" onchange="changePerPage()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
-                        <option value="5">5 per page</option>
-                        <option value="25" selected>25 per page</option>
-                        <option value="50">50 per page</option>
-                        <option value="100">100 per page</option>
-                        <option value="200">200 per page</option>
-                        <option value="250">250 per page</option>
+                        <option value="5">` + tr.T("dashboard.per_page", "count", "5") + `</option>
+                        <option value="25" selected>` + tr.T("dashboard.per_page", "count", "25") + `</option>
+                        <option value="50">` + tr.T("dashboard.per_page", "count", "50") + `</option>
+                        <option value="100">` + tr.T("dashboard.per_page", "count", "100") + `</option>
+                        <option value="200">` + tr.T("dashboard.per_page", "count", "200") + `</option>
+                        <option value="250">` + tr.T("dashboard.per_page", "count", "250") + `</option>
                     </select>
                 </div>
                 <!-- File counter and pagination -->
                 <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div id="fileCounter" style="font-weight: 600; color: #333; font-size: 14px;">
-                        Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> files
+                        ` + tr.T("dashboard.file_counter", "visible", `<span id="visibleCount">0</span>`, "total", `<span id="totalCount">0</span>`) + `
                     </div>
                     <div id="paginationControls" style="display: flex; gap: 8px; align-items: center;">
-                        <button onclick="prevPage()" id="prevBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">← Prev</button>
-                        <span id="pageInfo" style="font-size: 14px; color: #666; min-width: 80px; text-align: center;">Page 1 of 1</span>
-                        <button onclick="nextPage()" id="nextBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">Next →</button>
+                        <button onclick="prevPage()" id="prevBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">← ` + tr.T("dashboard.prev_button") + `</button>
+                        <span id="pageInfo" style="font-size: 14px; color: #666; min-width: 80px; text-align: center;">` + tr.T("dashboard.page_info", "page", "1", "total", "1") + `</span>
+                        <button onclick="nextPage()" id="nextBtn" style="padding: 6px 12px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">` + tr.T("dashboard.next_button") + ` →</button>
                     </div>
                 </div>
             </div>`
@@ -1231,7 +1233,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 	if len(files) == 0 {
 		html += `
             <div class="empty-state">
-                No files uploaded yet. Start by uploading your first file!
+                ` + tr.T("dashboard.no_files") + `
             </div>`
 	} else {
 		html += `
@@ -1243,36 +1245,36 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 			// Escape URLs for safe use in JavaScript
 			splashURLEscaped := template.HTMLEscapeString(splashURL)
 			directURLEscaped := template.HTMLEscapeString(directURL)
-			status := "Active"
+			status := tr.T("common.active")
 			statusColor := "#4caf50"
 
 			if !f.UnlimitedDownloads && f.DownloadsRemaining <= 0 {
-				status = "Expired (downloads)"
+				status = tr.T("dashboard.status_expired_downloads")
 				statusColor = "#f44336"
 			} else if !f.UnlimitedTime && f.ExpireAt > 0 && f.ExpireAt < time.Now().Unix() {
-				status = "Expired (time)"
+				status = tr.T("dashboard.status_expired_time")
 				statusColor = "#f44336"
 			}
 
 			expiryInfo := ""
 			if f.UnlimitedTime && f.UnlimitedDownloads {
-				expiryInfo = "Never expires"
+				expiryInfo = tr.T("dashboard.never_expires")
 			} else if f.UnlimitedTime {
-				expiryInfo = fmt.Sprintf("%d downloads remaining", f.DownloadsRemaining)
+				expiryInfo = tr.T("dashboard.downloads_remaining", "count", fmt.Sprintf("%d", f.DownloadsRemaining))
 			} else if f.UnlimitedDownloads {
-				expiryInfo = fmt.Sprintf("Expires: %s", f.ExpireAtString)
+				expiryInfo = tr.T("dashboard.expires_colon", "date", f.ExpireAtString)
 			} else {
-				expiryInfo = fmt.Sprintf("%d downloads left, expires %s", f.DownloadsRemaining, f.ExpireAtString)
+				expiryInfo = tr.T("dashboard.downloads_left_expires", "count", fmt.Sprintf("%d", f.DownloadsRemaining), "date", f.ExpireAtString)
 			}
 
 			authBadge := ""
 			if f.RequireAuth {
-				authBadge = `<span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔒 Auth Required</span>`
+				authBadge = `<span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔒 ` + tr.T("dashboard.auth_required_badge") + `</span>`
 			}
 
 			passwordBadge := ""
 			if f.FilePasswordPlain != "" {
-				passwordBadge = `<span style="background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔐 Password Protected</span>`
+				passwordBadge = `<span style="background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔐 ` + tr.T("dashboard.password_protected_badge") + `</span>`
 			}
 
 			// Team badges
@@ -1292,7 +1294,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 						}
 						teamsListHTML += template.HTMLEscapeString(teamName)
 					}
-					teamBadges = fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; cursor: help;" title="Shared with: %s">👥 %d teams</span>`, teamsListHTML, len(teams))
+					teamBadges = fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; cursor: help;" title="%s">👥 %s</span>`,
+						tr.T("dashboard.shared_with_tooltip", "teams", teamsListHTML),
+						tr.T("dashboard.teams_count", "count", fmt.Sprintf("%d", len(teams))))
 				}
 			}
 
@@ -1306,14 +1310,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
 			passwordDisplay := ""
 			if f.FilePasswordPlain != "" {
-				passwordDisplay = fmt.Sprintf(`<p style="margin-top: 8px;"><strong>🔐 Password:</strong> <span id="password-%s" style="cursor: pointer; color: #9c27b0; text-decoration: underline;" onclick="togglePasswordVisibility('%s', '%s')">👁️ Show</span></p>`,
-					f.Id, f.Id, template.JSEscapeString(f.FilePasswordPlain))
+				passwordDisplay = fmt.Sprintf(`<p style="margin-top: 8px;"><strong>🔐 %s:</strong> <span id="password-%s" style="cursor: pointer; color: #9c27b0; text-decoration: underline;" onclick="togglePasswordVisibility('%s', '%s')">%s</span></p>`,
+					tr.T("common.password"), f.Id, f.Id, template.JSEscapeString(f.FilePasswordPlain), showPasswordLabel)
 			}
 
 			commentDisplay := ""
 			if f.Comment != "" {
-				commentDisplay = fmt.Sprintf(`<p style="margin-top: 8px; padding: 12px; background: #fff3cd; border-left: 4px solid %s; border-radius: 4px; color: #333; font-weight: 500;"><strong style="font-weight: 700;">📝 Note:</strong> %s</p>`,
-					s.getPrimaryColor(), template.HTMLEscapeString(f.Comment))
+				commentDisplay = fmt.Sprintf(`<p style="margin-top: 8px; padding: 12px; background: #fff3cd; border-left: 4px solid %s; border-radius: 4px; color: #333; font-weight: 500;"><strong style="font-weight: 700;">📝 %s</strong> %s</p>`,
+					s.getPrimaryColor(), tr.T("dashboard.note_label"), template.HTMLEscapeString(f.Comment))
 			}
 
 			// Create data-teams attribute for filtering
@@ -1336,6 +1340,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 				fileExt = fileExt[1:] // Remove leading dot
 			}
 
+			downloadedTimesText := tr.T("dashboard.downloaded_times", "count", fmt.Sprintf("%d", f.DownloadCount))
+
 			html += fmt.Sprintf(`
                 <li class="file-item" data-file-type="%s" data-teams="%s" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-comment="%s">
                     <div class="file-info">
@@ -1343,40 +1349,45 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
                         </h3>
                         %s
-                        <p>%s • Downloaded %d times • %s</p>
-                        <p style="color: %s;">Status: %s</p>
+                        <p>%s • %s • %s</p>
+                        <p style="color: %s;">%s: %s</p>
                         %s
                         <div class="link-display">
-                            <h4>🌐 Splash Page (Recommended - Shows branding)</h4>
+                            <h4>🌐 %s</h4>
                             <div class="link-box">
                                 <a href="%s" target="_blank">%s</a>
-                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 Copy</button>
+                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 %s</button>
                             </div>
-                            <h4>⬇️ Direct Download Link</h4>
+                            <h4>⬇️ %s</h4>
                             <div class="link-box">
                                 <a href="%s" target="_blank">%s</a>
-                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 Copy</button>
+                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 %s</button>
                             </div>
                         </div>
                         <div class="file-actions" style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="View download history" style="flex: 0 0 auto;">
-                                📊 History
+                            <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="%s" style="flex: 0 0 auto;">
+                                📊 %s
                             </button>
-                            <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="Send file link via email" style="background: #007bff; flex: 0 0 auto;">
-                                📧 Email
+                            <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="%s" style="background: #007bff; flex: 0 0 auto;">
+                                📧 %s
                             </button>
-                            <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s', %t, '%s')" title="Edit file settings" style="flex: 0 0 auto;">
-                                ✏️ Edit
+                            <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s', %t, '%s')" title="%s" style="flex: 0 0 auto;">
+                                ✏️ %s
                             </button>
                             <button class="btn btn-danger" onclick="deleteFile('%s', '%s')" style="flex: 0 0 auto; background: #dc3545 !important; color: white;">
-                                🗑️ Delete
+                                🗑️ %s
                             </button>
                         </div>
                     </div>
-                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, template.HTMLEscapeString(f.Comment), template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, f.DownloadCount, expiryInfo, statusColor, status, passwordDisplay,
-				splashURL, splashURL, splashURLEscaped,
-				directURL, directURL, directURLEscaped,
-				f.Id, template.JSEscapeString(f.Name), f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.RequireAuth, template.JSEscapeString(f.FilePasswordPlain), f.Id, template.JSEscapeString(f.Name))
+                </li>`, fileType, dataTeamsAttr, template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, template.HTMLEscapeString(f.Comment), template.HTMLEscapeString(f.Name), template.HTMLEscapeString(f.Name), authBadge, passwordBadge, teamBadges, commentDisplay, f.Size, downloadedTimesText, expiryInfo, statusColor, tr.T("common.status"), status, passwordDisplay,
+				tr.T("dashboard.splash_link_heading"),
+				splashURL, splashURL, splashURLEscaped, tr.T("dashboard.copy_button"),
+				tr.T("dashboard.direct_link_heading"),
+				directURL, directURL, directURLEscaped, tr.T("dashboard.copy_button"),
+				f.Id, template.JSEscapeString(f.Name), tr.T("dashboard.view_history_title"), tr.T("dashboard.history_button"),
+				f.Id, template.JSEscapeString(f.Name), template.JSEscapeString(splashURL), tr.T("dashboard.send_email_title"), tr.T("dashboard.email_button"),
+				f.Id, template.JSEscapeString(f.Name), f.DownloadsRemaining, f.ExpireAt, f.UnlimitedDownloads, f.UnlimitedTime, template.JSEscapeString(f.Comment), f.RequireAuth, template.JSEscapeString(f.FilePasswordPlain), tr.T("dashboard.edit_file_title"), tr.T("common.edit"),
+				f.Id, template.JSEscapeString(f.Name), tr.T("common.delete"))
 		}
 		html += `
             </ul>`
@@ -1389,20 +1400,20 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     <!-- Email File Modal -->
     <div id="emailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
-            <h2 style="margin-bottom: 24px; color: #333;">Send File Link via Email</h2>
+            <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.email_modal_heading") + `</h2>
             <input type="hidden" id="emailFileId">
-            <p style="margin-bottom: 20px; color: #666;">Sending link for: <strong id="emailFileName"></strong></p>
+            <p style="margin-bottom: 20px; color: #666;">` + tr.T("dashboard.email_modal_sending_for") + ` <strong id="emailFileName"></strong></p>
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">Recipient Email:</label>
-                <input type="email" id="emailRecipient" placeholder="recipient@example.com" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">` + tr.T("dashboard.recipient_email_label") + `</label>
+                <input type="email" id="emailRecipient" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
             </div>
             <div style="margin-bottom: 24px;">
-                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">Message (optional):</label>
-                <textarea id="emailMessage" rows="4" placeholder="Add a personal message..." style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical;"></textarea>
+                <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">` + tr.T("dashboard.message_optional_label") + `</label>
+                <textarea id="emailMessage" rows="4" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.personal_message_placeholder")) + `" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical;"></textarea>
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button onclick="closeEmailModal()" class="btn btn-secondary" style="padding: 10px 20px;">Cancel</button>
-                <button onclick="sendEmailLink()" class="btn btn-primary" style="padding: 10px 20px; background: #007bff;">Send Email</button>
+                <button onclick="closeEmailModal()" class="btn btn-secondary" style="padding: 10px 20px;">` + tr.T("common.cancel") + `</button>
+                <button onclick="sendEmailLink()" class="btn btn-primary" style="padding: 10px 20px; background: #007bff;">` + tr.T("dashboard.send_email_button") + `</button>
             </div>
         </div>
     </div>
@@ -1410,92 +1421,92 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     <!-- Edit File Modal -->
     <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
-            <h2 style="margin-bottom: 24px; color: #333;">Edit File Settings</h2>
+            <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.edit_modal_heading") + `</h2>
 
             <input type="hidden" id="editFileId">
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.file_label_colon") + `</label>
                 <p id="editFileName" style="color: #666; font-weight: 600;"></p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="editUnlimitedTime" onchange="toggleEditTimeLimit()">
-                    Never expire (keep forever)
+                    ` + tr.T("dashboard.never_expire_forever_label") + `
                 </label>
             </div>
 
             <div id="editTimeLimitSection" style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Days Until Expiration:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.days_until_expiration_label") + `</label>
                 <input type="number" id="editExpirationDays" value="7" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
-                <p style="font-size: 12px; color: #999; margin-top: 4px;">Days from now until file expires</p>
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">` + tr.T("dashboard.days_until_expiration_help") + `</p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="editUnlimitedDownloads" onchange="toggleEditDownloadLimit()">
-                    Unlimited downloads
+                    ` + tr.T("dashboard.unlimited_downloads_label") + `
                 </label>
             </div>
 
             <div id="editDownloadLimitSection" style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Downloads Remaining:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.downloads_remaining_label") + `</label>
                 <input type="number" id="editDownloadsLimit" value="5" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
             </div>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">💬 Description/Note:</label>
-                <textarea id="editFileComment" rows="3" maxlength="1000" placeholder="Add a description or note about this file..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
-                <p style="font-size: 12px; color: #999; margin-top: 4px;">This message will be shown to recipients on the download page (max 1000 characters)</p>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">💬 ` + tr.T("dashboard.description_label_colon") + `</label>
+                <textarea id="editFileComment" rows="3" maxlength="1000" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.description_placeholder_short")) + `" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">` + tr.T("dashboard.description_help_short") + `</p>
             </div>
 
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="editRequireAuth">
-                    🔒 Require authentication to download
+                    🔒 ` + tr.T("dashboard.require_auth_download_label") + `
                 </label>
-                <p style="font-size: 12px; color: #999; margin-top: 4px; margin-left: 24px;">If enabled, only logged-in users can download this file</p>
+                <p style="font-size: 12px; color: #999; margin-top: 4px; margin-left: 24px;">` + tr.T("dashboard.require_auth_help") + `</p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="editEnablePassword" onchange="toggleEditPasswordField()">
-                    🔐 Password protect this file
+                    🔐 ` + tr.T("dashboard.password_protect_label") + `
                 </label>
                 <div id="editPasswordFieldContainer" style="display: none; margin-top: 12px; margin-left: 24px;">
-                    <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">Password:</label>
-                    <input type="text" id="editFilePassword" placeholder="Enter password" maxlength="100" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
-                    <p style="font-size: 12px; color: #999; margin-top: 4px;">Recipients will need this password to download the file</p>
+                    <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">` + tr.T("common.password") + `:</label>
+                    <input type="text" id="editFilePassword" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.password_placeholder")) + `" maxlength="100" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+                    <p style="font-size: 12px; color: #999; margin-top: 4px;">` + tr.T("dashboard.password_help") + `</p>
                 </div>
             </div>
 
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
-                <label style="display: block; margin-bottom: 12px; font-weight: 500;">👥 Team Sharing:</label>
+                <label style="display: block; margin-bottom: 12px; font-weight: 500;">👥 ` + tr.T("dashboard.team_sharing_label") + `</label>
 
                 <!-- Current teams -->
                 <div id="editCurrentTeams" style="margin-bottom: 16px;">
-                    <div style="color: #999; font-style: italic; font-size: 14px;">Loading current teams...</div>
+                    <div style="color: #999; font-style: italic; font-size: 14px;">` + tr.T("dashboard.loading_current_teams") + `</div>
                 </div>
 
                 <!-- Add new team -->
                 <div style="background: #f5f5f5; padding: 12px; border-radius: 6px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">Add to team:</label>
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;">` + tr.T("dashboard.add_to_team_label") + `</label>
                     <select id="editTeamSelect" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; background: white;">
-                        <option value="">-- Select a team --</option>
+                        <option value="">` + tr.T("dashboard.select_team_option") + `</option>
                     </select>
                     <button onclick="addTeamToFile()" style="margin-top: 8px; padding: 8px 16px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; width: 100%;">
-                        ➕ Add Team
+                        ➕ ` + tr.T("dashboard.add_team_button") + `
                     </button>
                 </div>
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button onclick="saveFileEdit()" style="flex: 1; padding: 14px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Save Changes
+                    ` + tr.T("dashboard.save_changes_button") + `
                 </button>
                 <button onclick="closeEditModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Cancel
+                    ` + tr.T("common.cancel") + `
                 </button>
             </div>
         </div>
@@ -1504,52 +1515,52 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     <!-- Upload Settings Modal -->
     <div id="uploadModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
-            <h2 style="margin-bottom: 24px; color: #333;">Upload Settings</h2>
+            <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.upload_settings_heading") + `</h2>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.file_label_colon") + `</label>
                 <p id="selectedFileName" style="color: #666;"></p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="requireAuth" style="margin-right: 8px;">
-                    Require authentication to download
+                    ` + tr.T("dashboard.require_auth_download_label") + `
                 </label>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="unlimitedTime" onchange="toggleTimeLimit()">
-                    Never expire (keep forever)
+                    ` + tr.T("dashboard.never_expire_forever_label") + `
                 </label>
             </div>
 
             <div id="timeLimitSection" style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Expiration Days:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.expiration_days_label") + `</label>
                 <input type="number" id="expirationDays" value="7" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
-                <p style="font-size: 12px; color: #999; margin-top: 4px;">Set to 0 for no time limit</p>
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">` + tr.T("dashboard.expiration_days_help") + `</p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="unlimitedDownloads" onchange="toggleDownloadLimit()">
-                    Unlimited downloads
+                    ` + tr.T("dashboard.unlimited_downloads_label") + `
                 </label>
             </div>
 
             <div id="downloadLimitSection" style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Download Limit:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.download_limit_colon_label") + `</label>
                 <input type="number" id="downloadsLimit" value="5" min="0" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
-                <p style="font-size: 12px; color: #999; margin-top: 4px;">Set to 0 for unlimited downloads</p>
+                <p style="font-size: 12px; color: #999; margin-top: 4px;">` + tr.T("dashboard.download_limit_help") + `</p>
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button onclick="performUpload()" style="flex: 1; padding: 14px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Upload File
+                    ` + tr.T("dashboard.upload_file_heading") + `
                 </button>
                 <button onclick="closeUploadModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Cancel
+                    ` + tr.T("common.cancel") + `
                 </button>
             </div>
 
@@ -1565,20 +1576,20 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     <!-- Download History Modal -->
     <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h2 style="margin-bottom: 24px; color: #333;">📊 Download History</h2>
+            <h2 style="margin-bottom: 24px; color: #333;">📊 ` + tr.T("dashboard.download_history_heading") + `</h2>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.file_label_colon") + `</label>
                 <p id="historyFileName" style="color: #666; font-weight: 600;"></p>
             </div>
 
             <div id="downloadHistoryContent" style="margin-top: 20px;">
-                <p style="text-align: center; color: #999;">Loading...</p>
+                <p style="text-align: center; color: #999;">` + tr.T("common.loading") + `</p>
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button onclick="closeDownloadHistoryModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Close
+                    ` + tr.T("common.close") + `
                 </button>
             </div>
         </div>
@@ -1586,10 +1597,50 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
     <script src="/static/js/dashboard.js?v=6.1.6"></script>
     <script>
+        const wvShowPasswordLabel = '` + template.JSEscapeString(showPasswordLabel) + `';
+        const I18N = {
+            loading: '` + template.JSEscapeString(tr.T("common.loading")) + `',
+            noActivityYet: '` + template.JSEscapeString(tr.T("dashboard.no_activity_yet")) + `',
+            downloads: '` + template.JSEscapeString(tr.T("dashboard.downloads")) + `',
+            dateTime: '` + template.JSEscapeString(tr.T("dashboard.date_time_header")) + `',
+            downloadedBy: '` + template.JSEscapeString(tr.T("dashboard.downloaded_by_header")) + `',
+            ipAddress: '` + template.JSEscapeString(tr.T("dashboard.ip_address_header")) + `',
+            anonymous: '` + template.JSEscapeString(tr.T("dashboard.anonymous_label")) + `',
+            na: '` + template.JSEscapeString(tr.T("dashboard.na_label")) + `',
+            authShort: '` + template.JSEscapeString(tr.T("dashboard.auth_short_badge")) + `',
+            emailsSent: '` + template.JSEscapeString(tr.T("dashboard.emails_sent_heading")) + `',
+            recipient: '` + template.JSEscapeString(tr.T("dashboard.recipient_header")) + `',
+            message: '` + template.JSEscapeString(tr.T("dashboard.message_header")) + `',
+            noMessage: '` + template.JSEscapeString(tr.T("dashboard.no_message_label")) + `',
+            errorLoadingHistory: '` + template.JSEscapeString(tr.T("dashboard.error_loading_history")) + `',
+            errRecipientEmailRequired: '` + template.JSEscapeString(tr.T("dashboard.err_recipient_email_required")) + `',
+            sending: '` + template.JSEscapeString(tr.T("dashboard.sending_label")) + `',
+            sendEmailButton: '` + template.JSEscapeString(tr.T("dashboard.send_email_button")) + `',
+            emailSentSuccess: '` + template.JSEscapeString(tr.T("notice.email_sent")) + `',
+            errorPrefix: '` + template.JSEscapeString(tr.T("dashboard.error_prefix")) + `',
+            failedToSendEmail: '` + template.JSEscapeString(tr.T("dashboard.failed_to_send_email")) + `',
+            errorSendingEmail: '` + template.JSEscapeString(tr.T("dashboard.error_sending_email")) + `',
+            editFormNotLoaded: '` + template.JSEscapeString(tr.T("dashboard.edit_form_not_loaded")) + `',
+            currentlySharedWith: '` + template.JSEscapeString(tr.T("dashboard.currently_shared_with")) + `',
+            notSharedWithTeams: '` + template.JSEscapeString(tr.T("dashboard.not_shared_with_teams")) + `',
+            failedToLoadTeams: '` + template.JSEscapeString(tr.T("dashboard.failed_to_load_teams")) + `',
+            removeButton: '` + template.JSEscapeString(tr.T("dashboard.remove_button")) + `',
+            pleaseSelectTeam: '` + template.JSEscapeString(tr.T("dashboard.please_select_team")) + `',
+            failedToAddTeam: '` + template.JSEscapeString(tr.T("dashboard.failed_to_add_team")) + `',
+            unknownError: '` + template.JSEscapeString(tr.T("dashboard.unknown_error")) + `',
+            removeTeamConfirm: '` + template.JSEscapeString(tr.T("dashboard.remove_team_confirm")) + `',
+            failedToRemoveTeam: '` + template.JSEscapeString(tr.T("dashboard.failed_to_remove_team")) + `',
+            fileIdMissing: '` + template.JSEscapeString(tr.T("dashboard.file_id_missing")) + `',
+            passwordRequiredOrUncheck: '` + template.JSEscapeString(tr.T("dashboard.password_required_or_uncheck")) + `',
+            errorSavingChanges: '` + template.JSEscapeString(tr.T("dashboard.error_saving_changes")) + `',
+            pageOf: '` + template.JSEscapeString(tr.T("dashboard.page_info")) + `',
+            selectTeamOption: '` + template.JSEscapeString(tr.T("dashboard.select_team_option")) + `'
+        };
+
         function showDownloadHistory(fileId, fileName) {
             document.getElementById('historyFileName').textContent = fileName;
             document.getElementById('downloadHistoryModal').style.display = 'flex';
-            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">Loading...</p>';
+            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">' + I18N.loading + '</p>';
 
             fetch('/file/downloads?file_id=' + encodeURIComponent(fileId))
                 .then(response => response.json())
@@ -1598,7 +1649,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     const emailLogs = data.emailLogs || [];
 
                     if (downloadLogs.length === 0 && emailLogs.length === 0) {
-                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">No activity yet</p>';
+                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">' + I18N.noActivityYet + '</p>';
                         return;
                     }
 
@@ -1606,20 +1657,20 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                     // Show download logs
                     if (downloadLogs.length > 0) {
-                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📥 Downloads (' + downloadLogs.length + ')</h3>';
+                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📥 ' + I18N.downloads + ' (' + downloadLogs.length + ')</h3>';
                         html += '<table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
-                        html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
-                        html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
-                        html += '<th style="padding: 12px; text-align: left;">IP Address</th>';
+                        html += '<th style="padding: 12px; text-align: left;">' + I18N.dateTime + '</th>';
+                        html += '<th style="padding: 12px; text-align: left;">' + I18N.downloadedBy + '</th>';
+                        html += '<th style="padding: 12px; text-align: left;">' + I18N.ipAddress + '</th>';
                         html += '</tr></thead><tbody>';
 
                         downloadLogs.forEach(log => {
                             const date = new Date(log.downloadedAt * 1000);
                             const dateStr = date.toLocaleString('sv-SE');
-                            const downloader = log.email || 'Anonymous';
-                            const ip = log.ipAddress || 'N/A';
-                            const authBadge = log.isAuthenticated ? ' <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🔒 Auth</span>' : '';
+                            const downloader = log.email || I18N.anonymous;
+                            const ip = log.ipAddress || I18N.na;
+                            const authBadge = log.isAuthenticated ? ' <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🔒 ' + I18N.authShort + '</span>' : '';
 
                             html += '<tr style="border-bottom: 1px solid #eee;">';
                             html += '<td style="padding: 12px;">' + dateStr + '</td>';
@@ -1633,18 +1684,18 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                     // Show email logs
                     if (emailLogs.length > 0) {
-                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📧 Emails Sent (' + emailLogs.length + ')</h3>';
+                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📧 ' + I18N.emailsSent + ' (' + emailLogs.length + ')</h3>';
                         html += '<table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
-                        html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
-                        html += '<th style="padding: 12px; text-align: left;">Recipient</th>';
-                        html += '<th style="padding: 12px; text-align: left;">Message</th>';
+                        html += '<th style="padding: 12px; text-align: left;">' + I18N.dateTime + '</th>';
+                        html += '<th style="padding: 12px; text-align: left;">' + I18N.recipient + '</th>';
+                        html += '<th style="padding: 12px; text-align: left;">' + I18N.message + '</th>';
                         html += '</tr></thead><tbody>';
 
                         emailLogs.forEach(log => {
                             const date = new Date(log.sentAt * 1000);
                             const dateStr = date.toLocaleString('sv-SE');
-                            const message = log.message || '<em style="color: #999;">No message</em>';
+                            const message = log.message || '<em style="color: #999;">' + I18N.noMessage + '</em>';
 
                             html += '<tr style="border-bottom: 1px solid #eee;">';
                             html += '<td style="padding: 12px;">' + dateStr + '</td>';
@@ -1659,7 +1710,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     document.getElementById('downloadHistoryContent').innerHTML = html;
                 })
                 .catch(error => {
-                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">Error loading history</p>';
+                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">' + I18N.errorLoadingHistory + '</p>';
                     console.error('Error:', error);
                 });
         }
@@ -1685,11 +1736,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
         function togglePasswordVisibility(fileId, password) {
             const element = document.getElementById('password-' + fileId);
-            if (element.textContent === '👁️ Show') {
+            if (element.textContent === wvShowPasswordLabel) {
                 element.textContent = password;
                 element.style.fontFamily = 'monospace';
             } else {
-                element.textContent = '👁️ Show';
+                element.textContent = wvShowPasswordLabel;
                 element.style.fontFamily = 'inherit';
             }
         }
@@ -1713,13 +1764,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             const message = document.getElementById('emailMessage').value;
 
             if (!recipient) {
-                alert('Please enter a recipient email address');
+                alert(I18N.errRecipientEmailRequired);
                 return;
             }
 
             const btn = event.target;
             btn.disabled = true;
-            btn.textContent = 'Sending...';
+            btn.textContent = I18N.sending;
 
             try {
                 const response = await fetch('/file/email', {
@@ -1731,16 +1782,16 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                 const result = await response.json();
                 if (response.ok) {
-                    alert('Email sent successfully!');
+                    alert(I18N.emailSentSuccess);
                     closeEmailModal();
                 } else {
-                    alert('Error: ' + (result.error || 'Failed to send email'));
+                    alert(I18N.errorPrefix + ' ' + (result.error || I18N.failedToSendEmail));
                 }
             } catch (error) {
-                alert('Error sending email: ' + error.message);
+                alert(I18N.errorSendingEmail + ' ' + error.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Send Email';
+                btn.textContent = I18N.sendEmailButton;
             }
         }
 
@@ -1750,7 +1801,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             const fileIdInput = document.getElementById('editFileId');
             if (!fileIdInput) {
                 console.error('ERROR: editFileId input element not found!');
-                alert('Error: Edit form not properly loaded. Please refresh the page.');
+                alert(I18N.editFormNotLoaded);
                 return;
             }
             fileIdInput.value = fileId;
@@ -1807,7 +1858,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             .then(response => response.json())
             .then(data => {
                 const select = document.getElementById('editTeamSelect');
-                select.innerHTML = '<option value="">-- Select a team --</option>';
+                select.innerHTML = '<option value="">' + I18N.selectTeamOption + '</option>';
 
                 if (data.success && data.teams && data.teams.length > 0) {
                     data.teams.forEach(team => {
@@ -1831,7 +1882,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             .then(data => {
                 const container = document.getElementById('editCurrentTeams');
                 if (data.success && data.teams && data.teams.length > 0) {
-                    container.innerHTML = '<div style="margin-bottom: 8px; font-size: 13px; color: #666; font-weight: 500;">Currently shared with:</div>';
+                    container.innerHTML = '<div style="margin-bottom: 8px; font-size: 13px; color: #666; font-weight: 500;">' + I18N.currentlySharedWith + '</div>';
                     data.teams.forEach(team => {
                         const teamDiv = document.createElement('div');
                         teamDiv.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 6px;';
@@ -1841,17 +1892,17 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                             '</span>' +
                             '<button onclick="removeTeamFromFile(\'' + fileId + '\', ' + team.id + ', \'' + escapeHtml(team.name).replace(/'/g, "\\'") + '\')" ' +
                             'style="padding: 4px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">' +
-                            '✕ Remove' +
+                            '✕ ' + I18N.removeButton +
                             '</button>';
                         container.appendChild(teamDiv);
                     });
                 } else {
-                    container.innerHTML = '<div style="color: #999; font-style: italic; font-size: 14px;">Not shared with any teams</div>';
+                    container.innerHTML = '<div style="color: #999; font-style: italic; font-size: 14px;">' + I18N.notSharedWithTeams + '</div>';
                 }
             })
             .catch(error => {
                 console.error('Error loading file teams:', error);
-                document.getElementById('editCurrentTeams').innerHTML = '<div style="color: #f44336; font-size: 14px;">Failed to load teams</div>';
+                document.getElementById('editCurrentTeams').innerHTML = '<div style="color: #f44336; font-size: 14px;">' + I18N.failedToLoadTeams + '</div>';
             });
         }
 
@@ -1862,7 +1913,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             const teamName = select.options[select.selectedIndex].text;
 
             if (!teamId) {
-                alert('Please select a team');
+                alert(I18N.pleaseSelectTeam);
                 return;
             }
 
@@ -1879,17 +1930,17 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     select.value = '';
                     location.reload(); // Reload to update badges
                 } else {
-                    alert('Failed to add team: ' + (data.message || 'Unknown error'));
+                    alert(I18N.failedToAddTeam + ': ' + (data.message || I18N.unknownError));
                 }
             })
             .catch(error => {
                 console.error('Error adding team:', error);
-                alert('Failed to add team');
+                alert(I18N.failedToAddTeam);
             });
         }
 
         function removeTeamFromFile(fileId, teamId, teamName) {
-            if (!confirm('Remove file from team "' + teamName + '"?')) {
+            if (!confirm(I18N.removeTeamConfirm.replace('{{team}}', teamName))) {
                 return;
             }
 
@@ -1905,12 +1956,12 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     loadCurrentFileTeams(fileId);
                     location.reload(); // Reload to update badges
                 } else {
-                    alert('Failed to remove team: ' + (data.message || 'Unknown error'));
+                    alert(I18N.failedToRemoveTeam + ': ' + (data.message || I18N.unknownError));
                 }
             })
             .catch(error => {
                 console.error('Error removing team:', error);
-                alert('Failed to remove team');
+                alert(I18N.failedToRemoveTeam);
             });
         }
 
@@ -1956,13 +2007,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             const filePassword = document.getElementById('editFilePassword').value;
 
             if (!fileId || fileId === '') {
-                alert('Error: File ID is missing. Please close and reopen the edit dialog.');
+                alert(I18N.fileIdMissing);
                 return;
             }
 
             // Validate password if enabled
             if (enablePassword && (!filePassword || filePassword.trim() === '')) {
-                alert('Please enter a password or uncheck the password protection option.');
+                alert(I18N.passwordRequiredOrUncheck);
                 return;
             }
 
@@ -2005,11 +2056,11 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     closeEditModal();
                     location.reload();
                 } else if (result.error) {
-                    alert('Error: ' + result.error);
+                    alert(I18N.errorPrefix + ' ' + result.error);
                 }
             })
             .catch(error => {
-                alert('Error saving changes: ' + error);
+                alert(I18N.errorSavingChanges + ' ' + error);
             });
         }
 
@@ -2288,7 +2339,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             const prevBtnEl = document.getElementById('prevBtn');
             const nextBtnEl = document.getElementById('nextBtn');
 
-            if (pageInfoEl) pageInfoEl.textContent = 'Page ' + currentPage + ' of ' + Math.max(1, totalPages);
+            if (pageInfoEl) pageInfoEl.textContent = I18N.pageOf.replace('{{page}}', currentPage).replace('{{total}}', Math.max(1, totalPages));
 
             if (prevBtnEl) {
                 prevBtnEl.disabled = currentPage === 1;
@@ -2307,7 +2358,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         // are defined in dashboard.js and loaded automatically on page load
     </script>
     <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
-        Powered by WulfVault Version ` + s.config.Version + `
+        ` + tr.T("dashboard.powered_by", "version", s.config.Version) + `
     </div>
 </body>
 </html>`

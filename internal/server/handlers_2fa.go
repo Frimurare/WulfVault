@@ -287,7 +287,7 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.render2FAVerifyPage(w, r, "Invalid form data")
+		s.render2FAVerifyPage(w, r, "twofa.error.invalid_form")
 		return
 	}
 
@@ -300,7 +300,7 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 		// Validate backup code
 		valid, err = database.DB.ValidateBackupCode(user.Id, code)
 		if err != nil {
-			s.render2FAVerifyPage(w, r, "Error validating backup code")
+			s.render2FAVerifyPage(w, r, "twofa.error.backup_validation")
 			return
 		}
 	} else {
@@ -309,7 +309,7 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !valid {
-		s.render2FAVerifyPage(w, r, "Invalid verification code")
+		s.render2FAVerifyPage(w, r, "twofa.error.invalid_code")
 		return
 	}
 
@@ -330,7 +330,7 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 
 	sessionID, err := auth.CreateSession(user.Id, sessionDuration)
 	if err != nil {
-		s.render2FAVerifyPage(w, r, "Failed to create session")
+		s.render2FAVerifyPage(w, r, "twofa.error.session_failed")
 		return
 	}
 
@@ -354,16 +354,18 @@ func (s *Server) handle2FAVerify(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// render2FAVerifyPage renders the 2FA verification page
-func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, errorMsg string) {
+// render2FAVerifyPage renders the 2FA verification page. errorKey is an i18n
+// key rather than finished text.
+func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, errorKey string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tr := s.tr(r)
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Two-Factor Authentication - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("twofa.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -465,41 +467,42 @@ func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, err
     </style>
 </head>
 <body>
+    ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="verify-container">
         <div class="logo">
             <h1>` + s.config.CompanyName + `</h1>
-            <p>Two-Factor Authentication</p>
+            <p>` + tr.T("twofa.title") + `</p>
         </div>`
 
-	if errorMsg != "" {
-		html += `<div class="error">` + errorMsg + `</div>`
+	if errorKey != "" {
+		html += `<div class="error">` + tr.T(errorKey) + `</div>`
 	}
 
 	html += `
         <form method="POST" action="/2fa/verify" id="totp-form">
             <div class="form-group">
-                <label for="code">Enter the 6-digit code from your authenticator app</label>
+                <label for="code">` + tr.T("twofa.info") + `</label>
                 <input type="text" id="code" name="code" maxlength="6" pattern="[0-9]{6}" required autofocus autocomplete="off">
                 <input type="hidden" name="use_backup" value="0">
             </div>
-            <button type="submit" class="btn">Verify</button>
+            <button type="submit" class="btn">` + tr.T("twofa.submit") + `</button>
         </form>
 
         <form method="POST" action="/2fa/verify" id="backup-form">
             <div class="form-group">
-                <label for="backup-code">Enter a backup code</label>
+                <label for="backup-code">` + tr.T("twofa.backup_code_label") + `</label>
                 <input type="text" id="backup-code" name="code" maxlength="16" required autocomplete="off">
                 <input type="hidden" name="use_backup" value="1">
             </div>
-            <button type="submit" class="btn">Verify Backup Code</button>
+            <button type="submit" class="btn">` + tr.T("twofa.backup_submit") + `</button>
         </form>
 
         <div class="help-text">
-            Enter the code from your authenticator app
+            ` + tr.T("twofa.code_hint") + `
         </div>
 
         <div class="backup-link">
-            <a href="#" id="toggle-backup">Use a backup code instead</a>
+            <a href="#" id="toggle-backup">` + tr.T("twofa.use_backup_code") + `</a>
         </div>
     </div>
 
@@ -516,11 +519,11 @@ func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, err
             if (showingBackup) {
                 totpForm.style.display = 'none';
                 backupForm.style.display = 'block';
-                toggleLink.textContent = 'Use authenticator app instead';
+                toggleLink.textContent = '` + tr.T("twofa.use_authenticator") + `';
             } else {
                 totpForm.style.display = 'block';
                 backupForm.style.display = 'none';
-                toggleLink.textContent = 'Use a backup code instead';
+                toggleLink.textContent = '` + tr.T("twofa.use_backup_code") + `';
             }
         });
 
