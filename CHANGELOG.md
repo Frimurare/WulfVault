@@ -88,6 +88,18 @@ Upgrading is strongly recommended.
   10-minute inactivity timeout, GDPR self-service routes, and the API examples
   for upload and branding whose field names did not match the server.
 
+### Upgrade notes
+
+- Update **both** the binary and the `web/static` directory — this release
+  adds `web/static/js/chunked-download.js`, which is served from disk. A
+  binary-only swap leaves the splash page without the new download client
+  (it still works via the direct-link fallback).
+- Database migrations run automatically on first start, including the rewrite
+  of legacy-anonymized rows and the missing `RemindedAt` column.
+- All download-flow cookies are invalidated by the signing change; visitors
+  and download accounts simply log in again. Regular user sessions are
+  unaffected.
+
 ## [7.1.1] - Aurora - 2026-05-30
 
 Provider-aware invite UI. The "create user" admin form previously labelled the
