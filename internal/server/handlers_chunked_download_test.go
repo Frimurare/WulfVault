@@ -606,7 +606,7 @@ func TestDownloadEndpointsEnforcePassword(t *testing.T) {
 		})
 
 		t.Run(endpoint+" with the cookie", func(t *testing.T) {
-			cookie := &http.Cookie{Name: "password_verified_secretfile", Value: "true"}
+			cookie := &http.Cookie{Name: "password_verified_secretfile", Value: passwordProofValue("secretfile")}
 			if code := ts.get("/api/v1/download/secretfile/"+endpoint, cookie).Code; code >= 400 {
 				t.Fatalf("got status %d for an unlocked file, want it served", code)
 			}
@@ -614,7 +614,7 @@ func TestDownloadEndpointsEnforcePassword(t *testing.T) {
 	}
 
 	t.Run("a cookie for another file does not unlock this one", func(t *testing.T) {
-		cookie := &http.Cookie{Name: "password_verified_otherfile", Value: "true"}
+		cookie := &http.Cookie{Name: "password_verified_otherfile", Value: passwordProofValue("otherfile")}
 		if code := ts.get("/api/v1/download/secretfile/chunk", cookie).Code; code != http.StatusUnauthorized {
 			t.Fatalf("got status %d, want 401", code)
 		}
@@ -622,6 +622,13 @@ func TestDownloadEndpointsEnforcePassword(t *testing.T) {
 
 	t.Run("a falsified cookie value does not unlock the file", func(t *testing.T) {
 		cookie := &http.Cookie{Name: "password_verified_secretfile", Value: "hunter2"}
+		if code := ts.get("/api/v1/download/secretfile/chunk", cookie).Code; code != http.StatusUnauthorized {
+			t.Fatalf("got status %d, want 401", code)
+		}
+	})
+
+	t.Run("the legacy literal true is no longer accepted", func(t *testing.T) {
+		cookie := &http.Cookie{Name: "password_verified_secretfile", Value: "true"}
 		if code := ts.get("/api/v1/download/secretfile/chunk", cookie).Code; code != http.StatusUnauthorized {
 			t.Fatalf("got status %d, want 401", code)
 		}
@@ -649,8 +656,15 @@ func TestDownloadEndpointsEnforceAuthentication(t *testing.T) {
 		}
 	}
 
-	t.Run("an unknown download session does not authenticate", func(t *testing.T) {
+	t.Run("a bare email in the session cookie does not authenticate", func(t *testing.T) {
 		cookie := &http.Cookie{Name: "download_session_privatefile", Value: "stranger@example.com"}
+		if code := ts.get("/api/v1/download/privatefile/chunk", cookie).Code; code != http.StatusUnauthorized {
+			t.Fatalf("got status %d, want 401", code)
+		}
+	})
+
+	t.Run("a signed session for an unknown account does not authenticate", func(t *testing.T) {
+		cookie := &http.Cookie{Name: "download_session_privatefile", Value: sessionCookieValue("privatefile", "stranger@example.com")}
 		if code := ts.get("/api/v1/download/privatefile/chunk", cookie).Code; code != http.StatusUnauthorized {
 			t.Fatalf("got status %d, want 401", code)
 		}

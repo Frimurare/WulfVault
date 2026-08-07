@@ -93,7 +93,7 @@ func downloadAPICookiePath(fileID string) string {
 func (s *Server) resolveDownloadCredentials(r *http.Request, fileInfo *database.FileInfo) downloadCredentials {
 	var creds downloadCredentials
 
-	if cookie, err := r.Cookie("password_verified_" + fileInfo.Id); err == nil && cookie.Value == "true" {
+	if cookie, err := r.Cookie("password_verified_" + fileInfo.Id); err == nil && verifyPasswordProof(fileInfo.Id, cookie.Value) {
 		creds.PasswordVerified = true
 	}
 
@@ -102,9 +102,11 @@ func (s *Server) resolveDownloadCredentials(r *http.Request, fileInfo *database.
 	}
 
 	if cookie, err := r.Cookie("download_session_" + fileInfo.Id); err == nil {
-		account, err := database.DB.GetDownloadAccountByEmail(cookie.Value)
-		if err == nil && account.IsActive {
-			creds.Account = account
+		if email := sessionCookieEmail(fileInfo.Id, cookie.Value); email != "" {
+			account, err := database.DB.GetDownloadAccountByEmail(email)
+			if err == nil && account.IsActive {
+				creds.Account = account
+			}
 		}
 	}
 
@@ -124,6 +126,10 @@ func (s *Server) handleAPIDownloadRoutes(w http.ResponseWriter, r *http.Request)
 	case "verify":
 		s.handleDownloadVerify(w, r, fileID)
 	default:
+		// handleDownload derives the file ID by stripping a "/d/"-length
+		// prefix, so hand it the path it expects. Before this rewrite the
+		// bare /api/v1/download/<id> form always missed the file.
+		r.URL.Path = "/d/" + fileID
 		s.handleAPIDownload(w, r)
 	}
 }

@@ -100,17 +100,21 @@ func (s *Server) getDownloadAccountFromSession(r *http.Request) (*models.Downloa
 		return nil, http.ErrNoCookie
 	}
 
-	log.Printf("DEBUG: Found download_session cookie with value: %s", cookie.Value)
+	// The cookie value is "email|mac", issued at login
+	email := sessionCookieEmail(downloadAccountScope, cookie.Value)
+	if email == "" {
+		log.Printf("DEBUG: download_session cookie failed signature check")
+		return nil, http.ErrNoCookie
+	}
 
-	// The cookie value is the email address
-	account, err := database.DB.GetDownloadAccountByEmail(cookie.Value)
+	account, err := database.DB.GetDownloadAccountByEmail(email)
 	if err != nil {
-		log.Printf("DEBUG: Failed to get account by email %s: %v", cookie.Value, err)
+		log.Printf("DEBUG: Failed to get account by email %s: %v", email, err)
 		return nil, http.ErrNoCookie
 	}
 
 	if !account.IsActive {
-		log.Printf("DEBUG: Account %s is not active", cookie.Value)
+		log.Printf("DEBUG: Account %s is not active", email)
 		return nil, http.ErrNoCookie
 	}
 
