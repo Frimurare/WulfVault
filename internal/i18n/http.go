@@ -148,6 +148,19 @@ func WithUserLanguage(r *http.Request, userLang string) *http.Request {
 	return r.WithContext(NewContext(r.Context(), For(lang)))
 }
 
+// ClearCookie removes an explicit language choice, so the visitor falls back to
+// the browser's Accept-Language header and the server default again.
+func ClearCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     CookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: false,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
 // SetCookie stores an explicit language choice in the browser.
 func SetCookie(w http.ResponseWriter, lang Lang) {
 	http.SetCookie(w, &http.Cookie{

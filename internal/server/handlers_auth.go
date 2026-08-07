@@ -32,7 +32,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Parse form
 	if err := r.ParseForm(); err != nil {
-		s.renderLoginPage(w, r, "Invalid form data")
+		s.renderLoginPage(w, r, "login.error.invalid_form")
 		return
 	}
 
@@ -59,7 +59,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Success:    false,
 			ErrorMsg:   "Invalid credentials",
 		})
-		s.renderLoginPage(w, r, "Invalid credentials")
+		s.renderLoginPage(w, r, "login.error.invalid_credentials")
 		return
 	}
 
@@ -99,7 +99,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 		sessionID, err := auth.CreateSession(user.Id, sessionDuration)
 		if err != nil {
-			s.renderLoginPage(w, r, "Failed to create session")
+			s.renderLoginPage(w, r, "login.error.session_failed")
 			return
 		}
 
@@ -146,7 +146,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		// Create session (using email as session identifier)
 		sessionEmail, err := auth.CreateDownloadAccountSession(downloadAccount.Id)
 		if err != nil {
-			s.renderLoginPage(w, r, "Failed to create session")
+			s.renderLoginPage(w, r, "login.error.session_failed")
 			return
 		}
 
@@ -182,7 +182,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		// Redirect to download user dashboard
 		http.Redirect(w, r, "/download/dashboard", http.StatusSeeOther)
 	} else {
-		s.renderLoginPage(w, r, "Unknown account type")
+		s.renderLoginPage(w, r, "login.error.unknown_account")
 	}
 }
 
@@ -233,17 +233,19 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-// renderLoginPage renders the login page
-func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMsg string) {
+// renderLoginPage renders the login page. errorKey is an i18n key rather than
+// finished text, so the message follows the visitor's language.
+func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorKey string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tr := s.tr(r)
 	inviteEmail := template.HTMLEscapeString(r.URL.Query().Get("invite"))
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Login - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("login.page_title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -322,6 +324,15 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
             opacity: 0.6;
             cursor: not-allowed;
         }
+        .notice {
+            background: #fff8e1;
+            border: 1px solid #ffe0a3;
+            color: #8a6d3b;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
         .error {
             background: #fee;
             border: 1px solid #fcc;
@@ -364,7 +375,7 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
                     // Mark as submitting
                     isSubmitting = true;
                     submitBtn.disabled = true;
-                    submitBtn.textContent = 'Logging in...';
+                    submitBtn.textContent = '` + tr.T("login.submitting") + `';
                     submitBtn.style.opacity = '0.7';
 
                     // Safety timeout to re-enable after 5 seconds if no response
@@ -372,7 +383,7 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
                         if (isSubmitting) {
                             isSubmitting = false;
                             submitBtn.disabled = false;
-                            submitBtn.textContent = 'Login';
+                            submitBtn.textContent = '` + tr.T("login.submit") + `';
                             submitBtn.style.opacity = '1';
                         }
                     }, 5000);
@@ -382,6 +393,7 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
     </script>
 </head>
 <body>
+    ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="login-container">
         <div class="logo">`
 
@@ -396,22 +408,27 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
 	}
 
 	html += `
-            <p>Secure File Sharing</p>
+            <p>` + tr.T("login.tagline") + `</p>
         </div>`
 
-	if errorMsg != "" {
-		html += `<div class="error">` + errorMsg + `</div>`
+	if errorKey != "" {
+		html += `<div class="error">` + tr.T(errorKey) + `</div>`
+	}
+
+	// requireAuth redirects here with ?timeout=1 after an inactivity logout.
+	if r.URL.Query().Get("timeout") == "1" {
+		html += `<div class="notice">` + tr.T("login.notice.timeout") + `</div>`
 	}
 
 	if inviteEmail != "" {
 		// Use the configured provider display name in the banner so the
 		// invitee sees the right brand ("Sign in with Google" etc).
-		bannerProvider := "your SSO provider"
+		bannerProvider := tr.T("login.sso_generic_provider")
 		if ssoCfg, err := auth.LoadIdentityProviderConfig(database.DB); err == nil && ssoCfg.ShouldShowSSOButton() {
 			bannerProvider = ssoCfg.EffectiveDisplayName()
 		}
 		html += `<div style="background: #e8f4f8; border: 1px solid #b3e0ed; color: #0c5460; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px;">
-            <strong>You've been invited.</strong> Sign in with ` + template.HTMLEscapeString(bannerProvider) + ` below to activate your account.
+            ` + tr.TH("login.invite_banner", "provider", bannerProvider) + `
         </div>`
 	}
 
@@ -425,18 +442,18 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
 	html += `
         <form method="POST" action="/login">
             <div class="form-group">
-                <label for="email">Email or Username</label>
+                <label for="email">` + tr.T("login.email_or_username") + `</label>
                 <input type="text" id="email" name="email"` + emailValueAttr + ` required` + emailAutofocus + `>
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">` + tr.T("login.password") + `</label>
                 <input type="password" id="password" name="password" required>
             </div>
             <div class="form-group" style="display: flex; align-items: center; margin-bottom: 20px;">
                 <input type="checkbox" id="remember_me" name="remember_me" style="width: auto; margin-right: 8px;">
-                <label for="remember_me" style="margin: 0; font-weight: normal; cursor: pointer;">Keep me logged in (30 days)</label>
+                <label for="remember_me" style="margin: 0; font-weight: normal; cursor: pointer;">` + tr.T("login.remember_me") + `</label>
             </div>
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">` + tr.T("login.submit") + `</button>
         </form>`
 
 	// Render the SSO button only if a provider is enabled and not overridden
@@ -461,18 +478,18 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorMs
 		html += `
         <div style="display:flex; align-items:center; margin: 20px 0 16px; color:#999; font-size:12px;">
             <div style="flex:1; height:1px; background:#e5e7eb;"></div>
-            <div style="padding: 0 12px;">OR</div>
+            <div style="padding: 0 12px;">` + tr.T("login.or") + `</div>
             <div style="flex:1; height:1px; background:#e5e7eb;"></div>
         </div>
         <a href="/auth/oidc/login" style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:12px; background:white; color:#1f1f1f; border:1px solid #d2d2d2; border-radius:6px; font-size:14px; font-weight:600; text-decoration:none; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
             ` + providerIcon + `
-            Sign in with ` + providerName + `
+            ` + tr.T("login.sign_in_with", "provider", providerName) + `
         </a>`
 	}
 
 	html += `
         <div style="text-align: center; margin-top: 15px;">
-            <a href="/forgot-password" style="color: ` + s.getPrimaryColor() + `; text-decoration: none; font-size: 14px;">Forgot Password?</a>
+            <a href="/forgot-password" style="color: ` + s.getPrimaryColor() + `; text-decoration: none; font-size: 14px;">` + tr.T("login.forgot_password") + `</a>
         </div>
         <div class="footer">
             ` + s.config.FooterText + `

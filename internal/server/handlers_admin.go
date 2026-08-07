@@ -1238,6 +1238,17 @@ func (s *Server) handleAdminSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Default interface language for visitors who have not chosen one
+	if language := r.FormValue("default_language"); language != "" {
+		if lang, ok := i18n.Normalize(language); ok {
+			database.DB.SetConfigValue(ConfigKeyDefaultLanguage, string(lang))
+			i18n.SetServerDefault(string(lang))
+			// Re-resolve this response in the new default, so the settings page
+			// that follows is rendered in the language just chosen.
+			r = i18n.WithUserLanguage(r, string(lang))
+		}
+	}
+
 	// Handle dashboard style preference
 	dashboardStyle := r.FormValue("dashboard_style")
 	if dashboardStyle == "on" {
@@ -4290,7 +4301,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
             font-weight: 500;
             font-size: 14px;
         }
-        input[type="text"], input[type="number"], input[type="url"] {
+        input[type="text"], input[type="number"], input[type="url"], select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -4379,6 +4390,13 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
             </div>
 
             <form method="POST" action="/admin/settings">
+                <div class="form-group">
+                    <label for="default_language">` + tr.T("admin.settings.default_language") + `</label>
+                    <select id="default_language" name="default_language">` +
+		languageSelectOptionsHTML(tr, string(i18n.ServerDefault()), false) + `</select>
+                    <p class="help-text">` + tr.T("admin.settings.default_language_help") + `</p>
+                </div>
+
                 <div class="form-group">
                     <label for="server_url">Server URL</label>
                     <input type="url" id="server_url" name="server_url" value="` + serverURL + `" required>

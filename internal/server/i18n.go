@@ -46,17 +46,26 @@ func (s *Server) loadLanguageConfig() {
 // handleSetLanguage switches the interface language. It always stores the
 // choice in a cookie, and additionally persists it on the profile when a user
 // is logged in, so the choice follows the account to other devices.
+//
+// An empty lang parameter means "follow the server default": both the cookie
+// and the profile setting are cleared. A missing parameter is a malformed call
+// and simply returns to the start page.
 func (s *Server) handleSetLanguage(w http.ResponseWriter, r *http.Request) {
-	lang, ok := i18n.Normalize(r.URL.Query().Get("lang"))
-	if !ok {
+	if !r.URL.Query().Has("lang") {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	i18n.SetCookie(w, lang)
+	choice := ""
+	if lang, ok := i18n.Normalize(r.URL.Query().Get("lang")); ok {
+		choice = string(lang)
+		i18n.SetCookie(w, lang)
+	} else {
+		i18n.ClearCookie(w)
+	}
 
 	if user, err := s.getUserFromSession(r); err == nil && user != nil {
-		if err := database.DB.UpdateUserLanguage(user.Id, string(lang)); err != nil {
+		if err := database.DB.UpdateUserLanguage(user.Id, choice); err != nil {
 			log.Printf("Warning: Failed to save language for user %d: %v", user.Id, err)
 		}
 	}
@@ -175,6 +184,60 @@ const languageSwitcherCSS = `
                 height: 19px;
             }
         }`
+
+// getStandaloneLanguageSwitcherHTML renders the flag switcher for pages that
+// have no header — login, forgot password, reset password. It is pinned to the
+// top right corner and brings its own CSS so it can be dropped into any page.
+func (s *Server) getStandaloneLanguageSwitcherHTML(tr *i18n.Translator) string {
+	html := `<style>
+        .lang-switch-standalone {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+        }
+        .lang-switch-standalone a {
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.25);
+            line-height: 0;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .lang-switch-standalone a:hover {
+            opacity: 1;
+        }
+        .lang-switch-standalone a.active {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.85);
+        }
+        .lang-switch-standalone svg {
+            display: block;
+            border-radius: 1px;
+        }
+    </style>
+    <div class="lang-switch-standalone">`
+
+	for _, lang := range i18n.Supported() {
+		title := template.HTMLEscapeString(tr.T("lang.switch_to", "language", tr.T("lang."+string(lang))))
+		active := ""
+		if tr.Is(lang) {
+			active = " class=\"active\""
+			title = template.HTMLEscapeString(tr.T("lang." + string(lang)))
+		}
+		html += `
+        <a href="/lang?lang=` + string(lang) + `"` + active + ` title="` + title + `" aria-label="` + title + `" hreflang="` + string(lang) + `">` +
+			languageFlagSVG(lang) + `</a>`
+	}
+
+	return html + `
+    </div>`
+}
 
 // languageSelectOptionsHTML renders <option> elements for a language picker.
 // selected is the currently stored value; an empty string selects the

@@ -58,7 +58,7 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, tr *i18n.Translat
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -302,6 +302,17 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, tr *i18n.Translat
                 padding: 5px;
             }
         }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 <body>
@@ -321,6 +332,24 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, tr *i18n.Translat
                 <div class="setting-info">
                     <h3>Username</h3>
                     <p>` + user.Name + `</p>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <h3>` + tr.T("settings.language_heading") + `</h3>
+                    <p>` + tr.T("settings.language_description") + `</p>
+                </div>
+                <div>
+                    <form method="GET" action="/lang" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="hidden" name="return" value="/settings">
+                        <label for="language" class="sr-only">` + tr.T("settings.language_label") + `</label>
+                        <select id="language" name="lang" style="padding: 9px 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">` +
+		languageSelectOptionsHTML(tr, user.Language, true) + `</select>
+                        <button type="submit" style="background: ` + s.getPrimaryColor() + `; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                            ` + tr.T("settings.language_save") + `
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
