@@ -109,6 +109,13 @@ func (d *Database) RunMigrations() error {
 		return err
 	}
 
+	// RemindedAt is in the CREATE TABLE for fresh installs but never had an
+	// upgrade migration, so the expiry-reminder query failed with "no such
+	// column" on every database created before it was added to the schema.
+	if err := d.addColumnIfNotExists("Files", "RemindedAt", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+
 	// Rewrite rows anonymized by earlier versions, which stored the real
 	// address inside the placeholder and in OriginalEmail.
 	if err := d.rewriteLegacyAnonymizedRows(); err != nil {
