@@ -261,6 +261,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Warning: Could not share file to team %d: %v", teamId, err)
 		} else {
 			log.Printf("File %s shared with team %d by user %d", fileID, teamId, user.Id)
+			s.audit.LogFileSharedWithTeam(user, fileID, header.Filename, int64(teamId), teamName(teamId), r)
 		}
 	}
 
