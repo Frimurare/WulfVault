@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	Version = "7.1.1 Aurora"
+	Version = "7.2.0 Grease Monkey"
 )
 
 var (

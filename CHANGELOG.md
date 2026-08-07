@@ -5,6 +5,86 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.2.0] - Grease Monkey - 2026-08-07
+
+A maintenance release in the truest sense: the three long-standing roadmap
+issues (#31, #32, #33) are implemented, and a full code audit against the
+documentation surfaced a set of security and GDPR defects that are fixed here.
+Upgrading is strongly recommended.
+
+### Added
+
+- **Smart chunked download** (#31) — the download splash page now downloads
+  large files in 25 MB chunks with a progress overlay (speed + ETA), automatic
+  retry with exponential backoff, resume after closing the browser, and SHA-256
+  verification against the server. Files stream to disk via the File System
+  Access API where available (IndexedDB fallback), so 15 GB+ downloads work
+  without holding the file in RAM. The direct-link path (`/d/{id}`) is
+  unchanged, and the splash page falls back to it when JavaScript is off.
+  New API endpoints: `GET /api/v1/download/{id}/info`, `/chunk`, `/verify` —
+  all enforcing the same expiry/limit/password/authentication checks as the
+  classic download path.
+- **Recipient guidance in share emails** (#32) — when a shared file requires
+  authentication, the share email now explains why the identity check exists,
+  how it works, that the account can be deleted immediately afterwards, and
+  that no marketing email will ever be sent. Rendered only when authentication
+  is actually required; direct-link emails are byte-identical to before.
+  The justification is documented in the GDPR records of processing.
+- **Swedish and English localization** (#33) — new i18n foundation with
+  embedded locale catalogues (370 keys each), a language switcher in the
+  header, per-user language preference, and a server default language setting.
+  Resolution order: profile → cookie → Accept-Language → server default →
+  English. Login, password reset, 2FA, navigation, both dashboards and the
+  download-account pages are fully translated; remaining admin pages follow in
+  future releases.
+- **First test suite** — the project previously had no Go tests. This release
+  adds 250+ test cases across `internal/server`, `internal/database`,
+  `internal/email`, `internal/i18n` and `cmd/server`.
+
+### Security
+
+- **Download cookies are now signed.** The password-verification cookie held
+  the literal string `true` and the download-session cookies held a plain
+  email address, so a client could fabricate a cookie and bypass the file
+  password or impersonate a known download account. All download-flow cookies
+  now carry an HMAC bound to the install's master key. Existing cookies simply
+  fail verification and the visitor re-authenticates.
+- **The file list API no longer returns share passwords.**
+  `GET /api/v1/files` included each file's share password in plaintext in
+  every response. The field is removed; `has_password` remains.
+- **The initial admin password is now cryptographically random.** It was
+  previously derived from the server start time, making it guessable when the
+  installation time was approximately known. Set `ADMIN_PASSWORD` to override,
+  as before.
+- **Account anonymization is now irreversible.** GDPR deletion previously
+  embedded the real address in the "anonymized" placeholder and copied it to a
+  second column. Anonymized rows now use `deleted-user-<id>@deleted.local` and
+  store only a SHA-256 fingerprint. A migration rewrites rows anonymized by
+  earlier versions automatically.
+- **Invitation emails keep HTTPS.** Welcome and SSO-invite links were
+  rewritten from https to http, sending first-login credentials over a
+  plaintext link when running behind a TLS proxy.
+
+### Fixed
+
+- **Remember Me works for download accounts.** The 30-day session was issued
+  but a 10-minute inactivity logout ignored it, and dashboard activity never
+  counted as activity — users were logged out ten minutes after their last
+  download regardless of the checkbox.
+- **Audit log covers account-security events.** `PASSWORD_CHANGED`,
+  `2FA_ENABLED`/`2FA_DISABLED`, `USER_ACTIVATED`/`USER_DEACTIVATED` and
+  `FILE_SHARED_WITH_TEAM` are now recorded.
+- The bare `/api/v1/download/{id}` endpoint always returned 404 due to a
+  path-prefix mismatch.
+- The public-URL fallback printed a malformed address when no server URL was
+  configured, producing broken links in emails on default installations.
+- An inactivity logout now shows a message on the login page instead of
+  redirecting silently.
+- Documentation corrected against the code: password-reset validity (1 hour),
+  hashing algorithm (bcrypt), permanent-deletion grace period (90 days), the
+  10-minute inactivity timeout, GDPR self-service routes, and the API examples
+  for upload and branding whose field names did not match the server.
+
 ## [7.1.1] - Aurora - 2026-05-30
 
 Provider-aware invite UI. The "create user" admin form previously labelled the
