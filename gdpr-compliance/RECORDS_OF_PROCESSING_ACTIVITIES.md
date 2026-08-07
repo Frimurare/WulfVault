@@ -388,6 +388,34 @@ Tracking file downloads via share links for sender notification and abuse preven
 - File owners can only see downloads for their own files
 - Download account holders can request account deletion anytime
 
+### 4.7 Download Authentication ("Require authentication" setting)
+
+**What it does:**
+When a file is shared with *Require authentication* enabled (the default), the recipient
+confirms an email address and sets a password before the download starts. The download is
+then recorded against that verified identity instead of an anonymous request.
+
+**Why this processing is justified:**
+
+| Justification | Explanation |
+|---------------|-------------|
+| **Traceability** | The download log names a verified recipient, so the data controller can show *who* received a file containing personal data, and when. |
+| **Delivery to the intended recipient** | A forwarded or guessed link does not by itself grant access. This limits accidental disclosure to third parties (Art. 5(1)(f), integrity and confidentiality). |
+| **Demonstrating controlled access** | Access is granted deliberately and evidenced, which supports the accountability obligation in Art. 5(2) and helps scope any breach assessment (Art. 33/34). |
+
+**Legal basis:** Contractual necessity (Art. 6(1)(b)) for delivering the file, and legitimate
+interest (Art. 6(1)(f)) in protecting the shared content and evidencing access.
+
+**Data minimization:**
+- Only name, email address and a password hash are stored for a download account
+- No profiling, tracking, analytics or marketing is performed on download accounts
+- Download account holders receive no email other than transactional messages about their own downloads
+
+**Transparency:**
+The share email tells the recipient, before they click, why the identity check exists, what it
+involves, and that the account can be deleted immediately afterwards. Deletion is self-service
+via `/download/delete-account` and anonymizes the email address in the logs.
+
 ---
 
 ## Processing Activity #5: Email Communications
