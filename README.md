@@ -1,919 +1,212 @@
-# WulfVault - Enterprise File Sharing Platform
+# WulfVault — Enterprise File Sharing Platform
 
-**Version 7.2.0 Grease Monkey** | **Self-Hosted** | **Open Source** | **AGPL-3.0**
+**Version 7.2.0 Grease Monkey** · Self-Hosted · Open Source · AGPL-3.0
 
-> **What's new in 7.1 Aurora:** **Generic OpenID Connect** alongside Microsoft Entra ID. Sign-in works with Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC-compliant issuer — pick the provider type in *Identity Providers* and fill in an issuer URL + client ID/secret. SSO is purely additive: local password accounts (including break-glass and service accounts) always remain available. See [§ Single Sign-On (Aurora)](#-single-sign-on-aurora) below.
+WulfVault is a self-hosted file sharing platform for organizations that need security, accountability, and full control over their data. Written in Go, it is a complete alternative to commercial file-transfer services — no subscriptions, no per-transfer fees, no practical file-size limit — with multi-user management, per-user quotas, enterprise audit logging, full download tracking, branded download pages, 2FA, SSO (Microsoft Entra ID + generic OpenID Connect), self-service password management, file-request portals, and GDPR-compliant account deletion.
 
-WulfVault is a professional-grade, self-hosted file sharing platform designed for organizations that demand security, accountability, and complete control over their data. Built with Go for exceptional performance and reliability, WulfVault provides a complete alternative to commercial file transfer services, eliminating subscription costs while offering superior features: multi-user management with role-based access, per-user storage quotas, enterprise-grade audit logging for compliance (GDPR, SOC 2, HIPAA), comprehensive download tracking, branded download pages, two-factor authentication, **Microsoft Entra ID + Generic OpenID Connect SSO (additive to local accounts)**, self-service password management, file request portals, and GDPR-compliant account deletion.
+**Built for:** law enforcement, healthcare, legal, government, education, creative agencies — anyone sharing sensitive or very large files that need download tracking and compliance evidence.
 
-**Perfect for:** Law enforcement agencies, healthcare providers, legal firms, creative agencies, government departments, educational institutions, and any organization handling sensitive or large files that require detailed download tracking, compliance documentation, and enterprise-grade security.
+> **New in 7.1 Aurora:** generic **OpenID Connect** alongside Microsoft Entra ID — Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC issuer. SSO is additive; local password accounts (including break-glass and service accounts) always remain. See [Single Sign-On](#single-sign-on).
 
 ---
 
 ## Why WulfVault?
 
-Many organizations need to share large files regularly but face challenges:
-- Commercial file transfer services charge high fees per user or transfer
-- Large video files (surveillance footage, recordings) exceed typical email limits
-- Need to know exactly who downloaded what and when for compliance
-- Want complete control over data security and retention
+Organizations that share large files regularly hit the same walls: commercial services charge per user or transfer, big video exports exceed email limits, compliance requires knowing exactly who downloaded what and when, and sensitive data shouldn't leave your infrastructure.
 
-WulfVault solves this by providing:
-- Self-hosted solution - your data stays on your infrastructure
-- No per-transfer costs or user limits
-- Complete download tracking with email addresses and timestamps
-- Customizable storage quotas per user
-- Support for very large files - no practical size limit, fully configurable
+WulfVault answers all four: your data stays on your own server, there are no per-transfer costs or user caps, every download is tracked with email and timestamp, and storage quotas are configurable per user. Large files (multi-gigabyte surveillance footage and the like) are supported with chunked, resumable uploads.
+
+---
+
+## Deploy
+
+**One-click managed hosting** — deploy WulfVault with updates and backups handled for you, on the cloud provider and region of your choice:
+
+[![Deploy on Elestio](https://elest.io/images/logos/deploy-on-elestio-black.png)](https://elest.io/open-source/wulfvault)
+
+**Self-host it yourself** — Docker, Docker Compose, or a single Go binary; see [Installation](#installation).
 
 ---
 
 ## Key Features
 
-### 🚀 File Sharing & Transfer
-- **Drag-and-drop upload interface** - Modern, intuitive file upload experience
-- **Large file support** - No practical upper size limit, fully configurable (chunked uploads, tested with multi-gigabyte video surveillance footage)
-- **Custom chunked upload system (v6.0+):**
-  - Automatic file splitting into 25MB chunks for optimal performance (v6.1.0+)
-  - Built-in retry logic with exponential backoff (up to 50 attempts per chunk, ~7.5 minutes total) (v6.1.4+)
-  - Full-screen visual progress overlay with real-time statistics
-  - Speed calculation and ETA display during upload
-  - Network interruption recovery without losing progress
-  - Perfect for unstable connections, router restarts, or overnight uploads
-  - Large visual feedback: "UPLOADING - X%" with green success animation at 100%
-  - 150 entertaining upload one-liners with 💾 emoji to keep you engaged
-- **Two sharing modes:**
-  - **Direct download links (DEFAULT)** - The "require authentication" checkbox is **unchecked by default**, so recipients can download straight from the link
-  - **Authenticated downloads** - Tick "require authentication" at upload time and recipients must create a secure download account (email + password) before they can download
-- **Password-protected files** - Add extra security layer with password protection per file
-- **Expiring shares** - Auto-delete after X downloads or Y days (or both)
-- **Custom expiration settings** - Flexible download limits (1-999) and date-based expiration
-- **Upload request portals** - Create shareable links for others to upload files to you
-- **Email integration** - Send download links directly via email with customizable templates
-- **File preview & metadata** - View file details, size, upload date, and download statistics
-- **File comments/descriptions (v4.7+):**
-  - Add notes and context to shared files
-  - Comments visible in file details and admin views
-  - Searchable in admin file management
-  - Perfect for adding context like "Q3 Financial Report - Final Version"
-- **Trash system with enhanced UI (v4.3+):**
-  - Deleted files kept for configurable retention period (1-365 days) with restore capability
-  - Modern gradient-styled action buttons: ♻️ Restore (green) and 🗑️ Delete Forever (red)
-  - One-click restore or permanent deletion with visual feedback and hover effects
-  - Complete audit trail: see who deleted files, when, and days remaining before auto-deletion
-  - Fully responsive mobile layout with optimized touch targets
-- **File Sharing Wisdom** - 180+ humorous one-liners on dashboards reminding users why email attachments fail
+**File sharing & transfer**
+- Drag-and-drop uploads; no practical size limit (chunked, resumable — tested with multi-GB video).
+- Chunked upload engine: 25 MB chunks, exponential-backoff retry (up to ~7.5 min/chunk), full-screen progress with speed/ETA, and recovery through network drops, router restarts or overnight transfers.
+- Two sharing modes: **direct links** (default) or **authenticated downloads** (recipient creates an email+password download account at upload time).
+- Per-file password protection; expiring shares (after N downloads and/or Y days); flexible download-count limits (1–999).
+- File comments/descriptions, searchable in admin; preview and metadata (size, date, download stats).
+- Trash with configurable retention (1–365 days), one-click restore or permanent delete, and a full who/when audit trail.
 
-### 👥 User Management & Access Control
-- **Role-based access:**
-  - **Super Admin** - Full system control, user management, branding, settings
-  - **Admin users** - Manage users and view all files across the system
-  - **Regular users** - Upload and share files within their storage quota
-  - **Download accounts** - Automatically created for authenticated downloads with self-service portal
-- **Team collaboration (v4.2+):**
-  - **Create teams** - Organize users into teams for shared file access
-  - **Multi-team file sharing** - Share files with multiple teams simultaneously
-  - **Team management UI** - Add/remove team members with visual badges
-  - **Team roles** - Owner, Admin, and Member permissions
-  - **Team storage quotas** - Per-team storage limits and usage tracking
-  - **Smart team badges** - Files show team names or count with hover tooltips
-  - **Real-time team sync** - Instant updates when files are shared/unshared
-  - **Team filter dropdown** - Filter Team Files by specific team for easy navigation when in multiple teams
-- **Per-user storage quotas** - Individually configurable storage limits (MB to TB)
-- **User dashboard** - Real-time quota usage, file management, and download statistics
-- **Active/inactive status** - Temporarily disable users without deletion
-- **Bulk user operations** - Efficient management of multiple users
-- **Download account portal** - Recipients can view their download history and manage their accounts
+**User management & access control**
+- Roles: Super Admin, Admin, Regular user, and auto-created Download accounts (with a self-service portal for download history).
+- Teams: shared file access, multi-team sharing, per-team quotas, Owner/Admin/Member roles, team badges and filtering.
+- Per-user storage quotas (MB–TB), active/inactive status, bulk operations, real-time quota/usage dashboard.
 
-### 📊 Download Tracking & Accountability
-- **Modern Glassmorphic Admin Dashboard:**
-  - **2025 modern design** - Animated gradient backgrounds with glassmorphism effects
-  - **Real-time statistics** - Total users, active users, downloads, storage trends
-  - **Comprehensive metrics** - Download/upload data (today, week, month, year)
-  - **User growth tracking** - Monthly user additions/removals with growth percentages
-  - **Security overview** - 2FA adoption rates, backup code status
-  - **File statistics** - Largest files, most active users, top file types
-  - **Trend analysis** - Storage trends, most active days, download patterns
-  - **Twemoji integration** - Colorful emojis across all platforms (Linux, Windows, macOS)
-  - **Responsive design** - Mobile-first with smooth animations and transitions
-- **Complete audit trail:**
-  - Track exactly **who** downloaded files (email addresses for authenticated downloads)
-  - Record **when** downloads occurred (precise timestamps)
-  - Log **from where** downloads originated (IP addresses with configurable privacy controls)
-- **Per-file download history** - View detailed download logs for each file
-- **Exportable reports** - Download tracking data in CSV format for compliance
-- **Download count limits** - Automatically expire files after reaching download threshold
-- **Email notifications** - Optional notifications when files are downloaded (configurable)
+**Download tracking & accountability**
+- Complete audit trail: **who** (email on authenticated downloads), **when** (timestamps), **from where** (IP, with privacy controls).
+- Per-file download history; CSV export for compliance; download-count expiry; optional download notifications.
+- Modern admin dashboard: real-time users/downloads/storage metrics, growth trends, 2FA adoption, top files/users.
 
-### 📋 Enterprise Logging & Monitoring
+**Enterprise logging & monitoring**
+- Comprehensive audit log of all user, auth, file-lifecycle, team and configuration actions, with configurable retention (1–3650 days).
 
-#### Audit Logs
-- **Comprehensive audit trail:**
-  - All user actions logged (logins, file operations, settings changes)
-  - Detailed tracking of authentication events (2FA, password changes, failed logins)
-  - Complete file lifecycle logging (upload, download, delete, restore, permanent deletion)
-  - Team management operations (member changes, role updates, file sharing)
-  - System configuration changes (settings, branding, quotas, audit policy)
-  - Email sends logged with recipient and file details (v4.7+)
-  - File request uploads logged with uploader IP and file info (v4.7+)
-- **Compliance-ready:**
-  - Meets GDPR, SOC 2, HIPAA, and ISO 27001 audit requirements
-  - Configurable retention periods (1 day to 10 years)
-  - Automatic cleanup based on time and size limits
-  - Immutable write-only log entries
-- **Advanced filtering and search:**
-  - Filter by user, action type, entity type, date range
-  - Full-text search across all log fields
-  - Pagination for large datasets (50 logs per page)
-  - Real-time statistics (total logs, recent activity, failed actions)
-- **Export capabilities:**
-  - CSV export for external audit tools
-  - Timestamped export files
-  - Complete log data including IP addresses, user agents, detailed context
-  - Filterable exports for targeted reporting
-- **Configurable retention:**
-  - Set retention period: 90 days (default) up to 10 years
-  - Size-based cleanup: 100 MB (default) up to 10 GB
-  - Automated daily cleanup scheduler
-  - Settings accessible via Server Settings page
-- **Admin access:**
-  - Accessible via Server → Audit Logs
-  - Direct URL: `/admin/audit-logs`
-  - Admin-only access with secure authentication
+**Single Sign-On**
+- Microsoft Entra ID and generic OpenID Connect (Google, Okta, Keycloak, Authelia, Auth0, …). Additive to local accounts; configure under *Identity Providers*.
 
-#### Server Logs (v6.1.0+)
-- **HTTP request logging:**
-  - All API requests logged with status codes, methods, paths
-  - Request and response sizes tracked
-  - Response time monitoring
-  - IP address logging for security tracking
-- **Upload event tracking:**
-  - Upload start logs with filename, size, user, email, IP
-  - Upload complete logs with duration and average speed
-  - Upload progress tracking (every 100 chunks)
-  - Upload abandonment detection with detailed metrics
-- **Admin interface:**
-  - Real-time log viewing with auto-refresh
-  - Advanced search and filtering (date range, level, keyword)
-  - Export to CSV for external analysis
-  - 50MB maximum size with automatic rotation
-  - Accessible via Server → Server Logs
+**Security & authentication**
+- bcrypt password hashing (cost 12), TOTP 2FA with backup codes, self-service password reset.
+- Secure 128-bit download hashes, session expiry (24 h, or 30 days with "Remember Me"), 10-minute inactivity logout (paused during transfers), CSRF protection, files stored outside the web root.
 
-#### SysMonitor Logs (v6.1.0+)
-- **Detailed system monitoring:**
-  - Every chunk upload logged with progress percentage
-  - Real-time tracking of upload performance
-  - Separate from main logs to prevent spam
-  - 10MB maximum size with automatic rotation
-- **Admin monitoring interface:**
-  - Live log viewer with 5-second auto-refresh
-  - Search functionality for filtering events
-  - Perfect for debugging upload issues
-  - Detailed metrics for system administrators
-  - Accessible via Server → SysMonitor Logs
+**Branding, email & file requests**
+- Custom logo, colors and company name on the app and download pages.
+- Send download links by email with customizable templates and notifications.
+- Upload-request portals: shareable links that let others upload files **to** you.
 
-### 🔑 Single Sign-On (Aurora)
-- **Two provider types** selectable in *Server → Identity Providers*:
-  - **Microsoft Entra ID (Azure AD)** — special-cased with multi-tenant aliases (`common` / `organizations` / `consumers`) and explicit `tid`-claim validation.
-  - **Generic OpenID Connect** (v7.1) — works with any OIDC-compliant issuer: Google Workspace, Okta, Keycloak, Authelia, Auth0, or your own IdP. Inline help in the admin UI lists the issuer URL pattern for each common provider.
-- **OpenID Connect Authorization Code + PKCE** flow under the hood (`coreos/go-oidc/v3`).
-- **Additive to local accounts** — break-glass and service accounts keep using password sign-in. Every user is either a `local` (password) account or an SSO account; a local password account is never silently re-bound to an external IdP.
-- **Account provisioning** — two ways a user gets an SSO-backed account:
-  - **Pre-created by an admin** — create the user in *Admin → Users* as an SSO account (no local password). On their first successful sign-in, WulfVault binds the external identity (`ExternalID`) to that pre-created row automatically — no further admin step.
-  - **Auto-provisioning** (optional, per setting) — any first-time sign-in whose email domain is on the allow-list creates a user automatically with the configured default role.
-- **Configurable provider display name** — the login button reads "Sign in with Microsoft" / "Sign in with Google" / "Sign in with SSO" — whatever you configure (defaults to "Microsoft" for Entra, "SSO" for Generic OIDC).
-- **Domain allow-list** — restrict sign-in to one or more email domains; empty = any account from the provider is accepted.
-- **Admin escape hatch** `entra_force_local_only` hides the SSO button AND rejects the callback (404) even when SSO is otherwise configured — forces local-only authentication.
-- **Routes:** `/auth/oidc/{login,callback}` (v7.1 canonical) and the legacy `/auth/entra/{login,callback}` paths both work, so existing Entra app registrations don't need their redirect URI updated.
-- **Configuration:** Client secret encrypted at rest with AES-256-GCM. One provider configured at a time per install. Tenant validation (`tid` claim) is enforced for Entra.
-
-### 🔐 Security & Authentication
-- **Two-Factor Authentication (2FA):**
-  - TOTP-based (compatible with Google Authenticator, Authy, etc.)
-  - Backup codes for account recovery
-  - Regenerable backup codes with old code invalidation
-  - Per-user 2FA enrollment
-- **Password security:**
-  - bcrypt hashing with cost factor 12
-  - Self-service password change for all user types
-  - Password reset via email with secure tokens (1-hour expiration)
-  - Minimum password length enforcement (8 characters)
-- **Session management:**
-  - Secure session cookies with automatic expiration (24 hours)
-  - Automatic logout after 10 minutes of inactivity
-  - Inactivity timeout is suspended while an upload or download is running, so long transfers are never interrupted
-  - Optional "Remember Me" login creates a 30-day session that is exempt from the inactivity timeout
-  - SameSite cookies for CSRF protection
-  - Secure logout with session invalidation
-- **File access control:**
-  - Secure random hash generation for download links (128-bit entropy)
-  - Optional password protection per file
-  - Automatic link expiration
-  - No file enumeration or directory listing
-- **Privacy controls:**
-  - Optional IP address logging (GDPR-configurable)
-  - GDPR-compliant download account self-deletion
-  - Self-service data export for download accounts
-
-### 🎨 Branding & Customization
-- **Full branding control:**
-  - Upload custom logo (replaces default WulfVault branding)
-  - Custom primary and secondary colors for entire interface
-  - Custom company name displayed throughout system
-  - Branded download pages shown to all recipients
-- **Configurable system settings:**
-  - Trash retention period (1-365 days)
-  - Default storage quota for new users
-  - Maximum file size limits
-  - Server URL and port configuration
-- **Automated maintenance:**
-  - Scheduled cleanup of expired files
-  - Automatic trash purging based on retention policy
-  - Database optimization and maintenance
-
-### 🌐 Email & Notifications
-- **5 Email Providers Supported:**
-  - **Resend (recommended)** - Built on AWS SES with best-in-class deliverability
-  - **SendGrid** - Industry-leading email API with simple setup
-  - **Mailgun** - Powerful API with domain/region configuration
-  - **Brevo** - API-based transactional email (formerly SendInBlue)
-  - **SMTP** - Classic SMTP with/without TLS for self-hosted servers
-- **Security & Management:**
-  - Encrypted credential storage (AES-256-GCM)
-  - Test email functionality before activation
-  - Switch between providers with one click
-  - Complete DNS verification guides (Loopia, generic DNS)
-- **Email templates:**
-  - Password reset emails with secure tokens
-  - File sharing notifications with download links
-  - Custom branding in all email communications
-  - Professional HTML email templates
-- **Redesigned email templates (v4.7+):**
-  - Professional table-based layout for all email clients (including Outlook dark mode)
-  - Large, prominent action buttons with clear CTAs
-  - "What is this?" explanations for non-technical recipients
-  - Clear expiration warnings with date/time
-  - Upload request, download/share, and download notification emails
-- **Email tracking:**
-  - Log all sent emails with timestamps
-  - Track email delivery status
-  - Audit trail for compliance
-
-### 📁 File Request System
-- **Inbound file collection:**
-  - Create upload request links for receiving files from others
-  - Customizable upload limits (file size and count)
-  - 24-hour link expiration for security (with clear countdown timers)
-  - Password protection for upload portals
-- **Smart expiry management (v4.2.2+):**
-  - **Live countdown timers** - "Expires in 23 hours", "Expires in 5 hours" with color-coded urgency
-  - **Grace period display** - After expiry: "EXPIRED - Auto-removal in 5 days" countdown
-  - **Automatic cleanup** - Expired requests removed after 5 days to keep dashboard clean
-  - **Visual feedback** - Green (active), orange (urgent), red (expired) status indicators
-- **Use cases:**
-  - Collect files from customers or contractors
-  - Receive large files without email attachments
-  - Temporary upload portals with time limits
-  - Anonymous file submission with accountability
-
-### 🔧 Administration & Management
-- **Comprehensive admin dashboard:**
-  - System-wide statistics (total files, downloads, users, storage)
-  - Recent activity monitoring
-  - User growth analytics
-  - Quick access to all management functions
-- **File management:**
-  - View all files across all users with complete metadata
-  - Advanced search and filter capabilities
-  - Delete files with trash safety net (configurable retention period)
-  - One-click restore for accidentally deleted files with full metadata preservation
-  - Permanent deletion from trash with confirmation dialogs
-  - Detailed trash view: who deleted, when, days remaining, original owner
-  - Modern, responsive UI with gradient buttons and emoji indicators
-  - **Improved All Files view** - Card-based layout with clear file separation, grouped file+note display, and better visual hierarchy
-- **User administration:**
-  - Create, edit, and delete users with full audit trail
-  - Manage download accounts with comprehensive controls
-  - Adjust quotas on the fly
-  - Toggle user active/inactive status
-  - **Enterprise pagination & filtering:**
-    - Search users by name or email instantly
-    - Filter by user level (Regular Users / Admins)
-    - Filter by status (Active / Inactive)
-    - 50 users per page (configurable up to 200)
-    - Previous/Next navigation with result counters
-    - Independent pagination for users and download accounts
-    - Mobile-responsive filter UI
-    - Scales to thousands of users without performance degradation
-- **System settings:**
-  - Configure server URL and port
-  - Set system-wide defaults
-  - Manage trash retention
-  - Control privacy and logging settings
+**Administration**
+- Web UI for users, teams, quotas, branding, settings, audit policy and audit-log export.
 
 ---
 
 ## Quick Start
 
-### First-Time Setup
-
-1. **Download and start WulfVault** (see installation methods below)
-
-2. **Initial admin credentials:**
-   On first run (when no users exist) WulfVault creates a super-admin from the
-   `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables. If they are not set,
-   the email defaults to `admin@localhost` and a **random password is generated
-   and printed once to the server logs** — copy it from the startup output.
-
+1. **Start WulfVault** — see [Installation](#installation).
+2. **First-run admin:** on first start (no users yet) WulfVault creates a super-admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`. If unset, the email is `admin@localhost` and a random password is **printed once to the server log** — copy it.
    ```bash
    ADMIN_EMAIL=admin@yourdomain.com ADMIN_PASSWORD='choose-a-strong-password' ./wulfvault
    ```
+3. **Log in** at `http://your-server:8080/admin`, then change the password under Settings.
+4. **Configure** the server URL, branding, users and per-user quotas.
+5. **Share** — users log in at `http://your-server:8080`, drag files in, and send the share links.
 
-   **⚠️ IMPORTANT:** If you used a generated password, change it immediately after first login.
-
-3. **Login to admin panel:**
-   - Navigate to `http://your-server:8080/admin`
-   - Use the credentials from step 2
-   - Go to Settings and change your password
-
-4. **Configure your instance:**
-   - Set your server URL (Admin > Settings)
-   - Customize branding (Admin > Branding)
-   - Create regular users (Admin > Users)
-   - Set storage quotas per user
-
-5. **Start sharing files:**
-   - Users login at `http://your-server:8080`
-   - Drag and drop files to upload
-   - Copy share links and send to recipients
+> If you used the generated password, change it immediately after first login.
 
 ---
 
 ## Installation
 
-### Docker (Recommended)
+Clone the repository once, then pick a method:
 
 ```bash
-# Clone repository first
 git clone https://github.com/Frimurare/WulfVault.git
 cd WulfVault
+```
 
-# Build and run with Docker
+**Docker**
+```bash
 docker build -t wulfvault/wulfvault:latest .
-docker run -d \
-  --name wulfvault \
-  -p 8080:8080 \
-  -v ./data:/data \
-  -v ./uploads:/uploads \
+docker run -d --name wulfvault -p 8080:8080 \
+  -v ./data:/data -v ./uploads:/uploads \
   -e SERVER_URL=https://files.yourdomain.com \
   wulfvault/wulfvault:latest
 ```
 
-### Docker Compose
-
+**Docker Compose** (uses the bundled `docker-compose.yml`)
 ```bash
-# Clone repository
-git clone https://github.com/Frimurare/WulfVault.git
-cd WulfVault
-
-# Start with Docker Compose (uses docker-compose.yml in repo)
 docker compose up -d --build
 ```
 
-Or create custom `docker-compose.yml`:
-```yaml
-version: '3.8'
-services:
-  wulfvault:
-    build: .
-    image: wulfvault/wulfvault:latest
-    container_name: wulfvault
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/data
-      - ./uploads:/uploads
-    environment:
-      - SERVER_URL=https://files.yourdomain.com
-      - MAX_FILE_SIZE_MB=5000
-      - DEFAULT_QUOTA_MB=10000
-    restart: unless-stopped
-```
-
-### Build from Source
-
-**Prerequisites:** Go 1.21+
-
+**Build from source** (Go 1.21+)
 ```bash
-# Clone repository
-git clone https://github.com/Frimurare/WulfVault.git
-cd WulfVault
-
-# Install dependencies
 go mod download
-
-# Build
 go build -o wulfvault cmd/server/main.go
-
-# Run
 ./wulfvault
 ```
 
-**Default credentials on first run:**
-- Email: from `ADMIN_EMAIL` (defaults to `admin@localhost`)
-- Password: from `ADMIN_PASSWORD`, or a random password printed to the server logs if unset
-
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first launch to choose your own credentials.
-
-See [INSTALLATION.md](INSTALLATION.md) for detailed deployment guides including Proxmox LXC, reverse proxy configuration, and SSL setup.
+See [INSTALLATION.md](INSTALLATION.md) for Proxmox LXC, reverse-proxy and SSL guides.
 
 ---
 
 ## Configuration
 
-### Environment Variables
-
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SERVER_URL` | Public URL of the server | `http://localhost:8080` |
 | `PORT` | Server port | `8080` |
-| `DATA_DIR` | Data directory for database | `./data` |
-| `UPLOADS_DIR` | Directory for uploaded files | `./uploads` |
-| `MAX_FILE_SIZE_MB` | Maximum file size in MB | `5000` (5 GB) |
-| `DEFAULT_QUOTA_MB` | Default storage quota per user (MB) | `5000` (5 GB) |
-| `SESSION_TIMEOUT_HOURS` | Session expiration time | `24` |
+| `DATA_DIR` | Database directory | `./data` |
+| `UPLOADS_DIR` | Uploaded-files directory | `./uploads` |
+| `MAX_FILE_SIZE_MB` | Maximum file size (MB) | `5000` (5 GB) |
+| `DEFAULT_QUOTA_MB` | Default per-user quota (MB) | `5000` (5 GB) |
+| `SESSION_TIMEOUT_HOURS` | Session expiration | `24` |
 | `TRASH_RETENTION_DAYS` | Days to keep deleted files | `5` |
-| `ADMIN_EMAIL` | Email for the auto-created admin (first run only) | `admin@localhost` |
-| `ADMIN_PASSWORD` | Password for the auto-created admin (first run only) | random (printed to logs) |
+| `ADMIN_EMAIL` | First-run admin email | `admin@localhost` |
+| `ADMIN_PASSWORD` | First-run admin password | random (printed to log) |
 
-### Admin Settings (Web UI)
-
-After logging in as admin, configure:
-- **Branding** - Logo, colors, company name
-- **Storage Quotas** - Set custom limits per user (default: 5 GB per user)
-- **Trash Retention** - How long deleted files are kept (default: 5 days, range: 1-365 days)
-- **File Size Limits** - Maximum upload size (default: 5 GB, configurable with no practical upper limit)
-- **Session Timeout** - Login session duration (default: 24 hours)
-- **IP Logging** - Enable/disable IP address tracking (default: disabled)
-
----
-
-## Use Cases
-
-### Large Video File Sharing
-Organizations with surveillance systems or video production need to share large video exports:
-- Export video footage (often 1GB+ files)
-- Upload to WulfVault with expiration and authentication
-- Share link with investigators, management, or customers
-- Track exactly who downloaded the footage and when
-- Maintain complete audit trail for legal compliance
-
-### Secure Document Distribution
-Share sensitive documents with accountability:
-- Service agreements and contracts
-- System documentation and manuals
-- Evidence files requiring chain of custody
-- Financial reports with download tracking
-
-### Team File Collaboration
-Internal file sharing for distributed teams:
-- Large design files and CAD drawings
-- Project deliverables too large for email
-- Marketing materials and video content
-- Backup distribution to remote locations
-
-### Requesting Files from Others
-Create upload request links for:
-- Collecting files from customers or contractors
-- Receiving large files without email attachments
-- Temporary upload portals with size and time limits
-- Anonymous file submission with tracking
-
----
-
-## User Workflows
-
-### Uploading and Sharing Files
-
-1. **Login** at `http://your-server/dashboard`
-2. **Drag and drop** file (or click to browse)
-3. **Set options:**
-   - Expiration: Downloads limit or time limit or both
-   - Authentication: Require recipient to create account (optional)
-   - Password: Protect file with password (optional)
-4. **Upload** and get shareable link
-5. **Share link** via email, chat, or other channels
-6. **Track downloads** - Click "History" button to see who downloaded
-
-### Receiving Authenticated Files
-
-1. **Click download link** received from sender
-2. **Create download account** with email and password (first time only)
-3. **Login** and download file
-4. **Reuse account** for future authenticated downloads
-
-### Admin User Management
-
-1. **Login** to admin panel at `http://your-server/admin`
-2. **Create users:**
-   - Set email, password, user level (Super Admin, Admin, or Regular User)
-   - Assign storage quota (e.g., 5GB, 50GB, or custom)
-   - Set active/inactive status with toggle
-   - Organize users into teams for shared file access
-3. **Monitor usage** in dashboard
-   - Real-time system statistics (files, downloads, storage, users)
-   - User growth analytics (new users last 30 days)
-   - Storage usage per user with quota visualization
-4. **View all files** and download history across system
-   - Complete download audit trail with email, timestamp, IP (if enabled)
-   - Export download reports in CSV format for compliance
-5. **Manage trash** with enhanced UI and restore accidentally deleted files
-   - Modern gradient-styled buttons: ♻️ Restore (green) and 🗑️ Delete Forever (red)
-   - Complete audit trail: who deleted, when, days remaining
-   - One-click restore or permanent deletion with confirmation dialogs
+Branding, quotas, trash retention, file-size limits, session timeout and IP logging are also configurable in **Admin → Settings**. IP logging is off by default.
 
 ---
 
 ## API
 
-WulfVault is primarily a **server-rendered web application**, but it also exposes a JSON **REST API** under `/api/v1/*` for automation and integrations.
-
-**Available APIs:**
-- **Session Verification** - `GET /api/whoami` — check session validity (added in v6.2.7). Used by integrations such as the Evidence Courier exporter.
-- **User Management** - Create, read, update, delete users; manage storage quotas (`/api/v1/users`)
-- **File Management** - Upload, download, list files (`/api/v1/files`, `/api/v1/upload`, `/api/v1/download/`)
-- **Download Accounts** - Manage download-only accounts (`/api/v1/download-accounts`)
-- **File Requests** - Manage upload request portals (`/api/v1/file-requests`)
-- **Trash Management** - List, restore, permanently delete files (`/api/v1/trash`)
-- **Admin/System** - System statistics, branding, settings (`/api/v1/admin/stats`, `/api/v1/admin/branding`, `/api/v1/admin/settings`)
-- **Logs** - Audit, server and sysmonitor logs, with CSV export (`/api/v1/admin/audit-logs`, etc.)
-
-Teams are managed via the `/api/teams/*` and `/api/admin/teams/*` endpoints.
-
-**Example API calls** (default port `8080`; adjust to your deployment):
+WulfVault is primarily a server-rendered web app, but also exposes a JSON REST API under `/api/v1/*` for automation (default port `8080`):
 
 ```bash
-# Verify session (added in v6.2.7)
-curl -b cookies.txt https://wulfvault.example.com/api/whoami
-# → 200 { "authenticated": true, "id": 123, "email": "...", "name": "...", "role": "user", ... }
-# → 401 { "authenticated": false, "error": "Not authenticated" }
-
-# List all users (admin only)
-curl -b cookies.txt http://localhost:8080/api/v1/users
-
-# Upload a file
-curl -b cookies.txt -F "file=@document.pdf" \
-  http://localhost:8080/api/v1/upload
-
-# Get system statistics (admin only)
-curl -b cookies.txt http://localhost:8080/api/v1/admin/stats
+# Verify session        → 200 {authenticated:true,…} / 401 {authenticated:false}
+GET  /api/v1/auth/verify
+GET  /api/v1/users          # list users (admin)
+POST /api/v1/files          # upload a file
+GET  /api/v1/stats          # system statistics (admin)
 ```
-
-**Authentication:** API requests use session-based authentication via cookies (the `session` cookie set at login).
-
-**Full documentation:** See [API.md](docs/API.md) for complete endpoint reference and examples.
 
 ---
 
 ## Security
 
-### Default Security Features
+bcrypt password hashing (cost 12) · 128-bit random download links · session expiry with 10-minute inactivity logout · CSRF protection via SameSite cookies · files stored outside the web root · optional IP logging · no directory listing.
 
-- Passwords hashed with bcrypt (cost factor 12)
-- Secure random hash generation for download links (128-bit entropy)
-- Session tokens with automatic expiration (24 hours, or 30 days with "Remember Me")
-- Automatic logout after 10 minutes of inactivity (not applied during an active transfer or to "Remember Me" sessions)
-- CSRF protection via SameSite cookies
-- Files stored outside web root with access control
-- IP address logging for all downloads
-- No directory listing or file enumeration
-
-### Recommended Production Setup
-
-1. **Change default admin password immediately**
-2. **Use HTTPS** - Deploy behind reverse proxy (nginx/Caddy) with SSL
-3. **Enable firewall** - Only expose ports 80/443
-4. **Regular backups** - Backup `./data` and `./uploads` directories
-5. **Monitor logs** - Watch for suspicious download patterns
-6. **Update regularly** - Keep WulfVault up to date
-7. **Strong passwords** - Enforce password policies for all users
+**Production setup:** change the admin password, terminate TLS at a reverse proxy (nginx/Caddy), expose only 80/443, back up `./data` and `./uploads`, watch the logs, and keep WulfVault updated.
 
 ---
 
 ## GDPR Compliance
 
-**Status:** ✅ **WulfVault is GDPR-Compliant** (Grade: A-, 94%)
+WulfVault is **GDPR-ready (grade A-, 94%)**, built privacy-by-design and privacy-by-default: self-service data export (Art. 15/20) and account erasure with anonymizing soft-delete (Art. 17), rectification via settings (Art. 16), audit logging with configurable retention, TLS in transit, 2FA, data minimization (no analytics or tracking), and IP logging off by default. Only strictly-necessary session cookies are used, so **no cookie-consent banner is required** unless you add analytics.
 
-WulfVault is designed with **privacy-by-design** and **privacy-by-default** principles, making it suitable for organizations handling personal data under GDPR and other data protection regulations.
-
-### Built-in GDPR Features
-
-#### User Rights Implementation
-- ✅ **Right of Access (Art. 15)** - Users can export all their data from `/settings/account` ("Export My Data")
-- ✅ **Right to Rectification (Art. 16)** - Users can update their profile and password via settings
-- ✅ **Right to Erasure (Art. 17)** - Account deletion with GDPR-compliant soft deletion at `/settings/delete-account`
-- ✅ **Right to Data Portability (Art. 20)** - JSON export of all personal data
-- ✅ **Right to Be Informed (Art. 13/14)** - Privacy Policy templates provided
-
-#### Technical Measures (Art. 32)
-- ✅ **Audit Logging** - Comprehensive activity tracking with configurable retention (1-3650 days)
-- ✅ **Encryption in Transit** - TLS/HTTPS for all connections (TLS 1.2+ required)
-- ⚠️ **Encryption at Rest** - Not built-in; use OS-level disk encryption (LUKS, BitLocker, FileVault)
-- ✅ **Password Security** - bcrypt hashing (cost factor 12, never plaintext)
-- ✅ **2FA Support** - TOTP-based two-factor authentication
-- ✅ **Session Security** - HttpOnly, Secure, SameSite cookies with 24-hour lifetime and a 10-minute inactivity timeout ("Remember Me" sessions last 30 days without the inactivity timeout)
-- ✅ **Data Minimization** - Only necessary data collected, no tracking or analytics
-- ✅ **IP Logging** - Optional (disabled by default for privacy)
-
-#### Organizational Measures
-- ✅ **Data Retention Policies** - Configurable audit log retention with automatic cleanup
-- ✅ **Soft Deletion** - Deleted accounts anonymized (`deleted-user-XXX@deleted.local`) with audit trail preserved
-- ✅ **Breach Notification Procedure** - Complete incident response guide provided
-- ✅ **Records of Processing Activities (ROPA)** - Template for Art. 30 compliance
-
-### GDPR Compliance Documentation
-
-Complete GDPR compliance package available in the `/gdpr-compliance/` directory:
-
-| Document | Purpose | Required Action |
-|----------|---------|-----------------|
-| **README.md** | Complete GDPR compliance guide | Read and follow |
-| **PRIVACY_POLICY_TEMPLATE.md** | Privacy Policy for users | Customize & publish |
-| **COOKIE_POLICY_TEMPLATE.md** | Cookie usage transparency | Customize & publish |
-| **DATA_PROCESSING_AGREEMENT_TEMPLATE.md** | B2B processor contracts (Art. 28) | Customize if B2B |
-| **BREACH_NOTIFICATION_PROCEDURE.md** | Incident response plan (Art. 33/34) | Review & follow |
-| **DEPLOYMENT_CHECKLIST.md** | Pre-launch compliance verification | Complete all items |
-| **RECORDS_OF_PROCESSING_ACTIVITIES.md** | Art. 30 documentation | Maintain & update |
-| **COOKIE_CONSENT_BANNER.html** | Cookie consent template (optional) | Use only if adding analytics |
-
-### Quick Compliance Setup
-
-1. **Customize Templates** (1-2 hours)
-   ```bash
-   cd gdpr-compliance/
-   # Edit all *_TEMPLATE.md files, replace [PLACEHOLDERS]
-   ```
-
-2. **Publish Required Policies**
-   - Privacy Policy → Must be accessible at `/privacy-policy`
-   - Cookie Policy → Must be accessible at `/cookie-policy`
-
-3. **Complete Deployment Checklist**
-   ```bash
-   # Review and complete all sections
-   cat gdpr-compliance/DEPLOYMENT_CHECKLIST.md
-   ```
-
-4. **Enable GDPR Features**
-   - Users can export data: `/settings/account` → "Export My Data"
-   - Users can delete accounts: `/settings/delete-account`
-   - Admins can export audit logs: Admin → Audit Logs → Export CSV
-
-### Compliance Scorecard
-
-| Feature | Status | Grade |
-|---------|--------|-------|
-| Data Collection & Minimization | ✅ | A+ |
-| Audit Logging | ✅ | A |
-| User Right: Delete | ✅ | A+ |
-| User Right: Access | ✅ | A |
-| User Right: Portability | ✅ | A |
-| User Right: Rectification | ✅ | A |
-| Authentication & Security | ✅ | A+ |
-| Role-Based Access Control | ✅ | A+ |
-| Encryption (Transit) | ✅ | A |
-| Encryption (At Rest) | ⚠️ Use OS-level | B |
-| Data Retention Policies | ✅ | A |
-| Privacy Documentation | ⚠️ Templates Provided | A |
-| Cookie Consent | ✅ N/A (Essential cookies only) | A |
-| Breach Notification | ⚠️ Procedure Provided | A |
-| **OVERALL COMPLIANCE** | **✅** | **A- (94%)** |
-
-### Cookie Compliance Note
-
-**WulfVault does NOT require cookie consent banner** because it only uses:
-- ✅ **Session cookies** - Strictly necessary for authentication (exempt from consent)
-- ❌ **No analytics cookies** - No Google Analytics, Facebook Pixel, or tracking
-- ❌ **No marketing cookies** - No third-party advertising or retargeting
-
-**When you WOULD need the cookie banner:**
-- If you add Google Analytics or similar analytics tools
-- If you add marketing/advertising tracking
-- If you add third-party tracking scripts
-
-The `COOKIE_CONSENT_BANNER.html` template is provided for organizations that add analytics later.
-
-### Regulatory Standards Supported
-
-- ✅ **GDPR** (EU General Data Protection Regulation)
-- ✅ **UK GDPR** (United Kingdom)
-- ✅ **ePrivacy Directive** (Cookie Law) - Compliant without banner
-- ✅ **SOC 2** (Audit logging and access controls)
-- ⚠️ **HIPAA** (Healthcare - requires OS-level disk encryption)
-- ✅ **ISO 27001** (Information security management)
-
-### Data Processing Summary
-
-**Personal Data Collected:**
-- User accounts: Name, email, password (hashed), role, creation date
-- Authentication: 2FA secrets (encrypted), backup codes (hashed)
-- Activity data: Login timestamps, file actions, IP addresses (optional)
-- Files: Metadata (filename, size, MIME type) and contents
-
-**Legal Basis (GDPR Art. 6):**
-- Contractual necessity (6(1)(b)) - Service provision
-- Legitimate interest (6(1)(f)) - Security, fraud prevention
-- Legal obligation (6(1)(c)) - Audit compliance
-
-**Data Retention:**
-- User accounts: Until deletion (soft delete with 90-day grace period)
-- Audit logs: Configurable (90 days default, 1-3650 days available)
-- Deleted files: 5 days in trash (configurable)
-- Backups: [Configure based on your policy]
-
-**Data Transfers:**
-- Default: All data stays on your server (location: [SPECIFY])
-- If using cloud hosting: Document location and safeguards (SCCs if outside EU)
-
-### For Different Organization Types
-
-#### Small Organizations (<250 employees)
-- ✅ Basic compliance: Privacy Policy, data export, account deletion
-- ⚠️ ROPA: Only required if processing is not occasional or involves special data
-- ⚠️ DPO: Not required unless large-scale monitoring or special category data
-
-#### Medium/Large Organizations (250+ employees)
-- ✅ Full GDPR compliance required
-- ✅ ROPA (Records of Processing Activities) mandatory
-- ⚠️ DPO: Required if public authority or large-scale systematic monitoring
-
-#### B2B SaaS Providers
-- ✅ Data Processing Agreement (DPA) required for each customer
-- ✅ Sub-processor notification procedures
-- ✅ Breach notification within 24 hours to customers
-
-#### Healthcare / Finance / Government
-- ✅ Enable OS-level disk encryption (LUKS, BitLocker, FileVault)
-- ✅ Conduct Data Protection Impact Assessment (DPIA)
-- ✅ Enhanced audit logging and retention
-- ✅ Annual security assessments
-
-### Implementation Time
-
-| Task | Effort | Priority |
-|------|--------|----------|
-| Customize Privacy Policy | 1-2 hours | CRITICAL |
-| Complete Deployment Checklist | 2-4 hours | CRITICAL |
-| Review Breach Notification Procedure | 1 hour | CRITICAL |
-| Customize DPA (if B2B) | 2-3 hours | HIGH |
-| Test user data export | 30 min | HIGH |
-| Test account deletion | 30 min | HIGH |
-| Add cookie consent banner (optional, only if using analytics) | 1 hour | LOW |
-| Configure audit retention | 15 min | MEDIUM |
-| **Total Estimated Time** | **10-15 hours** | |
-
-### Support Resources
-
-- **Full Documentation:** `/gdpr-compliance/README.md`
-- **Compliance Report:** See root directory for detailed analysis
-- **EU GDPR Portal:** https://gdpr.eu/
-- **ICO Guidance (UK):** https://ico.org.uk/
-- **EDPB Guidelines:** https://edpb.europa.eu/
-
-### Important Notes
-
-⚠️ **Action Required:**
-- WulfVault provides GDPR-compliant technical features
-- **You must customize templates** with your organization details before use
-- **Consult legal counsel** for compliance verification in your jurisdiction
-- **Keep documentation current** as data processing changes
-
-✅ **Best Practices:**
-- Enable HTTPS/TLS in production (required)
-- Configure audit log retention per your jurisdiction
-- Appoint Data Protection Officer (DPO) if required
-- Conduct annual GDPR compliance reviews
-- Train staff on data protection procedures
-
----
-
-## Server Restart Feature
-
-The Admin Settings page includes a **"Restart Server"** button that is **currently disabled** until systemd service is installed.
-
-### Why is it disabled?
-
-The restart button requires a process manager (systemd, supervisor, etc.) to automatically restart the server after shutdown. Without this, clicking the button will stop the server without restarting it.
-
-### How to enable it
-
-1. **Install systemd service** (requires sudo):
-   ```bash
-   sudo cp /tmp/wulfvault.service /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable wulfvault
-   sudo systemctl start wulfvault
-   ```
-
-2. **Uncomment the restart button** in the code:
-   - Open `internal/server/handlers_admin.go`
-   - Find the section marked `<!-- RESTART SERVER BUTTON - DISABLED`
-   - Remove the `<!--` and `-->` comment markers
-   - Also uncomment the JavaScript function at the bottom
-   - Rebuild: `go build -o wulfvault cmd/server/main.go`
-   - Restart the service: `sudo systemctl restart wulfvault`
-
-3. **The button will now work!** It will use `systemctl restart wulfvault` to gracefully restart the server.
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment and autostart instructions.
+A complete compliance pack — privacy/cookie/DPA templates, breach-notification procedure, ROPA, and a pre-launch checklist — lives in [`gdpr-compliance/`](gdpr-compliance/README.md). Note: encryption at rest is not built in; use OS-level disk encryption (LUKS/BitLocker/FileVault), which is also what HIPAA requires.
 
 ---
 
 ## Troubleshooting
 
-### Can't login with default credentials
+- **Can't log in on first run** — the admin password was random and printed to the server log; check the startup output (or set `ADMIN_EMAIL`/`ADMIN_PASSWORD` before first launch).
+- **Uploads fail** — check `MAX_FILE_SIZE_MB`, the user's quota, server disk space, and the browser console.
+- **Download links don't work** — verify `SERVER_URL`, and that the file hasn't expired or been trashed.
+- **More help** — [INSTALLATION.md](INSTALLATION.md), `docker compose logs -f wulfvault`, or open an [issue](https://github.com/Frimurare/WulfVault/issues).
 
-The first-run admin account uses the `ADMIN_EMAIL` / `ADMIN_PASSWORD` environment
-variables. If you didn't set them, the email is `admin@localhost` and the password
-was randomly generated and printed to the server logs on first startup — check those
-logs for the generated password.
-
-If it still doesn't work, check the server logs for initialization errors.
-
-### Files not uploading
-
-- Check `MAX_FILE_SIZE_MB` environment variable
-- Verify user has available storage quota
-- Check disk space on server
-- Review browser console for JavaScript errors
-
-### Download links not working
-
-- Verify `SERVER_URL` is set correctly in environment
-- Check that files haven't expired
-- Ensure file wasn't deleted or moved to trash
-- Check server logs for errors
-
-### More help
-
-- Check [INSTALLATION.md](INSTALLATION.md) for detailed setup
-- Review logs: `docker compose logs -f wulfvault`
-- Open issue on GitHub: https://github.com/Frimurare/WulfVault/issues
+The admin **Restart Server** button is disabled until a systemd service is installed; see [DEPLOYMENT.md](DEPLOYMENT.md) to enable it.
 
 ---
 
 ## Development
 
-### Running Tests
-
 ```bash
-go test ./...
+go test ./...                              # run tests
+go build -o wulfvault cmd/server/main.go   # build
 ```
 
-### Project Structure
-
 ```
-WulfVault/
-├── cmd/server/          # Main application entry point
-├── internal/
-│   ├── auth/           # Authentication and sessions
-│   ├── database/       # SQLite database operations
-│   ├── models/         # Data models
-│   └── server/         # HTTP handlers and routing
-├── web/
-│   ├── static/         # CSS, JavaScript, images
-│   └── templates/      # HTML templates
-├── INSTALLATION.md     # Detailed installation guide
-├── LICENSE            # AGPL-3.0 license
-└── README.md          # This file
+cmd/server/      entry point
+internal/        auth · database · models · server
+web/             static assets · templates
 ```
 
-### Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Submit a pull request
+Contributions welcome — fork, branch, add tests, open a PR.
 
 ---
 
 ## License
 
-This project is licensed under the **AGPL-3.0** license - see [LICENSE](LICENSE) for details.
-
-**Why AGPL-3.0?** This license ensures that if anyone uses WulfVault to provide a service over a network (like SaaS), they must share their modifications with the community. This prevents companies from taking the code, making improvements, and keeping them proprietary. It protects the open-source nature of the project while requiring attribution and source disclosure for all network use.
-
-See [NOTICE.md](NOTICE.md) for full attribution and license information.
+**AGPL-3.0** (see [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md)). The AGPL ensures that anyone offering WulfVault as a network service must share their modifications with the community, keeping the project open.
 
 ---
 
 ## Support
 
-- **Issues:** https://github.com/Frimurare/WulfVault/issues
-- **Discussions:** https://github.com/Frimurare/WulfVault/discussions
-- **Documentation:** https://github.com/Frimurare/WulfVault/wiki
-- **Contact:** ulf@manvarg.se
+- Issues: https://github.com/Frimurare/WulfVault/issues
+- Discussions: https://github.com/Frimurare/WulfVault/discussions
+- Docs/Wiki: https://github.com/Frimurare/WulfVault/wiki
+- Contact: ulf@manvarg.se
 
 ---
 
-**Made for organizations that need secure, accountable file sharing for large files**
+*Made for organizations that need secure, accountable sharing of large files.*
