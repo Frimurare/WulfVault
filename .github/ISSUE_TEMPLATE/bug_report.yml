@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in WulfVault does not work as documented.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Security problems go to [private reporting](https://github.com/Frimurare/WulfVault/security/advisories/new), not here.**
+  - type: input
+    id: version
+    attributes:
+      label: WulfVault version
+      description: Shown in the admin footer, or run `./wulfvault --version`.
+      placeholder: "7.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Single binary (systemd or manual)
+        - Docker / Docker Compose
+        - Elestio or other hosted
+        - Other (describe below)
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS, browser and reverse proxy
+      placeholder: "Ubuntu 24.04, Firefox 130, nginx 1.26"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Log in as admin
+        2. Upload a 3 GB file with "authenticated download"
+        3. Open the link in a private window
+        4. See error …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Server log (`journalctl -u wulfvault` or `docker compose logs wulfvault`) and browser console if relevant. **Remove tokens, passwords, e-mail addresses and file names you do not want public.**
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and the troubleshooting section of the README.
+          required: true
+        - label: This report contains no secrets or personal data.
+          required: true
