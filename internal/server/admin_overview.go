@@ -132,6 +132,15 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
 	mostDownloadedFile string, downloadCount int, uploadsUsed, diskAvailable int64, duplicateFiles []DuplicateFile) {
 	t := tr.T
+	localizedNumber := func(value string) string {
+		if tr.Is(i18n.LangSV) {
+			return strings.ReplaceAll(value, ".", ",")
+		}
+		return value
+	}
+	formatBytes := func(value int64) string {
+		return localizedNumber(dashboardFormatBytes(value))
+	}
 	metric := func(key, value string) dashboardMetric {
 		return dashboardMetric{Label: t("admin.overview." + key), Value: value}
 	}
@@ -147,8 +156,8 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 		Logo:           dashboardLogoURL(branding["branding_logo"]),
 		Version:        s.config.Version,
 		Plain:          style == "plain",
-		StorageUsed:    dashboardFormatBytes(uploadsUsed),
-		StorageFree:    dashboardFormatBytes(diskAvailable),
+		StorageUsed:    formatBytes(uploadsUsed),
+		StorageFree:    formatBytes(diskAvailable),
 		StoragePercent: percentage,
 		StorageKnown:   storageKnown,
 		Duplicates:     duplicateFiles,
@@ -198,24 +207,24 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 	for i, period := range periods {
 		data.Transfers = append(data.Transfers, dashboardMetric{
 			Label: t("admin.overview." + period),
-			Value: dashboardFormatBytes(downloaded[i]),
-			Note:  dashboardFormatBytes(uploaded[i]),
+			Value: formatBytes(downloaded[i]),
+			Note:  formatBytes(uploaded[i]),
 		})
 	}
 	data.UserGrowth = []dashboardMetric{
 		metric("users_added", fmt.Sprint(usersAdded)),
 		metric("users_removed", fmt.Sprint(usersRemoved)),
-		metric("growth", fmt.Sprintf("%+.1f%%", userGrowth)),
+		metric("growth", localizedNumber(fmt.Sprintf("%+.1f%%", userGrowth))),
 	}
 	data.Usage = []dashboardMetric{
 		metric("active_files_7", fmt.Sprint(activeFiles7Days)),
 		metric("active_files_30", fmt.Sprint(activeFiles30Days)),
-		metric("average_size", dashboardFormatBytes(avgFileSize)),
-		metric("average_downloads", fmt.Sprintf("%.1f", avgDownloadsPerFile)),
+		metric("average_size", formatBytes(avgFileSize)),
+		metric("average_downloads", localizedNumber(fmt.Sprintf("%.1f", avgDownloadsPerFile))),
 	}
 	data.Security = []dashboardMetric{
-		{Label: t("admin.overview.two_fa"), Value: fmt.Sprintf("%.1f%%", twoFAAdoption), Note: t("admin.overview.two_fa_note")},
-		{Label: t("admin.overview.backup_codes"), Value: fmt.Sprintf("%.1f", avgBackupCodes), Note: t("admin.overview.backup_codes_note")},
+		{Label: t("admin.overview.two_fa"), Value: localizedNumber(fmt.Sprintf("%.1f%%", twoFAAdoption)), Note: t("admin.overview.two_fa_note")},
+		{Label: t("admin.overview.backup_codes"), Value: localizedNumber(fmt.Sprintf("%.1f", avgBackupCodes)), Note: t("admin.overview.backup_codes_note")},
 	}
 	if largestFileName == "" {
 		largestFileName = t("admin.overview.no_data")
@@ -224,7 +233,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 		mostDownloadedFile = t("admin.overview.no_data")
 	}
 	data.Files = []dashboardMetric{
-		{Label: t("admin.overview.largest_file"), Value: largestFileName, Note: dashboardFormatBytes(largestFileSize)},
+		{Label: t("admin.overview.largest_file"), Value: largestFileName, Note: formatBytes(largestFileSize)},
 		{Label: t("admin.overview.most_downloaded"), Value: mostDownloadedFile, Note: t("admin.overview.download_count", "count", fmt.Sprint(downloadCount))},
 	}
 	for i, name := range top5ActiveUsers {
@@ -253,14 +262,14 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 	}
 	storageGrowth := t("admin.overview.no_data")
 	if storagePast > 0 {
-		storageGrowth = fmt.Sprintf("%+.1f%%", float64(storageNow-storagePast)/float64(storagePast)*100)
+		storageGrowth = localizedNumber(fmt.Sprintf("%+.1f%%", float64(storageNow-storagePast)/float64(storagePast)*100))
 	}
 	data.Trends = []dashboardMetric{
 		metric("file_types", fileTypesText),
 		{Label: t("admin.overview.active_day"), Value: weekday, Note: t("admin.overview.download_count", "count", fmt.Sprint(weekdayCount))},
-		{Label: t("admin.overview.storage_trend"), Value: storageGrowth, Note: dashboardFormatBytes(storagePast) + " → " + dashboardFormatBytes(storageNow)},
+		{Label: t("admin.overview.storage_trend"), Value: storageGrowth, Note: formatBytes(storagePast) + " → " + formatBytes(storageNow)},
 	}
-	page, err := template.New("admin-overview").Funcs(template.FuncMap{"t": t, "icon": dashboardIcon}).Parse(adminOverviewTemplate)
+	page, err := template.New("admin-overview").Funcs(template.FuncMap{"t": t, "icon": dashboardIcon, "number": localizedNumber}).Parse(adminOverviewTemplate)
 	if err != nil {
 		log.Printf("Parse admin overview: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -340,7 +349,7 @@ const adminOverviewTemplate = `<!DOCTYPE html>
         <div class="wv-storage-content">
           <div class="wv-storage-ring">
             <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="wv-ring-track" cx="60" cy="60" r="50" pathLength="100"/>{{if .StorageKnown}}<circle class="wv-ring-used" cx="60" cy="60" r="50" pathLength="100" stroke-dasharray="{{.StoragePercent}} 100"/>{{end}}</svg>
-            <div><strong>{{if .StorageKnown}}{{.StoragePercent}}%{{else}}—{{end}}</strong><span>{{t "admin.overview.used"}}</span></div>
+            <div><strong>{{if .StorageKnown}}{{number .StoragePercent}}%{{else}}—{{end}}</strong><span>{{t "admin.overview.used"}}</span></div>
           </div>
           <dl class="wv-storage-values"><div><dt><span class="wv-dot"></span>{{t "admin.overview.upload_storage"}}</dt><dd>{{.StorageUsed}}</dd></div><div><dt><span class="wv-dot wv-dot-muted"></span>{{t "admin.overview.available"}}</dt><dd>{{.StorageFree}}</dd></div></dl>
         </div>

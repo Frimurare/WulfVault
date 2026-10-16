@@ -45,8 +45,8 @@ func TestAdminOverviewUsesSelectedLanguage(t *testing.T) {
 		want []string
 		omit []string
 	}{
-		{i18n.LangEN, []string{"Overview", "Data transfer", "Uploaded", "More statistics", "Monday", "Review duplicate files"}, []string{"Översikt", "Dataöverföring", "Granska dubbletter"}},
-		{i18n.LangSV, []string{"Översikt", "Dataöverföring", "Uppladdat", "Mer statistik", "Måndag", "Granska dubbletter"}, []string{"Data transfer", "More statistics", "Monday"}},
+		{i18n.LangEN, []string{"Overview", "Data transfer", "Uploaded", "More statistics", "Monday", "Review duplicate files", "11.1%"}, []string{"Översikt", "Dataöverföring", "Granska dubbletter"}},
+		{i18n.LangSV, []string{"Översikt", "Dataöverföring", "Uppladdat", "Mer statistik", "Måndag", "Granska dubbletter", "11,1%"}, []string{"Data transfer", "More statistics", "Monday"}},
 	} {
 		t.Run(string(tc.lang), func(t *testing.T) {
 			page := renderOverviewTestPage(t, tc.lang)
