@@ -80,6 +80,18 @@ func TestAdminOverviewEscapesStoredContent(t *testing.T) {
 	}
 }
 
+func TestDashboardLogoURL(t *testing.T) {
+	logo := "data:image/png;base64,iVBORw0KGgo="
+	if string(dashboardLogoURL(logo)) != logo {
+		t.Error("uploaded image data URL must survive template URL filtering")
+	}
+	for _, invalid := range []string{"javascript:alert(1)", "data:text/html;base64,PHNjcmlwdD4=", "data:image/png;base64,invalid!", "data:image/png;base64,"} {
+		if dashboardLogoURL(invalid) != "" {
+			t.Errorf("unsafe or malformed logo accepted: %s", invalid)
+		}
+	}
+}
+
 func TestDashboardStoragePercent(t *testing.T) {
 	for _, tc := range []struct {
 		used, available int64

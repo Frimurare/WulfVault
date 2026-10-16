@@ -13,6 +13,10 @@ on:
       - 'scripts/check-admin-overview.cjs'
       - '.github/workflows/admin-overview.yml'
 
+concurrency:
+  group: admin-overview-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

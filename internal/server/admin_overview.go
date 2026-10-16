@@ -7,6 +7,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"log"
@@ -36,7 +37,7 @@ type dashboardLink struct {
 type adminOverviewData struct {
 	Lang           string
 	Company        string
-	Logo           string
+	Logo           template.URL
 	Version        string
 	Name           string
 	Plain          bool
@@ -84,6 +85,20 @@ func dashboardStoragePercent(used, available int64) (string, bool) {
 	return fmt.Sprintf("%.1f", percentage), true
 }
 
+// Uploaded logos are stored as base64 image data URLs. html/template blocks
+// data URLs by default, so allow only this explicit set of image MIME types.
+func dashboardLogoURL(value string) template.URL {
+	for _, mime := range []string{"image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"} {
+		prefix := "data:" + mime + ";base64,"
+		if strings.HasPrefix(value, prefix) {
+			if decoded, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(value, prefix)); err == nil && len(decoded) > 0 {
+				return template.URL(value)
+			}
+		}
+	}
+	return ""
+}
+
 func dashboardIcon(name string) template.HTML {
 	paths := map[string]string{
 		"home":     `<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>`,
@@ -129,7 +144,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 	data := adminOverviewData{
 		Lang:           string(tr.Lang()),
 		Company:        s.config.CompanyName,
-		Logo:           branding["branding_logo"],
+		Logo:           dashboardLogoURL(branding["branding_logo"]),
 		Version:        s.config.Version,
 		Plain:          style == "plain",
 		StorageUsed:    dashboardFormatBytes(uploadsUsed),
