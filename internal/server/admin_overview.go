@@ -86,18 +86,18 @@ func dashboardStoragePercent(used, available int64) (string, bool) {
 
 func dashboardIcon(name string) template.HTML {
 	paths := map[string]string{
-		"home": `<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>`,
-		"folder": `<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>`,
-		"users": `<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-17a3 3 0 0 1 0 6m2 5a5 5 0 0 1 3 5"/>`,
-		"team": `<circle cx="12" cy="7" r="3"/><path d="M6 21v-2a6 6 0 0 1 12 0v2M3 9v6m-3-3h6m15-3v6m-3-3h6"/>`,
-		"server": `<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6h1m-1 11h1"/>`,
+		"home":     `<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>`,
+		"folder":   `<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>`,
+		"users":    `<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-17a3 3 0 0 1 0 6m2 5a5 5 0 0 1 3 5"/>`,
+		"team":     `<circle cx="12" cy="7" r="3"/><path d="M6 21v-2a6 6 0 0 1 12 0v2M3 9v6m-3-3h6m15-3v6m-3-3h6"/>`,
+		"server":   `<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6h1m-1 11h1"/>`,
 		"download": `<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>`,
-		"upload": `<path d="M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5"/>`,
+		"upload":   `<path d="M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5"/>`,
 		"calendar": `<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>`,
-		"account": `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="9" r="3"/><path d="M5 19a7 7 0 0 1 14 0"/>`,
-		"logout": `<path d="M9 4H4v16h5m0-8h12m-4-4 4 4-4 4"/>`,
-		"arrow": `<path d="M4 12h16m-6-6 6 6-6 6"/>`,
-		"shield": `<path d="m12 3 9 4v5c0 5-9 10-9 10S3 17 3 12V7z"/><path d="m8 12 3 3 5-6"/>`,
+		"account":  `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="9" r="3"/><path d="M5 19a7 7 0 0 1 14 0"/>`,
+		"logout":   `<path d="M9 4H4v16h5m0-8h12m-4-4 4 4-4 4"/>`,
+		"arrow":    `<path d="M4 12h16m-6-6 6 6-6 6"/>`,
+		"shield":   `<path d="m12 3 9 4v5c0 5-9 10-9 10S3 17 3 12V7z"/><path d="m8 12 3 3 5-6"/>`,
 	}
 	path, ok := paths[name]
 	if !ok {

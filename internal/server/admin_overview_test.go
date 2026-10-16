@@ -113,6 +113,7 @@ func TestAdminOverviewPreviewFixtures(t *testing.T) {
 	}
 	for _, lang := range []i18n.Lang{i18n.LangEN, i18n.LangSV} {
 		page := renderOverviewTestPage(t, lang)
+		page = strings.ReplaceAll(page, "&lt;script&gt;user&lt;/script&gt;", "Demo Admin")
 		if err := os.WriteFile(filepath.Join(dir, string(lang)+".html"), []byte(page), 0644); err != nil {
 			t.Fatal(err)
 		}

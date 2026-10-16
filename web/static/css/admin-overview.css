@@ -170,7 +170,7 @@
   .wv-transfer-table { font-size: 12px; }
   .wv-transfer-table th, .wv-transfer-table td { padding: 12px 5px; }
   .wv-storage-content { gap: 16px; }
-  .wv-storage-ring { width: 140px; height: 140px; flex-basis: 140px; }
+  .wv-storage-ring { width: 132px; height: 132px; flex-basis: 132px; }
   .wv-storage-values { min-width: 100px; }
   .wv-storage-values dd { font-size: 17px; }
   .wv-detail-grid { grid-template-columns: minmax(0, 1fr); }

@@ -22,15 +22,15 @@ const assert = require('node:assert/strict');
           await menu.locator(':scope > summary').click();
           assert.equal(await menu.getAttribute('open'), '');
           await page.locator('.wv-nav-group').first().locator('summary').click();
-          assert.ok(await page.locator('a[href="/admin/duplicates"]').isVisible());
-          await page.locator('a[href="/admin/duplicates"]').focus();
+          assert.ok(await page.locator('.wv-navigation a[href="/admin/duplicates"]').isVisible());
+          await page.locator('.wv-navigation a[href="/admin/duplicates"]').focus();
           await page.keyboard.press('Escape');
           assert.equal(await menu.getAttribute('open'), null);
           assert.ok(await menu.locator(':scope > summary').evaluate((el) => el === document.activeElement));
         } else {
           await page.locator('.wv-nav-group').first().locator('summary').focus();
           await page.keyboard.press('Enter');
-          assert.ok(await page.locator('a[href="/admin/duplicates"]').isVisible());
+          assert.ok(await page.locator('.wv-navigation a[href="/admin/duplicates"]').isVisible());
         }
         await page.locator('.wv-more').first().locator('summary').click();
         assert.ok(await page.locator('.wv-detail-grid').isVisible());
@@ -39,6 +39,11 @@ const assert = require('node:assert/strict');
         assert.deepEqual(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })), [], 'accessibility violations');
         await page.locator('.wv-more').first().locator('summary').click();
         await page.screenshot({ path: 'ui-screenshots/' + lang + '-' + width + '.png', fullPage: true });
+        if (lang === 'sv' && [1440, 390].includes(width)) {
+          const png = await fs.readFile('ui-screenshots/' + lang + '-' + width + '.png');
+          const encoded = png.toString('base64');
+          for (let i = 0; i < encoded.length; i += 4000) console.log('WV_PREVIEW_' + width + ':' + encoded.slice(i, i + 4000));
+        }
         await page.close();
       }
     }
