@@ -12,4 +12,22 @@
       menu.querySelector('summary').focus();
     }
   });
+  const path = location.pathname.replace(/\/$/, '') || '/';
+  const links = [...menu.querySelectorAll('a[href]')];
+  const active = links
+    .filter((link) => path === link.pathname || path.startsWith(link.pathname + '/'))
+    .sort((a, b) => b.pathname.length - a.pathname.length)[0];
+  if (active) {
+    links.forEach((link) => link.removeAttribute('aria-current'));
+    active.setAttribute('aria-current', 'page');
+    const group = active.closest('.wv-nav-group');
+    if (group) group.open = true;
+    const heading = document.querySelector('.wv-current-page');
+    if (heading) heading.textContent = active.textContent.trim();
+  }
+  document.querySelectorAll('.wv-languages a').forEach((link) => {
+    const url = new URL(link.href);
+    url.searchParams.set('return', location.pathname + location.search);
+    link.href = url.pathname + url.search;
+  });
 })();

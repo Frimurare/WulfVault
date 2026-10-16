@@ -15,6 +15,7 @@ import (
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
 	"github.com/Frimurare/WulfVault/internal/models"
+	"github.com/Frimurare/WulfVault/internal/i18n"
 )
 
 // handleDownloadAccountGDPR shows download account self-service page with GDPR delete option
@@ -28,7 +29,7 @@ func (s *Server) handleDownloadAccountGDPR(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Render GDPR self-service page
-	s.renderDownloadAccountGDPRPage(w, account, "")
+	s.renderDownloadAccountGDPRPage(w, s.tr(r), account, "")
 }
 
 // handleDownloadAccountDelete handles GDPR-compliant account deletion
@@ -50,7 +51,7 @@ func (s *Server) handleDownloadAccountDelete(w http.ResponseWriter, r *http.Requ
 	if confirmation != "DELETE" {
 		// Re-render page with error
 		account, _ = s.getDownloadAccountFromSession(r)
-		s.renderDownloadAccountGDPRPage(w, account, "Du måste skriva DELETE för att bekräfta")
+		s.renderDownloadAccountGDPRPage(w, s.tr(r), account, "Du måste skriva DELETE för att bekräfta")
 		return
 	}
 
@@ -123,12 +124,9 @@ func (s *Server) getDownloadAccountFromSession(r *http.Request) (*models.Downloa
 }
 
 // renderDownloadAccountGDPRPage renders the GDPR self-service page
-func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *models.DownloadAccount, errorMsg string) {
+func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	// Get branding config
-	brandingConfig, _ := database.DB.GetBrandingConfig()
-	logoData := brandingConfig["branding_logo"]
 
 	errorHTML := ""
 	if errorMsg != "" {
@@ -396,33 +394,9 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, account *m
         }
     </script>
 </head>
-<body>
-    <div class="nav-header">
-        <div class="logo">`
-
-	if logoData != "" {
-		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
-	} else {
-		html += `<h1>` + s.config.CompanyName + ` - My Downloads</h1>`
-	}
-
-	html += `
-        </div>
-        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <nav>
-            <a href="/download/dashboard">Dashboard</a>
-            <a href="/download/change-password">Change Password</a>
-            <a href="/download/account-settings">Account Settings</a>
-            <a href="/download/logout">Logout</a>
-        </nav>
-    </div>
-    <div class="mobile-nav-overlay"></div>
-
-    <div class="container">
+<body class="wv-app">
+    ` + s.getDownloadUserHeaderHTML(tr) + `
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
             <h2>Mitt Nedladdningskonto</h2>
             <p>` + s.config.CompanyName + `</p>
@@ -546,7 +520,7 @@ func (s *Server) renderAccountDeletionSuccess(w http.ResponseWriter) {
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="container">
         <div class="success-icon">
             <svg viewBox="0 0 20 20" fill="currentColor">
@@ -630,7 +604,7 @@ func (s *Server) handleUserAccountSettings(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.renderUserAccountSettings(w, user, "")
+	s.renderUserAccountSettings(w, s.tr(r), user, "")
 }
 
 // handleUserAccountDelete handles GDPR-compliant account deletion for system users
@@ -650,7 +624,7 @@ func (s *Server) handleUserAccountDelete(w http.ResponseWriter, r *http.Request)
 	confirmation := r.FormValue("confirmation")
 	if confirmation != "DELETE" {
 		// Re-render page with error
-		s.renderUserAccountSettings(w, user, "You must type DELETE to confirm")
+		s.renderUserAccountSettings(w, s.tr(r), user, "You must type DELETE to confirm")
 		return
 	}
 
@@ -692,12 +666,9 @@ func (s *Server) handleUserAccountDelete(w http.ResponseWriter, r *http.Request)
 }
 
 // renderUserAccountSettings renders the account settings page with deletion option
-func (s *Server) renderUserAccountSettings(w http.ResponseWriter, user *models.User, errorMsg string) {
+func (s *Server) renderUserAccountSettings(w http.ResponseWriter, tr *i18n.Translator, user *models.User, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	// Get branding config
-	brandingConfig, _ := database.DB.GetBrandingConfig()
-	logoData := brandingConfig["branding_logo"]
 
 	errorHTML := ""
 	if errorMsg != "" {
@@ -705,7 +676,7 @@ func (s *Server) renderUserAccountSettings(w http.ResponseWriter, user *models.U
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -896,26 +867,9 @@ func (s *Server) renderUserAccountSettings(w http.ResponseWriter, user *models.U
         }
     </script>
 </head>
-<body>
-    <div class="nav-header">
-        <div class="logo">`
-
-	if logoData != "" {
-		html += `<img src="` + logoData + `" alt="` + s.config.CompanyName + `">`
-	} else {
-		html += `<h1>` + s.config.CompanyName + `</h1>`
-	}
-
-	html += `
-        </div>
-        <nav>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/settings">Settings</a>
-            <a href="/logout">Logout</a>
-        </nav>
-    </div>
-
-    <div class="container">
+<body class="wv-app">
+    ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
             <h2>Account Settings</h2>
             <p>` + s.config.CompanyName + `</p>

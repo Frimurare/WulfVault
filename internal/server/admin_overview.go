@@ -35,16 +35,8 @@ type dashboardLink struct {
 }
 
 type adminOverviewData struct {
-	Lang           string
-	Company        string
-	Logo           template.URL
-	Version        string
-	Name           string
+	appShellData
 	Plain          bool
-	LanguageLinks  []dashboardLink
-	Navigation     []dashboardLink
-	FileLinks      []dashboardLink
-	ServerLinks    []dashboardLink
 	Metrics        []dashboardMetric
 	Transfers      []dashboardMetric
 	StorageUsed    string
@@ -144,17 +136,10 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 	metric := func(key, value string) dashboardMetric {
 		return dashboardMetric{Label: t("admin.overview." + key), Value: value}
 	}
-	link := func(key, href, icon string) dashboardLink {
-		return dashboardLink{Label: t(key), Href: href, Icon: icon}
-	}
-	branding, _ := database.DB.GetBrandingConfig()
 	style, _ := database.DB.GetConfigValue("dashboard_style")
 	percentage, storageKnown := dashboardStoragePercent(uploadsUsed, diskAvailable)
 	data := adminOverviewData{
-		Lang:           string(tr.Lang()),
-		Company:        s.config.CompanyName,
-		Logo:           dashboardLogoURL(branding["branding_logo"]),
-		Version:        s.config.Version,
+		appShellData:   s.newAppShellData(tr, user, "admin"),
 		Plain:          style == "plain",
 		StorageUsed:    formatBytes(uploadsUsed),
 		StorageFree:    formatBytes(diskAvailable),
@@ -165,36 +150,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 	if diskAvailable < 0 {
 		data.StorageFree = t("admin.overview.no_data")
 	}
-	if user != nil {
-		data.Name = user.Name
-	}
-	for _, lang := range i18n.Supported() {
-		data.LanguageLinks = append(data.LanguageLinks, dashboardLink{
-			Label: tr.T("lang." + string(lang)),
-			Href:  "/lang?lang=" + string(lang) + "&return=/admin",
-			Icon:  string(lang),
-		})
-	}
-	data.Navigation = []dashboardLink{
-		link("admin.overview.title", "/admin", "home"),
-		link("nav.my_files", "/dashboard", "folder"),
-		link("nav.users", "/admin/users", "users"),
-		link("nav.teams", "/admin/teams", "team"),
-	}
-	data.FileLinks = []dashboardLink{
-		link("nav.all_files", "/admin/files", "folder"),
-		link("nav.duplicate_files", "/admin/duplicates", "folder"),
-		link("nav.trash", "/admin/trash", "folder"),
-	}
-	data.ServerLinks = []dashboardLink{
-		link("nav.server_settings", "/admin/settings", "server"),
-		link("nav.branding", "/admin/branding", "server"),
-		link("nav.email", "/admin/email-settings", "server"),
-		link("nav.identity_providers", "/admin/identity-providers", "shield"),
-		link("nav.audit_logs", "/admin/audit-logs", "shield"),
-		link("nav.server_logs", "/admin/server-logs", "server"),
-		link("nav.sysmonitor_logs", "/admin/sysmonitor-logs", "server"),
-	}
+	data.CurrentPath = "/admin"
 	data.Metrics = []dashboardMetric{
 		{Label: t("admin.overview.total_users"), Value: fmt.Sprint(totalUsers), Icon: "users"},
 		{Label: t("admin.overview.active_users"), Value: fmt.Sprint(activeUsers), Icon: "account"},
@@ -269,7 +225,7 @@ func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator
 		{Label: t("admin.overview.active_day"), Value: weekday, Note: t("admin.overview.download_count", "count", fmt.Sprint(weekdayCount))},
 		{Label: t("admin.overview.storage_trend"), Value: storageGrowth, Note: formatBytes(storagePast) + " → " + formatBytes(storageNow)},
 	}
-	page, err := template.New("admin-overview").Funcs(template.FuncMap{"t": t, "icon": dashboardIcon, "number": localizedNumber}).Parse(adminOverviewTemplate)
+	page, err := template.New("admin-overview").Funcs(template.FuncMap{"t": t, "icon": dashboardIcon, "number": localizedNumber}).Parse(appShellTemplate + adminOverviewTemplate)
 	if err != nil {
 		log.Printf("Parse admin overview: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -292,38 +248,12 @@ const adminOverviewTemplate = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{t "admin.page_title"}} · {{.Company}}</title>
 <link rel="stylesheet" href="/static/css/admin-overview.css">
+<link rel="stylesheet" href="/static/css/app-shell.css">
 <script src="/static/js/admin-overview.js" defer></script>
 </head>
 <body class="wv-overview{{if .Plain}} wv-plain{{end}}">
-<a class="wv-skip" href="#main">{{t "admin.overview.skip"}}</a>
-<aside class="wv-sidebar" aria-label="{{t "admin.overview.navigation"}}">
-  <a class="wv-brand" href="/admin">
-    {{if .Logo}}<span class="wv-logo"><img src="{{.Logo}}" alt="{{.Company}}"></span>{{else}}<span class="wv-brand-icon">{{icon "shield"}}</span><span class="wv-company">{{.Company}}</span>{{end}}
-    <span class="wv-product">WulfVault</span>
-  </a>
-  <details class="wv-navigation" open>
-    <summary>{{icon "folder"}}<span>{{t "admin.overview.navigation"}}</span><span class="wv-chevron" aria-hidden="true">⌄</span></summary>
-    <nav aria-label="{{t "admin.overview.navigation"}}">
-      {{range .Navigation}}<a class="wv-nav-link" href="{{.Href}}"{{if eq .Href "/admin"}} aria-current="page"{{end}}>{{icon .Icon}}<span>{{.Label}}</span></a>{{end}}
-      <details class="wv-nav-group"><summary>{{icon "folder"}}<span>{{t "nav.files"}}</span><span class="wv-chevron" aria-hidden="true">⌄</span></summary><div>{{range .FileLinks}}<a class="wv-nav-link" href="{{.Href}}">{{.Label}}</a>{{end}}</div></details>
-      <details class="wv-nav-group"><summary>{{icon "server"}}<span>{{t "nav.server"}}</span><span class="wv-chevron" aria-hidden="true">⌄</span></summary><div>{{range .ServerLinks}}<a class="wv-nav-link" href="{{.Href}}">{{.Label}}</a>{{end}}</div></details>
-      <div class="wv-nav-account">
-        <a class="wv-nav-link" href="/settings">{{icon "account"}}<span>{{t "nav.my_account"}}</span></a>
-        <a class="wv-nav-link" href="/logout">{{icon "logout"}}<span>{{t "nav.logout"}}</span></a>
-      </div>
-    </nav>
-  </details>
-</aside>
+{{template "app-shell" .}}
 <div class="wv-workspace">
-  <header class="wv-topbar">
-    <p class="wv-breadcrumb">{{t "admin.overview.administration"}} <span aria-hidden="true">/</span> <strong>{{t "admin.overview.title"}}</strong></p>
-    <div class="wv-topbar-tools">
-      <nav class="wv-languages" aria-label="{{t "admin.overview.language"}}">
-        {{range .LanguageLinks}}<a href="{{.Href}}" hreflang="{{.Icon}}" lang="{{.Icon}}"{{if eq .Icon $.Lang}} aria-current="true"{{end}}>{{.Label}}</a>{{end}}
-      </nav>
-      {{if .Name}}<span class="wv-user">{{icon "account"}}<span>{{.Name}}</span></span>{{end}}
-    </div>
-  </header>
   <main id="main" class="wv-main" tabindex="-1">
     <div class="wv-page-heading">
       <div><p class="wv-eyebrow">{{t "admin.overview.administration"}}</p><h1>{{t "admin.overview.title"}}</h1><p class="wv-subtitle">{{t "admin.overview.subtitle"}}</p></div>

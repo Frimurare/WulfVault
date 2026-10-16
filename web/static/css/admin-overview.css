@@ -1,5 +1,5 @@
 /* WulfVault - Copyright (c) 2025 Ulf Holmström. AGPL-3.0. */
-.wv-overview {
+:is(.wv-overview, .wv-app) {
   --wv-navy: #11273b;
   --wv-accent: #087f95;
   --wv-ink: #162d44;
@@ -10,12 +10,12 @@
   color: var(--wv-ink);
   font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-.wv-overview *, .wv-overview *::before, .wv-overview *::after { box-sizing: border-box; }
-.wv-overview a { color: inherit; text-decoration: none; }
-.wv-overview h1, .wv-overview h2, .wv-overview h3, .wv-overview p { margin: 0; }
-.wv-overview svg { width: 22px; height: 22px; flex: 0 0 22px; }
-.wv-overview a:focus-visible, .wv-overview summary:focus-visible { outline: 3px solid #00aaca; outline-offset: 4px; border-radius: 5px; }
-.wv-overview a, .wv-overview summary { -webkit-tap-highlight-color: transparent; }
+:is(.wv-overview, .wv-app) *, :is(.wv-overview, .wv-app) *::before, :is(.wv-overview, .wv-app) *::after { box-sizing: border-box; }
+:is(.wv-overview, .wv-app) a { color: inherit; text-decoration: none; }
+:is(.wv-overview, .wv-app) h1, :is(.wv-overview, .wv-app) h2, :is(.wv-overview, .wv-app) h3, :is(.wv-overview, .wv-app) p { margin: 0; }
+:is(.wv-overview, .wv-app) svg { width: 22px; height: 22px; flex: 0 0 22px; }
+:is(.wv-overview, .wv-app) a:focus-visible, :is(.wv-overview, .wv-app) summary:focus-visible { outline: 3px solid #00aaca; outline-offset: 4px; border-radius: 5px; }
+:is(.wv-overview, .wv-app) a, :is(.wv-overview, .wv-app) summary { -webkit-tap-highlight-color: transparent; }
 .wv-plain { background: #fff; }
 .wv-skip { position: fixed; top: 12px; left: 12px; transform: translateY(-180%); padding: 12px 18px; background: #fff; z-index: 30; border: 2px solid var(--wv-accent); }
 .wv-skip:focus { transform: none; }
@@ -33,7 +33,7 @@
 .wv-nav-link:hover, .wv-nav-group > summary:hover { background: #203d53; color: #fff; }
 .wv-nav-link[aria-current="page"] { background: #1b4c61; color: #fff; box-shadow: inset 3px 0 #66cde1; }
 .wv-nav-group > summary { list-style: none; }
-.wv-overview summary::-webkit-details-marker { display: none; }
+:is(.wv-overview, .wv-app) summary::-webkit-details-marker { display: none; }
 .wv-chevron { margin-left: auto; font-size: 20px; line-height: 1; }
 .wv-nav-group[open] > summary .wv-chevron, .wv-more[open] > summary .wv-chevron { transform: rotate(180deg); }
 .wv-nav-group > div { padding: 0 0 6px 25px; }
@@ -56,7 +56,7 @@
 .wv-main:focus { outline: none; }
 .wv-page-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 22px; margin-bottom: 28px; }
 .wv-eyebrow { display: inline-block; color: #08637a; background: #e4f2f6; font-size: 11px; font-weight: 700; letter-spacing: .05em; padding: 4px 8px; border-radius: 4px; margin-bottom: 10px !important; }
-.wv-overview h1 { font-size: clamp(28px, 3vw, 38px); font-weight: 750; line-height: 1.2; letter-spacing: -1px; margin-bottom: 8px; }
+:is(.wv-overview, .wv-app) h1 { font-size: clamp(28px, 3vw, 38px); font-weight: 750; line-height: 1.2; letter-spacing: -1px; margin-bottom: 8px; }
 .wv-subtitle, .wv-help { color: var(--wv-muted); font-size: 13px; }
 .wv-subtitle { font-size: 15px; }
 .wv-actions { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -72,8 +72,8 @@
 .wv-number { font-size: 30px; line-height: 1.2; font-weight: 750; letter-spacing: -.7px; margin-top: 6px !important; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .wv-summary-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; margin-bottom: 28px; }
 .wv-panel { padding: 22px; }
-.wv-overview h2 { font-size: 18px; line-height: 1.3; font-weight: 700; letter-spacing: -.3px; }
-.wv-overview .wv-metric h2 { font-size: 11px; letter-spacing: .025em; }
+:is(.wv-overview, .wv-app) h2 { font-size: 18px; line-height: 1.3; font-weight: 700; letter-spacing: -.3px; }
+:is(.wv-overview, .wv-app) .wv-metric h2 { font-size: 11px; letter-spacing: .025em; }
 .wv-panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 7px; }
 .wv-panel-heading svg { color: var(--wv-accent); width: 20px; height: 20px; }
 .wv-table-scroll { overflow-x: auto; margin-top: 20px; }
@@ -177,10 +177,10 @@
   .wv-footer { margin: 0 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wv-overview *, .wv-overview *::before, .wv-overview *::after { scroll-behavior: auto !important; }
+  :is(.wv-overview, .wv-app) *, :is(.wv-overview, .wv-app) *::before, :is(.wv-overview, .wv-app) *::after { scroll-behavior: auto !important; }
 }
 @media print {
   .wv-sidebar, .wv-topbar, .wv-actions, .wv-quick-section, .wv-tip, .wv-skip { display: none; }
   .wv-workspace { margin: 0; }
-  .wv-overview { background: #fff; }
+  :is(.wv-overview, .wv-app) { background: #fff; }
 }

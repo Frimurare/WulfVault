@@ -953,9 +953,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body data-user-id="` + fmt.Sprintf("%d", user.Id) + `">
+<body class="wv-app" data-user-id="` + fmt.Sprintf("%d", user.Id) + `">
     ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="joke-section">
             <div class="joke-title">💡 ` + tr.T("dashboard.joke_heading") + `</div>
             <div class="joke-text">` + joke.Text + `</div>
@@ -1659,7 +1659,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     // Show download logs
                     if (downloadLogs.length > 0) {
                         html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📥 ' + I18N.downloads + ' (' + downloadLogs.length + ')</h3>';
-                        html += '<table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">';
+                        html += '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">' + I18N.dateTime + '</th>';
                         html += '<th style="padding: 12px; text-align: left;">' + I18N.downloadedBy + '</th>';
@@ -1680,13 +1680,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                             html += '</tr>';
                         });
 
-                        html += '</tbody></table>';
+                        html += '</tbody></table></div>';
                     }
 
                     // Show email logs
                     if (emailLogs.length > 0) {
                         html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📧 ' + I18N.emailsSent + ' (' + emailLogs.length + ')</h3>';
-                        html += '<table style="width: 100%; border-collapse: collapse;">';
+                        html += '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">' + I18N.dateTime + '</th>';
                         html += '<th style="padding: 12px; text-align: left;">' + I18N.recipient + '</th>';
@@ -1705,7 +1705,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                             html += '</tr>';
                         });
 
-                        html += '</tbody></table>';
+                        html += '</tbody></table></div>';
                     }
 
                     document.getElementById('downloadHistoryContent').innerHTML = html;

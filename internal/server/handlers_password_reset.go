@@ -290,7 +290,7 @@ func (s *Server) renderForgotPasswordPage(w http.ResponseWriter, r *http.Request
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="logo">
@@ -379,7 +379,7 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, r *http.Request,
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="error-icon">⚠️</div>
@@ -532,7 +532,7 @@ func (s *Server) renderResetPasswordPage(w http.ResponseWriter, r *http.Request,
         }
     </script>
 </head>
-<body>
+<body class="wv-public">
     ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="logo">
@@ -650,7 +650,7 @@ func (s *Server) renderPasswordResetSuccessPage(w http.ResponseWriter, r *http.R
         }, 5000);
     </script>
 </head>
-<body>
+<body class="wv-public">
     ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="container">
         <div class="success-icon">✓</div>

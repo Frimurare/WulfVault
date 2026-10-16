@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Extend Wolf Overhaul across the application: use one role-aware sidebar and
+  language switcher on admin, file, team, settings and download-account pages.
+  Unify cards, forms, tables and mobile navigation; match standalone sign-in,
+  password and download pages to the same visual theme.
+
 - Redesign the admin overview with a compact sidebar, responsive navigation,
   summary counters, data transfer table, storage chart and quick links.
 - Translate all admin overview content into Swedish and English through the

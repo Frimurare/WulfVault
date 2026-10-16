@@ -1083,7 +1083,7 @@ func (s *Server) renderPasswordPromptPage(w http.ResponseWriter, tr *i18n.Transl
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="password-container">
         <div class="logo">
             <h1>` + s.config.CompanyName + `</h1>
@@ -1265,7 +1265,7 @@ func (s *Server) renderDownloadAuthPage(w http.ResponseWriter, tr *i18n.Translat
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="download-container">
         <div class="logo">
             <h1>` + s.config.CompanyName + `</h1>
@@ -1541,7 +1541,7 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="splash-container">
         <div class="logo">`
 
@@ -1705,7 +1705,7 @@ func (s *Server) renderSplashPageExpired(w http.ResponseWriter, tr *i18n.Transla
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="splash-container">
         <div class="logo">`
 
@@ -1895,7 +1895,7 @@ func (s *Server) performDownloadWithRedirect(w http.ResponseWriter, r *http.Requ
         };
     </script>
 </head>
-<body>
+<body class="wv-public">
     <div class="success-container">
         <div class="success-icon">✓</div>
 

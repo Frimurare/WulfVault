@@ -188,7 +188,7 @@ func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter, tr *i18n.T
     <title>SysMonitor Logs - ` + companyName + `</title>
     ` + faviconHTML + `
 </head>
-<body>
+<body class="wv-app">
 ` + headerHTML + `
 `
 	html += `
@@ -222,7 +222,7 @@ func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter, tr *i18n.T
         }
     </style>
 
-    <div class="container" style="margin-top: 30px;">
+    <div class="container" id="main" role="main" tabindex="-1" style="margin-top: 30px;">
         <h2>SysMonitor Logs</h2>
         <p class="log-info">Detailed system monitoring logs including all chunk uploads (max 10MB, auto-rotated)</p>
 

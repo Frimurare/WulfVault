@@ -956,9 +956,9 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
@@ -1504,7 +1504,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1761,9 +1761,9 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
             <h2>Manage Users</h2>
             <a href="/admin/users/create" class="btn">+ Create User</a>
@@ -1824,7 +1824,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
             </form>
         </div>
 
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>Name</th>
@@ -1880,7 +1880,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
 
         <!-- User Pagination -->`
 
@@ -1957,7 +1957,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
             </form>
         </div>
 
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>Name</th>
@@ -2009,7 +2009,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
 
         <!-- Download Account Pagination -->`
 
@@ -2174,9 +2174,9 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
@@ -2390,7 +2390,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2775,9 +2775,9 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2 style="margin-bottom: 20px;">All Files</h2>
 
         <div class="stats-bar">
@@ -2965,7 +2965,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                 .then(response => response.json())
                 .then(data => {
                     if (data.logs && data.logs.length > 0) {
-                        let html = '<table style="width: 100%; border-collapse: collapse;">';
+                        let html = '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
                         html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
@@ -2986,7 +2986,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                             html += '</tr>';
                         });
 
-                        html += '</tbody></table>';
+                        html += '</tbody></table></div>';
                         html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
                         document.getElementById('downloadHistoryContent').innerHTML = html;
                     } else {
@@ -3138,7 +3138,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 	totalPages := (totalFiles + limit - 1) / limit
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3344,9 +3344,9 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2 style="margin-bottom: 20px;">🔍 Duplicate Files</h2>
 
         <div class="stats-bar">
@@ -3539,7 +3539,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator,
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3632,9 +3632,9 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>Branding Settings</h2>`
 
 	if message != "" {
@@ -3756,7 +3756,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3849,9 +3849,9 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="card">
             <h2>System Settings</h2>`
 
@@ -4051,7 +4051,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4196,9 +4196,9 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top: 30px;">
             <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
 

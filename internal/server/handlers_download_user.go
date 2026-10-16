@@ -334,10 +334,10 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getDownloadUserHeaderHTML(tr) + `
 
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="account-info">
             <h2>` + tr.T("dlaccount.account_info") + `</h2>
             <div class="info-grid">
@@ -427,7 +427,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
         </div>
 
         <h2 style="margin-bottom: 20px; color: #333;">📜 ` + tr.T("dlaccount.history") + `</h2>
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>` + tr.T("dlaccount.col_file_name") + `</th>
@@ -461,7 +461,7 @@ func (s *Server) renderDownloadDashboard(w http.ResponseWriter, tr *i18n.Transla
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
     </div>
 
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
@@ -558,10 +558,10 @@ func (s *Server) renderDownloadChangePasswordPage(w http.ResponseWriter, tr *i18
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getDownloadUserHeaderHTML(tr) + `
 
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="card">
             ` + messageHTML + `
             <form method="POST" action="/download/change-password">
