@@ -760,7 +760,7 @@ func (s *Server) renderUploadRequestPage(w http.ResponseWriter, fileRequest *mod
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="upload-container">
         <div class="logo">
             <h1>` + s.config.CompanyName + `</h1>
@@ -949,7 +949,7 @@ func (s *Server) renderUploadRequestExpired(w http.ResponseWriter, fileRequest *
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="container">
         <div class="logo">
             <h1>` + s.config.CompanyName + `</h1>
@@ -1029,7 +1029,7 @@ func (s *Server) renderUploadRequestUsed(w http.ResponseWriter, fileRequest *mod
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="container">
         <div class="logo">
             <h1>` + s.config.CompanyName + `</h1>

@@ -200,7 +200,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter, tr *i18n.Transl
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -646,10 +646,10 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter, tr *i18n.Transl
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
 
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="filters-card">
             <h3 style="margin-bottom: 15px; color: #333;">Filters</h3>
             <div class="filters-grid">
@@ -727,7 +727,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter, tr *i18n.Transl
             </div>
 
             <div class="table-container">
-                <table>
+                <div class="wv-table-wrap"><table>
                     <thead>
                         <tr>
                             <th style="width: 60px;">ID</th>
@@ -745,7 +745,7 @@ func (s *Server) renderAdminAuditLogsPage(w http.ResponseWriter, tr *i18n.Transl
                             <td colspan="8" class="loading">Loading audit logs...</td>
                         </tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <!-- Mobile Cards View -->

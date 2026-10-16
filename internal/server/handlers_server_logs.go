@@ -380,14 +380,14 @@ func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter, tr *i18n.Trans
 	faviconHTML := s.getFaviconHTML()
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Server Logs - ` + companyName + `</title>
     ` + faviconHTML + `
 </head>
-<body>
+<body class="wv-app">
 ` + headerHTML + `
     <style>
         .log-viewer {
@@ -455,7 +455,7 @@ func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter, tr *i18n.Trans
         .status-badge.s5xx { background: #f8d7da; color: #721c24; }
     </style>
 
-    <div class="container" style="margin-top: 30px;">
+    <div class="container" id="main" role="main" tabindex="-1" style="margin-top: 30px;">
         <h2>Server Logs</h2>
         <p class="log-info">HTTP request logs with status codes, durations and upload events</p>
 

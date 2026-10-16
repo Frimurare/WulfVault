@@ -470,7 +470,7 @@ func (s *Server) render2FAVerifyPage(w http.ResponseWriter, r *http.Request, err
         }
     </style>
 </head>
-<body>
+<body class="wv-public">
     ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="verify-container">
         <div class="logo">

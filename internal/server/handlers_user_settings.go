@@ -315,9 +315,9 @@ func (s *Server) renderUserSettingsPage(w http.ResponseWriter, tr *i18n.Translat
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="card">
             <h2>Account Settings</h2>
 

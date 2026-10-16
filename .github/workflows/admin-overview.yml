@@ -1,0 +1,69 @@
+name: Wolf Overhaul application validation
+
+on:
+  pull_request:
+    paths:
+      - 'internal/server/admin_overview*'
+      - 'internal/server/app_shell*'
+      - 'internal/server/header.go'
+      - 'internal/server/handlers_*.go'
+      - 'internal/i18n/locales/**'
+      - 'web/static/css/*.css'
+      - 'web/static/js/admin-overview.js'
+      - 'scripts/check-admin-overview.cjs'
+      - 'scripts/check-app-shell.cjs'
+      - '.github/workflows/admin-overview.yml'
+
+concurrency:
+  group: admin-overview-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check formatting
+        run: |
+          gofmt -d internal/server/admin_overview.go internal/server/admin_overview_test.go internal/server/app_shell.go internal/server/app_shell_test.go internal/server/header.go internal/server/handlers_gdpr.go
+          test -z "$(gofmt -l internal/server/admin_overview.go internal/server/admin_overview_test.go internal/server/app_shell.go internal/server/app_shell_test.go internal/server/header.go internal/server/handlers_gdpr.go)"
+      - name: Test and vet
+        if: success() || failure()
+        run: |
+          go test ./...
+          go vet ./...
+      - name: Generate disposable browser fixtures
+        if: success() || failure()
+        env:
+          WV_UI_PREVIEW_DIR: ${{ runner.temp }}/wv-ui
+        run: |
+          go test ./internal/server -run '^(TestAdminOverviewPreviewFixtures|TestApplicationPageFixtures)$' -count=1
+          cp -r web/static "$WV_UI_PREVIEW_DIR/static"
+      - uses: actions/setup-node@v4
+        if: success() || failure()
+        with:
+          node-version: '22'
+      - name: Check responsive layout and accessibility
+        if: success() || failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/wv-browser"
+          npm install --prefix "$RUNNER_TEMP/wv-browser" playwright @axe-core/playwright
+          "$RUNNER_TEMP/wv-browser/node_modules/.bin/playwright" install --with-deps chromium
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory "$RUNNER_TEMP/wv-ui" > "$RUNNER_TEMP/wv-ui-server.log" 2>&1 &
+          NODE_PATH="$RUNNER_TEMP/wv-browser/node_modules" node scripts/check-admin-overview.cjs
+          WV_UI_PREVIEW_DIR="$RUNNER_TEMP/wv-ui" NODE_PATH="$RUNNER_TEMP/wv-browser/node_modules" node scripts/check-app-shell.cjs
+      - name: Upload preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-overview-previews
+          path: ui-screenshots
+          if-no-files-found: ignore

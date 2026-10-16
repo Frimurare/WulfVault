@@ -1,0 +1,97 @@
+/* WulfVault - Copyright (c) 2025 Ulf Holmström. AGPL-3.0. */
+body.wv-app, body.wv-public { background: #f5f8fb !important; color: #162d44; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; margin: 0 !important; min-height: 100vh; }
+body.wv-app { padding: 0 0 0 236px !important; }
+body.wv-overview > .wv-topbar { margin-left: 236px; }
+.wv-app .wv-sidebar { z-index: 20; }
+.wv-app .wv-topbar { margin: 0; }
+.wv-app .wv-brand { text-decoration: none; }
+.wv-app .wv-product { color: #fff; }
+.wv-breadcrumb .wv-breadcrumb-context { margin: 0; color: var(--wv-muted); }
+.wv-app .container { width: 100% !important; max-width: 1600px !important; margin: 0 auto !important; padding: 32px !important; min-width: 0; }
+.wv-app .container > h1, .wv-app .container > h2, .wv-app .page-header h1, .wv-app .page-header h2 { color: #162d44 !important; font-size: clamp(25px, 3vw, 34px) !important; letter-spacing: -.6px; font-weight: 750; margin-bottom: 24px; }
+.wv-app .container h3 { color: #162d44; font-size: 17px; }
+.wv-app :is(.content, .card, .settings-card, .filters-card, .logs-card, .account-info, .upload-section, .file-request-section, .files-section, .stat-card, .file-list, .team-list) {
+  background: #fff !important; border: 1px solid #dce5ed !important; border-radius: 10px !important; box-shadow: none !important; backdrop-filter: none !important; min-width: 0;
+}
+.wv-app :is(.card, .settings-card, .filters-card, .account-info, .upload-section, .file-request-section) { padding: 24px !important; }
+.wv-app :is(.stat-card, .card):hover, .wv-app :is(.file-item, .team-item):hover { transform: none !important; box-shadow: none !important; }
+.wv-app .container > :is(.card, .settings-card) { max-width: 1040px; }
+.wv-app :is(.file-item, .team-item) { border-bottom: 1px solid #dce5ed !important; }
+.wv-app :is(.file-item, .team-item):last-child { border-bottom: 0 !important; }
+.wv-app :is(.file-item, .team-item):hover { background: #f5fafc !important; }
+.wv-app .stat-card .value { color: #087f95 !important; font-size: 30px !important; line-height: 1.25; font-weight: 750; }
+.wv-app .stat-card { padding: 20px !important; }
+.wv-app .joke-section { background: #edf8fb !important; color: #225e70 !important; border: 1px solid #cde9f0; box-shadow: none !important; border-radius: 8px !important; padding: 18px 22px !important; }
+.wv-app :is(.joke-title, .joke-text) { color: #225e70 !important; }
+.wv-app .joke-text { font-size: 14px !important; }
+.wv-app :is(.btn, button, input[type="submit"], .filter-btn, .clear-btn, .back-btn, .btn-action, .load-more-btn) { font: inherit; border-radius: 6px !important; min-height: 44px; box-shadow: none !important; transition: background-color .15s, border-color .15s; }
+.wv-app .btn { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
+.wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download, .load-more-btn, #uploadButton) { background: #087f95 !important; border: 1px solid #087f95 !important; color: #fff !important; }
+.wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download):hover { background: #076c80 !important; }
+.wv-app :is(.btn-secondary, .back-btn, .clear-btn) { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
+.wv-app :is(.btn-danger, .btn-delete) { background: #b42332 !important; color: #fff !important; border-color: #b42332 !important; }
+.wv-app :is(.btn-restore, .btn-success) { background: #187749 !important; color: #fff !important; }
+.wv-app :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]):not([type="submit"]), select, textarea) { max-width: 100%; min-width: 0; min-height: 44px; border: 1px solid #b9c8d5 !important; border-radius: 6px !important; background: #fff; color: #162d44; font: inherit; padding: 10px 12px; }
+.wv-app :is(input, select, textarea):focus-visible { outline: 3px solid #a1dce7; outline-offset: 1px; border-color: #087f95 !important; }
+.wv-app :is(.actions, .file-actions, .team-actions, .filter-buttons, .pagination-controls, .pagination-buttons, .tab-buttons) { flex-wrap: wrap; gap: 10px; }
+.wv-app .wv-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.wv-app table { width: 100%; border-collapse: collapse; border-radius: 0 !important; box-shadow: none !important; }
+.wv-app table th { background: #f1f6f9 !important; color: #405a70 !important; font-size: 12px; letter-spacing: .015em; font-weight: 650; }
+.wv-app table :is(th, td) { padding: 14px 16px; border-bottom: 1px solid #e4ebf1 !important; }
+.wv-app table tbody tr:hover { background: #f7fbfd !important; }
+.wv-app .upload-zone { background: #f4fafc !important; border: 2px dashed #9dbfcb !important; border-radius: 8px !important; }
+.wv-app .upload-zone svg { color: #087f95 !important; }
+.wv-app :is(.link-box, .link-display, .file-note, .file-description) { overflow-wrap: anywhere; min-width: 0; }
+.wv-app :is(.modal-content, .details-modal-content) { max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow: auto; border-radius: 10px !important; }
+.wv-app .container :is(.info-box, .alert, .success-message, .error-message) { border-radius: 7px !important; box-shadow: none !important; }
+.wv-app .container .subtitle, .wv-app .container .lead { color: #52677b; }
+.wv-app .container > :last-child { margin-bottom: 0; }
+.wv-app :is(.log-viewer, .details-json) { overflow: auto; max-width: 100%; }
+.wv-app .container :is(h1, h2, h3, p, label, .file-name, .team-name) { overflow-wrap: anywhere; }
+.wv-app :is(.file-info, .setting-info, .filter-group, .form-group) { min-width: 0; }
+.wv-public { --primary-color: #087f95; --secondary-color: #11273b; --background: #f5f8fb; }
+.wv-public :is(.login-container, .auth-container, .reset-container, .container, .card) { border-radius: 12px !important; box-shadow: 0 12px 40px rgba(17,39,59,.08) !important; border-color: #dce5ed !important; }
+.wv-public :is(button[type="submit"], .btn-primary) { background: #087f95 !important; border-radius: 6px !important; color: #fff !important; min-height: 44px; }
+.wv-public input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { min-height: 44px; border-radius: 6px !important; }
+@media (max-width: 900px) {
+  body.wv-app { padding: 0 !important; }
+  body.wv-overview > .wv-topbar { margin-left: 0; }
+  .wv-app .container { padding: 24px 20px !important; }
+  .wv-app .wv-sidebar { position: static; }
+}
+@media (max-width: 540px) {
+  .wv-app .container { padding: 22px 16px !important; }
+  .wv-app :is(.card, .settings-card, .filters-card, .account-info, .upload-section, .file-request-section) { padding: 18px !important; }
+  .wv-app :is(.actions, .page-header, .files-header, .team-header, .setting-item, .filters-row, .filters-grid) { flex-wrap: wrap; gap: 12px; }
+  .wv-app :is(.filters-grid, .filters-row, .form-row, .grid-2) { grid-template-columns: minmax(0, 1fr) !important; }
+  .wv-app :is(.actions, .file-actions, .team-actions, .pagination) { max-width: 100%; }
+  .wv-app .file-actions :is(.btn, button) { white-space: normal; }
+  .wv-app :is(.stats, .info-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .wv-app :is(.log-viewer, .log-info) { padding: 14px !important; }
+  .wv-app table :is(th, td) { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wv-app *, .wv-public * { animation: none !important; transition: none !important; }
+}
+@media print {
+  body.wv-app { padding: 0 !important; }
+  .wv-app .wv-sidebar, .wv-app .wv-topbar, .wv-app .wv-skip { display: none; }
+}
+
+/* Long provider URLs and account identifiers must wrap inside narrow cards. */
+.wv-app .container code { overflow-wrap: anywhere !important; white-space: normal !important; }
+.wv-app .info-item { min-width: 0; }
+.wv-app .info-item span { overflow-wrap: anywhere; }
+.wv-app :is(.filters, .pagination, .stats-bar) { background: #fff !important; border: 1px solid #dce5ed !important; border-radius: 10px !important; box-shadow: none !important; }
+.wv-app .container > .actions:first-child > h2,
+.wv-app .container > .card > h2:first-child { font-size: clamp(25px, 3vw, 34px) !important; color: #162d44 !important; line-height: 1.25; }
+.wv-app .file-tab.active { color: #087f95 !important; border-bottom-color: #087f95 !important; }
+.wv-app .action-links a { color: #087f95; }
+.wv-app button[onclick="showCreateRequestModal()"] { background: #087f95 !important; }
+
+.wv-app .stat-card h3 { font-size: 12px !important; line-height: 1.4; letter-spacing: .025em; color: #52677b !important; }
+@media (max-width: 540px) {
+  .wv-app .container div:has(> #publicUrl) { flex-wrap: wrap; }
+  .wv-app #publicUrl { flex: 1 1 100% !important; width: 100%; }
+  .wv-app label > input[type="checkbox"] { flex: 0 0 20px; width: 20px !important; }
+}

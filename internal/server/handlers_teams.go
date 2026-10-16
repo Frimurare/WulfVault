@@ -700,7 +700,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -979,9 +979,9 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
             <h2>📁 Manage Teams</h2>
             <button class="btn" onclick="showCreateModal()">+ Create Team</button>
@@ -1203,7 +1203,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             fetch('/api/teams/members?teamId=' + teamId)
                 .then(r => r.json())
                 .then(data => {
-                    let html = '<table style="width: 100%;"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead><tbody>';
+                    let html = '<div class="wv-table-wrap"><table style="width: 100%;"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead><tbody>';
 
                     if (data.members && data.members.length > 0) {
                         data.members.forEach(m => {
@@ -1215,7 +1215,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                         html += '<tr><td colspan="5" style="text-align: center; padding: 20px;">No members yet</td></tr>';
                     }
 
-                    html += '</tbody></table>';
+                    html += '</tbody></table></div>';
                     document.getElementById('membersList').innerHTML = html;
                     document.getElementById('membersModal').classList.add('active');
                 });
@@ -1329,7 +1329,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, tr *i18n.Translator, use
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1453,10 +1453,10 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, tr *i18n.Translator, use
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
 
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
             <h2>👥 My Teams</h2>
             <p>Teams you're a member of</p>
@@ -1531,7 +1531,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1687,10 +1687,10 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
 
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
             <div>
                 <h2>📁 ` + team.Name + ` - Shared Files</h2>
@@ -1922,6 +1922,8 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
         }
 
         function updateDisplay() {
+            // Empty teams have no pagination controls.
+            if (!document.getElementById('visibleCount')) return;
             const totalFiles = allItems.length;
             const totalFiltered = filteredItems.length;
             const totalPages = Math.ceil(totalFiltered / perPage);

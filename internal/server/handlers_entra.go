@@ -256,7 +256,7 @@ func (s *Server) renderEntraError(w http.ResponseWriter, msg string) {
         a.btn:hover { opacity:0.92; }
     </style>
 </head>
-<body>
+<body class="wv-public">
     <div class="card">
         <h1>Sign-in problem</h1>
         <p>` + esc(msg) + `</p>

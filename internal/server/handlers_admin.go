@@ -201,7 +201,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Get available disk space on the filesystem
-	var diskAvailable int64
+	diskAvailable := int64(-1) // Unknown until Statfs succeeds.
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs(s.config.UploadsDir, &stat); err == nil {
 		diskAvailable = int64(stat.Bavail * uint64(stat.Bsize))
@@ -941,8 +941,10 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.
 	}
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     ` + s.getFaviconHTML() + `
@@ -956,9 +958,9 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
@@ -1485,517 +1487,6 @@ func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) 
 
 // getAdminHeaderHTML returns branded header HTML for admin pages
 
-func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
-	bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear int64,
-	bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear int64,
-	usersAdded, usersRemoved int, userGrowth float64,
-	activeFiles7Days, activeFiles30Days int, avgFileSize int64, avgDownloadsPerFile float64,
-	twoFAAdoption, avgBackupCodes float64,
-	largestFileName string, largestFileSize int64, top5ActiveUsers []string, top5FileCounts []int,
-	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
-	mostDownloadedFile string, downloadCount int, uploadsUsed, diskAvailable int64, duplicateFiles []DuplicateFile) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	// Get dashboard style preference
-	dashboardStyle, _ := database.DB.GetConfigValue("dashboard_style")
-	if dashboardStyle == "" {
-		dashboardStyle = "colorful" // Default to colorful
-	}
-
-	// Get joke of the day
-	joke := models.GetJokeOfTheDay()
-
-	// Helper function to format bytes
-	formatBytes := func(bytes int64) string {
-		const unit = 1024
-		if bytes < unit {
-			return fmt.Sprintf("%d B", bytes)
-		}
-		div, exp := int64(unit), 0
-		for n := bytes / unit; n >= unit; n /= unit {
-			div *= unit
-			exp++
-		}
-		return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-	}
-
-	// Format all byte statistics (downloaded)
-	bytesDownloadedTodayStr := formatBytes(bytesDownloadedToday)
-	bytesDownloadedWeekStr := formatBytes(bytesDownloadedWeek)
-	bytesDownloadedMonthStr := formatBytes(bytesDownloadedMonth)
-	bytesDownloadedYearStr := formatBytes(bytesDownloadedYear)
-
-	// Format upload statistics
-	bytesUploadedTodayStr := formatBytes(bytesUploadedToday)
-	bytesUploadedWeekStr := formatBytes(bytesUploadedWeek)
-	bytesUploadedMonthStr := formatBytes(bytesUploadedMonth)
-	bytesUploadedYearStr := formatBytes(bytesUploadedYear)
-
-	// Format usage statistics
-	avgFileSizeStr := formatBytes(avgFileSize)
-
-	// Format file statistics
-	largestFileSizeStr := formatBytes(largestFileSize)
-
-	// Format trend data - file types string
-	fileTypesStr := ""
-	if len(topFileTypes) > 0 {
-		for i, ext := range topFileTypes {
-			if i > 0 {
-				fileTypesStr += ", "
-			}
-			fileTypesStr += fmt.Sprintf(".%s (%d)", ext, fileTypeCounts[i])
-		}
-	}
-
-	// Format storage trend
-	storagePastStr := formatBytes(storagePast)
-	storageNowStr := formatBytes(storageNow)
-	storageGrowth := 0.0
-	if storagePast > 0 {
-		storageGrowth = float64(storageNow-storagePast) / float64(storagePast) * 100
-	}
-
-	// Format disk storage statistics
-	uploadsUsedStr := formatBytes(uploadsUsed)
-	diskAvailableStr := formatBytes(diskAvailable)
-
-	html := `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="Ulf Holmström">
-    <title>Admin Dashboard - ` + s.config.CompanyName + `</title>
-    ` + s.getFaviconHTML() + `
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-            ` + func() string {
-		if dashboardStyle == "plain" {
-			return "background: #ffffff;"
-		}
-		return `background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            background-size: 200% 200%;
-            animation: gradientShift 15s ease infinite;`
-	}() + `
-            min-height: 100vh;
-            position: relative;
-        }
-
-        body::before {
-            ` + func() string {
-		if dashboardStyle == "plain" {
-			return "display: none;"
-		}
-		return `content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255, 107, 237, 0.3), transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2), transparent 50%);
-            pointer-events: none;
-            z-index: 0;`
-	}() + `
-        }
-
-        .main-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow:
-                0 8px 32px 0 rgba(31, 38, 135, 0.15),
-                0 20px 60px rgba(0, 0, 0, 0.1),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-card:hover {
-            transform: translateY(-4px);
-            box-shadow:
-                0 12px 48px 0 rgba(31, 38, 135, 0.25),
-                0 30px 80px rgba(0, 0, 0, 0.15),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-        }
-
-        .stat-number {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .gradient-border {
-            position: relative;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
-            border-radius: 1rem;
-            padding: 2px;
-        }
-
-        .gradient-border-inner {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: calc(1rem - 2px);
-            padding: 1.5rem;
-            backdrop-filter: blur(20px);
-        }
-
-        .section-title {
-            background: linear-gradient(135deg, #1e293b, #475569);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 800;
-            letter-spacing: -0.025em;
-        }
-
-        .wisdom-banner {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow:
-                0 20px 60px rgba(0, 0, 0, 0.25),
-                0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Twemoji image sizing */
-        img.emoji {
-            height: 1em;
-            width: 1em;
-            margin: 0 0.05em 0 0.1em;
-            vertical-align: -0.1em;
-            display: inline-block;
-        }
-
-        /* Larger emojis in specific contexts */
-        .text-3xl img.emoji {
-            height: 1.875rem;
-            width: 1.875rem;
-        }
-
-        .text-4xl img.emoji {
-            height: 2.25rem;
-            width: 2.25rem;
-        }
-    </style>
-</head>
-<body>
-    ` + s.getAdminHeaderHTML("", tr) + `
-
-    <div class="main-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <!-- File Sharing Wisdom Banner -->
-        <div class="wisdom-banner relative overflow-hidden rounded-2xl mb-12 transition-all duration-500 hover:scale-[1.02]">
-            <div class="p-6 sm:p-8">
-                <div class="flex items-start gap-4">
-                    <span class="emoji text-4xl">💡</span>
-                    <div>
-                        <div class="text-xs font-bold text-white/90 uppercase tracking-widest mb-3">File Sharing Wisdom</div>
-                        <p class="text-white text-lg sm:text-xl font-medium leading-relaxed">` + joke.Text + `</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dashboard Overview -->
-        <h2 class="section-title text-3xl mb-8">Dashboard Overview</h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Users</h3>
-                    <span class="emoji text-3xl">👥</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", totalUsers) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Active Users</h3>
-                    <span class="emoji text-3xl">✅</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", activeUsers) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Downloads</h3>
-                    <span class="emoji text-3xl">⬇️</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", totalDownloads) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Downloads Today</h3>
-                    <span class="emoji text-3xl">📅</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", downloadsToday) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Server Storage Used</h3>
-                    <span class="emoji text-3xl">💾</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + uploadsUsedStr + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Server Storage Left</h3>
-                    <span class="emoji text-3xl">📊</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + diskAvailableStr + `</div>
-            </div>
-        </div>
-
-        <!-- Downloaded Data -->
-        <h2 class="section-title text-3xl mb-8">📥 Downloaded Data</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Today</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedTodayStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Week</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedWeekStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Month</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedMonthStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Year</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedYearStr + `</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Uploaded Data -->
-        <h2 class="section-title text-3xl mb-8">📤 Uploaded Data</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">Today</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedTodayStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Week</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedWeekStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Month</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedMonthStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Year</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedYearStr + `</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- User Growth -->
-        <h2 class="section-title text-3xl mb-8">👥 User Growth (This Month)</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-green-600 uppercase tracking-widest mb-4">Users Added</h3>
-                <div class="text-5xl font-extrabold text-green-600">` + fmt.Sprintf("%d", usersAdded) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-red-600 uppercase tracking-widest mb-4">Users Removed</h3>
-                <div class="text-5xl font-extrabold text-red-600">` + fmt.Sprintf("%d", usersRemoved) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Growth</h3>
-                <div class="text-5xl font-extrabold text-blue-600">` + fmt.Sprintf("%.1f%%", userGrowth) + `</div>
-            </div>
-        </div>
-
-        <!-- Usage Statistics -->
-        <h2 class="section-title text-3xl mb-8">📈 Usage Statistics</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-4">Active Files (7 days)</h3>
-                <div class="text-4xl font-extrabold text-purple-600">` + fmt.Sprintf("%d", activeFiles7Days) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-purple-700 uppercase tracking-widest mb-4">Active Files (30 days)</h3>
-                <div class="text-4xl font-extrabold text-purple-700">` + fmt.Sprintf("%d", activeFiles30Days) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Avg File Size</h3>
-                <div class="text-3xl font-extrabold text-indigo-600">` + avgFileSizeStr + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Avg Downloads/File</h3>
-                <div class="text-4xl font-extrabold text-blue-600">` + fmt.Sprintf("%.1f", avgDownloadsPerFile) + `</div>
-            </div>
-        </div>
-
-        <!-- Security Overview -->
-        <h2 class="section-title text-3xl mb-8">🔐 Security Overview</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-violet-600 uppercase tracking-widest mb-5">2FA Adoption Rate</h3>
-                <div class="stat-number text-5xl font-extrabold mb-3">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
-                <p class="text-sm text-slate-600 font-medium">Percentage of Users/Admins with 2FA enabled</p>
-            </div>
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-violet-600 uppercase tracking-widest mb-5">Avg Backup Codes Remaining</h3>
-                <div class="stat-number text-5xl font-extrabold mb-3">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
-                <p class="text-sm text-slate-600 font-medium">Average per user with 2FA enabled</p>
-            </div>
-        </div>
-
-        <!-- File Statistics -->
-        <h2 class="section-title text-3xl mb-8">📁 File Statistics</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">Largest File</h3>
-                <div class="text-2xl font-extrabold text-slate-900 mb-3 break-words">` + largestFileName + `</div>
-                <p class="text-lg text-amber-600 font-bold">` + largestFileSizeStr + `</p>
-            </div>
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">5 Most Active Users</h3>` +
-		func() string {
-			html := `<div style="display: flex; flex-direction: column; gap: 8px;">`
-			for i := 0; i < len(top5ActiveUsers) && i < 5; i++ {
-				html += fmt.Sprintf(`
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 8px;">
-                        <span style="font-weight: 600; color: #1e293b;">%d. %s</span>
-                        <span style="color: #f59e0b; font-weight: 600;">%d files</span>
-                    </div>`, i+1, top5ActiveUsers[i], top5FileCounts[i])
-			}
-			html += `</div>`
-			return html
-		}() + `
-            </div>
-        </div>
-
-        <!-- Trend Data -->
-        <h2 class="section-title text-3xl mb-8">⚡ Trend Data</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Top File Types</h3>
-                <div class="text-lg font-bold text-slate-900 break-words">` + fileTypesStr + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Most Active Day</h3>
-                <div class="text-3xl font-extrabold text-slate-900 mb-2">` + topWeekday + `</div>
-                <p class="text-sm text-slate-600">` + fmt.Sprintf("%d downloads", weekdayCount) + `</p>
-            </div>
-            <div class="glass-card rounded-2xl p-6 lg:col-span-2">
-                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Storage Trend (Last 30 Days)</h3>
-                <div class="stat-number text-4xl font-extrabold mb-2">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
-                <p class="text-sm text-slate-600 font-medium">` + storagePastStr + ` → ` + storageNowStr + `</p>
-            </div>
-        </div>
-
-        <!-- Fun Fact -->
-        <h2 class="section-title text-3xl mb-8">🎯 Fun Fact</h2>
-        <div class="grid grid-cols-1 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-pink-600 uppercase tracking-widest mb-5">Most Downloaded File</h3>
-                <div class="text-3xl font-extrabold text-slate-900 mb-3 break-words">` + mostDownloadedFile + `</div>
-                <p class="text-lg text-pink-600 font-bold">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
-            </div>
-        </div>
-
-        <!-- Duplicate Files -->
-        <h2 class="section-title text-3xl mb-8">📋 Duplicate Files</h2>
-        <div class="glass-card rounded-2xl p-8 mb-16">
-            ` + func() string {
-		if len(duplicateFiles) == 0 {
-			return `<p class="text-slate-600 text-center">No duplicate files found. All files have unique name and size combinations.</p>`
-		}
-
-		html := `<div class="space-y-6">`
-		for _, dup := range duplicateFiles {
-			html += `
-                <div class="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-r-lg">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <h4 class="font-bold text-slate-900 mb-2 break-words">` + template.HTMLEscapeString(dup.Name) + `</h4>
-                            <p class="text-sm text-slate-600 mb-2">Size: ` + dup.Size + ` | Duplicates: ` + fmt.Sprintf("%d copies", dup.Count) + `</p>
-                            <div class="text-xs text-slate-500 font-mono">
-                                <p class="mb-1">File IDs: ` + func() string {
-				ids := ""
-				for i, id := range dup.FileIds {
-					if i > 0 {
-						ids += ", "
-					}
-					ids += id
-				}
-				return ids
-			}() + `</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>`
-		}
-		html += `</div>`
-		return html
-	}() + `
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="text-center py-8 text-xs text-slate-400">
-        Powered by WulfVault Version ` + s.config.Version + `
-    </div>
-
-    <script>
-        // Convert all emojis to colorful Twemoji images
-        window.addEventListener('DOMContentLoaded', function() {
-            twemoji.parse(document.body, {
-                folder: 'svg',
-                ext: '.svg'
-            });
-        });
-    </script>
-
-</body>
-</html>`
-
-	w.Write([]byte(html))
-}
-
 func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, users []*models.User, downloadAccounts []*models.DownloadAccount,
 	userFilter *database.UserFilter, userCount int, dlFilter *database.DownloadAccountFilter, dlCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -2015,7 +1506,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2272,9 +1763,9 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
             <h2>Manage Users</h2>
             <a href="/admin/users/create" class="btn">+ Create User</a>
@@ -2335,7 +1826,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
             </form>
         </div>
 
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>Name</th>
@@ -2391,7 +1882,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
 
         <!-- User Pagination -->`
 
@@ -2468,7 +1959,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
             </form>
         </div>
 
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>Name</th>
@@ -2520,7 +2011,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
 
         <!-- Download Account Pagination -->`
 
@@ -2670,8 +2161,10 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     ` + s.getFaviconHTML() + `
@@ -2685,9 +2178,9 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
@@ -2901,7 +2394,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3286,9 +2779,9 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2 style="margin-bottom: 20px;">All Files</h2>
 
         <div class="stats-bar">
@@ -3476,7 +2969,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                 .then(response => response.json())
                 .then(data => {
                     if (data.logs && data.logs.length > 0) {
-                        let html = '<table style="width: 100%; border-collapse: collapse;">';
+                        let html = '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
                         html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
@@ -3497,7 +2990,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                             html += '</tr>';
                         });
 
-                        html += '</tbody></table>';
+                        html += '</tbody></table></div>';
                         html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
                         document.getElementById('downloadHistoryContent').innerHTML = html;
                     } else {
@@ -3649,7 +3142,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 	totalPages := (totalFiles + limit - 1) / limit
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3855,9 +3348,9 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2 style="margin-bottom: 20px;">🔍 Duplicate Files</h2>
 
         <div class="stats-bar">
@@ -4050,7 +3543,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator,
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4143,9 +3636,9 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>Branding Settings</h2>`
 
 	if message != "" {
@@ -4267,7 +3760,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4360,9 +3853,9 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="card">
             <h2>System Settings</h2>`
 
@@ -4562,7 +4055,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4707,9 +4200,9 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top: 30px;">
             <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
 
