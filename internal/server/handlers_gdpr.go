@@ -14,8 +14,8 @@ import (
 
 	"github.com/Frimurare/WulfVault/internal/database"
 	"github.com/Frimurare/WulfVault/internal/email"
-	"github.com/Frimurare/WulfVault/internal/models"
 	"github.com/Frimurare/WulfVault/internal/i18n"
+	"github.com/Frimurare/WulfVault/internal/models"
 )
 
 // handleDownloadAccountGDPR shows download account self-service page with GDPR delete option
@@ -126,7 +126,6 @@ func (s *Server) getDownloadAccountFromSession(r *http.Request) (*models.Downloa
 // renderDownloadAccountGDPRPage renders the GDPR self-service page
 func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, tr *i18n.Translator, account *models.DownloadAccount, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 
 	errorHTML := ""
 	if errorMsg != "" {
@@ -668,7 +667,6 @@ func (s *Server) handleUserAccountDelete(w http.ResponseWriter, r *http.Request)
 // renderUserAccountSettings renders the account settings page with deletion option
 func (s *Server) renderUserAccountSettings(w http.ResponseWriter, tr *i18n.Translator, user *models.User, errorMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 
 	errorHTML := ""
 	if errorMsg != "" {

@@ -33,8 +33,8 @@ jobs:
           cache: true
       - name: Check formatting
         run: |
-          gofmt -d internal/server/admin_overview.go internal/server/admin_overview_test.go internal/server/app_shell.go internal/server/app_shell_test.go internal/server/header.go
-          test -z "$(gofmt -l internal/server/admin_overview.go internal/server/admin_overview_test.go internal/server/app_shell.go internal/server/app_shell_test.go internal/server/header.go)"
+          gofmt -d internal/server/admin_overview.go internal/server/admin_overview_test.go internal/server/app_shell.go internal/server/app_shell_test.go internal/server/header.go internal/server/handlers_gdpr.go
+          test -z "$(gofmt -l internal/server/admin_overview.go internal/server/admin_overview_test.go internal/server/app_shell.go internal/server/app_shell_test.go internal/server/header.go internal/server/handlers_gdpr.go)"
       - name: Test and vet
         if: success() || failure()
         run: |
