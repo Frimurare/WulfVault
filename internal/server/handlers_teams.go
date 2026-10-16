@@ -1922,6 +1922,8 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
         }
 
         function updateDisplay() {
+            // Empty teams have no pagination controls.
+            if (!document.getElementById('visibleCount')) return;
             const totalFiles = allItems.length;
             const totalFiltered = filteredItems.length;
             const totalPages = Math.ceil(totalFiltered / perPage);

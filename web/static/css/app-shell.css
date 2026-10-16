@@ -77,3 +77,14 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
   body.wv-app { padding: 0 !important; }
   .wv-app .wv-sidebar, .wv-app .wv-topbar, .wv-app .wv-skip { display: none; }
 }
+
+/* Long provider URLs and account identifiers must wrap inside narrow cards. */
+.wv-app .container code { overflow-wrap: anywhere !important; white-space: normal !important; }
+.wv-app .info-item { min-width: 0; }
+.wv-app .info-item span { overflow-wrap: anywhere; }
+.wv-app :is(.filters, .pagination, .stats-bar) { background: #fff !important; border: 1px solid #dce5ed !important; border-radius: 10px !important; box-shadow: none !important; }
+.wv-app .container > .actions:first-child > h2,
+.wv-app .container > .card > h2:first-child { font-size: clamp(25px, 3vw, 34px) !important; color: #162d44 !important; line-height: 1.25; }
+.wv-app .file-tab.active { color: #087f95 !important; border-bottom-color: #087f95 !important; }
+.wv-app .action-links a { color: #087f95; }
+.wv-app button[onclick="showCreateRequestModal()"] { background: #087f95 !important; }
