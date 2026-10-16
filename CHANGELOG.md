@@ -5,6 +5,18 @@ All notable changes to WulfVault will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Redesign the admin overview with a compact sidebar, responsive navigation,
+  summary counters, data transfer table, storage chart and quick links.
+- Translate all admin overview content into Swedish and English through the
+  existing per-request language system. Keep detailed statistics and duplicate
+  file information in expandable sections.
+- Render stored names through escaped templates and serve overview styling,
+  icons and scripts locally without third-party dashboard dependencies.
+
 ## [7.2.0] - Grease Monkey - 2026-08-07
 
 A maintenance release in the truest sense: the three long-standing roadmap

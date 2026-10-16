@@ -1,0 +1,63 @@
+name: Admin overview validation
+
+on:
+  push:
+    branches: [codex/admin-overview-redesign]
+  pull_request:
+    paths:
+      - 'internal/server/admin_overview*'
+      - 'internal/server/handlers_admin.go'
+      - 'internal/i18n/locales/**'
+      - 'web/static/css/admin-overview.css'
+      - 'web/static/js/admin-overview.js'
+      - 'scripts/check-admin-overview.cjs'
+      - '.github/workflows/admin-overview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check formatting
+        run: |
+          gofmt -d internal/server/admin_overview.go internal/server/admin_overview_test.go
+          test -z "$(gofmt -l internal/server/admin_overview.go internal/server/admin_overview_test.go)"
+      - name: Test and vet
+        if: success() || failure()
+        run: |
+          go test ./...
+          go vet ./...
+      - name: Generate disposable browser fixtures
+        if: success() || failure()
+        env:
+          WV_UI_PREVIEW_DIR: ${{ runner.temp }}/wv-ui
+        run: |
+          go test ./internal/server -run '^TestAdminOverviewPreviewFixtures$' -count=1
+          cp -r web/static "$WV_UI_PREVIEW_DIR/static"
+      - uses: actions/setup-node@v4
+        if: success() || failure()
+        with:
+          node-version: '22'
+      - name: Check responsive layout and accessibility
+        if: success() || failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/wv-browser"
+          npm install --prefix "$RUNNER_TEMP/wv-browser" playwright @axe-core/playwright
+          "$RUNNER_TEMP/wv-browser/node_modules/.bin/playwright" install --with-deps chromium
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory "$RUNNER_TEMP/wv-ui" > "$RUNNER_TEMP/wv-ui-server.log" 2>&1 &
+          NODE_PATH="$RUNNER_TEMP/wv-browser/node_modules" node scripts/check-admin-overview.cjs
+      - name: Upload preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-overview-previews
+          path: ui-screenshots
+          if-no-files-found: ignore
