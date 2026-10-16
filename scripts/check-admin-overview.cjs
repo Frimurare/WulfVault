@@ -11,7 +11,8 @@ const assert = require('node:assert/strict');
   try {
     for (const lang of ['en', 'sv']) {
       for (const width of [1440, 1024, 768, 390, 320]) {
-        const page = await browser.newPage({ viewport: { width, height: 1000 } });
+        const context = await browser.newContext({ viewport: { width, height: 1000 } });
+        const page = await context.newPage();
         await page.goto('http://127.0.0.1:8765/' + lang + '.html');
         await page.waitForFunction(() => document.querySelector('.wv-navigation').open === (innerWidth > 900));
         assert.equal(await page.locator('html').getAttribute('lang'), lang);
@@ -44,7 +45,7 @@ const assert = require('node:assert/strict');
           const encoded = png.toString('base64');
           for (let i = 0; i < encoded.length; i += 4000) console.log('WV_PREVIEW_' + width + ':' + encoded.slice(i, i + 4000));
         }
-        await page.close();
+        await context.close();
       }
     }
     const noJS = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
