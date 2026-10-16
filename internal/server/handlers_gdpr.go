@@ -134,7 +134,7 @@ func (s *Server) renderDownloadAccountGDPRPage(w http.ResponseWriter, tr *i18n.T
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="sv">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

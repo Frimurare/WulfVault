@@ -941,8 +941,10 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.
 	}
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     ` + s.getFaviconHTML() + `
@@ -2159,8 +2161,10 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     ` + s.getFaviconHTML() + `

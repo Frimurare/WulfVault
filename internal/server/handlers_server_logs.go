@@ -380,7 +380,7 @@ func (s *Server) renderAdminServerLogsPage(w http.ResponseWriter, tr *i18n.Trans
 	faviconHTML := s.getFaviconHTML()
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
