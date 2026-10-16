@@ -88,3 +88,10 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
 .wv-app .file-tab.active { color: #087f95 !important; border-bottom-color: #087f95 !important; }
 .wv-app .action-links a { color: #087f95; }
 .wv-app button[onclick="showCreateRequestModal()"] { background: #087f95 !important; }
+
+.wv-app .stat-card h3 { font-size: 12px !important; line-height: 1.4; letter-spacing: .025em; color: #52677b !important; }
+@media (max-width: 540px) {
+  .wv-app .container div:has(> #publicUrl) { flex-wrap: wrap; }
+  .wv-app #publicUrl { flex: 1 1 100% !important; width: 100%; }
+  .wv-app label > input[type="checkbox"] { flex: 0 0 20px; width: 20px !important; }
+}
