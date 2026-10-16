@@ -84,6 +84,7 @@ func (s *Server) newAppShellData(tr *i18n.Translator, user *models.User, role st
 		data.LogoutPath = "/download/logout"
 		data.Navigation = []dashboardLink{
 			link("nav.dashboard", "/download/dashboard", "home"),
+			link("dlaccount.change_password_title", "/download/change-password", "shield"),
 			link("nav.account_settings", "/download/account-settings", "account"),
 		}
 	default:

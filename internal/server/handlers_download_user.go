@@ -601,7 +601,7 @@ func (s *Server) handleDownloadAccountSettings(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	s.renderDownloadAccountGDPRPage(w, account, "")
+	s.renderDownloadAccountGDPRPage(w, s.tr(r), account, "")
 }
 
 // handleDownloadDeletedSuccess shows success page after account deletion

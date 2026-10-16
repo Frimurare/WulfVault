@@ -12,7 +12,8 @@
       menu.querySelector('summary').focus();
     }
   });
-  const path = location.pathname.replace(/\/$/, '') || '/';
+  const rawPath = location.pathname.replace(/\/$/, '') || '/';
+  const path = rawPath.startsWith('/admin/download-accounts/') ? '/admin/users' : rawPath;
   const links = [...menu.querySelectorAll('a[href]')];
   const active = links
     .filter((link) => path === link.pathname || path.startsWith(link.pathname + '/'))

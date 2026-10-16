@@ -15,6 +15,7 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
 }
 .wv-app :is(.card, .settings-card, .filters-card, .account-info, .upload-section, .file-request-section) { padding: 24px !important; }
 .wv-app :is(.stat-card, .card):hover, .wv-app :is(.file-item, .team-item):hover { transform: none !important; box-shadow: none !important; }
+.wv-app .container > :is(.card, .settings-card) { max-width: 1040px; }
 .wv-app :is(.file-item, .team-item) { border-bottom: 1px solid #dce5ed !important; }
 .wv-app :is(.file-item, .team-item):last-child { border-bottom: 0 !important; }
 .wv-app :is(.file-item, .team-item):hover { background: #f5fafc !important; }
@@ -24,6 +25,7 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
 .wv-app :is(.joke-title, .joke-text) { color: #225e70 !important; }
 .wv-app .joke-text { font-size: 14px !important; }
 .wv-app :is(.btn, button, input[type="submit"], .filter-btn, .clear-btn, .back-btn, .btn-action, .load-more-btn) { font: inherit; border-radius: 6px !important; min-height: 44px; box-shadow: none !important; transition: background-color .15s, border-color .15s; }
+.wv-app .btn { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
 .wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download, .load-more-btn, #uploadButton) { background: #087f95 !important; border: 1px solid #087f95 !important; color: #fff !important; }
 .wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download):hover { background: #076c80 !important; }
 .wv-app :is(.btn-secondary, .back-btn, .clear-btn) { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }

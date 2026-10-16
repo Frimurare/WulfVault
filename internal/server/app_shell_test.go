@@ -75,7 +75,9 @@ func TestApplicationPageFixtures(t *testing.T) {
 			public bool
 			render func(http.ResponseWriter)
 		}{
-			{"users", false, func(w http.ResponseWriter) { s.renderAdminUsers(w, tr, []*models.User{user, member}, nil, &database.UserFilter{Limit: 50}, 2, &database.DownloadAccountFilter{Limit: 50}, 0) }},
+			{"users", false, func(w http.ResponseWriter) {
+				s.renderAdminUsers(w, tr, []*models.User{user, member}, nil, &database.UserFilter{Limit: 50}, 2, &database.DownloadAccountFilter{Limit: 50}, 0)
+			}},
 			{"user-edit", false, func(w http.ResponseWriter) { s.renderAdminUserForm(w, tr, member, "") }},
 			{"recipient-edit", false, func(w http.ResponseWriter) { s.renderAdminDownloadAccountForm(w, tr, account, "") }},
 			{"files", false, func(w http.ResponseWriter) { s.renderAdminFiles(w, tr, []*database.FileInfo{file}, 4096) }},
@@ -84,7 +86,9 @@ func TestApplicationPageFixtures(t *testing.T) {
 			{"branding", false, func(w http.ResponseWriter) { s.renderAdminBranding(w, tr, "") }},
 			{"server-settings", false, func(w http.ResponseWriter) { s.renderAdminSettings(w, tr, "") }},
 			{"identity", false, func(w http.ResponseWriter) { s.renderIdentityProviders(w, tr, "", "") }},
-			{"email", false, func(w http.ResponseWriter) { s.renderEmailSettingsPage(w, tr, false, false, false, false, false, false, false, false, false, false, "", "", "", "", "", "", "", "", "", "") }},
+			{"email", false, func(w http.ResponseWriter) {
+				s.renderEmailSettingsPage(w, tr, false, false, false, false, false, false, false, false, false, false, "", "", "", "", "", "", "", "", "", "")
+			}},
 			{"audit", false, func(w http.ResponseWriter) { s.renderAdminAuditLogsPage(w, tr) }},
 			{"logs", false, func(w http.ResponseWriter) { s.renderAdminServerLogsPage(w, tr) }},
 			{"monitor", false, func(w http.ResponseWriter) { s.renderAdminSysMonitorLogsPage(w, tr) }},
@@ -94,11 +98,21 @@ func TestApplicationPageFixtures(t *testing.T) {
 			{"my-files", false, func(w http.ResponseWriter) { s.renderUserDashboard(w, tr, user) }},
 			{"settings", false, func(w http.ResponseWriter) { s.renderUserSettingsPage(w, tr, user, 0) }},
 			{"account", false, func(w http.ResponseWriter) { s.renderUserAccountSettings(w, tr, user, "") }},
-			{"downloads", false, func(w http.ResponseWriter) { s.renderDownloadDashboard(w, tr, account, nil, []*database.FileInfo{file}) }},
+			{"downloads", false, func(w http.ResponseWriter) {
+				s.renderDownloadDashboard(w, tr, account, nil, []*database.FileInfo{file})
+			}},
 			{"download-password", false, func(w http.ResponseWriter) { s.renderDownloadChangePasswordPage(w, tr, account, "", false) }},
 			{"download-account", false, func(w http.ResponseWriter) { s.renderDownloadAccountGDPRPage(w, tr, account, "") }},
-			{"login", true, func(w http.ResponseWriter) { r := httptest.NewRequest("GET", "/login", nil); r.Header.Set("Accept-Language", string(lang)); s.renderLoginPage(w, r, "") }},
-			{"forgot-password", true, func(w http.ResponseWriter) { r := httptest.NewRequest("GET", "/forgot-password", nil); r.Header.Set("Accept-Language", string(lang)); s.renderForgotPasswordPage(w, r, "", false) }},
+			{"login", true, func(w http.ResponseWriter) {
+				r := httptest.NewRequest("GET", "/login", nil)
+				r.Header.Set("Accept-Language", string(lang))
+				s.renderLoginPage(w, r, "")
+			}},
+			{"forgot-password", true, func(w http.ResponseWriter) {
+				r := httptest.NewRequest("GET", "/forgot-password", nil)
+				r.Header.Set("Accept-Language", string(lang))
+				s.renderForgotPasswordPage(w, r, "", false)
+			}},
 			{"download-splash", true, func(w http.ResponseWriter) { s.renderSplashPage(w, tr, file) }},
 		}
 		for _, tc := range cases {
@@ -118,8 +132,12 @@ func TestApplicationPageFixtures(t *testing.T) {
 					}
 				}
 				if outputDir != "" {
-					if err := os.MkdirAll(outputDir, 0755); err != nil { t.Fatal(err) }
-					if err := os.WriteFile(filepath.Join(outputDir, tc.name+"-"+string(lang)+".html"), []byte(page), 0644); err != nil { t.Fatal(err) }
+					if err := os.MkdirAll(outputDir, 0755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filepath.Join(outputDir, tc.name+"-"+string(lang)+".html"), []byte(page), 0644); err != nil {
+						t.Fatal(err)
+					}
 				}
 			})
 		}
