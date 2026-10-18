@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Refine file records, collapsible sharing links, grouped server settings, dialogs and the public download page; translate admin team/file/settings content and dynamic request labels into Swedish/English.
 
 - Finish the Wolf Overhaul action styles for populated team and file views:
   replace legacy emoji labels and cyan actions with consistent outlined buttons,

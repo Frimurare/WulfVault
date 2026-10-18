@@ -705,7 +705,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>Manage Teams - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("overhaul.teams.title") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -983,24 +983,24 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
-            <h2> Manage Teams</h2>
-            <button class="btn btn-primary" onclick="showCreateModal()">+ Create Team</button>
+            <h2> ` + template.HTMLEscapeString(tr.T("overhaul.teams.title")) + `</h2>
+            <button class="btn btn-primary" onclick="showCreateModal()">` + template.HTMLEscapeString(tr.T("overhaul.teams.create_action")) + `</button>
         </div>`
 
 	if len(teams) == 0 {
 		html += `
         <div class="empty-state">
-            <h3>No teams yet</h3>
-            <p>Click "Create Team" to get started.</p>
+            <h3>` + template.HTMLEscapeString(tr.T("overhaul.teams.empty")) + `</h3>
+            <p>` + template.HTMLEscapeString(tr.T("overhaul.teams.empty_help")) + `</p>
         </div>`
 	} else {
 		html += `
         <div class="team-list">`
 		for _, team := range teams {
-			statusBadge := `<span class="badge badge-active">Active</span>`
+			statusBadge := tr.T("common.active")
 			badgeClass := "badge-active"
 			if !team.IsActive {
-				statusBadge = `<span class="badge badge-inactive">Inactive</span>`
+				statusBadge = tr.T("common.inactive")
 				badgeClass = "badge-inactive"
 			}
 
@@ -1016,15 +1016,15 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                 </div>
                 <div class="team-description">%s</div>
                 <div class="team-stats">
-                    <span> %d members</span>
+                    <span> %d ` + tr.T("overhaul.teams.member_unit") + `</span>
                     <span> %s / %s (%d%%)</span>
-                    <span> Created: %s</span>
+                    <span> ` + tr.T("common.created") + ` %s</span>
                 </div>
                 <div class="team-actions">
-                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'"> Files</button>
-                    <button class="btn-action" onclick="viewMembers(%d, '%s')"> Members</button>
-                    <button class="btn-action" onclick="editTeam(%d)"> Edit</button>
-                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')"> Delete</button>
+                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'"> ` + template.HTMLEscapeString(tr.T("nav.files")) + `</button>
+                    <button class="btn-action" onclick="viewMembers(%d, '%s')"> ` + template.HTMLEscapeString(tr.T("overhaul.teams.members")) + `</button>
+                    <button class="btn-action" onclick="editTeam(%d)"> ` + template.HTMLEscapeString(tr.T("common.edit")) + `</button>
+                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')"> ` + template.HTMLEscapeString(tr.T("common.delete")) + `</button>
                 </div>
             </div>`,
 				team.Name,
@@ -1045,23 +1045,23 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     <!-- Create/Edit Team Modal -->
     <div id="teamModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Create Team</h2>
+            <h2 id="modalTitle">` + template.HTMLEscapeString(tr.T("overhaul.teams.create")) + `</h2>
             <div class="form-group">
-                <label for="teamName">Team Name *</label>
-                <input type="text" id="teamName" placeholder="e.g., Engineering" required>
+                <label for="teamName">` + template.HTMLEscapeString(tr.T("overhaul.teams.name")) + `</label>
+                <input type="text" id="teamName" placeholder="` + template.HTMLEscapeString(tr.T("overhaul.teams.name_hint")) + `" required>
             </div>
             <div class="form-group">
-                <label for="teamDescription">Description</label>
-                <textarea id="teamDescription" placeholder="Optional description"></textarea>
+                <label for="teamDescription">` + template.HTMLEscapeString(tr.T("overhaul.teams.description")) + `</label>
+                <textarea id="teamDescription" placeholder="` + template.HTMLEscapeString(tr.T("overhaul.teams.description_hint")) + `"></textarea>
             </div>
             <div class="form-group">
-                <label for="teamQuota">Storage Quota (MB) *</label>
+                <label for="teamQuota">` + template.HTMLEscapeString(tr.T("overhaul.teams.quota")) + `</label>
                 <input type="number" id="teamQuota" value="10240" min="1" required>
-                <small style="color: #666;">Default: 10240 MB (10 GB)</small>
+                <small style="color: #666;">` + template.HTMLEscapeString(tr.T("overhaul.teams.quota_help")) + `</small>
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveTeam()">Save</button>
+                <button class="btn btn-secondary" onclick="closeModal()">` + template.HTMLEscapeString(tr.T("common.cancel")) + `</button>
+                <button class="btn btn-primary" onclick="saveTeam()">` + template.HTMLEscapeString(tr.T("common.save")) + `</button>
             </div>
         </div>
     </div>
@@ -1069,11 +1069,11 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     <!-- Members Modal -->
     <div id="membersModal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
-            <h2 id="membersTitle">Team Members</h2>
+            <h2 id="membersTitle">` + template.HTMLEscapeString(tr.T("overhaul.teams.members_title")) + `</h2>
             <div id="membersList" style="margin: 20px 0;"></div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeMembersModal()">Close</button>
-                <button class="btn btn-primary" onclick="showAddMemberForm()">+ Add Member</button>
+                <button class="btn btn-secondary" onclick="closeMembersModal()">` + template.HTMLEscapeString(tr.T("common.close")) + `</button>
+                <button class="btn btn-primary" onclick="showAddMemberForm()">` + template.HTMLEscapeString(tr.T("overhaul.teams.add_action")) + `</button>
             </div>
         </div>
     </div>
@@ -1081,25 +1081,25 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     <!-- Add Member Modal -->
     <div id="addMemberModal" class="modal">
         <div class="modal-content">
-            <h2>Add Team Member</h2>
+            <h2>` + template.HTMLEscapeString(tr.T("overhaul.teams.add_title")) + `</h2>
             <input type="hidden" id="addMemberTeamId">
             <div class="form-group">
-                <label>Select User</label>
+                <label>` + template.HTMLEscapeString(tr.T("overhaul.teams.select_user")) + `</label>
                 <select id="userSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
-                    <option value="">Loading users...</option>
+                    <option value="">` + template.HTMLEscapeString(tr.T("overhaul.teams.loading_users")) + `</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Role</label>
+                <label>` + template.HTMLEscapeString(tr.T("overhaul.teams.role")) + `</label>
                 <select id="roleSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
-                    <option value="2">Member</option>
-                    <option value="1">Admin</option>
-                    <option value="0">Owner</option>
+                    <option value="2">` + template.HTMLEscapeString(tr.T("overhaul.teams.member")) + `</option>
+                    <option value="1">` + template.HTMLEscapeString(tr.T("overhaul.teams.admin")) + `</option>
+                    <option value="0">` + template.HTMLEscapeString(tr.T("overhaul.teams.owner")) + `</option>
                 </select>
             </div>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeAddMemberModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="addMemberToTeam()">Add Member</button>
+                <button class="btn btn-secondary" onclick="closeAddMemberModal()">` + template.HTMLEscapeString(tr.T("common.cancel")) + `</button>
+                <button class="btn btn-primary" onclick="addMemberToTeam()">` + template.HTMLEscapeString(tr.T("overhaul.teams.add")) + `</button>
             </div>
         </div>
     </div>
@@ -1108,7 +1108,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
         let currentTeamId = null;
 
         function showCreateModal() {
-            document.getElementById('modalTitle').textContent = 'Create Team';
+            document.getElementById('modalTitle').textContent = '` + template.JSEscapeString(tr.T("overhaul.teams.create")) + `';
             document.getElementById('teamName').value = '';
             document.getElementById('teamDescription').value = '';
             document.getElementById('teamQuota').value = '10240';
@@ -1122,7 +1122,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                 .then(r => r.json())
                 .then(data => {
                     // For now, just show a basic edit form
-                    document.getElementById('modalTitle').textContent = 'Edit Team';
+                    document.getElementById('modalTitle').textContent = '` + template.JSEscapeString(tr.T("overhaul.teams.edit")) + `';
                     currentTeamId = teamId;
                     document.getElementById('teamModal').classList.add('active');
                 });
@@ -1138,7 +1138,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             const quota = parseInt(document.getElementById('teamQuota').value);
 
             if (!name) {
-                alert('Team name is required');
+                alert('` + template.JSEscapeString(tr.T("overhaul.teams.name_required")) + `');
                 return;
             }
 
@@ -1161,10 +1161,10 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alert('Team saved successfully!');
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.saved")) + `');
                     location.reload();
                 } else {
-                    alert('Error saving team');
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.save_error")) + `');
                 }
             })
             .catch(err => {
@@ -1173,7 +1173,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
         }
 
         function deleteTeam(teamId, teamName) {
-            if (!confirm('Are you sure you want to delete team "' + teamName + '"?')) {
+            if (!confirm('` + template.JSEscapeString(tr.T("overhaul.teams.delete_prefix")) + `' + teamName + '` + template.JSEscapeString(tr.T("overhaul.teams.delete_suffix")) + `')) {
                 return;
             }
 
@@ -1185,16 +1185,16 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alert('Team deleted successfully!');
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.deleted")) + `');
                     location.reload();
                 } else {
-                    alert('Error deleting team');
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.delete_error")) + `');
                 }
             });
         }
 
         function viewMembers(teamId, teamName) {
-            document.getElementById('membersTitle').textContent = 'Members of ' + teamName;
+            document.getElementById('membersTitle').textContent = '` + template.JSEscapeString(tr.T("overhaul.teams.members_of")) + `' + teamName;
 
             // Store team ID for add member functionality
             currentAddMemberTeamId = teamId;
@@ -1203,16 +1203,16 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             fetch('/api/teams/members?teamId=' + teamId)
                 .then(r => r.json())
                 .then(data => {
-                    let html = '<div class="wv-table-wrap"><table style="width: 100%;"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead><tbody>';
+                    let html = '<div class="wv-table-wrap"><table style="width: 100%;"><thead><tr><th>` + template.HTMLEscapeString(tr.T("common.name")) + `</th><th>` + template.HTMLEscapeString(tr.T("overhaul.files.email")) + `</th><th>` + template.HTMLEscapeString(tr.T("overhaul.teams.role")) + `</th><th>` + template.HTMLEscapeString(tr.T("overhaul.teams.joined")) + `</th><th>` + template.HTMLEscapeString(tr.T("common.actions")) + `</th></tr></thead><tbody>';
 
                     if (data.members && data.members.length > 0) {
                         data.members.forEach(m => {
-                            const role = m.role === 0 ? 'Owner' : m.role === 1 ? 'Admin' : 'Member';
+                            const role = m.role === 0 ? '` + template.JSEscapeString(tr.T("overhaul.teams.owner")) + `' : m.role === 1 ? '` + template.JSEscapeString(tr.T("overhaul.teams.admin")) + `' : '` + template.JSEscapeString(tr.T("overhaul.teams.member")) + `';
                             const joinedDate = new Date(m.joinedAt * 1000).toLocaleDateString();
-                            html += '<tr><td>' + m.userName + '</td><td>' + m.userEmail + '</td><td>' + role + '</td><td>' + joinedDate + '</td><td><button onclick="removeMember(' + teamId + ', ' + m.userId + ', \'' + m.userName + '\')">Remove</button></td></tr>';
+                            html += '<tr><td>' + m.userName + '</td><td>' + m.userEmail + '</td><td>' + role + '</td><td>' + joinedDate + '</td><td><button onclick="removeMember(' + teamId + ', ' + m.userId + ', \'' + m.userName + '\')">` + template.HTMLEscapeString(tr.T("overhaul.teams.remove")) + `</button></td></tr>';
                         });
                     } else {
-                        html += '<tr><td colspan="5" style="text-align: center; padding: 20px;">No members yet</td></tr>';
+                        html += '<tr><td colspan="5" style="text-align: center; padding: 20px;">` + template.HTMLEscapeString(tr.T("overhaul.teams.no_members")) + `</td></tr>';
                     }
 
                     html += '</tbody></table></div>';
@@ -1231,7 +1231,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             // Get the current team ID from the members modal title or store it when opening
             const teamId = document.getElementById('addMemberTeamId').value || currentAddMemberTeamId;
             if (!teamId) {
-                alert('Error: Team ID not found');
+                alert('` + template.JSEscapeString(tr.T("overhaul.teams.missing_id")) + `');
                 return;
             }
 
@@ -1240,7 +1240,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                 .then(r => r.json())
                 .then(data => {
                     const select = document.getElementById('userSelect');
-                    select.innerHTML = '<option value="">-- Select a user --</option>';
+                    select.innerHTML = '<option value="">` + template.HTMLEscapeString(tr.T("overhaul.teams.select_user_option")) + `</option>';
 
                     if (data.users && data.users.length > 0) {
                         data.users.forEach(user => {
@@ -1254,7 +1254,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                     document.getElementById('addMemberModal').classList.add('active');
                 })
                 .catch(err => {
-                    alert('Error loading users: ' + err.message);
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.load_users_error")) + `' + err.message);
                 });
         }
 
@@ -1268,7 +1268,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             const role = parseInt(document.getElementById('roleSelect').value);
 
             if (!userId) {
-                alert('Please select a user');
+                alert('` + template.JSEscapeString(tr.T("overhaul.teams.select_required")) + `');
                 return;
             }
 
@@ -1284,12 +1284,12 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alert('Member added successfully!');
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.member_added")) + `');
                     closeAddMemberModal();
                     closeMembersModal();
                     location.reload();
                 } else {
-                    alert('Error: ' + (data.error || 'Failed to add member'));
+                    alert('Error: ' + (data.error || '` + template.JSEscapeString(tr.T("overhaul.teams.add_error")) + `'));
                 }
             })
             .catch(err => {
@@ -1298,7 +1298,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
         }
 
         function removeMember(teamId, userId, userName) {
-            if (!confirm('Remove ' + userName + ' from this team?')) {
+            if (!confirm('` + template.JSEscapeString(tr.T("overhaul.teams.remove_prefix")) + `' + userName + '` + template.JSEscapeString(tr.T("overhaul.teams.remove_suffix")) + `')) {
                 return;
             }
 
@@ -1310,7 +1310,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alert('Member removed!');
+                    alert('` + template.JSEscapeString(tr.T("overhaul.teams.removed")) + `');
                     closeMembersModal();
                     location.reload();
                 }

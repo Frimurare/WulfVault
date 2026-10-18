@@ -1134,9 +1134,9 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         </div>
 
         <!-- File Request Modal -->
-        <div id="fileRequestModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+        <div id="fileRequestModal" class="wv-dialog" role="dialog" aria-modal="true" aria-labelledby="requestModalTitle" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
             <div style="background: white; border-radius: 12px; padding: 32px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
-                <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.create_upload_request") + `</h2>
+                <h2 id="requestModalTitle" style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.create_upload_request") + `</h2>
                 <form id="fileRequestForm" onsubmit="submitFileRequest(event)">
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_title_label") + `</label>
@@ -1149,8 +1149,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         <textarea id="requestMessage" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.request_message_placeholder")) + `" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
                     </div>
 
-                    <div style="margin-bottom: 20px; padding: 14px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
-                        <p style="color: #856404; font-size: 13px; margin: 0; line-height: 1.5;">
+                    <div style="margin-bottom: 20px; padding: 14px; background: #f2f7fa; border: 1px solid #dce5ed; border-radius: 8px;">
+                        <p style="color: #405a70; font-size: 13px; margin: 0; line-height: 1.5;">
                              ` + tr.T("dashboard.request_security_notice") + `
                         </p>
                     </div>
@@ -1161,10 +1161,10 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">` + tr.T("dashboard.request_max_size_help") + `</p>
                     </div>
 
-                    <div style="margin-bottom: 24px; background: #fff9e6; padding: 16px; border-radius: 8px; border: 3px solid #ff9800;">
-                        <label style="display: block; margin-bottom: 8px; color: #e65100; font-weight: 700; font-size: 16px;"> ` + tr.T("dashboard.request_recipient_email_label") + `</label>
-                        <input type="email" id="requestRecipientEmail" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 12px; border: 3px solid #ff9800; border-radius: 6px; font-size: 14px; background: white;">
-                        <p style="color: #e65100; font-size: 13px; margin-top: 8px; font-weight: 600;">` + tr.T("dashboard.request_recipient_email_help") + `</p>
+                    <div style="margin-bottom: 24px; background: #f7fafc; padding: 16px; border-radius: 8px; border: 1px solid #c5d4df;">
+                        <label style="display: block; margin-bottom: 8px; color: #405a70; font-weight: 700; font-size: 16px;"> ` + tr.T("dashboard.request_recipient_email_label") + `</label>
+                        <input type="email" id="requestRecipientEmail" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 12px; border: 1px solid #c5d4df; border-radius: 6px; font-size: 14px; background: white;">
+                        <p style="color: #405a70; font-size: 13px; margin-top: 8px; font-weight: 600;">` + tr.T("dashboard.request_recipient_email_help") + `</p>
                     </div>
 
                     <div style="display: flex; gap: 12px;">
@@ -1353,7 +1353,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         <p>%s • %s • %s</p>
                         <p style="color: %s;">%s: %s</p>
                         %s
-                        <div class="link-display">
+                        <details class="wv-share-details"><summary>` + tr.T("overhaul.dashboard.share_links") + `</summary><div class="link-display">
                             <h4> %s</h4>
                             <div class="link-box">
                                 <a href="%s" target="_blank">%s</a>
@@ -1364,7 +1364,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                                 <a href="%s" target="_blank">%s</a>
                                 <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;"> %s</button>
                             </div>
-                        </div>
+                        </div></details>
                         <div class="file-actions" style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
                             <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="%s" style="flex: 0 0 auto;">
                                  %s
@@ -1399,7 +1399,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     </div>
 
     <!-- Email File Modal -->
-    <div id="emailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="emailModal" class="wv-dialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
             <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.email_modal_heading") + `</h2>
             <input type="hidden" id="emailFileId">
@@ -1420,7 +1420,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     </div>
 
     <!-- Edit File Modal -->
-    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="editModal" class="wv-dialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 500px; width: 90%;">
             <h2 style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.edit_modal_heading") + `</h2>
 
@@ -1575,7 +1575,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     </div>
 
     <!-- Download History Modal -->
-    <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="downloadHistoryModal" class="wv-dialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
             <h2 style="margin-bottom: 24px; color: #333;"> ` + tr.T("dashboard.download_history_heading") + `</h2>
 
@@ -1596,7 +1596,8 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js?v=wolf-overhaul-3"></script>
+    <script>window.WV_DASHBOARD_TEXT = ` + dashboardTextsJSON(tr) + `;</script>
+    <script src="/static/js/dashboard.js?v=wolf-overhaul-6"></script>
     <script>
         const wvShowPasswordLabel = '` + template.JSEscapeString(showPasswordLabel) + `';
         const I18N = {
@@ -2365,4 +2366,18 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 </html>`
 
 	w.Write([]byte(html))
+}
+
+func dashboardTextsJSON(tr *i18n.Translator) string {
+	texts := make(map[string]string)
+	for _, key := range []string{
+		"common.expired", "common.active", "common.inactive", "overhaul.files.copy",
+		"common.delete", "overhaul.files.unknown", "overhaul.dashboard.no_requests",
+		"overhaul.dashboard.request_delete", "overhaul.dashboard.expiring",
+		"overhaul.dashboard.removal", "overhaul.dashboard.error", "overhaul.dashboard.requests_error",
+	} {
+		texts[key] = tr.T(key)
+	}
+	encoded, _ := json.Marshal(texts)
+	return string(encoded)
 }

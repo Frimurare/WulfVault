@@ -137,6 +137,27 @@ func TestApplicationPageFixtures(t *testing.T) {
 						t.Fatal("page document language does not match the translator")
 					}
 				}
+				if lang == i18n.LangSV {
+					var required []string
+					switch tc.name {
+					case "admin-teams":
+						required = []string{"Hantera team", "Skapa team", "Medlemmar", "Redigera", "Teamnamn"}
+					case "files":
+						required = []string{"Alla filer", "Antal filer", "Kopiera", "Ta bort", "Nedladdningshistorik"}
+					case "server-settings":
+						required = []string{"Anslutning och språk", "Lagring och uppladdning", "Lagringstider och loggar", "Spara inställningar"}
+					case "my-files":
+						required = []string{"Delningslänkar", "Inga uppladdningsförfrågningar ännu"}
+					}
+					for _, marker := range required {
+						if !strings.Contains(page, marker) {
+							t.Errorf("Swedish %s page is missing %q", tc.name, marker)
+						}
+					}
+				}
+				if strings.Contains(page, "%!") {
+					t.Fatal("rendered page contains a formatting error")
+				}
 				if outputDir != "" {
 					if err := os.MkdirAll(outputDir, 0755); err != nil {
 						t.Fatal(err)

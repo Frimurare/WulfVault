@@ -2399,7 +2399,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>All Files - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("nav.all_files") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -2782,19 +2782,19 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 <body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
-        <h2 style="margin-bottom: 20px;">All Files</h2>
+        <h2 style="margin-bottom: 20px;">` + template.HTMLEscapeString(tr.T("nav.all_files")) + `</h2>
 
         <div class="stats-bar">
             <div class="stat-item">
-                <h3>Total Files</h3>
+                <h3>` + template.HTMLEscapeString(tr.T("overhaul.files.total")) + `</h3>
                 <div class="value">` + fmt.Sprintf("%d", len(files)) + `</div>
             </div>
             <div class="stat-item">
-                <h3>Total Storage</h3>
+                <h3>` + template.HTMLEscapeString(tr.T("overhaul.files.storage")) + `</h3>
                 <div class="value">` + totalStorageGB + `</div>
             </div>
             <div class="stat-item">
-                <h3>Total Downloads</h3>
+                <h3>` + template.HTMLEscapeString(tr.T("overhaul.files.downloads")) + `</h3>
                 <div class="value">` + fmt.Sprintf("%d", calculateTotalDownloads(files)) + `</div>
             </div>
         </div>
@@ -2803,16 +2803,16 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
         <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
             <input type="text" id="fileSearch" placeholder=" Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
             <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
-                <option value="name-asc"> Name (A-Z)</option>
-                <option value="name-desc"> Name (Z-A)</option>
-                <option value="date-desc" selected> Newest First</option>
-                <option value="date-asc"> Oldest First</option>
-                <option value="downloads-desc"> Most Downloads</option>
-                <option value="downloads-asc"> Least Downloads</option>
-                <option value="size-desc"> Largest First</option>
-                <option value="size-asc"> Smallest First</option>
-                <option value="user-asc"> User (A-Z)</option>
-                <option value="user-desc"> User (Z-A)</option>
+                <option value="name-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.name_asc")) + `</option>
+                <option value="name-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.name_desc")) + `</option>
+                <option value="date-desc" selected> ` + template.HTMLEscapeString(tr.T("overhaul.files.date_desc")) + `</option>
+                <option value="date-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.date_asc")) + `</option>
+                <option value="downloads-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.downloads_desc")) + `</option>
+                <option value="downloads-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.downloads_asc")) + `</option>
+                <option value="size-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.size_desc")) + `</option>
+                <option value="size-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.size_asc")) + `</option>
+                <option value="user-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.user_asc")) + `</option>
+                <option value="user-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.user_desc")) + `</option>
             </select>
         </div>
 
@@ -2822,39 +2822,39 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 	if len(files) == 0 {
 		html += `
                 <li class="empty-state">
-                    No files in the system yet.
+                    ` + template.HTMLEscapeString(tr.T("overhaul.files.empty")) + `
                 </li>`
 	}
 
 	for _, f := range files {
 		// Get user info
-		userName := "Deleted user"
+		userName := tr.T("overhaul.files.deleted_user")
 		user, err := database.DB.GetUserByID(f.UserId)
 		if err == nil {
 			userName = user.Name
 		}
 
 		// Status
-		status := `<span class="badge badge-active">Active</span>`
+		status := `<span class="badge badge-active">` + template.HTMLEscapeString(tr.T("common.active")) + `</span>`
 		if !f.UnlimitedDownloads && f.DownloadsRemaining <= 0 {
-			status = `<span class="badge badge-expired">Expired</span>`
+			status = `<span class="badge badge-expired">` + template.HTMLEscapeString(tr.T("common.expired")) + `</span>`
 		} else if !f.UnlimitedTime && f.ExpireAt > 0 && f.ExpireAt < time.Now().Unix() {
-			status = `<span class="badge badge-expired">Expired</span>`
+			status = `<span class="badge badge-expired">` + template.HTMLEscapeString(tr.T("common.expired")) + `</span>`
 		}
 
 		// Auth badge
 		authBadge := ""
 		if f.RequireAuth {
-			authBadge = ` <span class="badge badge-auth"> Auth</span>`
+			authBadge = ` <span class="badge badge-auth"> ` + template.HTMLEscapeString(tr.T("overhaul.files.auth")) + `</span>`
 		}
 
 		// Expiration info
-		expiryInfo := "Never"
+		expiryInfo := tr.T("common.never")
 		if !f.UnlimitedTime && f.ExpireAtString != "" {
 			expiryInfo = f.ExpireAtString
 		}
 		if !f.UnlimitedDownloads {
-			expiryInfo += fmt.Sprintf(" (%d left)", f.DownloadsRemaining)
+			expiryInfo += fmt.Sprintf(" (%d "+tr.T("overhaul.files.left")+")", f.DownloadsRemaining)
 		}
 
 		downloadURL := s.getPublicURL() + "/d/" + f.Id
@@ -2862,7 +2862,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
-			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> Note:</strong> %s</p>`,
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> ` + template.HTMLEscapeString(tr.T("overhaul.files.note")) + `</strong> %s</p>`,
 				template.HTMLEscapeString(f.Comment))
 		}
 
@@ -2878,13 +2878,13 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                         <h3 title="%s">
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s
                         </h3>
-                        <p>%s • %s • %d downloads • Expires: %s</p>
+                        <p>%s • %s • %d ` + tr.T("overhaul.files.download_unit") + ` • ` + tr.T("overhaul.files.expires") + ` %s</p>
                         %s
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> History</button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> Copy</button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')"> Delete</button>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> ` + template.HTMLEscapeString(tr.T("overhaul.files.history")) + `</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> ` + template.HTMLEscapeString(tr.T("overhaul.files.copy")) + `</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')"> ` + template.HTMLEscapeString(tr.T("common.delete")) + `</button>
                     </div>
                 </li>`,
 			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, userName, template.HTMLEscapeString(f.Comment),
@@ -2908,7 +2908,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url).then(() => {
                     const originalText = button.innerHTML;
-                    button.innerHTML = '✓ Copied!';
+                    button.innerHTML = '` + template.JSEscapeString(tr.T("overhaul.files.copied")) + `';
                     button.style.background = '#4caf50';
                     setTimeout(() => {
                         button.innerHTML = originalText;
@@ -2932,15 +2932,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
             textArea.select();
             try {
                 document.execCommand('copy');
-                alert('✓ Link copied to clipboard!');
+                alert('` + template.JSEscapeString(tr.T("overhaul.files.copy_success")) + `');
             } catch (err) {
-                prompt('Copy this link manually:', text);
+                prompt('` + template.JSEscapeString(tr.T("overhaul.files.copy_manual")) + `', text);
             }
             document.body.removeChild(textArea);
         }
 
         async function deleteFile(fileId) {
-            if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) return;
+            if (!confirm('` + template.JSEscapeString(tr.T("overhaul.files.confirm_delete")) + `')) return;
 
             try {
                 const response = await fetch('/file/delete', {
@@ -2953,17 +2953,17 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                     location.reload();
                 } else {
                     const result = await response.json();
-                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                    alert('` + template.JSEscapeString(tr.T("overhaul.files.delete_error")) + `' + (result.error || '` + template.JSEscapeString(tr.T("overhaul.files.unknown")) + `'));
                 }
             } catch (error) {
-                alert('Delete failed: ' + error.message);
+                alert('` + template.JSEscapeString(tr.T("overhaul.files.delete_error")) + `' + error.message);
             }
         }
 
         function showDownloadHistory(fileId, fileName) {
             document.getElementById('historyFileName').textContent = fileName;
             document.getElementById('downloadHistoryModal').style.display = 'flex';
-            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">Loading...</p>';
+            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("common.loading")) + `</p>';
 
             fetch('/file/downloads?file_id=' + encodeURIComponent(fileId))
                 .then(response => response.json())
@@ -2973,7 +2973,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
                         html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
-                        html += '<th style="padding: 12px; text-align: left;">IP Address</th>';
+                        html += '<th style="padding: 12px; text-align: left;">` + template.HTMLEscapeString(tr.T("overhaul.files.ip")) + `</th>';
                         html += '</tr></thead><tbody>';
 
                         data.logs.forEach(log => {
@@ -2981,7 +2981,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                             const dateStr = date.toLocaleString('sv-SE');
                             const downloader = log.email || 'Anonymous';
                             const ip = log.ipAddress || 'N/A';
-                            const authBadge = log.isAuthenticated ? ' <span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;"> Auth</span>' : '';
+                            const authBadge = log.isAuthenticated ? ' <span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;"> ` + template.HTMLEscapeString(tr.T("overhaul.files.auth")) + `</span>' : '';
 
                             html += '<tr style="border-bottom: 1px solid #eee;">';
                             html += '<td style="padding: 12px;">' + dateStr + '</td>';
@@ -2994,7 +2994,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                         html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
                         document.getElementById('downloadHistoryContent').innerHTML = html;
                     } else {
-                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">No downloads yet</p>';
+                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("overhaul.files.history_empty")) + `</p>';
                     }
                 })
                 .catch(error => {
@@ -3107,7 +3107,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
     <!-- Download History Modal -->
     <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h2 style="margin-bottom: 24px; color: #333;"> Download History</h2>
+            <h2 style="margin-bottom: 24px; color: #333;"> ` + template.HTMLEscapeString(tr.T("overhaul.files.history_title")) + `</h2>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
@@ -3115,12 +3115,12 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
             </div>
 
             <div id="downloadHistoryContent" style="margin-top: 20px;">
-                <p style="text-align: center; color: #999;">Loading...</p>
+                <p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("common.loading")) + `</p>
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button onclick="closeDownloadHistoryModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Close
+                    ` + template.HTMLEscapeString(tr.T("common.close")) + `
                 </button>
             </div>
         </div>
@@ -3856,11 +3856,11 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 <body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
-        <div class="card">
-            <h2>System Settings</h2>`
+        <div class="card wv-settings-card">
+            <h2>` + template.HTMLEscapeString(tr.T("admin.settings.page_title")) + `</h2>`
 
 	if message != "" {
-		if message[:5] == "Error" {
+		if strings.HasPrefix(message, "Error") {
 			html += `<div class="error">` + message + `</div>`
 		} else {
 			html += `<div class="success">` + message + `</div>`
@@ -3875,21 +3875,22 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html += `
-            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;"> Current Public URL</h3>
-                <p style="color: #856404; font-size: 13px; margin-bottom: 12px;">Share this URL with your users to access the system:</p>
+            <section class="wv-public-address">
+                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;"> ` + template.HTMLEscapeString(tr.T("overhaul.settings.public")) + `</h3>
+                <p style="color: #856404; font-size: 13px; margin-bottom: 12px;">` + template.HTMLEscapeString(tr.T("overhaul.settings.public_help")) + `</p>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="text" id="publicUrl" value="` + fullPublicURL + `" readonly
                            style="flex: 1; padding: 12px; background: white; border: 2px solid #ffc107; font-family: monospace; font-size: 14px; font-weight: 600; color: #d32f2f;">
                     <button type="button" onclick="copyPublicURL()" class="btn"
                             style="background: #ffc107; color: #856404; font-weight: 700; white-space: nowrap;">
-                         COPY URL
+                         ` + template.HTMLEscapeString(tr.T("overhaul.settings.copy")) + `
                     </button>
                 </div>
-                <p id="copyStatus" style="color: #28a745; font-size: 12px; margin-top: 8px; display: none;">✓ Copied to clipboard!</p>
-            </div>
+                <p id="copyStatus" style="color: #28a745; font-size: 12px; margin-top: 8px; display: none;">` + template.HTMLEscapeString(tr.T("overhaul.settings.copied")) + `</p>
+            </section>
 
-            <form method="POST" action="/admin/settings">
+            <form method="POST" action="/admin/settings" class="wv-settings-form">
+                <fieldset><legend>` + tr.T("overhaul.settings.connection") + `</legend>
                 <div class="form-group">
                     <label for="default_language">` + tr.T("admin.settings.default_language") + `</label>
                     <select id="default_language" name="default_language">` +
@@ -3898,64 +3899,72 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
                 </div>
 
                 <div class="form-group">
-                    <label for="server_url">Server URL</label>
+                    <label for="server_url">` + template.HTMLEscapeString(tr.T("overhaul.settings.url")) + `</label>
                     <input type="url" id="server_url" name="server_url" value="` + serverURL + `" required>
-                    <p class="help-text">The public URL where this server is accessible (e.g., https://files.manvarg.se). Do not include the port - it's configured separately below.</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.url_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="port">Server Port</label>
+                    <label for="port">` + template.HTMLEscapeString(tr.T("overhaul.settings.port")) + `</label>
                     <input type="number" id="port" name="port" value="` + port + `" min="1" max="65535" required>
-                    <p class="help-text">Port number for the server to listen on. Ports below 1024 require administrator privileges.</p>
-                    <p class="help-text" style="color: #ff6b00; font-weight: 600;"> Changes require server restart to take effect</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.port_help")) + `</p>
+                    <p class="help-text" style="color: #ff6b00; font-weight: 600;"> ` + template.HTMLEscapeString(tr.T("overhaul.settings.restart")) + `</p>
                 </div>
 
+                </fieldset>
+                <fieldset><legend>` + tr.T("overhaul.settings.storage") + `</legend>
                 <div class="form-group">
-                    <label for="max_file_size_mb">Max File Size (MB)</label>
+                    <label for="max_file_size_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.max_file")) + `</label>
                     <input type="number" id="max_file_size_mb" name="max_file_size_mb" value="` + maxFileSizeMB + `" min="1" required>
-                    <p class="help-text">Maximum file size users can upload</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.max_file_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="default_quota_mb">Default User Quota (MB)</label>
+                    <label for="default_quota_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.quota")) + `</label>
                     <input type="number" id="default_quota_mb" name="default_quota_mb" value="` + defaultQuotaMB + `" min="100" required>
-                    <p class="help-text">Default storage quota for new users</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.quota_help")) + `</p>
                 </div>
 
+                </fieldset>
+                <fieldset><legend>` + tr.T("overhaul.settings.retention") + `</legend>
                 <div class="form-group">
-                    <label for="trash_retention_days">Trash Retention Period (Days)</label>
+                    <label for="trash_retention_days">` + template.HTMLEscapeString(tr.T("overhaul.settings.trash")) + `</label>
                     <input type="number" id="trash_retention_days" name="trash_retention_days" value="` + trashRetentionDays + `" min="1" max="365" required>
-                    <p class="help-text">Number of days to keep deleted files in trash before permanent deletion</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.trash_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="audit_log_retention_days">Audit Log Retention (Days)</label>
+                    <label for="audit_log_retention_days">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_days")) + `</label>
                     <input type="number" id="audit_log_retention_days" name="audit_log_retention_days" value="` + auditLogRetentionDays + `" min="1" max="3650" required>
-                    <p class="help-text">Number of days to keep audit logs before automatic cleanup (default: 90 days)</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_days_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="audit_log_max_size_mb">Audit Log Max Size (MB)</label>
+                    <label for="audit_log_max_size_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_size")) + `</label>
                     <input type="number" id="audit_log_max_size_mb" name="audit_log_max_size_mb" value="` + auditLogMaxSizeMB + `" min="10" max="10000" required>
-                    <p class="help-text">Maximum database size for audit logs before automatic cleanup of oldest entries (default: 100 MB)</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_size_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="server_log_max_size_mb">Server Log Max Size (MB)</label>
+                    <label for="server_log_max_size_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.server_size")) + `</label>
                     <input type="number" id="server_log_max_size_mb" name="server_log_max_size_mb" value="` + serverLogMaxSizeMB + `" min="10" max="1000" required>
-                    <p class="help-text">Maximum file size for server logs before automatic rotation (default: 50 MB)</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.server_size_help")) + `</p>
                 </div>
 
+                </fieldset>
+                <fieldset><legend>` + tr.T("overhaul.settings.appearance") + `</legend>
                 <div class="form-group">
                     <label style="display: flex; align-items: center; cursor: pointer;">
                         <input type="checkbox" id="dashboard_style" name="dashboard_style" ` + dashboardStyleChecked + ` style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
-                        <span>Use plain white dashboard (instead of colorful)</span>
+                        <span>` + template.HTMLEscapeString(tr.T("overhaul.settings.plain")) + `</span>
                     </label>
-                    <p class="help-text">Enable this option for a clean white dashboard background instead of the colorful gradient</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.plain_help")) + `</p>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Settings</button>
-                <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">Cancel</a>
+                </fieldset>
+                <div class="wv-form-actions"><button type="submit" class="btn btn-primary">` + template.HTMLEscapeString(tr.T("overhaul.settings.save")) + `</button>
+                <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">` + template.HTMLEscapeString(tr.T("common.cancel")) + `</a>
+                </div>
             </form>
         </div>
 

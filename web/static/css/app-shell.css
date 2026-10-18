@@ -139,3 +139,90 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
 
 .wv-app .delete-request-btn { background: #fff !important; color: #b42332 !important; border: 1px solid #ecc7ce !important; }
 .wv-app .delete-request-btn:hover { background: #fff1f3 !important; }
+
+/* Content surfaces: one section edge, with light separators between records. */
+.wv-app .files-section .file-list { border: 0 !important; border-radius: 0 !important; background: transparent !important; gap: 0; }
+.wv-app .file-item { gap: 24px; align-items: flex-start; }
+.wv-app .file-item .file-info { overflow: visible; }
+.wv-app .file-info h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; line-height: 1.5; }
+.wv-app .file-info h3 > span:first-child { max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere; }
+.wv-app .file-info > p { font-size: 13px; line-height: 1.65; color: #52677b; }
+.wv-app .file-note { padding: 0 !important; margin: 8px 0 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; line-height: 1.6; }
+.wv-app .file-actions { min-width: 0; flex-shrink: 0; margin-top: 12px; }
+.wv-app .file-actions .btn { margin: 0; }
+.wv-share-details { margin-top: 14px; }
+.wv-share-details > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #087f95; font-size: 13px; font-weight: 600; cursor: pointer; }
+.wv-share-details > summary::before { content: "+"; font-size: 18px; }
+.wv-share-details[open] > summary::before { content: "−"; }
+.wv-app .wv-share-details .link-display { border: 0 !important; border-left: 2px solid #d7e6ed !important; background: transparent !important; border-radius: 0 !important; padding: 4px 0 4px 16px !important; }
+.wv-app .wv-share-details .link-box { border: 0 !important; background: #f5f8fb !important; gap: 12px; margin-bottom: 12px; }
+.wv-app .stats-bar { gap: 20px; justify-content: flex-start; padding: 24px; }
+.wv-app .stat-item { flex: 1; text-align: left; min-width: 0; background: transparent !important; padding: 0; }
+.wv-app .stat-item h3 { font-size: 12px; color: #52677b; }
+.wv-app .stat-item .value { font-size: 28px; color: #162d44 !important; }
+/* Forms and dialogs share the same type, spacing and subdued help surfaces. */
+.wv-app fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 30px; }
+.wv-app legend { width: 100%; padding: 0 0 12px; margin-bottom: 18px; border-bottom: 1px solid #e4ebf1; font-size: 17px; font-weight: 650; color: #162d44; }
+.wv-app .wv-settings-form .form-group { margin-bottom: 22px; }
+.wv-app .wv-settings-card { max-width: 1000px !important; }
+.wv-app .wv-public-address { padding: 20px; background: #f2f7fa; border-radius: 8px; margin-bottom: 30px; }
+.wv-app .wv-public-address :is(h3, p, #publicUrl) { color: #405a70 !important; }
+.wv-app .wv-public-address #publicUrl { font-weight: 500 !important; }
+.wv-app .help-text, .wv-app .form-group small { color: #52677b !important; font-size: 12px; line-height: 1.6; }
+.wv-app label { line-height: 1.5; }
+.wv-app :is(.modal, .wv-dialog) { padding: 16px; overflow-y: auto; backdrop-filter: blur(3px); }
+.wv-app :is(.modal-content, .details-modal-content, .wv-dialog > div) { width: min(100%, 620px) !important; max-height: calc(100dvh - 32px); overflow-y: auto; padding: 28px !important; border: 1px solid #dce5ed; border-radius: 14px !important; box-shadow: 0 20px 70px #11273b24 !important; background: #fff; }
+.wv-app :is(.modal-content, .wv-dialog > div) h2 { font-size: 22px; letter-spacing: -.4px; color: #162d44 !important; }
+.wv-app .modal-actions, .wv-form-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding-top: 8px; }
+.wv-app [style*="background: #fff3cd"], .wv-app [style*="background: #fff9e6"], .wv-app [style*="background: #e3f2fd"] { background: #f2f7fa !important; border: 0 !important; border-radius: 8px !important; color: #405a70 !important; }
+.wv-app [style*="color: #856404"], .wv-app [style*="color: #e65100"] { color: #405a70 !important; }
+.wv-app .file-request-section > div > p { line-height: 1.6; }
+.wv-app :is(.filters, .filters-card, .files-header) { padding: 22px; }
+.wv-app :is(.file-card, .account-card) { box-shadow: none !important; border: 1px solid #dce5ed !important; border-radius: 10px; }
+.wv-app .file-card-header { background: #f2f7fa !important; color: #162d44 !important; }
+.wv-app .pagination { border: 0 !important; border-radius: 0 !important; padding: 16px 0; }
+.wv-app button:disabled { opacity: .5 !important; cursor: default; }
+.wv-app :is(.modal-content, .wv-dialog) button[type="button"] { background: #fff; color: #34566b; border: 1px solid #c5d4df !important; }
+/* Public transfer pages put the file and download action ahead of optional copy. */
+.wv-transfer-page { padding: 40px 20px !important; }
+.wv-transfer-page .splash-container { max-width: 680px; padding: 36px; text-align: left; border: 1px solid #dce5ed; border-radius: 16px; box-shadow: 0 16px 50px #11273b0d; }
+.wv-transfer-page .logo { margin-bottom: 28px; }
+.wv-transfer-page .logo img { max-height: 60px; max-width: 180px; }
+.wv-transfer-page .file-icon { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin-bottom: 18px; border-radius: 12px; background: #edf8fb; color: #087f95; }
+.wv-transfer-page .file-icon svg { width: 28px; height: 28px; }
+.wv-transfer-page .file-info { margin-bottom: 20px; }
+.wv-transfer-page .file-info h2 { color: #162d44; font-size: clamp(20px, 3vw, 26px); line-height: 1.4; letter-spacing: -.4px; }
+.wv-transfer-page .wv-sender-note { padding: 16px 18px; margin: 20px 0; background: #f5f8fb; border-radius: 8px; }
+.wv-transfer-page .wv-sender-note h3 { color: #405a70 !important; font-size: 13px !important; margin-bottom: 6px !important; }
+.wv-transfer-page .wv-sender-note p { color: #405a70 !important; font-size: 14px !important; }
+.wv-transfer-page .file-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 24px 0; padding: 18px 0; border-block: 1px solid #e4ebf1; }
+.wv-transfer-page .detail-item { background: transparent; padding: 0; }
+.wv-transfer-page .detail-item h3 { color: #52677b; font-size: 11px; letter-spacing: .04em; }
+.wv-transfer-page .detail-item p { color: #162d44; font-size: 17px; }
+.wv-transfer-page .badge { background: #edf3f7; color: #405a70; font-size: 12px; margin: 0 0 18px; }
+.wv-transfer-page .download-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 50px; padding: 12px 20px; background: #087f95; color: #fff; border-radius: 8px; font-size: 16px; font-weight: 650; box-shadow: none; }
+.wv-transfer-page .download-btn svg { width: 22px; height: 22px; }
+.wv-transfer-page .download-btn:hover { background: #076c80; transform: none; box-shadow: none; }
+.wv-transfer-page .download-btn:focus-visible, .wv-transfer-page summary:focus-visible { outline: 3px solid #087f95; outline-offset: 4px; }
+.wv-transfer-page .poem-section { margin: 24px 0 0; padding: 16px 0 0; border: 0; border-top: 1px solid #e4ebf1; background: transparent; border-radius: 0; color: #52677b; }
+.wv-transfer-page .poem-section summary { font-size: 12px; cursor: pointer; }
+.wv-transfer-page .poem-text { font-size: 13px; margin-top: 14px; }
+.wv-transfer-page .poem-author { font-size: 12px; }
+.wv-transfer-page .footer { font-size: 11px; color: #52677b; margin-top: 24px; }
+@media (max-width: 768px) {
+ .wv-app .file-actions { width: 100%; }
+ .wv-app .stats-bar { flex-direction: row; flex-wrap: wrap; }
+ .wv-app .stat-item { flex-basis: 100px; }
+}
+@media (max-width: 540px) {
+ .wv-app :is(.modal-content, .wv-dialog > div) { padding: 20px !important; }
+ .wv-app .file-item { gap: 12px; }
+ .wv-app .files-header { padding: 18px; }
+ .wv-app .file-actions .btn { flex: 1 1 auto; }
+ .wv-transfer-page { padding: 20px 12px !important; align-items: flex-start; }
+ .wv-transfer-page .splash-container { padding: 24px 20px; border-radius: 12px; }
+}
+
+.wv-app .wv-request-item { padding: 18px 0; border-bottom: 1px solid #e4ebf1; }
+.wv-app .wv-request-item:last-child { border-bottom: 0; }
+.wv-app .wv-request-item h4 { color: #162d44; font-size: 15px; }

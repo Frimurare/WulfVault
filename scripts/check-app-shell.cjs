@@ -75,6 +75,41 @@ const pages = [
               assert.equal(await action.evaluate((el) => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)', 'team actions must use the shared neutral style');
               assert.ok(!/\p{Extended_Pictographic}/u.test(await page.locator('.team-actions').innerText()), 'team actions must not contain legacy emoji');
             }
+            if (lang === 'sv' && name === 'admin-teams') {
+              assert.match(await page.locator('#main').innerText(), /Hantera team/);
+              assert.ok(!(await page.locator('#main').innerText()).includes('Manage Teams'));
+              await page.getByRole('button', { name: '+ Skapa team', exact: true }).click();
+              assert.ok(await page.locator('#teamModal').isVisible());
+              assert.equal(await page.locator('#modalTitle').innerText(), 'Skapa team');
+              await page.locator('#teamModal').getByRole('button', { name: 'Avbryt', exact: true }).click();
+            }
+            if (name === 'my-files') {
+              const share = page.locator('.wv-share-details').first();
+              assert.equal(await share.getAttribute('open'), null, 'sharing URLs should start collapsed');
+              await share.locator('summary').click();
+              assert.ok(await share.locator('.link-display').isVisible());
+              assert.equal(await share.locator('.link-box a').count(), 2, 'both sharing URL variants must remain available');
+              await share.locator('summary').click();
+              await page.locator('button[onclick="showCreateRequestModal()"]').click();
+              assert.ok(await page.locator('#fileRequestModal').isVisible());
+              const modalSize = await page.locator('#fileRequestModal > div').boundingBox();
+              assert.ok(modalSize.height <= 969, 'request dialog must fit the viewport');
+              if (lang === 'sv' && [1440, 390].includes(width)) {
+                const png = await page.screenshot({ path: 'ui-screenshots/request-dialog-' + width + '.png', fullPage: true });
+                const encoded = png.toString('base64');
+                for (let i = 0; i < encoded.length; i += 4000) console.log('WV_APP_PREVIEW_request-dialog_' + width + ':' + encoded.slice(i, i + 4000));
+              }
+              await page.locator('button[onclick="closeFileRequestModal()"]').click();
+            }
+            if (name === 'download-splash') {
+              assert.ok(await page.locator('#wvDownloadButton').isVisible());
+              assert.equal(await page.locator('.poem-section').getAttribute('open'), null);
+              const positions = await page.evaluate(() => ({
+                button: document.getElementById('wvDownloadButton').getBoundingClientRect().top,
+                poem: document.querySelector('.poem-section').getBoundingClientRect().top
+              }));
+              assert.ok(positions.button < positions.poem, 'download action must precede optional poem');
+            }
             const overflow = await page.evaluate(() => ({
               page: document.documentElement.scrollWidth,
               width: innerWidth,
@@ -85,7 +120,7 @@ const pages = [
             await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
             if (lang === 'sv' && [1440, 390].includes(width)) {
               await page.screenshot({ path: 'ui-screenshots/' + name + '-' + width + '.png', fullPage: true });
-              if (['admin-teams', 'my-files', 'files'].includes(name)) {
+              if (['admin-teams', 'my-files', 'files', 'server-settings', 'download-splash'].includes(name)) {
                 const png = await fs.readFile('ui-screenshots/' + name + '-' + width + '.png');
                 const encoded = png.toString('base64');
                 for (let i = 0; i < encoded.length; i += 4000) console.log('WV_APP_PREVIEW_' + name + '_' + width + ':' + encoded.slice(i, i + 4000));

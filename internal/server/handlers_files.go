@@ -1541,8 +1541,8 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body class="wv-public">
-    <div class="splash-container">
+<body class="wv-public wv-transfer-page">
+    <main class="splash-container">
         <div class="logo">`
 
 	if logoData != "" {
@@ -1554,19 +1554,19 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, tr *i18n.Translator, fi
 	html += `
         </div>
 
-        <div class="file-icon">📦</div>
+        <div class="file-icon" aria-hidden="true">` + string(dashboardIcon("folder")) + `</div>
 
         <div class="file-info">
-            <h2>` + fileInfo.Name + `</h2>
+            <h2>` + template.HTMLEscapeString(fileInfo.Name) + `</h2>
         </div>`
 
 	// Add comment/note if present (moved to top as it's important)
 	if fileInfo.Comment != "" {
 		html += `
-        <div style="margin: 25px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid ` + primaryColor + `; border-radius: 8px; text-align: left;">
-            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">💬 ` + tr.T("splash.note_from_sender") + `</h3>
+        <section class="wv-sender-note">
+            <h3 style="color: ` + primaryColor + `; font-size: 16px; margin-bottom: 10px;">` + tr.T("splash.note_from_sender") + `</h3>
             <p style="color: #555; font-size: 15px; line-height: 1.6;">` + template.HTMLEscapeString(fileInfo.Comment) + `</p>
-        </div>`
+        </section>`
 	}
 
 	html += `
@@ -1600,29 +1600,30 @@ func (s *Server) renderSplashPage(w http.ResponseWriter, tr *i18n.Translator, fi
         </div>`
 
 	if fileInfo.RequireAuth {
-		html += `<div class="badge">🔒 ` + tr.T("splash.auth_required_badge") + `</div>`
+		html += `<div class="badge">` + tr.T("splash.auth_required_badge") + `</div>`
 	}
 
 	// Add Poem of the Day section
 	html += `
-        <div class="poem-section">
-            <div class="poem-title">📖 ` + tr.T("splash.poem_title") + `</div>
-            <div class="poem-text">` + poem.Text + `</div>
-            <div class="poem-author">— ` + poem.Author + `</div>
-        </div>
+
 
         <a href="` + downloadURL + `" class="download-btn" id="wvDownloadButton"
            data-file-id="` + template.HTMLEscapeString(fileInfo.Id) + `"
            data-api-base="/api/v1/download/` + template.HTMLEscapeString(fileInfo.Id) + `"
            data-direct-url="/d/` + template.HTMLEscapeString(fileInfo.Id) + `">
-            <span style="font-size: 24px; margin-right: 10px;">⬇️</span>
-            <span style="font-size: 20px; font-weight: 700;" data-download-label>` + tr.T("splash.download_button") + `</span>
+            ` + string(dashboardIcon("download")) + `
+            <span data-download-label>` + tr.T("splash.download_button") + `</span>
         </a>
+
+        <details class="poem-section"><summary>` + tr.T("splash.poem_title") + `</summary>
+            <div class="poem-text">` + template.HTMLEscapeString(poem.Text) + `</div>
+            <div class="poem-author">— ` + template.HTMLEscapeString(poem.Author) + `</div>
+        </details>
 
         <div class="footer">
             ` + tr.TH("splash.powered_by", "company", companyName) + `
         </div>
-    </div>
+    </main>
     <script>
         window.WV_DOWNLOAD_I18N = ` + chunkedDownloadI18NJSON(tr) + `;
     </script>

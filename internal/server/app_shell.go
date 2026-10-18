@@ -112,9 +112,9 @@ func (s *Server) renderAppShell(tr *i18n.Translator, user *models.User, role str
 	return out.String()
 }
 
-const appShellAssets = `<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-5">
-<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-5">
-<script src="/static/js/admin-overview.js?v=wolf-overhaul-5" defer></script>`
+const appShellAssets = `<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-6">
+<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-6">
+<script src="/static/js/admin-overview.js?v=wolf-overhaul-6" defer></script>`
 
 const appShellTemplate = `{{define "app-shell"}}
 <a class="wv-skip" href="#main">{{t "admin.overview.skip"}}</a>
