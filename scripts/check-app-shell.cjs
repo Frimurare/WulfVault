@@ -43,6 +43,11 @@ const pages = [
               const html = await fs.readFile(path.join(process.env.WV_UI_PREVIEW_DIR, name + '-' + lang + '.html'));
               return route.fulfill({ contentType: 'text/html; charset=utf-8', body: html });
             }
+            if (url.pathname === '/file-request/list') {
+              return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ requests: [
+                { id: 1, title: 'Review documents', message: 'Upload the latest report', is_active: true, is_expired: false, expires_at: Math.floor(Date.now() / 1000) + 7200, upload_url: 'https://vault.example.com/upload-request/demo' }
+              ] }) });
+            }
             if (request.resourceType() === 'fetch' || request.resourceType() === 'xhr') {
               return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, logs: [], teams: [], files: [], emails: [], total: 0, total_count: 0, count: 0 }) });
             }
@@ -84,6 +89,11 @@ const pages = [
               await page.locator('#teamModal').getByRole('button', { name: 'Avbryt', exact: true }).click();
             }
             if (name === 'my-files') {
+              assert.equal(await page.locator('.wv-request-item').count(), 1, 'populated upload request should render');
+              if (lang === 'sv') {
+                assert.match(await page.locator('.wv-request-item').innerText(), /Kopiera/);
+                assert.ok(!(await page.locator('.wv-request-item').innerText()).includes('Delete'));
+              }
               const share = page.locator('.wv-share-details').first();
               assert.equal(await share.getAttribute('open'), null, 'sharing URLs should start collapsed');
               await share.locator('summary').click();
@@ -104,6 +114,8 @@ const pages = [
             if (name === 'download-splash') {
               assert.ok(await page.locator('#wvDownloadButton').isVisible());
               assert.equal(await page.locator('.poem-section').getAttribute('open'), null);
+              const transferAxe = await new AxeBuilder({ page }).include('.splash-container').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+              assert.deepEqual(transferAxe.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) })), [], 'public transfer accessibility');
               const positions = await page.evaluate(() => ({
                 button: document.getElementById('wvDownloadButton').getBoundingClientRect().top,
                 poem: document.querySelector('.poem-section').getBoundingClientRect().top

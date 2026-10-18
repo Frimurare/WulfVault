@@ -1084,13 +1084,13 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             <h2>` + template.HTMLEscapeString(tr.T("overhaul.teams.add_title")) + `</h2>
             <input type="hidden" id="addMemberTeamId">
             <div class="form-group">
-                <label>` + template.HTMLEscapeString(tr.T("overhaul.teams.select_user")) + `</label>
+                <label for="userSelect">` + template.HTMLEscapeString(tr.T("overhaul.teams.select_user")) + `</label>
                 <select id="userSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                     <option value="">` + template.HTMLEscapeString(tr.T("overhaul.teams.loading_users")) + `</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>` + template.HTMLEscapeString(tr.T("overhaul.teams.role")) + `</label>
+                <label for="roleSelect">` + template.HTMLEscapeString(tr.T("overhaul.teams.role")) + `</label>
                 <select id="roleSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                     <option value="2">` + template.HTMLEscapeString(tr.T("overhaul.teams.member")) + `</option>
                     <option value="1">` + template.HTMLEscapeString(tr.T("overhaul.teams.admin")) + `</option>
@@ -1168,7 +1168,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                 }
             })
             .catch(err => {
-                alert('Error: ' + err.message);
+                alert('` + template.JSEscapeString(tr.T("overhaul.dashboard.error")) + `' + err.message);
             });
         }
 
@@ -1293,7 +1293,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                 }
             })
             .catch(err => {
-                alert('Error: ' + err.message);
+                alert('` + template.JSEscapeString(tr.T("overhaul.dashboard.error")) + `' + err.message);
             });
         }
 

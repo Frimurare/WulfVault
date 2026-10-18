@@ -1139,13 +1139,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                 <h2 id="requestModalTitle" style="margin-bottom: 24px; color: #333;">` + tr.T("dashboard.create_upload_request") + `</h2>
                 <form id="fileRequestForm" onsubmit="submitFileRequest(event)">
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_title_label") + `</label>
+                        <label for="requestTitle" style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_title_label") + `</label>
                         <input type="text" id="requestTitle" required placeholder="` + template.HTMLEscapeString(tr.T("dashboard.request_title_placeholder")) + `" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">` + tr.T("dashboard.request_title_help") + `</p>
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.message_optional_label") + `</label>
+                        <label for="requestMessage" style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.message_optional_label") + `</label>
                         <textarea id="requestMessage" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.request_message_placeholder")) + `" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
                     </div>
 
@@ -1156,13 +1156,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     </div>
 
                     <div style="margin-bottom: 24px;">
-                        <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_max_size_label") + `</label>
+                        <label for="requestMaxSize" style="display: block; margin-bottom: 8px; color: #333; font-weight: 600;">` + tr.T("dashboard.request_max_size_label") + `</label>
                         <input type="number" id="requestMaxSize" min="0.1" max="15" step="0.1" value="1" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">` + tr.T("dashboard.request_max_size_help") + `</p>
                     </div>
 
                     <div style="margin-bottom: 24px; background: #f7fafc; padding: 16px; border-radius: 8px; border: 1px solid #c5d4df;">
-                        <label style="display: block; margin-bottom: 8px; color: #405a70; font-weight: 700; font-size: 16px;"> ` + tr.T("dashboard.request_recipient_email_label") + `</label>
+                        <label for="requestRecipientEmail" style="display: block; margin-bottom: 8px; color: #405a70; font-weight: 700; font-size: 16px;">` + tr.T("dashboard.request_recipient_email_label") + `</label>
                         <input type="email" id="requestRecipientEmail" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 12px; border: 1px solid #c5d4df; border-radius: 6px; font-size: 14px; background: white;">
                         <p style="color: #405a70; font-size: 13px; margin-top: 8px; font-weight: 600;">` + tr.T("dashboard.request_recipient_email_help") + `</p>
                     </div>

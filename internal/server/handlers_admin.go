@@ -2801,7 +2801,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 
         <!-- Search and Sort Controls -->
         <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-            <input type="text" id="fileSearch" placeholder=" Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
+            <input type="text" id="fileSearch" placeholder="` + template.HTMLEscapeString(tr.T("overhaul.files.search")) + `" onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
             <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
                 <option value="name-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.name_asc")) + `</option>
                 <option value="name-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.name_desc")) + `</option>
@@ -2972,14 +2972,14 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                         let html = '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
-                        html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
+                        html += '<th style="padding: 12px; text-align: left;">` + template.JSEscapeString(tr.T("overhaul.files.downloaded_by")) + `</th>';
                         html += '<th style="padding: 12px; text-align: left;">` + template.HTMLEscapeString(tr.T("overhaul.files.ip")) + `</th>';
                         html += '</tr></thead><tbody>';
 
                         data.logs.forEach(log => {
                             const date = new Date(log.downloadedAt * 1000);
                             const dateStr = date.toLocaleString('sv-SE');
-                            const downloader = log.email || 'Anonymous';
+                            const downloader = log.email || '` + template.JSEscapeString(tr.T("overhaul.files.anonymous")) + `';
                             const ip = log.ipAddress || 'N/A';
                             const authBadge = log.isAuthenticated ? ' <span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;"> ` + template.HTMLEscapeString(tr.T("overhaul.files.auth")) + `</span>' : '';
 
@@ -2991,14 +2991,14 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                         });
 
                         html += '</tbody></table></div>';
-                        html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
+                        html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">` + template.JSEscapeString(tr.T("overhaul.files.total_downloads")) + `' + data.logs.length + '</p>';
                         document.getElementById('downloadHistoryContent').innerHTML = html;
                     } else {
                         document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("overhaul.files.history_empty")) + `</p>';
                     }
                 })
                 .catch(error => {
-                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">Error loading download history</p>';
+                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">` + template.JSEscapeString(tr.T("overhaul.files.history_error_full")) + `</p>';
                     console.error('Error:', error);
                 });
         }
@@ -3105,12 +3105,12 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
     </script>
 
     <!-- Download History Modal -->
-    <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="downloadHistoryModal" class="wv-dialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
             <h2 style="margin-bottom: 24px; color: #333;"> ` + template.HTMLEscapeString(tr.T("overhaul.files.history_title")) + `</h2>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + template.JSEscapeString(tr.T("overhaul.files.file_label")) + `</label>
                 <p id="historyFileName" style="color: #666; font-weight: 600;"></p>
             </div>
 
@@ -4021,11 +4021,11 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
                     if (success) {
                         showCopySuccess();
                     } else {
-                        alert('Failed to copy URL. Please copy manually: ' + urlInput.value);
+                        alert('` + template.JSEscapeString(tr.T("overhaul.settings.copy_failed")) + `' + urlInput.value);
                     }
                 } catch (err) {
                     console.error('Copy failed:', err);
-                    alert('Failed to copy URL. Please copy manually: ' + urlInput.value);
+                    alert('` + template.JSEscapeString(tr.T("overhaul.settings.copy_failed")) + `' + urlInput.value);
                 }
             }
 

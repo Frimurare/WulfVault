@@ -598,5 +598,11 @@
   "overhaul.dashboard.expiring": "Går snart ut…",
   "overhaul.dashboard.removal": "Automatisk borttagning",
   "overhaul.dashboard.error": "Fel: ",
-  "overhaul.dashboard.requests_error": "Kunde inte ladda uppladdningsförfrågningar"
+  "overhaul.dashboard.requests_error": "Kunde inte ladda uppladdningsförfrågningar",
+  "overhaul.files.downloaded_by": "Nedladdat av",
+  "overhaul.files.anonymous": "Anonym",
+  "overhaul.files.total_downloads": "Nedladdningar totalt: ",
+  "overhaul.files.history_error_full": "Kunde inte ladda nedladdningshistoriken",
+  "overhaul.files.file_label": "Fil:",
+  "overhaul.settings.copy_failed": "Kunde inte kopiera adressen. Kopiera den manuellt: "
 }

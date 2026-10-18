@@ -598,5 +598,11 @@
   "overhaul.dashboard.expiring": "Expiring soon…",
   "overhaul.dashboard.removal": "Automatic removal",
   "overhaul.dashboard.error": "Error: ",
-  "overhaul.dashboard.requests_error": "Could not load upload requests"
+  "overhaul.dashboard.requests_error": "Could not load upload requests",
+  "overhaul.files.downloaded_by": "Downloaded By",
+  "overhaul.files.anonymous": "Anonymous",
+  "overhaul.files.total_downloads": "Total downloads: ",
+  "overhaul.files.history_error_full": "Error loading download history",
+  "overhaul.files.file_label": "File:",
+  "overhaul.settings.copy_failed": "Failed to copy URL. Please copy manually: "
 }
