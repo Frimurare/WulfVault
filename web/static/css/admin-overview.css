@@ -191,5 +191,7 @@
 .wv-sidebar .wv-sidebar-version { margin: auto 14px 0; padding-top: 28px; color: #a5b8c9; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 @media (max-width: 900px) {
   .wv-sidebar .wv-sidebar-version { margin: 0; padding: 12px 0 0; }
-  .wv-sidebar:has(.wv-navigation:not([open])) .wv-sidebar .wv-sidebar-version { display: none; }
+  .wv-sidebar:has(.wv-navigation:not([open])) .wv-sidebar-version { display: none; }
 }
+
+.wv-sidebar-version > span { display: block; }

@@ -247,9 +247,9 @@ const adminOverviewTemplate = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{t "admin.page_title"}} · {{.Company}}</title>
-<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-4">
-<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-4">
-<script src="/static/js/admin-overview.js?v=wolf-overhaul-4" defer></script>
+<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-5">
+<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-5">
+<script src="/static/js/admin-overview.js?v=wolf-overhaul-5" defer></script>
 </head>
 <body class="wv-overview{{if .Plain}} wv-plain{{end}}">
 {{template "app-shell" .}}

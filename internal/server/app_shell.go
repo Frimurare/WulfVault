@@ -112,9 +112,9 @@ func (s *Server) renderAppShell(tr *i18n.Translator, user *models.User, role str
 	return out.String()
 }
 
-const appShellAssets = `<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-4">
-<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-4">
-<script src="/static/js/admin-overview.js?v=wolf-overhaul-4" defer></script>`
+const appShellAssets = `<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-5">
+<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-5">
+<script src="/static/js/admin-overview.js?v=wolf-overhaul-5" defer></script>`
 
 const appShellTemplate = `{{define "app-shell"}}
 <a class="wv-skip" href="#main">{{t "admin.overview.skip"}}</a>
@@ -134,7 +134,7 @@ const appShellTemplate = `{{define "app-shell"}}
       </div>
     </nav>
   </details>
-  {{if .Version}}<p class="wv-sidebar-version">v{{.Version}}</p>{{end}}
+  <div class="wv-sidebar-version"><span>WulfVault © 2025 Ulf Holmström</span>{{if .Version}}<span>v{{.Version}}</span>{{end}}</div>
 </aside>
   <header class="wv-topbar">
     <p class="wv-breadcrumb"><span class="wv-breadcrumb-context">{{.Company}}</span> <span aria-hidden="true">/</span> <strong class="wv-current-page">{{.PageTitle}}</strong></p>
