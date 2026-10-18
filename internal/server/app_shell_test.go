@@ -62,7 +62,7 @@ func TestApplicationPageFixtures(t *testing.T) {
 	if err := database.DB.CreateUser(member); err != nil {
 		t.Fatal(err)
 	}
-	file := &database.FileInfo{Id: "demo-report", Name: "Quarterly-report-with-a-long-filename.pdf", UserId: user.Id, Size: "4 KB", SizeBytes: 4096, UploadDate: time.Now().Unix(), DownloadsRemaining: -1}
+	file := &database.FileInfo{Id: "demo-report", Name: "Quarterly-report-with-a-long-filename.pdf", UserId: user.Id, Size: "4 KB", SizeBytes: 4096, UploadDate: time.Now().Unix(), DownloadsRemaining: -1, UnlimitedDownloads: true, UnlimitedTime: true, RequireAuth: true, Comment: "Shared document for review"}
 	if err := database.DB.SaveFile(file); err != nil {
 		t.Fatal(err)
 	}
