@@ -534,8 +534,8 @@ function loadFileRequests() {
 
                 html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
                 html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
-                html += '<button onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy</button>';
-                html += '<button class="delete-request-btn" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
+                html += '<button class="btn btn-secondary" onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy</button>';
+                html += '<button class="delete-request-btn btn btn-danger" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>';
                 html += '</div></div>';
             });
             html += '</div>';

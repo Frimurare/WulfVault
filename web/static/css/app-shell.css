@@ -136,3 +136,6 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
   .wv-app .team-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wv-app .team-actions button { width: 100%; padding: 10px 12px !important; }
 }
+
+.wv-app .delete-request-btn { background: #fff !important; color: #b42332 !important; border: 1px solid #ecc7ce !important; }
+.wv-app .delete-request-btn:hover { background: #fff1f3 !important; }
