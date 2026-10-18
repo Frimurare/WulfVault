@@ -247,9 +247,9 @@ const adminOverviewTemplate = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{t "admin.page_title"}} · {{.Company}}</title>
-<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-3">
-<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-3">
-<script src="/static/js/admin-overview.js?v=wolf-overhaul-3" defer></script>
+<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-4">
+<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-4">
+<script src="/static/js/admin-overview.js?v=wolf-overhaul-4" defer></script>
 </head>
 <body class="wv-overview{{if .Plain}} wv-plain{{end}}">
 {{template "app-shell" .}}
@@ -311,7 +311,7 @@ const adminOverviewTemplate = `<!DOCTYPE html>
       <div class="wv-duplicates">{{range .Duplicates}}<article class="wv-card wv-panel"><h3>{{.Name}}</h3><p>{{.Size}} · {{t "admin.overview.copies" "count" (printf "%d" .Count)}}</p><p class="wv-help">{{t "admin.overview.file_ids"}}: {{range $i, $id := .FileIds}}{{if $i}}, {{end}}{{$id}}{{end}}</p></article>{{else}}<p class="wv-help">{{t "admin.overview.no_duplicates"}}</p>{{end}}<a class="wv-text-link" href="/admin/duplicates">{{t "admin.overview.review_duplicates"}} →</a></div>
     </details>
   </main>
-  <footer class="wv-footer"><span>{{.Company}} · WulfVault</span><span>v{{.Version}}</span></footer>
+  <footer class="wv-footer"><span>{{.Company}} · WulfVault</span></footer>
 </div>
 </body>
 </html>

@@ -184,3 +184,12 @@
   .wv-workspace { margin: 0; }
   :is(.wv-overview, .wv-app) { background: #fff; }
 }
+
+/* Keep the running version beneath navigation and at the foot of tall screens. */
+.wv-sidebar { display: flex; flex-direction: column; }
+.wv-brand, .wv-navigation { flex-shrink: 0; }
+.wv-sidebar-version { margin: auto 14px 0; padding-top: 28px; color: #a5b8c9; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .wv-sidebar-version { margin: 0; padding: 12px 0 0; }
+  .wv-sidebar:has(.wv-navigation:not([open])) .wv-sidebar-version { display: none; }
+}

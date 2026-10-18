@@ -112,16 +112,15 @@ func (s *Server) renderAppShell(tr *i18n.Translator, user *models.User, role str
 	return out.String()
 }
 
-const appShellAssets = `<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-3">
-<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-3">
-<script src="/static/js/admin-overview.js?v=wolf-overhaul-3" defer></script>`
+const appShellAssets = `<link rel="stylesheet" href="/static/css/admin-overview.css?v=wolf-overhaul-4">
+<link rel="stylesheet" href="/static/css/app-shell.css?v=wolf-overhaul-4">
+<script src="/static/js/admin-overview.js?v=wolf-overhaul-4" defer></script>`
 
 const appShellTemplate = `{{define "app-shell"}}
 <a class="wv-skip" href="#main">{{t "admin.overview.skip"}}</a>
 <aside class="wv-sidebar" aria-label="{{t "admin.overview.navigation"}}">
   <a class="wv-brand" href="{{with index .Navigation 0}}{{.Href}}{{end}}">
     {{if .Logo}}<span class="wv-logo"><img src="{{.Logo}}" alt="{{.Company}}"></span>{{else}}<span class="wv-brand-icon">{{icon "shield"}}</span><span class="wv-company">{{.Company}}</span>{{end}}
-    <span class="wv-product">WulfVault</span>
   </a>
   <details class="wv-navigation" open>
     <summary>{{icon "folder"}}<span>{{t "admin.overview.navigation"}}</span><span class="wv-chevron" aria-hidden="true">⌄</span></summary>
@@ -135,6 +134,7 @@ const appShellTemplate = `{{define "app-shell"}}
       </div>
     </nav>
   </details>
+  {{if .Version}}<p class="wv-sidebar-version">v{{.Version}}</p>{{end}}
 </aside>
   <header class="wv-topbar">
     <p class="wv-breadcrumb"><span class="wv-breadcrumb-context">{{.Company}}</span> <span aria-hidden="true">/</span> <strong class="wv-current-page">{{.PageTitle}}</strong></p>
