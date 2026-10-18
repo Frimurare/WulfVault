@@ -820,7 +820,7 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, tr *i18n.Transla
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1134,10 +1134,10 @@ func (s *Server) renderEmailSettingsPage(w http.ResponseWriter, tr *i18n.Transla
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
 
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="settings-card">
             <h1>Email Settings</h1>
             <p class="subtitle">Configure email provider to send notifications</p>

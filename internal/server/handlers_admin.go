@@ -201,7 +201,7 @@ func (s *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Get available disk space on the filesystem
-	var diskAvailable int64
+	diskAvailable := int64(-1) // Unknown until Statfs succeeds.
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs(s.config.UploadsDir, &stat); err == nil {
 		diskAvailable = int64(stat.Bavail * uint64(stat.Bsize))
@@ -941,8 +941,10 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.
 	}
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     ` + s.getFaviconHTML() + `
@@ -956,9 +958,9 @@ func (s *Server) renderAdminDownloadAccountForm(w http.ResponseWriter, tr *i18n.
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
@@ -1485,517 +1487,6 @@ func (s *Server) handleAdminRestoreFile(w http.ResponseWriter, r *http.Request) 
 
 // getAdminHeaderHTML returns branded header HTML for admin pages
 
-func (s *Server) renderAdminDashboard(w http.ResponseWriter, tr *i18n.Translator, user *models.User, totalUsers, activeUsers, totalDownloads, downloadsToday int,
-	bytesDownloadedToday, bytesDownloadedWeek, bytesDownloadedMonth, bytesDownloadedYear int64,
-	bytesUploadedToday, bytesUploadedWeek, bytesUploadedMonth, bytesUploadedYear int64,
-	usersAdded, usersRemoved int, userGrowth float64,
-	activeFiles7Days, activeFiles30Days int, avgFileSize int64, avgDownloadsPerFile float64,
-	twoFAAdoption, avgBackupCodes float64,
-	largestFileName string, largestFileSize int64, top5ActiveUsers []string, top5FileCounts []int,
-	topFileTypes []string, fileTypeCounts []int, topWeekday string, weekdayCount int, storagePast, storageNow int64,
-	mostDownloadedFile string, downloadCount int, uploadsUsed, diskAvailable int64, duplicateFiles []DuplicateFile) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	// Get dashboard style preference
-	dashboardStyle, _ := database.DB.GetConfigValue("dashboard_style")
-	if dashboardStyle == "" {
-		dashboardStyle = "colorful" // Default to colorful
-	}
-
-	// Get joke of the day
-	joke := models.GetJokeOfTheDay()
-
-	// Helper function to format bytes
-	formatBytes := func(bytes int64) string {
-		const unit = 1024
-		if bytes < unit {
-			return fmt.Sprintf("%d B", bytes)
-		}
-		div, exp := int64(unit), 0
-		for n := bytes / unit; n >= unit; n /= unit {
-			div *= unit
-			exp++
-		}
-		return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-	}
-
-	// Format all byte statistics (downloaded)
-	bytesDownloadedTodayStr := formatBytes(bytesDownloadedToday)
-	bytesDownloadedWeekStr := formatBytes(bytesDownloadedWeek)
-	bytesDownloadedMonthStr := formatBytes(bytesDownloadedMonth)
-	bytesDownloadedYearStr := formatBytes(bytesDownloadedYear)
-
-	// Format upload statistics
-	bytesUploadedTodayStr := formatBytes(bytesUploadedToday)
-	bytesUploadedWeekStr := formatBytes(bytesUploadedWeek)
-	bytesUploadedMonthStr := formatBytes(bytesUploadedMonth)
-	bytesUploadedYearStr := formatBytes(bytesUploadedYear)
-
-	// Format usage statistics
-	avgFileSizeStr := formatBytes(avgFileSize)
-
-	// Format file statistics
-	largestFileSizeStr := formatBytes(largestFileSize)
-
-	// Format trend data - file types string
-	fileTypesStr := ""
-	if len(topFileTypes) > 0 {
-		for i, ext := range topFileTypes {
-			if i > 0 {
-				fileTypesStr += ", "
-			}
-			fileTypesStr += fmt.Sprintf(".%s (%d)", ext, fileTypeCounts[i])
-		}
-	}
-
-	// Format storage trend
-	storagePastStr := formatBytes(storagePast)
-	storageNowStr := formatBytes(storageNow)
-	storageGrowth := 0.0
-	if storagePast > 0 {
-		storageGrowth = float64(storageNow-storagePast) / float64(storagePast) * 100
-	}
-
-	// Format disk storage statistics
-	uploadsUsedStr := formatBytes(uploadsUsed)
-	diskAvailableStr := formatBytes(diskAvailable)
-
-	html := `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="Ulf Holmström">
-    <title>Admin Dashboard - ` + s.config.CompanyName + `</title>
-    ` + s.getFaviconHTML() + `
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-            ` + func() string {
-		if dashboardStyle == "plain" {
-			return "background: #ffffff;"
-		}
-		return `background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            background-size: 200% 200%;
-            animation: gradientShift 15s ease infinite;`
-	}() + `
-            min-height: 100vh;
-            position: relative;
-        }
-
-        body::before {
-            ` + func() string {
-		if dashboardStyle == "plain" {
-			return "display: none;"
-		}
-		return `content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255, 107, 237, 0.3), transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(102, 126, 234, 0.2), transparent 50%);
-            pointer-events: none;
-            z-index: 0;`
-	}() + `
-        }
-
-        .main-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow:
-                0 8px 32px 0 rgba(31, 38, 135, 0.15),
-                0 20px 60px rgba(0, 0, 0, 0.1),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-card:hover {
-            transform: translateY(-4px);
-            box-shadow:
-                0 12px 48px 0 rgba(31, 38, 135, 0.25),
-                0 30px 80px rgba(0, 0, 0, 0.15),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-        }
-
-        .stat-number {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .gradient-border {
-            position: relative;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
-            border-radius: 1rem;
-            padding: 2px;
-        }
-
-        .gradient-border-inner {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: calc(1rem - 2px);
-            padding: 1.5rem;
-            backdrop-filter: blur(20px);
-        }
-
-        .section-title {
-            background: linear-gradient(135deg, #1e293b, #475569);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 800;
-            letter-spacing: -0.025em;
-        }
-
-        .wisdom-banner {
-            background: linear-gradient(135deg, ` + s.getPrimaryColor() + ` 0%, ` + s.getSecondaryColor() + ` 100%);
-            box-shadow:
-                0 20px 60px rgba(0, 0, 0, 0.25),
-                0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Twemoji image sizing */
-        img.emoji {
-            height: 1em;
-            width: 1em;
-            margin: 0 0.05em 0 0.1em;
-            vertical-align: -0.1em;
-            display: inline-block;
-        }
-
-        /* Larger emojis in specific contexts */
-        .text-3xl img.emoji {
-            height: 1.875rem;
-            width: 1.875rem;
-        }
-
-        .text-4xl img.emoji {
-            height: 2.25rem;
-            width: 2.25rem;
-        }
-    </style>
-</head>
-<body>
-    ` + s.getAdminHeaderHTML("", tr) + `
-
-    <div class="main-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <!-- File Sharing Wisdom Banner -->
-        <div class="wisdom-banner relative overflow-hidden rounded-2xl mb-12 transition-all duration-500 hover:scale-[1.02]">
-            <div class="p-6 sm:p-8">
-                <div class="flex items-start gap-4">
-                    <span class="emoji text-4xl">💡</span>
-                    <div>
-                        <div class="text-xs font-bold text-white/90 uppercase tracking-widest mb-3">File Sharing Wisdom</div>
-                        <p class="text-white text-lg sm:text-xl font-medium leading-relaxed">` + joke.Text + `</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dashboard Overview -->
-        <h2 class="section-title text-3xl mb-8">Dashboard Overview</h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Users</h3>
-                    <span class="emoji text-3xl">👥</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", totalUsers) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Active Users</h3>
-                    <span class="emoji text-3xl">✅</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", activeUsers) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Total Downloads</h3>
-                    <span class="emoji text-3xl">⬇️</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", totalDownloads) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Downloads Today</h3>
-                    <span class="emoji text-3xl">📅</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + fmt.Sprintf("%d", downloadsToday) + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Server Storage Used</h3>
-                    <span class="emoji text-3xl">💾</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + uploadsUsedStr + `</div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-xs font-bold text-slate-600 uppercase tracking-widest">Server Storage Left</h3>
-                    <span class="emoji text-3xl">📊</span>
-                </div>
-                <div class="stat-number text-5xl font-extrabold">` + diskAvailableStr + `</div>
-            </div>
-        </div>
-
-        <!-- Downloaded Data -->
-        <h2 class="section-title text-3xl mb-8">📥 Downloaded Data</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Today</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedTodayStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Week</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedWeekStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Month</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedMonthStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">This Year</h3>
-                    <div class="text-4xl font-extrabold text-blue-600">` + bytesDownloadedYearStr + `</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Uploaded Data -->
-        <h2 class="section-title text-3xl mb-8">📤 Uploaded Data</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">Today</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedTodayStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Week</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedWeekStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Month</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedMonthStr + `</div>
-                </div>
-            </div>
-            <div class="gradient-border">
-                <div class="gradient-border-inner">
-                    <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">This Year</h3>
-                    <div class="text-4xl font-extrabold text-emerald-600">` + bytesUploadedYearStr + `</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- User Growth -->
-        <h2 class="section-title text-3xl mb-8">👥 User Growth (This Month)</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-green-600 uppercase tracking-widest mb-4">Users Added</h3>
-                <div class="text-5xl font-extrabold text-green-600">` + fmt.Sprintf("%d", usersAdded) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-red-600 uppercase tracking-widest mb-4">Users Removed</h3>
-                <div class="text-5xl font-extrabold text-red-600">` + fmt.Sprintf("%d", usersRemoved) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Growth</h3>
-                <div class="text-5xl font-extrabold text-blue-600">` + fmt.Sprintf("%.1f%%", userGrowth) + `</div>
-            </div>
-        </div>
-
-        <!-- Usage Statistics -->
-        <h2 class="section-title text-3xl mb-8">📈 Usage Statistics</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-4">Active Files (7 days)</h3>
-                <div class="text-4xl font-extrabold text-purple-600">` + fmt.Sprintf("%d", activeFiles7Days) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-purple-700 uppercase tracking-widest mb-4">Active Files (30 days)</h3>
-                <div class="text-4xl font-extrabold text-purple-700">` + fmt.Sprintf("%d", activeFiles30Days) + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-4">Avg File Size</h3>
-                <div class="text-3xl font-extrabold text-indigo-600">` + avgFileSizeStr + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">Avg Downloads/File</h3>
-                <div class="text-4xl font-extrabold text-blue-600">` + fmt.Sprintf("%.1f", avgDownloadsPerFile) + `</div>
-            </div>
-        </div>
-
-        <!-- Security Overview -->
-        <h2 class="section-title text-3xl mb-8">🔐 Security Overview</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-violet-600 uppercase tracking-widest mb-5">2FA Adoption Rate</h3>
-                <div class="stat-number text-5xl font-extrabold mb-3">` + fmt.Sprintf("%.1f%%", twoFAAdoption) + `</div>
-                <p class="text-sm text-slate-600 font-medium">Percentage of Users/Admins with 2FA enabled</p>
-            </div>
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-violet-600 uppercase tracking-widest mb-5">Avg Backup Codes Remaining</h3>
-                <div class="stat-number text-5xl font-extrabold mb-3">` + fmt.Sprintf("%.1f", avgBackupCodes) + `</div>
-                <p class="text-sm text-slate-600 font-medium">Average per user with 2FA enabled</p>
-            </div>
-        </div>
-
-        <!-- File Statistics -->
-        <h2 class="section-title text-3xl mb-8">📁 File Statistics</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">Largest File</h3>
-                <div class="text-2xl font-extrabold text-slate-900 mb-3 break-words">` + largestFileName + `</div>
-                <p class="text-lg text-amber-600 font-bold">` + largestFileSizeStr + `</p>
-            </div>
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-5">5 Most Active Users</h3>` +
-		func() string {
-			html := `<div style="display: flex; flex-direction: column; gap: 8px;">`
-			for i := 0; i < len(top5ActiveUsers) && i < 5; i++ {
-				html += fmt.Sprintf(`
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 8px;">
-                        <span style="font-weight: 600; color: #1e293b;">%d. %s</span>
-                        <span style="color: #f59e0b; font-weight: 600;">%d files</span>
-                    </div>`, i+1, top5ActiveUsers[i], top5FileCounts[i])
-			}
-			html += `</div>`
-			return html
-		}() + `
-            </div>
-        </div>
-
-        <!-- Trend Data -->
-        <h2 class="section-title text-3xl mb-8">⚡ Trend Data</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Top File Types</h3>
-                <div class="text-lg font-bold text-slate-900 break-words">` + fileTypesStr + `</div>
-            </div>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Most Active Day</h3>
-                <div class="text-3xl font-extrabold text-slate-900 mb-2">` + topWeekday + `</div>
-                <p class="text-sm text-slate-600">` + fmt.Sprintf("%d downloads", weekdayCount) + `</p>
-            </div>
-            <div class="glass-card rounded-2xl p-6 lg:col-span-2">
-                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-widest mb-4">Storage Trend (Last 30 Days)</h3>
-                <div class="stat-number text-4xl font-extrabold mb-2">` + fmt.Sprintf("%+.1f%%", storageGrowth) + `</div>
-                <p class="text-sm text-slate-600 font-medium">` + storagePastStr + ` → ` + storageNowStr + `</p>
-            </div>
-        </div>
-
-        <!-- Fun Fact -->
-        <h2 class="section-title text-3xl mb-8">🎯 Fun Fact</h2>
-        <div class="grid grid-cols-1 gap-6 mb-16">
-            <div class="glass-card rounded-2xl p-8">
-                <h3 class="text-xs font-bold text-pink-600 uppercase tracking-widest mb-5">Most Downloaded File</h3>
-                <div class="text-3xl font-extrabold text-slate-900 mb-3 break-words">` + mostDownloadedFile + `</div>
-                <p class="text-lg text-pink-600 font-bold">` + fmt.Sprintf("%d downloads", downloadCount) + `</p>
-            </div>
-        </div>
-
-        <!-- Duplicate Files -->
-        <h2 class="section-title text-3xl mb-8">📋 Duplicate Files</h2>
-        <div class="glass-card rounded-2xl p-8 mb-16">
-            ` + func() string {
-		if len(duplicateFiles) == 0 {
-			return `<p class="text-slate-600 text-center">No duplicate files found. All files have unique name and size combinations.</p>`
-		}
-
-		html := `<div class="space-y-6">`
-		for _, dup := range duplicateFiles {
-			html += `
-                <div class="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-r-lg">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <h4 class="font-bold text-slate-900 mb-2 break-words">` + template.HTMLEscapeString(dup.Name) + `</h4>
-                            <p class="text-sm text-slate-600 mb-2">Size: ` + dup.Size + ` | Duplicates: ` + fmt.Sprintf("%d copies", dup.Count) + `</p>
-                            <div class="text-xs text-slate-500 font-mono">
-                                <p class="mb-1">File IDs: ` + func() string {
-				ids := ""
-				for i, id := range dup.FileIds {
-					if i > 0 {
-						ids += ", "
-					}
-					ids += id
-				}
-				return ids
-			}() + `</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>`
-		}
-		html += `</div>`
-		return html
-	}() + `
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="text-center py-8 text-xs text-slate-400">
-        Powered by WulfVault Version ` + s.config.Version + `
-    </div>
-
-    <script>
-        // Convert all emojis to colorful Twemoji images
-        window.addEventListener('DOMContentLoaded', function() {
-            twemoji.parse(document.body, {
-                folder: 'svg',
-                ext: '.svg'
-            });
-        });
-    </script>
-
-</body>
-</html>`
-
-	w.Write([]byte(html))
-}
-
 func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, users []*models.User, downloadAccounts []*models.DownloadAccount,
 	userFilter *database.UserFilter, userCount int, dlFilter *database.DownloadAccountFilter, dlCount int) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -2015,7 +1506,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2272,9 +1763,9 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
             <h2>Manage Users</h2>
             <a href="/admin/users/create" class="btn">+ Create User</a>
@@ -2335,7 +1826,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
             </form>
         </div>
 
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>Name</th>
@@ -2391,7 +1882,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
 
         <!-- User Pagination -->`
 
@@ -2468,7 +1959,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
             </form>
         </div>
 
-        <table>
+        <div class="wv-table-wrap"><table>
             <thead>
                 <tr>
                     <th>Name</th>
@@ -2520,7 +2011,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 
 	html += `
             </tbody>
-        </table>
+        </table></div>
 
         <!-- Download Account Pagination -->`
 
@@ -2670,8 +2161,10 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
     <title>` + title + `</title>
     ` + s.getFaviconHTML() + `
@@ -2685,9 +2178,9 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         .error { background: #fee; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c33; }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>` + title + `</h2>`
 
 	if errorMsg != "" {
@@ -2767,7 +2260,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 		}
 		return ""
 	}() + `>
-            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;">👁️</button>
+            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;"></button>
         </div>` + func() string {
 		if !isEdit {
 			return `
@@ -2775,7 +2268,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         <label>Confirm Password:</label>
         <div style="position: relative;">
             <input type="password" id="password_confirm" required>
-            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;">👁️</button>
+            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;"></button>
         </div>
         <div id="password-error" style="color: #c33; font-size: 14px; margin-top: 4px; display: none;">Passwords do not match</div>`
 		}
@@ -2819,7 +2312,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         <br>
         <label style="display: flex; align-items: center; cursor: pointer; background: #e3f2fd; padding: 12px; border-radius: 6px; border-left: 4px solid #2196f3;">
             <input type="checkbox" name="send_welcome_email" value="1" checked style="width: auto; margin-right: 8px;">
-            <span style="font-weight: 500;">📧 Send welcome email with password setup link</span>
+            <span style="font-weight: 500;"> Send welcome email with password setup link</span>
         </label>
         <div style="font-size: 13px; color: #666; margin-top: 8px; margin-left: 28px;">
             User will receive an email to set their own password. The password entered above will be ignored if checked.
@@ -2901,12 +2394,12 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 	totalStorageGB := fmt.Sprintf("%.2f GB", float64(totalStorage)/(1024*1024*1024))
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Ulf Holmström">
-    <title>All Files - ` + s.config.CompanyName + `</title>
+    <title>` + tr.T("nav.all_files") + ` - ` + s.config.CompanyName + `</title>
     ` + s.getFaviconHTML() + `
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -3286,40 +2779,40 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
-        <h2 style="margin-bottom: 20px;">All Files</h2>
+    <div class="container" id="main" role="main" tabindex="-1">
+        <h2 style="margin-bottom: 20px;">` + template.HTMLEscapeString(tr.T("nav.all_files")) + `</h2>
 
         <div class="stats-bar">
             <div class="stat-item">
-                <h3>Total Files</h3>
+                <h3>` + template.HTMLEscapeString(tr.T("overhaul.files.total")) + `</h3>
                 <div class="value">` + fmt.Sprintf("%d", len(files)) + `</div>
             </div>
             <div class="stat-item">
-                <h3>Total Storage</h3>
+                <h3>` + template.HTMLEscapeString(tr.T("overhaul.files.storage")) + `</h3>
                 <div class="value">` + totalStorageGB + `</div>
             </div>
             <div class="stat-item">
-                <h3>Total Downloads</h3>
+                <h3>` + template.HTMLEscapeString(tr.T("overhaul.files.downloads")) + `</h3>
                 <div class="value">` + fmt.Sprintf("%d", calculateTotalDownloads(files)) + `</div>
             </div>
         </div>
 
         <!-- Search and Sort Controls -->
         <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-            <input type="text" id="fileSearch" placeholder="🔍 Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
+            <input type="text" id="fileSearch" placeholder="` + template.HTMLEscapeString(tr.T("overhaul.files.search")) + `" onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
             <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
-                <option value="name-asc">📝 Name (A-Z)</option>
-                <option value="name-desc">📝 Name (Z-A)</option>
-                <option value="date-desc" selected>📅 Newest First</option>
-                <option value="date-asc">📅 Oldest First</option>
-                <option value="downloads-desc">📊 Most Downloads</option>
-                <option value="downloads-asc">📊 Least Downloads</option>
-                <option value="size-desc">📦 Largest First</option>
-                <option value="size-asc">📦 Smallest First</option>
-                <option value="user-asc">👤 User (A-Z)</option>
-                <option value="user-desc">👤 User (Z-A)</option>
+                <option value="name-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.name_asc")) + `</option>
+                <option value="name-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.name_desc")) + `</option>
+                <option value="date-desc" selected> ` + template.HTMLEscapeString(tr.T("overhaul.files.date_desc")) + `</option>
+                <option value="date-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.date_asc")) + `</option>
+                <option value="downloads-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.downloads_desc")) + `</option>
+                <option value="downloads-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.downloads_asc")) + `</option>
+                <option value="size-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.size_desc")) + `</option>
+                <option value="size-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.size_asc")) + `</option>
+                <option value="user-asc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.user_asc")) + `</option>
+                <option value="user-desc"> ` + template.HTMLEscapeString(tr.T("overhaul.files.user_desc")) + `</option>
             </select>
         </div>
 
@@ -3329,39 +2822,39 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 	if len(files) == 0 {
 		html += `
                 <li class="empty-state">
-                    No files in the system yet.
+                    ` + template.HTMLEscapeString(tr.T("overhaul.files.empty")) + `
                 </li>`
 	}
 
 	for _, f := range files {
 		// Get user info
-		userName := "Deleted user"
+		userName := tr.T("overhaul.files.deleted_user")
 		user, err := database.DB.GetUserByID(f.UserId)
 		if err == nil {
 			userName = user.Name
 		}
 
 		// Status
-		status := `<span class="badge badge-active">Active</span>`
+		status := `<span class="badge badge-active">` + template.HTMLEscapeString(tr.T("common.active")) + `</span>`
 		if !f.UnlimitedDownloads && f.DownloadsRemaining <= 0 {
-			status = `<span class="badge badge-expired">Expired</span>`
+			status = `<span class="badge badge-expired">` + template.HTMLEscapeString(tr.T("common.expired")) + `</span>`
 		} else if !f.UnlimitedTime && f.ExpireAt > 0 && f.ExpireAt < time.Now().Unix() {
-			status = `<span class="badge badge-expired">Expired</span>`
+			status = `<span class="badge badge-expired">` + template.HTMLEscapeString(tr.T("common.expired")) + `</span>`
 		}
 
 		// Auth badge
 		authBadge := ""
 		if f.RequireAuth {
-			authBadge = ` <span class="badge badge-auth">🔒 Auth</span>`
+			authBadge = ` <span class="badge badge-auth"> ` + template.HTMLEscapeString(tr.T("overhaul.files.auth")) + `</span>`
 		}
 
 		// Expiration info
-		expiryInfo := "Never"
+		expiryInfo := tr.T("common.never")
 		if !f.UnlimitedTime && f.ExpireAtString != "" {
 			expiryInfo = f.ExpireAtString
 		}
 		if !f.UnlimitedDownloads {
-			expiryInfo += fmt.Sprintf(" (%d left)", f.DownloadsRemaining)
+			expiryInfo += fmt.Sprintf(" (%d "+tr.T("overhaul.files.left")+")", f.DownloadsRemaining)
 		}
 
 		downloadURL := s.getPublicURL() + "/d/" + f.Id
@@ -3369,7 +2862,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
-			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong>📝 Note:</strong> %s</p>`,
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> ` + template.HTMLEscapeString(tr.T("overhaul.files.note")) + `</strong> %s</p>`,
 				template.HTMLEscapeString(f.Comment))
 		}
 
@@ -3383,15 +2876,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                 <li class="file-item" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-username="%s" data-comment="%s">
                     <div class="file-info">
                         <h3 title="%s">
-                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s
                         </h3>
-                        <p>%s • %s • %d downloads • Expires: %s</p>
+                        <p>%s • %s • %d ` + tr.T("overhaul.files.download_unit") + ` • ` + tr.T("overhaul.files.expires") + ` %s</p>
                         %s
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')">📊 History</button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)">📋 Copy</button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> ` + template.HTMLEscapeString(tr.T("overhaul.files.history")) + `</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> ` + template.HTMLEscapeString(tr.T("overhaul.files.copy")) + `</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')"> ` + template.HTMLEscapeString(tr.T("common.delete")) + `</button>
                     </div>
                 </li>`,
 			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, userName, template.HTMLEscapeString(f.Comment),
@@ -3415,7 +2908,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url).then(() => {
                     const originalText = button.innerHTML;
-                    button.innerHTML = '✓ Copied!';
+                    button.innerHTML = '` + template.JSEscapeString(tr.T("overhaul.files.copied")) + `';
                     button.style.background = '#4caf50';
                     setTimeout(() => {
                         button.innerHTML = originalText;
@@ -3439,15 +2932,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
             textArea.select();
             try {
                 document.execCommand('copy');
-                alert('✓ Link copied to clipboard!');
+                alert('` + template.JSEscapeString(tr.T("overhaul.files.copy_success")) + `');
             } catch (err) {
-                prompt('Copy this link manually:', text);
+                prompt('` + template.JSEscapeString(tr.T("overhaul.files.copy_manual")) + `', text);
             }
             document.body.removeChild(textArea);
         }
 
         async function deleteFile(fileId) {
-            if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) return;
+            if (!confirm('` + template.JSEscapeString(tr.T("overhaul.files.confirm_delete")) + `')) return;
 
             try {
                 const response = await fetch('/file/delete', {
@@ -3460,35 +2953,35 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                     location.reload();
                 } else {
                     const result = await response.json();
-                    alert('Delete failed: ' + (result.error || 'Unknown error'));
+                    alert('` + template.JSEscapeString(tr.T("overhaul.files.delete_error")) + `' + (result.error || '` + template.JSEscapeString(tr.T("overhaul.files.unknown")) + `'));
                 }
             } catch (error) {
-                alert('Delete failed: ' + error.message);
+                alert('` + template.JSEscapeString(tr.T("overhaul.files.delete_error")) + `' + error.message);
             }
         }
 
         function showDownloadHistory(fileId, fileName) {
             document.getElementById('historyFileName').textContent = fileName;
             document.getElementById('downloadHistoryModal').style.display = 'flex';
-            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">Loading...</p>';
+            document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("common.loading")) + `</p>';
 
             fetch('/file/downloads?file_id=' + encodeURIComponent(fileId))
                 .then(response => response.json())
                 .then(data => {
                     if (data.logs && data.logs.length > 0) {
-                        let html = '<table style="width: 100%; border-collapse: collapse;">';
+                        let html = '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">Date & Time</th>';
-                        html += '<th style="padding: 12px; text-align: left;">Downloaded By</th>';
-                        html += '<th style="padding: 12px; text-align: left;">IP Address</th>';
+                        html += '<th style="padding: 12px; text-align: left;">` + template.JSEscapeString(tr.T("overhaul.files.downloaded_by")) + `</th>';
+                        html += '<th style="padding: 12px; text-align: left;">` + template.HTMLEscapeString(tr.T("overhaul.files.ip")) + `</th>';
                         html += '</tr></thead><tbody>';
 
                         data.logs.forEach(log => {
                             const date = new Date(log.downloadedAt * 1000);
                             const dateStr = date.toLocaleString('sv-SE');
-                            const downloader = log.email || 'Anonymous';
+                            const downloader = log.email || '` + template.JSEscapeString(tr.T("overhaul.files.anonymous")) + `';
                             const ip = log.ipAddress || 'N/A';
-                            const authBadge = log.isAuthenticated ? ' <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🔒 Auth</span>' : '';
+                            const authBadge = log.isAuthenticated ? ' <span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;"> ` + template.HTMLEscapeString(tr.T("overhaul.files.auth")) + `</span>' : '';
 
                             html += '<tr style="border-bottom: 1px solid #eee;">';
                             html += '<td style="padding: 12px;">' + dateStr + '</td>';
@@ -3497,15 +2990,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                             html += '</tr>';
                         });
 
-                        html += '</tbody></table>';
-                        html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">Total downloads: ' + data.logs.length + '</p>';
+                        html += '</tbody></table></div>';
+                        html += '<p style="margin-top: 16px; color: #666; font-size: 14px;">` + template.JSEscapeString(tr.T("overhaul.files.total_downloads")) + `' + data.logs.length + '</p>';
                         document.getElementById('downloadHistoryContent').innerHTML = html;
                     } else {
-                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">No downloads yet</p>';
+                        document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("overhaul.files.history_empty")) + `</p>';
                     }
                 })
                 .catch(error => {
-                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">Error loading download history</p>';
+                    document.getElementById('downloadHistoryContent').innerHTML = '<p style="text-align: center; color: #f44336;">` + template.JSEscapeString(tr.T("overhaul.files.history_error_full")) + `</p>';
                     console.error('Error:', error);
                 });
         }
@@ -3612,22 +3105,22 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
     </script>
 
     <!-- Download History Modal -->
-    <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="downloadHistoryModal" class="wv-dialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h2 style="margin-bottom: 24px; color: #333;">📊 Download History</h2>
+            <h2 style="margin-bottom: 24px; color: #333;"> ` + template.HTMLEscapeString(tr.T("overhaul.files.history_title")) + `</h2>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + template.JSEscapeString(tr.T("overhaul.files.file_label")) + `</label>
                 <p id="historyFileName" style="color: #666; font-weight: 600;"></p>
             </div>
 
             <div id="downloadHistoryContent" style="margin-top: 20px;">
-                <p style="text-align: center; color: #999;">Loading...</p>
+                <p style="text-align: center; color: #999;">` + template.HTMLEscapeString(tr.T("common.loading")) + `</p>
             </div>
 
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button onclick="closeDownloadHistoryModal()" style="flex: 1; padding: 14px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                    Close
+                    ` + template.HTMLEscapeString(tr.T("common.close")) + `
                 </button>
             </div>
         </div>
@@ -3649,7 +3142,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 	totalPages := (totalFiles + limit - 1) / limit
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3855,10 +3348,10 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
-        <h2 style="margin-bottom: 20px;">🔍 Duplicate Files</h2>
+    <div class="container" id="main" role="main" tabindex="-1">
+        <h2 style="margin-bottom: 20px;"> Duplicate Files</h2>
 
         <div class="stats-bar">
             <div class="stat-item">
@@ -3892,7 +3385,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 		html += `
                 <li class="file-item">
                     <div style="text-align: center; width: 100%; padding: 40px 20px; color: #666;">
-                        ✨ No duplicate files found! All files have unique name and size combinations.
+                         No duplicate files found! All files have unique name and size combinations.
                     </div>
                 </li>`
 	}
@@ -3914,12 +3407,12 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 		}
 
 		// Duplicate badge
-		dupBadge := ` <span class="badge badge-duplicate">📋 DUPLICATE</span>`
+		dupBadge := ` <span class="badge badge-duplicate"> DUPLICATE</span>`
 
 		// Auth badge
 		authBadge := ""
 		if f.RequireAuth {
-			authBadge = ` <span class="badge badge-auth">🔒 Auth</span>`
+			authBadge = ` <span class="badge badge-auth"> Auth</span>`
 		}
 
 		// Expiration info
@@ -3940,7 +3433,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
-			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong>📝 Note:</strong> %s</p>`,
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> Note:</strong> %s</p>`,
 				template.HTMLEscapeString(f.Comment))
 		}
 
@@ -3948,15 +3441,15 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
                 <li class="file-item">
                     <div class="file-info">
                         <h3 title="%s">
-                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s%s
                         </h3>
-                        <p>👤 %s • 📦 %s • 📊 %d downloads • ⏰ Expires: %s • 📤 Uploaded: %s • 🆔 %s</p>
+                        <p> %s •  %s •  %d downloads •  Expires: %s •  Uploaded: %s •  %s</p>
                         %s
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')">📊 History</button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)">📋 Copy</button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> History</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> Copy</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')"> Delete</button>
                     </div>
                 </li>`,
 			template.HTMLEscapeString(f.Name),
@@ -4001,7 +3494,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
         function copyToClipboard(url, btn) {
             navigator.clipboard.writeText(url).then(() => {
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ Copied!';
+                btn.innerHTML = ' Copied!';
                 btn.style.background = '#28a745';
                 setTimeout(() => {
                     btn.innerHTML = originalText;
@@ -4050,7 +3543,7 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator,
 	brandingConfig, _ := database.DB.GetBrandingConfig()
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4143,9 +3636,9 @@ func (s *Server) renderAdminBranding(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>Branding Settings</h2>`
 
 	if message != "" {
@@ -4267,7 +3760,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4360,14 +3853,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
-        <div class="card">
-            <h2>System Settings</h2>`
+    <div class="container" id="main" role="main" tabindex="-1">
+        <div class="card wv-settings-card">
+            <h2>` + template.HTMLEscapeString(tr.T("admin.settings.page_title")) + `</h2>`
 
 	if message != "" {
-		if message[:5] == "Error" {
+		if strings.HasPrefix(message, "Error") {
 			html += `<div class="error">` + message + `</div>`
 		} else {
 			html += `<div class="success">` + message + `</div>`
@@ -4382,21 +3875,22 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 	}
 
 	html += `
-            <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;">📋 Current Public URL</h3>
-                <p style="color: #856404; font-size: 13px; margin-bottom: 12px;">Share this URL with your users to access the system:</p>
+            <section class="wv-public-address">
+                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;"> ` + template.HTMLEscapeString(tr.T("overhaul.settings.public")) + `</h3>
+                <p style="color: #856404; font-size: 13px; margin-bottom: 12px;">` + template.HTMLEscapeString(tr.T("overhaul.settings.public_help")) + `</p>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="text" id="publicUrl" value="` + fullPublicURL + `" readonly
                            style="flex: 1; padding: 12px; background: white; border: 2px solid #ffc107; font-family: monospace; font-size: 14px; font-weight: 600; color: #d32f2f;">
                     <button type="button" onclick="copyPublicURL()" class="btn"
                             style="background: #ffc107; color: #856404; font-weight: 700; white-space: nowrap;">
-                        📋 COPY URL
+                         ` + template.HTMLEscapeString(tr.T("overhaul.settings.copy")) + `
                     </button>
                 </div>
-                <p id="copyStatus" style="color: #28a745; font-size: 12px; margin-top: 8px; display: none;">✓ Copied to clipboard!</p>
-            </div>
+                <p id="copyStatus" style="color: #28a745; font-size: 12px; margin-top: 8px; display: none;">` + template.HTMLEscapeString(tr.T("overhaul.settings.copied")) + `</p>
+            </section>
 
-            <form method="POST" action="/admin/settings">
+            <form method="POST" action="/admin/settings" class="wv-settings-form">
+                <fieldset><legend>` + tr.T("overhaul.settings.connection") + `</legend>
                 <div class="form-group">
                     <label for="default_language">` + tr.T("admin.settings.default_language") + `</label>
                     <select id="default_language" name="default_language">` +
@@ -4405,64 +3899,72 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
                 </div>
 
                 <div class="form-group">
-                    <label for="server_url">Server URL</label>
+                    <label for="server_url">` + template.HTMLEscapeString(tr.T("overhaul.settings.url")) + `</label>
                     <input type="url" id="server_url" name="server_url" value="` + serverURL + `" required>
-                    <p class="help-text">The public URL where this server is accessible (e.g., https://files.manvarg.se). Do not include the port - it's configured separately below.</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.url_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="port">Server Port</label>
+                    <label for="port">` + template.HTMLEscapeString(tr.T("overhaul.settings.port")) + `</label>
                     <input type="number" id="port" name="port" value="` + port + `" min="1" max="65535" required>
-                    <p class="help-text">Port number for the server to listen on. Ports below 1024 require administrator privileges.</p>
-                    <p class="help-text" style="color: #ff6b00; font-weight: 600;">⚠️ Changes require server restart to take effect</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.port_help")) + `</p>
+                    <p class="help-text" style="color: #ff6b00; font-weight: 600;"> ` + template.HTMLEscapeString(tr.T("overhaul.settings.restart")) + `</p>
                 </div>
 
+                </fieldset>
+                <fieldset><legend>` + tr.T("overhaul.settings.storage") + `</legend>
                 <div class="form-group">
-                    <label for="max_file_size_mb">Max File Size (MB)</label>
+                    <label for="max_file_size_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.max_file")) + `</label>
                     <input type="number" id="max_file_size_mb" name="max_file_size_mb" value="` + maxFileSizeMB + `" min="1" required>
-                    <p class="help-text">Maximum file size users can upload</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.max_file_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="default_quota_mb">Default User Quota (MB)</label>
+                    <label for="default_quota_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.quota")) + `</label>
                     <input type="number" id="default_quota_mb" name="default_quota_mb" value="` + defaultQuotaMB + `" min="100" required>
-                    <p class="help-text">Default storage quota for new users</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.quota_help")) + `</p>
                 </div>
 
+                </fieldset>
+                <fieldset><legend>` + tr.T("overhaul.settings.retention") + `</legend>
                 <div class="form-group">
-                    <label for="trash_retention_days">Trash Retention Period (Days)</label>
+                    <label for="trash_retention_days">` + template.HTMLEscapeString(tr.T("overhaul.settings.trash")) + `</label>
                     <input type="number" id="trash_retention_days" name="trash_retention_days" value="` + trashRetentionDays + `" min="1" max="365" required>
-                    <p class="help-text">Number of days to keep deleted files in trash before permanent deletion</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.trash_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="audit_log_retention_days">Audit Log Retention (Days)</label>
+                    <label for="audit_log_retention_days">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_days")) + `</label>
                     <input type="number" id="audit_log_retention_days" name="audit_log_retention_days" value="` + auditLogRetentionDays + `" min="1" max="3650" required>
-                    <p class="help-text">Number of days to keep audit logs before automatic cleanup (default: 90 days)</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_days_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="audit_log_max_size_mb">Audit Log Max Size (MB)</label>
+                    <label for="audit_log_max_size_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_size")) + `</label>
                     <input type="number" id="audit_log_max_size_mb" name="audit_log_max_size_mb" value="` + auditLogMaxSizeMB + `" min="10" max="10000" required>
-                    <p class="help-text">Maximum database size for audit logs before automatic cleanup of oldest entries (default: 100 MB)</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.audit_size_help")) + `</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="server_log_max_size_mb">Server Log Max Size (MB)</label>
+                    <label for="server_log_max_size_mb">` + template.HTMLEscapeString(tr.T("overhaul.settings.server_size")) + `</label>
                     <input type="number" id="server_log_max_size_mb" name="server_log_max_size_mb" value="` + serverLogMaxSizeMB + `" min="10" max="1000" required>
-                    <p class="help-text">Maximum file size for server logs before automatic rotation (default: 50 MB)</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.server_size_help")) + `</p>
                 </div>
 
+                </fieldset>
+                <fieldset><legend>` + tr.T("overhaul.settings.appearance") + `</legend>
                 <div class="form-group">
                     <label style="display: flex; align-items: center; cursor: pointer;">
                         <input type="checkbox" id="dashboard_style" name="dashboard_style" ` + dashboardStyleChecked + ` style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
-                        <span>Use plain white dashboard (instead of colorful)</span>
+                        <span>` + template.HTMLEscapeString(tr.T("overhaul.settings.plain")) + `</span>
                     </label>
-                    <p class="help-text">Enable this option for a clean white dashboard background instead of the colorful gradient</p>
+                    <p class="help-text">` + template.HTMLEscapeString(tr.T("overhaul.settings.plain_help")) + `</p>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Save Settings</button>
-                <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">Cancel</a>
+                </fieldset>
+                <div class="wv-form-actions"><button type="submit" class="btn btn-primary">` + template.HTMLEscapeString(tr.T("overhaul.settings.save")) + `</button>
+                <a href="/admin" class="btn" style="background: #e0e0e0; margin-left: 10px;">` + template.HTMLEscapeString(tr.T("common.cancel")) + `</a>
+                </div>
             </form>
         </div>
 
@@ -4471,12 +3973,12 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
              See README.md section "Server Restart Feature" for details
 
         <div class="card" style="margin-top: 30px; border: 2px solid #f44336;">
-            <h2 style="color: #f44336;">⚙️ Server Management</h2>
+            <h2 style="color: #f44336;"> Server Management</h2>
             <p style="color: #666; margin-bottom: 20px;">
                 Restart the server to apply configuration changes or recover from issues.
             </p>
             <button onclick="confirmReboot()" class="btn" style="background: #f44336; color: white;">
-                🔄 Restart Server
+                 Restart Server
             </button>
             <p style="color: #999; font-size: 12px; margin-top: 10px;">
                 Note: Requires systemd service to be installed. See DEPLOYMENT.md for setup.
@@ -4519,11 +4021,11 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
                     if (success) {
                         showCopySuccess();
                     } else {
-                        alert('Failed to copy URL. Please copy manually: ' + urlInput.value);
+                        alert('` + template.JSEscapeString(tr.T("overhaul.settings.copy_failed")) + `' + urlInput.value);
                     }
                 } catch (err) {
                     console.error('Copy failed:', err);
-                    alert('Failed to copy URL. Please copy manually: ' + urlInput.value);
+                    alert('` + template.JSEscapeString(tr.T("overhaul.settings.copy_failed")) + `' + urlInput.value);
                 }
             }
 
@@ -4550,7 +4052,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
         */
     </script>
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-        Powered by WulfVault © Ulf Holmström – AGPL-3.0
+        Powered by WulfVault  Ulf Holmström – AGPL-3.0
     </div>
 </body>
 </html>`
@@ -4562,7 +4064,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4707,11 +4209,11 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top: 30px;">
-            <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
+            <h2 style="margin: 0;"> Trash (Deleted Files)</h2>`
 
 	if len(files) > 0 {
 		html += `
@@ -4728,7 +4230,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
                 transition: all 0.3s ease;
             " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.4)'"
                onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">
-                🗑️ Empty All Trash
+                 Empty All Trash
             </button>`
 	}
 
@@ -4736,7 +4238,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         </div>
 
         <div class="info-box">
-            ⚠️ Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
+             Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
         </div>
 
         <div class="file-list">`
@@ -4744,7 +4246,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 	if len(files) == 0 {
 		html += `
             <div class="empty-state">
-                <div class="empty-state-icon">🎉</div>
+                <div class="empty-state-icon"></div>
                 <p>Trash is empty</p>
             </div>`
 	}
@@ -4781,22 +4283,22 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Warning badge for files close to permanent deletion
 		warningBadge := ""
 		if daysLeft <= 2 {
-			warningBadge = `<span class="warning-badge">⚠️ ` + fmt.Sprintf("%d days left", daysLeft) + `</span>`
+			warningBadge = `<span class="warning-badge"> ` + fmt.Sprintf("%d days left", daysLeft) + `</span>`
 		}
 
 		html += fmt.Sprintf(`
             <div class="file-item">
                 <div class="file-info">
-                    <h3>📄 %s%s</h3>
+                    <h3> %s%s</h3>
                     <p>Owner: %s • Size: %s • Deleted: %s</p>
                     <p>Deleted by: %s • Auto-delete in: %d days</p>
                 </div>
                 <div class="file-actions">
                     <button class="btn btn-restore" onclick="restoreFile('%s')">
-                        ♻️ Restore
+                         Restore
                     </button>
                     <button class="btn btn-delete" onclick="permanentDelete('%s')">
-                        🗑️ Delete Forever
+                         Delete Forever
                     </button>
                 </div>
             </div>`,
@@ -4838,7 +4340,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
 
         async function permanentDelete(fileId) {
-            if (!confirm('⚠️ WARNING: This will PERMANENTLY delete the file. This action cannot be undone. Are you sure?')) return;
+            if (!confirm(' WARNING: This will PERMANENTLY delete the file. This action cannot be undone. Are you sure?')) return;
 
             try {
                 const response = await fetch('/admin/trash/delete', {
@@ -4859,11 +4361,11 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
 
         async function emptyAllTrash() {
-            if (!confirm('⚠️ Are you sure you want to PERMANENTLY DELETE ALL files in trash?\n\nThis action CANNOT be undone!')) {
+            if (!confirm(' Are you sure you want to PERMANENTLY DELETE ALL files in trash?\n\nThis action CANNOT be undone!')) {
                 return;
             }
 
-            if (!confirm('⚠️ FINAL WARNING: This will permanently delete ALL trash files. Are you absolutely sure?')) {
+            if (!confirm(' FINAL WARNING: This will permanently delete ALL trash files. Are you absolutely sure?')) {
                 return;
             }
 
@@ -4874,7 +4376,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
                 });
 
                 if (response.ok) {
-                    alert('✅ All trash files have been permanently deleted');
+                    alert(' All trash files have been permanently deleted');
                     window.location.reload();
                 } else {
                     const result = await response.json();

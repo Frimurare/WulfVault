@@ -165,7 +165,7 @@ func (s *Server) renderIdentityProviders(w http.ResponseWriter, tr *i18n.Transla
 	isGeneric := cfg.IsGenericOIDC()
 
 	html := `<!DOCTYPE html>
-<html lang="en">
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -204,9 +204,9 @@ func (s *Server) renderIdentityProviders(w http.ResponseWriter, tr *i18n.Transla
         @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
     </style>
 </head>
-<body>
+<body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
-    <div class="container">
+    <div class="container" id="main" role="main" tabindex="-1">
         <h2>Identity Providers</h2>
         <p class="lead">Configure external single sign-on. Local accounts always remain available as the primary mechanism and as a break-glass fallback.</p>
         ` + banner + `

@@ -181,14 +181,14 @@ func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter, tr *i18n.T
 	faviconHTML := s.getFaviconHTML()
 
 	html := `<!DOCTYPE html>
-<html>
+<html lang="` + string(tr.Lang()) + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SysMonitor Logs - ` + companyName + `</title>
     ` + faviconHTML + `
 </head>
-<body>
+<body class="wv-app">
 ` + headerHTML + `
 `
 	html += `
@@ -222,7 +222,7 @@ func (s *Server) renderAdminSysMonitorLogsPage(w http.ResponseWriter, tr *i18n.T
         }
     </style>
 
-    <div class="container" style="margin-top: 30px;">
+    <div class="container" id="main" role="main" tabindex="-1" style="margin-top: 30px;">
         <h2>SysMonitor Logs</h2>
         <p class="log-info">Detailed system monitoring logs including all chunk uploads (max 10MB, auto-rotated)</p>
 

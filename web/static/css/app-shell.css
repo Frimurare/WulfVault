@@ -1,0 +1,228 @@
+/* WulfVault - Copyright (c) 2025 Ulf Holmström. AGPL-3.0. */
+body.wv-app, body.wv-public { background: #f5f8fb !important; color: #162d44; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; margin: 0 !important; min-height: 100vh; }
+body.wv-app { padding: 0 0 0 236px !important; }
+body.wv-overview > .wv-topbar { margin-left: 236px; }
+.wv-app .wv-sidebar { z-index: 20; }
+.wv-app .wv-topbar { margin: 0; }
+.wv-app .wv-brand { text-decoration: none; }
+.wv-app .wv-product { color: #fff; }
+.wv-breadcrumb .wv-breadcrumb-context { margin: 0; color: var(--wv-muted); }
+.wv-app .container { width: 100% !important; max-width: 1600px !important; margin: 0 auto !important; padding: 32px !important; min-width: 0; }
+.wv-app .container > h1, .wv-app .container > h2, .wv-app .page-header h1, .wv-app .page-header h2 { color: #162d44 !important; font-size: clamp(25px, 3vw, 34px) !important; letter-spacing: -.6px; font-weight: 750; margin-bottom: 24px; }
+.wv-app .container h3 { color: #162d44; font-size: 17px; }
+.wv-app :is(.content, .card, .settings-card, .filters-card, .logs-card, .account-info, .upload-section, .file-request-section, .files-section, .stat-card, .file-list, .team-list) {
+  background: #fff !important; border: 1px solid #dce5ed !important; border-radius: 10px !important; box-shadow: none !important; backdrop-filter: none !important; min-width: 0;
+}
+.wv-app :is(.card, .settings-card, .filters-card, .account-info, .upload-section, .file-request-section) { padding: 24px !important; }
+.wv-app :is(.stat-card, .card):hover, .wv-app :is(.file-item, .team-item):hover { transform: none !important; box-shadow: none !important; }
+.wv-app .container > :is(.card, .settings-card) { max-width: 1040px; }
+.wv-app :is(.file-item, .team-item) { border-bottom: 1px solid #dce5ed !important; }
+.wv-app :is(.file-item, .team-item):last-child { border-bottom: 0 !important; }
+.wv-app :is(.file-item, .team-item):hover { background: #f5fafc !important; }
+.wv-app .stat-card .value { color: #087f95 !important; font-size: 30px !important; line-height: 1.25; font-weight: 750; }
+.wv-app .stat-card { padding: 20px !important; }
+.wv-app .joke-section { background: #edf8fb !important; color: #225e70 !important; border: 1px solid #cde9f0; box-shadow: none !important; border-radius: 8px !important; padding: 18px 22px !important; }
+.wv-app :is(.joke-title, .joke-text) { color: #225e70 !important; }
+.wv-app .joke-text { font-size: 14px !important; }
+.wv-app :is(.btn, button, input[type="submit"], .filter-btn, .clear-btn, .back-btn, .btn-action, .load-more-btn) { font: inherit; border-radius: 6px !important; min-height: 44px; box-shadow: none !important; transition: background-color .15s, border-color .15s; }
+.wv-app .btn { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
+.wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download, .load-more-btn, #uploadButton) { background: #087f95 !important; border: 1px solid #087f95 !important; color: #fff !important; }
+.wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download):hover { background: #076c80 !important; }
+.wv-app :is(.btn-secondary, .back-btn, .clear-btn) { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
+.wv-app :is(.btn-danger, .btn-delete) { background: #b42332 !important; color: #fff !important; border-color: #b42332 !important; }
+.wv-app :is(.btn-restore, .btn-success) { background: #187749 !important; color: #fff !important; }
+.wv-app :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]):not([type="submit"]), select, textarea) { max-width: 100%; min-width: 0; min-height: 44px; border: 1px solid #b9c8d5 !important; border-radius: 6px !important; background: #fff; color: #162d44; font: inherit; padding: 10px 12px; }
+.wv-app :is(input, select, textarea):focus-visible { outline: 3px solid #a1dce7; outline-offset: 1px; border-color: #087f95 !important; }
+.wv-app :is(.actions, .file-actions, .team-actions, .filter-buttons, .pagination-controls, .pagination-buttons, .tab-buttons) { flex-wrap: wrap; gap: 10px; }
+.wv-app .wv-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.wv-app table { width: 100%; border-collapse: collapse; border-radius: 0 !important; box-shadow: none !important; }
+.wv-app table th { background: #f1f6f9 !important; color: #405a70 !important; font-size: 12px; letter-spacing: .015em; font-weight: 650; }
+.wv-app table :is(th, td) { padding: 14px 16px; border-bottom: 1px solid #e4ebf1 !important; }
+.wv-app table tbody tr:hover { background: #f7fbfd !important; }
+.wv-app .upload-zone { background: #f4fafc !important; border: 2px dashed #9dbfcb !important; border-radius: 8px !important; }
+.wv-app .upload-zone svg { color: #087f95 !important; }
+.wv-app :is(.link-box, .link-display, .file-note, .file-description) { overflow-wrap: anywhere; min-width: 0; }
+.wv-app :is(.modal-content, .details-modal-content) { max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow: auto; border-radius: 10px !important; }
+.wv-app .container :is(.info-box, .alert, .success-message, .error-message) { border-radius: 7px !important; box-shadow: none !important; }
+.wv-app .container .subtitle, .wv-app .container .lead { color: #52677b; }
+.wv-app .container > :last-child { margin-bottom: 0; }
+.wv-app :is(.log-viewer, .details-json) { overflow: auto; max-width: 100%; }
+.wv-app .container :is(h1, h2, h3, p, label, .file-name, .team-name) { overflow-wrap: anywhere; }
+.wv-app :is(.file-info, .setting-info, .filter-group, .form-group) { min-width: 0; }
+.wv-public { --primary-color: #087f95; --secondary-color: #11273b; --background: #f5f8fb; }
+.wv-public :is(.login-container, .auth-container, .reset-container, .container, .card) { border-radius: 12px !important; box-shadow: 0 12px 40px rgba(17,39,59,.08) !important; border-color: #dce5ed !important; }
+.wv-public :is(button[type="submit"], .btn-primary) { background: #087f95 !important; border-radius: 6px !important; color: #fff !important; min-height: 44px; }
+.wv-public input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { min-height: 44px; border-radius: 6px !important; }
+@media (max-width: 900px) {
+  body.wv-app { padding: 0 !important; }
+  body.wv-overview > .wv-topbar { margin-left: 0; }
+  .wv-app .container { padding: 24px 20px !important; }
+  .wv-app .wv-sidebar { position: static; }
+}
+@media (max-width: 540px) {
+  .wv-app .container { padding: 22px 16px !important; }
+  .wv-app :is(.card, .settings-card, .filters-card, .account-info, .upload-section, .file-request-section) { padding: 18px !important; }
+  .wv-app :is(.actions, .page-header, .files-header, .team-header, .setting-item, .filters-row, .filters-grid) { flex-wrap: wrap; gap: 12px; }
+  .wv-app :is(.filters-grid, .filters-row, .form-row, .grid-2) { grid-template-columns: minmax(0, 1fr) !important; }
+  .wv-app :is(.actions, .file-actions, .team-actions, .pagination) { max-width: 100%; }
+  .wv-app .file-actions :is(.btn, button) { white-space: normal; }
+  .wv-app :is(.stats, .info-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .wv-app :is(.log-viewer, .log-info) { padding: 14px !important; }
+  .wv-app table :is(th, td) { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wv-app *, .wv-public * { animation: none !important; transition: none !important; }
+}
+@media print {
+  body.wv-app { padding: 0 !important; }
+  .wv-app .wv-sidebar, .wv-app .wv-topbar, .wv-app .wv-skip { display: none; }
+}
+
+/* Long provider URLs and account identifiers must wrap inside narrow cards. */
+.wv-app .container code { overflow-wrap: anywhere !important; white-space: normal !important; }
+.wv-app .info-item { min-width: 0; }
+.wv-app .info-item span { overflow-wrap: anywhere; }
+.wv-app :is(.filters, .pagination, .stats-bar) { background: #fff !important; border: 1px solid #dce5ed !important; border-radius: 10px !important; box-shadow: none !important; }
+.wv-app .container > .actions:first-child > h2,
+.wv-app .container > .card > h2:first-child { font-size: clamp(25px, 3vw, 34px) !important; color: #162d44 !important; line-height: 1.25; }
+.wv-app .file-tab.active { color: #087f95 !important; border-bottom-color: #087f95 !important; }
+.wv-app .action-links a { color: #087f95; }
+.wv-app button[onclick="showCreateRequestModal()"] { background: #087f95 !important; }
+
+.wv-app .stat-card h3 { font-size: 12px !important; line-height: 1.4; letter-spacing: .025em; color: #52677b !important; }
+@media (max-width: 540px) {
+  .wv-app .container div:has(> #publicUrl) { flex-wrap: wrap; }
+  .wv-app #publicUrl { flex: 1 1 100% !important; width: 100%; }
+  .wv-app label > input[type="checkbox"] { flex: 0 0 20px; width: 20px !important; }
+}
+
+/* Shared action hierarchy: outlined actions, one teal primary, quiet danger. */
+.wv-app :is(.btn-action, .btn-download, .btn-delete, .btn-restore, .btn-action.btn-danger),
+.wv-app .file-actions .btn,
+.wv-app .team-actions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 10px 16px !important; font-size: 14px !important;
+  font-weight: 600; line-height: 1.35; text-decoration: none;
+  background: #fff !important; color: #34566b !important;
+  border: 1px solid #c5d4df !important; border-radius: 7px !important;
+  box-shadow: none !important; transform: none !important; opacity: 1 !important;
+}
+.wv-app :is(.btn-action, .btn-download, .btn-delete, .btn-restore):hover,
+.wv-app .file-actions .btn:hover,
+.wv-app .team-actions button:hover { background: #edf5f8 !important; border-color: #91b5c3 !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-primary { background: #087f95 !important; color: #fff !important; border-color: #087f95 !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-primary:hover { background: #076c80 !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-danger,
+.wv-app .btn-delete { background: #fff !important; color: #b42332 !important; border-color: #ecc7ce !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-danger:hover,
+.wv-app .btn-delete:hover { background: #fff1f3 !important; border-color: #d7919d !important; }
+.wv-app :is(.file-actions, .team-actions) { gap: 10px; margin-top: 16px; }
+.wv-app .team-list { background: transparent !important; border: 0 !important; display: grid; gap: 16px; }
+.wv-app .team-item { background: #fff; border: 1px solid #dce5ed !important; border-radius: 10px; padding: 24px !important; }
+.wv-app .team-item:last-child { border-bottom: 1px solid #dce5ed !important; }
+.wv-app .team-name { font-size: 19px; color: #162d44; letter-spacing: -.3px; }
+.wv-app .team-description, .wv-app .team-stats { color: #52677b; }
+.wv-app .team-stats { font-size: 13px; gap: 8px 20px; }
+.wv-app .file-item { padding: 24px !important; }
+.wv-app .link-display { background: #f7fafc !important; border: 1px solid #dce5ed !important; border-radius: 8px !important; padding: 16px !important; }
+.wv-app .link-display h4 { color: #52677b !important; font-size: 12px !important; font-weight: 600; margin-bottom: 8px; }
+.wv-app .link-box { background: #fff !important; border: 1px solid #e0e8ef !important; border-radius: 6px; padding: 8px 10px !important; }
+.wv-app .link-box a { color: #286178 !important; font-size: 12px; }
+.wv-app .link-box button { padding: 8px 14px !important; font-size: 13px !important; }
+.wv-app .file-note { background: #f4f7fa !important; border: 1px solid #dce5ed !important; border-radius: 7px !important; color: #52677b !important; font-size: 13px; padding: 12px 14px !important; }
+.wv-app .wv-tag { display: inline-block; background: #edf3f7 !important; color: #405c70 !important; border: 1px solid #d6e1e9; border-radius: 20px !important; padding: 3px 9px !important; font-size: 11px !important; font-weight: 600; vertical-align: middle; }
+@media (max-width: 540px) {
+  .wv-app .team-item, .wv-app .file-item { padding: 18px !important; }
+  .wv-app .team-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wv-app .team-actions button { width: 100%; padding: 10px 12px !important; }
+}
+
+.wv-app .delete-request-btn { background: #fff !important; color: #b42332 !important; border: 1px solid #ecc7ce !important; }
+.wv-app .delete-request-btn:hover { background: #fff1f3 !important; }
+
+/* Content surfaces: one section edge, with light separators between records. */
+.wv-app .files-section .file-list { border: 0 !important; border-radius: 0 !important; background: transparent !important; gap: 0; }
+.wv-app .file-item { gap: 24px; align-items: flex-start; }
+.wv-app .file-item .file-info { overflow: visible; }
+.wv-app .file-info h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; line-height: 1.5; }
+.wv-app .file-info h3 > span:first-child { max-width: 100% !important; white-space: normal !important; overflow-wrap: anywhere; }
+.wv-app .file-info > p { font-size: 13px; line-height: 1.65; color: #52677b; }
+.wv-app .file-note { padding: 0 !important; margin: 8px 0 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; line-height: 1.6; }
+.wv-app .file-actions { min-width: 0; flex-shrink: 0; margin-top: 12px; }
+.wv-app .file-actions .btn { margin: 0; }
+.wv-share-details { margin-top: 14px; }
+.wv-share-details > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #087f95; font-size: 13px; font-weight: 600; cursor: pointer; }
+.wv-share-details > summary::before { content: "+"; font-size: 18px; }
+.wv-share-details[open] > summary::before { content: "−"; }
+.wv-app .wv-share-details .link-display { border: 0 !important; border-left: 2px solid #d7e6ed !important; background: transparent !important; border-radius: 0 !important; padding: 4px 0 4px 16px !important; }
+.wv-app .wv-share-details .link-box { border: 0 !important; background: #f5f8fb !important; gap: 12px; margin-bottom: 12px; }
+.wv-app .stats-bar { gap: 20px; justify-content: flex-start; padding: 24px; }
+.wv-app .stat-item { flex: 1; text-align: left; min-width: 0; background: transparent !important; padding: 0; }
+.wv-app .stat-item h3 { font-size: 12px; color: #52677b; }
+.wv-app .stat-item .value { font-size: 28px; color: #162d44 !important; }
+/* Forms and dialogs share the same type, spacing and subdued help surfaces. */
+.wv-app fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 30px; }
+.wv-app legend { width: 100%; padding: 0 0 12px; margin-bottom: 18px; border-bottom: 1px solid #e4ebf1; font-size: 17px; font-weight: 650; color: #162d44; }
+.wv-app .wv-settings-form .form-group { margin-bottom: 22px; }
+.wv-app .wv-settings-card { max-width: 1000px !important; }
+.wv-app .wv-public-address { padding: 20px; background: #f2f7fa; border-radius: 8px; margin-bottom: 30px; }
+.wv-app .wv-public-address :is(h3, p, #publicUrl) { color: #405a70 !important; }
+.wv-app .wv-public-address #publicUrl { font-weight: 500 !important; }
+.wv-app .help-text, .wv-app .form-group small { color: #52677b !important; font-size: 12px; line-height: 1.6; }
+.wv-app label { line-height: 1.5; }
+.wv-app :is(.modal, .wv-dialog) { padding: 16px; overflow-y: auto; backdrop-filter: blur(3px); }
+.wv-app :is(.modal-content, .details-modal-content, .wv-dialog > div) { width: min(100%, 620px) !important; max-height: calc(100dvh - 32px); overflow-y: auto; padding: 28px !important; border: 1px solid #dce5ed; border-radius: 14px !important; box-shadow: 0 20px 70px #11273b24 !important; background: #fff; }
+.wv-app :is(.modal-content, .wv-dialog > div) h2 { font-size: 22px; letter-spacing: -.4px; color: #162d44 !important; }
+.wv-app .modal-actions, .wv-form-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding-top: 8px; }
+.wv-app [style*="background: #fff3cd"], .wv-app [style*="background: #fff9e6"], .wv-app [style*="background: #e3f2fd"] { background: #f2f7fa !important; border: 0 !important; border-radius: 8px !important; color: #405a70 !important; }
+.wv-app [style*="color: #856404"], .wv-app [style*="color: #e65100"] { color: #405a70 !important; }
+.wv-app .file-request-section > div > p { line-height: 1.6; }
+.wv-app :is(.filters, .filters-card, .files-header) { padding: 22px; }
+.wv-app :is(.file-card, .account-card) { box-shadow: none !important; border: 1px solid #dce5ed !important; border-radius: 10px; }
+.wv-app .file-card-header { background: #f2f7fa !important; color: #162d44 !important; }
+.wv-app .pagination { border: 0 !important; border-radius: 0 !important; padding: 16px 0; }
+.wv-app button:disabled { opacity: .5 !important; cursor: default; }
+.wv-app :is(.modal-content, .wv-dialog) button[type="button"] { background: #fff; color: #34566b; border: 1px solid #c5d4df !important; }
+/* Public transfer pages put the file and download action ahead of optional copy. */
+.wv-transfer-page { padding: 40px 20px !important; }
+.wv-transfer-page .splash-container { max-width: 680px; padding: 36px; text-align: left; border: 1px solid #dce5ed; border-radius: 16px; box-shadow: 0 16px 50px #11273b0d; }
+.wv-transfer-page .logo { margin-bottom: 28px; }
+.wv-transfer-page .logo img { max-height: 60px; max-width: 180px; }
+.wv-transfer-page .file-icon { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin-bottom: 18px; border-radius: 12px; background: #edf8fb; color: #087f95; }
+.wv-transfer-page .file-icon svg { width: 28px; height: 28px; }
+.wv-transfer-page .file-info { margin-bottom: 20px; }
+.wv-transfer-page .file-info h2 { color: #162d44; font-size: clamp(20px, 3vw, 26px); line-height: 1.4; letter-spacing: -.4px; }
+.wv-transfer-page .wv-sender-note { padding: 16px 18px; margin: 20px 0; background: #f5f8fb; border-radius: 8px; }
+.wv-transfer-page .wv-sender-note h3 { color: #405a70 !important; font-size: 13px !important; margin-bottom: 6px !important; }
+.wv-transfer-page .wv-sender-note p { color: #405a70 !important; font-size: 14px !important; }
+.wv-transfer-page .file-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 24px 0; padding: 18px 0; border-block: 1px solid #e4ebf1; }
+.wv-transfer-page .detail-item { background: transparent; padding: 0; }
+.wv-transfer-page .detail-item h3 { color: #52677b; font-size: 11px; letter-spacing: .04em; }
+.wv-transfer-page .detail-item p { color: #162d44; font-size: 17px; }
+.wv-transfer-page .badge { background: #edf3f7; color: #405a70; font-size: 12px; margin: 0 0 18px; }
+.wv-transfer-page .download-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 50px; padding: 12px 20px; background: #087f95; color: #fff; border-radius: 8px; font-size: 16px; font-weight: 650; box-shadow: none; }
+.wv-transfer-page .download-btn svg { width: 22px; height: 22px; }
+.wv-transfer-page .download-btn:hover { background: #076c80; transform: none; box-shadow: none; }
+.wv-transfer-page .download-btn:focus-visible, .wv-transfer-page summary:focus-visible { outline: 3px solid #087f95; outline-offset: 4px; }
+.wv-transfer-page .poem-section { margin: 24px 0 0; padding: 16px 0 0; border: 0; border-top: 1px solid #e4ebf1; background: transparent; border-radius: 0; color: #52677b; }
+.wv-transfer-page .poem-section summary { font-size: 12px; cursor: pointer; }
+.wv-transfer-page .poem-text { font-size: 13px; margin-top: 14px; }
+.wv-transfer-page .poem-author { font-size: 12px; }
+.wv-transfer-page .footer { font-size: 11px; color: #52677b; margin-top: 24px; }
+@media (max-width: 768px) {
+ .wv-app .file-actions { width: 100%; }
+ .wv-app .stats-bar { flex-direction: row; flex-wrap: wrap; }
+ .wv-app .stat-item { flex-basis: 100px; }
+}
+@media (max-width: 540px) {
+ .wv-app :is(.modal-content, .wv-dialog > div) { padding: 20px !important; }
+ .wv-app .file-item { gap: 12px; }
+ .wv-app .files-header { padding: 18px; }
+ .wv-app .file-actions .btn { flex: 1 1 auto; }
+ .wv-transfer-page { padding: 20px 12px !important; align-items: flex-start; }
+ .wv-transfer-page .splash-container { padding: 24px 20px; border-radius: 12px; }
+}
+
+.wv-app .wv-request-item { padding: 18px 0; border-bottom: 1px solid #e4ebf1; }
+.wv-app .wv-request-item:last-child { border-bottom: 0; }
+.wv-app .wv-request-item h4 { color: #162d44; font-size: 15px; }

@@ -3,6 +3,9 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
 // You must retain this notice in any copy or derivative work.
 
+function dashboardText(key) {
+    return window.WV_DASHBOARD_TEXT?.[key] || key;
+}
 // Upload handling
 const uploadZone = document.getElementById('uploadZone');
 const fileInput = document.getElementById('fileInput');
@@ -451,7 +454,7 @@ function submitFileRequest(event) {
             showSuccess('Upload request created! The link is shown below.');
             loadFileRequests();
         } else {
-            alert('Error: ' + (result.error || 'Unknown error'));
+            alert(dashboardText('overhaul.dashboard.error') + (result.error || dashboardText('overhaul.files.unknown')));
         }
     })
     .catch(error => {
@@ -478,7 +481,7 @@ function loadFileRequests() {
             if (!container) return;
 
             if (!data.requests || data.requests.length === 0) {
-                container.innerHTML = '<p style="color: #999; font-style: italic;">No upload requests yet</p>';
+                container.innerHTML = '<p style="color: #999; font-style: italic;">' + escapeHtml(dashboardText('overhaul.dashboard.no_requests')) + '</p>';
                 return;
             }
 
@@ -493,36 +496,19 @@ function loadFileRequests() {
                 let borderColor = '#e0e0e0';
                 let bgColor = 'white';
 
+                const relative = new Intl.RelativeTimeFormat(document.documentElement.lang || 'en', { numeric: 'always' });
                 if (req.is_expired) {
-                    // Calculate days until auto-removal
-                    const expiredFor = now - expiresAt;
-                    const fiveDays = 5 * 24 * 60 * 60;
-                    const daysUntilRemoval = Math.max(0, Math.ceil((fiveDays - expiredFor) / (24 * 60 * 60)));
-
-                    expiryStatus = '<span style="color: #f44336; font-weight: 600;">⏰ EXPIRED</span> - ' +
-                                   '<span style="color: #ff9800;">Auto-removal in ' + daysUntilRemoval + ' day' + (daysUntilRemoval !== 1 ? 's' : '') + '</span>';
-                    borderColor = '#f44336';
-                    bgColor = '#fff5f5';
+                    const daysUntilRemoval = Math.max(0, Math.ceil((5 * 86400 - (now - expiresAt)) / 86400));
+                    expiryStatus = escapeHtml(dashboardText('common.expired')) + ' · ' +
+                        escapeHtml(dashboardText('overhaul.dashboard.removal')) + ' ' + escapeHtml(relative.format(daysUntilRemoval, 'day'));
                 } else {
-                    // Calculate hours until expiry
-                    const hoursUntilExpiry = Math.max(0, Math.floor(timeDiff / 3600));
-                    const minutesRemaining = Math.max(0, Math.floor((timeDiff % 3600) / 60));
-
-                    if (hoursUntilExpiry > 0) {
-                        expiryStatus = '<span style="color: #4caf50; font-weight: 500;">✓ Expires in ' + hoursUntilExpiry + ' hour' + (hoursUntilExpiry !== 1 ? 's' : '') + '</span>';
-                    } else if (minutesRemaining > 0) {
-                        expiryStatus = '<span style="color: #ff9800; font-weight: 500;">⚠️ Expires in ' + minutesRemaining + ' minute' + (minutesRemaining !== 1 ? 's' : '') + '</span>';
-                        borderColor = '#ff9800';
-                        bgColor = '#fff8e1';
-                    } else {
-                        expiryStatus = '<span style="color: #f44336; font-weight: 600;">⏰ Expiring soon...</span>';
-                        borderColor = '#f44336';
-                        bgColor = '#fff5f5';
-                    }
+                    const minutes = Math.max(0, Math.ceil(timeDiff / 60));
+                    expiryStatus = minutes > 0
+                        ? escapeHtml(relative.format(minutes >= 60 ? Math.ceil(minutes / 60) : minutes, minutes >= 60 ? 'hour' : 'minute'))
+                        : escapeHtml(dashboardText('overhaul.dashboard.expiring'));
                 }
-
-                const active = req.is_active ? '✅' : '❌';
-                html += '<div style="border: 2px solid ' + borderColor + '; background: ' + bgColor + '; padding: 16px; margin-bottom: 12px; border-radius: 8px; transition: all 0.3s;">';
+                const active = escapeHtml(dashboardText(req.is_active ? 'common.active' : 'common.inactive'));
+                html += '<div class="wv-request-item">';
                 html += '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">';
                 html += '<h4 style="margin: 0; flex: 1;">' + active + ' ' + escapeHtml(req.title) + '</h4>';
                 html += '<div style="text-align: right; font-size: 13px;">' + expiryStatus + '</div>';
@@ -534,8 +520,8 @@ function loadFileRequests() {
 
                 html += '<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">';
                 html += '<input type="text" value="' + req.upload_url + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">';
-                html += '<button onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Copy</button>';
-                html += '<button class="delete-request-btn" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>';
+                html += '<button class="btn btn-secondary" onclick="copyToClipboard(\''+req.upload_url+'\', this)" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">' + escapeHtml(dashboardText('overhaul.files.copy')) + '</button>';
+                html += '<button class="delete-request-btn btn btn-danger" data-request-id="'+req.id+'" data-request-title="'+escapeHtml(req.title)+'" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">' + escapeHtml(dashboardText('common.delete')) + '</button>';
                 html += '</div></div>';
             });
             html += '</div>';
@@ -556,7 +542,7 @@ function loadFileRequests() {
 }
 
 function deleteFileRequest(id, title) {
-    if (!confirm('Delete request: ' + title + '?')) return;
+    if (!confirm(dashboardText('overhaul.dashboard.request_delete') + title + '?')) return;
 
     const data = new FormData();
     data.append('request_id', id);
@@ -571,7 +557,7 @@ function deleteFileRequest(id, title) {
         if (result.success) {
             loadFileRequests();
         } else {
-            alert('Error: ' + (result.error || 'Unknown error'));
+            alert(dashboardText('overhaul.dashboard.error') + (result.error || dashboardText('overhaul.files.unknown')));
         }
     });
 }
@@ -1008,7 +994,7 @@ function showUploadError(error, retryCount) {
 
     // Show error details
     if (speedInfo) {
-        let errorMsg = error.message || 'Unknown error';
+        let errorMsg = error.message || dashboardText('overhaul.files.unknown');
         if (retryCount > 0) {
             errorMsg += `\n\nFailed after ${retryCount} retry attempts.`;
         }

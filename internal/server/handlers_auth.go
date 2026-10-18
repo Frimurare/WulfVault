@@ -392,7 +392,7 @@ func (s *Server) renderLoginPage(w http.ResponseWriter, r *http.Request, errorKe
         });
     </script>
 </head>
-<body>
+<body class="wv-public">
     ` + s.getStandaloneLanguageSwitcherHTML(tr) + `
     <div class="login-container">
         <div class="logo">`
