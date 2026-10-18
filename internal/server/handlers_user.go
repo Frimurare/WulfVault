@@ -1596,7 +1596,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js?v=6.1.6"></script>
+    <script src="/static/js/dashboard.js?v=wolf-overhaul-3"></script>
     <script>
         const wvShowPasswordLabel = '` + template.JSEscapeString(showPasswordLabel) + `';
         const I18N = {

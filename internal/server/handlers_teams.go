@@ -984,7 +984,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
             <h2> Manage Teams</h2>
-            <button class="btn" onclick="showCreateModal()">+ Create Team</button>
+            <button class="btn btn-primary" onclick="showCreateModal()">+ Create Team</button>
         </div>`
 
 	if len(teams) == 0 {
@@ -1061,7 +1061,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn" onclick="saveTeam()">Save</button>
+                <button class="btn btn-primary" onclick="saveTeam()">Save</button>
             </div>
         </div>
     </div>
@@ -1073,7 +1073,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             <div id="membersList" style="margin: 20px 0;"></div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeMembersModal()">Close</button>
-                <button class="btn" onclick="showAddMemberForm()">+ Add Member</button>
+                <button class="btn btn-primary" onclick="showAddMemberForm()">+ Add Member</button>
             </div>
         </div>
     </div>
@@ -1099,7 +1099,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeAddMemberModal()">Cancel</button>
-                <button class="btn" onclick="addMemberToTeam()">Add Member</button>
+                <button class="btn btn-primary" onclick="addMemberToTeam()">Add Member</button>
             </div>
         </div>
     </div>
