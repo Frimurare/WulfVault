@@ -651,7 +651,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 	storageUsedGB := fmt.Sprintf("%.1f", float64(storageUsed)/1000)
 	storageQuotaGB := fmt.Sprintf("%.1f", float64(storageQuota)/1000)
 
-	showPasswordLabel := "👁️ " + tr.T("dashboard.show_password")
+	showPasswordLabel := " " + tr.T("dashboard.show_password")
 
 	html := `<!DOCTYPE html>
 <html lang="` + string(tr.Lang()) + `">
@@ -957,7 +957,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     ` + s.getHeaderHTML(user, user.IsAdmin(), tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="joke-section">
-            <div class="joke-title">💡 ` + tr.T("dashboard.joke_heading") + `</div>
+            <div class="joke-title"> ` + tr.T("dashboard.joke_heading") + `</div>
             <div class="joke-text">` + joke.Text + `</div>
         </div>
 
@@ -997,7 +997,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     <h3 style="margin-bottom: 16px; color: #333;">` + tr.T("dashboard.upload_settings_heading") + `</h3>
 
                     <div class="form-group" style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 2px solid #3b82f6; margin-bottom: 20px;">
-                        <label for="fileComment" style="color: #1d4ed8; font-weight: 600;">💬 ` + tr.T("dashboard.description_label_recommended") + `</label>
+                        <label for="fileComment" style="color: #1d4ed8; font-weight: 600;"> ` + tr.T("dashboard.description_label_recommended") + `</label>
                         <textarea id="fileComment" name="file_comment" rows="3" maxlength="1000" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.description_placeholder")) + `" style="width: 100%; padding: 10px; border: 2px solid #93c5fd; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; margin-top: 8px;"></textarea>
                         <p style="color: #1e40af; font-size: 12px; margin-top: 4px;">
                             ` + tr.T("dashboard.description_help") + `
@@ -1006,7 +1006,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="expireDate">📅 ` + tr.T("dashboard.expiration_date_label") + `</label>
+                            <label for="expireDate"> ` + tr.T("dashboard.expiration_date_label") + `</label>
                             <input type="date" id="expireDate" name="expire_date">
                             <label style="margin-top: 8px;">
                                 <input type="checkbox" id="unlimitedTime" name="unlimited_time" checked> ` + tr.T("dashboard.never_expire_time_label") + `
@@ -1014,7 +1014,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         </div>
 
                         <div class="form-group">
-                            <label for="downloadsLimit">⬇️ ` + tr.T("dashboard.download_limit_label") + `</label>
+                            <label for="downloadsLimit"> ` + tr.T("dashboard.download_limit_label") + `</label>
                             <input type="number" id="downloadsLimit" name="downloads_limit" min="1" value="10">
                             <label style="margin-top: 8px;">
                                 <input type="checkbox" id="unlimitedDownloads" name="unlimited_downloads" checked> ` + tr.T("dashboard.unlimited_downloads_label") + `
@@ -1023,7 +1023,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     </div>
 
                     <div class="form-group">
-                        <label>🔗 ` + tr.T("dashboard.link_type_label") + `</label>
+                        <label> ` + tr.T("dashboard.link_type_label") + `</label>
                         <div style="display: flex; gap: 16px; margin-top: 8px;">
                             <label style="display: flex; align-items: center; gap: 8px;">
                                 <input type="radio" name="link_type" value="splash" checked>
@@ -1042,14 +1042,14 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     <div class="form-group">
                         <label>
                             <input type="checkbox" id="requireAuth" name="require_auth">
-                            🔒 ` + tr.T("dashboard.require_auth_label") + `
+                             ` + tr.T("dashboard.require_auth_label") + `
                         </label>
                     </div>
 
                     <div class="form-group">
                         <label>
                             <input type="checkbox" id="enablePassword" onchange="togglePasswordField()">
-                            🔐 ` + tr.T("dashboard.password_protect_label") + `
+                             ` + tr.T("dashboard.password_protect_label") + `
                         </label>
                         <div id="passwordFieldContainer" style="display: none; margin-top: 12px;">
                             <input type="text" id="filePassword" name="file_password" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.password_placeholder")) + `" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
@@ -1060,7 +1060,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     </div>
 
                     <div class="form-group">
-                        <label for="sendToEmail">📧 ` + tr.T("dashboard.send_email_label") + `</label>
+                        <label for="sendToEmail"> ` + tr.T("dashboard.send_email_label") + `</label>
                         <input type="email" id="sendToEmail" name="send_to_email" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
                         <p style="color: #666; font-size: 12px; margin-top: 4px;">
                             ` + tr.T("dashboard.send_email_help") + `
@@ -1068,7 +1068,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     </div>
 
                     <div class="form-group">
-                        <label>👥 ` + tr.T("dashboard.share_teams_label") + `</label>
+                        <label> ` + tr.T("dashboard.share_teams_label") + `</label>
                         <div id="teamSelectContainer" style="border: 2px solid #e0e0e0; border-radius: 6px; padding: 12px; max-height: 150px; overflow-y: auto; background: #fafafa;">
                             <div style="color: #999; font-style: italic;">` + tr.T("dashboard.loading_teams") + `</div>
                         </div>
@@ -1094,7 +1094,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         transition: all 0.3s ease;
                         margin-bottom: 15px;
                     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)'">
-                        <span style="font-size: 32px;">📤</span>
+                        <span style="font-size: 32px;"></span>
                         <span style="font-size: 20px; font-weight: 700; letter-spacing: 0.5px;">` + tr.T("dashboard.upload_file_heading") + `</span>
                     </button>
                     <button type="button" onclick="resetUploadForm()" style="
@@ -1112,7 +1112,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
                         transition: all 0.3s ease;
                     " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">
-                        ✖️ ` + tr.T("common.cancel") + `
+                         ` + tr.T("common.cancel") + `
                     </button>
                 </div>
             </form>
@@ -1120,15 +1120,15 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
         <!-- File Request Section -->
         <div class="file-request-section" style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 40px;">
-            <h2 style="margin-bottom: 16px; color: #333;">📥 ` + tr.T("dashboard.file_request_heading") + `</h2>
+            <h2 style="margin-bottom: 16px; color: #333;"> ` + tr.T("dashboard.file_request_heading") + `</h2>
             <p style="color: #666; margin-bottom: 12px;">` + tr.T("dashboard.file_request_description") + `</p>
             <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
                 <p style="color: #1976d2; font-size: 13px; margin: 0;">
-                    🔒 ` + tr.T("dashboard.file_request_security_notice") + `
+                     ` + tr.T("dashboard.file_request_security_notice") + `
                 </p>
             </div>
             <button onclick="showCreateRequestModal()" style="padding: 12px 24px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                ➕ ` + tr.T("dashboard.create_upload_request") + `
+                 ` + tr.T("dashboard.create_upload_request") + `
             </button>
             <div id="requestsList" style="margin-top: 20px;"></div>
         </div>
@@ -1151,7 +1151,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                     <div style="margin-bottom: 20px; padding: 14px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
                         <p style="color: #856404; font-size: 13px; margin: 0; line-height: 1.5;">
-                            ⏰ ` + tr.T("dashboard.request_security_notice") + `
+                             ` + tr.T("dashboard.request_security_notice") + `
                         </p>
                     </div>
 
@@ -1162,7 +1162,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                     </div>
 
                     <div style="margin-bottom: 24px; background: #fff9e6; padding: 16px; border-radius: 8px; border: 3px solid #ff9800;">
-                        <label style="display: block; margin-bottom: 8px; color: #e65100; font-weight: 700; font-size: 16px;">📧 ` + tr.T("dashboard.request_recipient_email_label") + `</label>
+                        <label style="display: block; margin-bottom: 8px; color: #e65100; font-weight: 700; font-size: 16px;"> ` + tr.T("dashboard.request_recipient_email_label") + `</label>
                         <input type="email" id="requestRecipientEmail" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.recipient_email_placeholder")) + `" style="width: 100%; padding: 12px; border: 3px solid #ff9800; border-radius: 6px; font-size: 14px; background: white;">
                         <p style="color: #e65100; font-size: 13px; margin-top: 8px; font-weight: 600;">` + tr.T("dashboard.request_recipient_email_help") + `</p>
                     </div>
@@ -1198,16 +1198,16 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                 </div>
                 <!-- Search and Sort Controls -->
                 <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="fileSearch" placeholder="🔍 ` + template.HTMLEscapeString(tr.T("dashboard.search_files_placeholder")) + `" onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
+                    <input type="text" id="fileSearch" placeholder=" ` + template.HTMLEscapeString(tr.T("dashboard.search_files_placeholder")) + `" onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
                     <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
-                        <option value="name-asc">📝 ` + tr.T("dashboard.sort_name_asc") + `</option>
-                        <option value="name-desc">📝 ` + tr.T("dashboard.sort_name_desc") + `</option>
-                        <option value="date-desc" selected>📅 ` + tr.T("dashboard.sort_date_desc") + `</option>
-                        <option value="date-asc">📅 ` + tr.T("dashboard.sort_date_asc") + `</option>
-                        <option value="downloads-desc">📊 ` + tr.T("dashboard.sort_downloads_desc") + `</option>
-                        <option value="downloads-asc">📊 ` + tr.T("dashboard.sort_downloads_asc") + `</option>
-                        <option value="size-desc">📦 ` + tr.T("dashboard.sort_size_desc") + `</option>
-                        <option value="size-asc">📦 ` + tr.T("dashboard.sort_size_asc") + `</option>
+                        <option value="name-asc"> ` + tr.T("dashboard.sort_name_asc") + `</option>
+                        <option value="name-desc"> ` + tr.T("dashboard.sort_name_desc") + `</option>
+                        <option value="date-desc" selected> ` + tr.T("dashboard.sort_date_desc") + `</option>
+                        <option value="date-asc"> ` + tr.T("dashboard.sort_date_asc") + `</option>
+                        <option value="downloads-desc"> ` + tr.T("dashboard.sort_downloads_desc") + `</option>
+                        <option value="downloads-asc"> ` + tr.T("dashboard.sort_downloads_asc") + `</option>
+                        <option value="size-desc"> ` + tr.T("dashboard.sort_size_desc") + `</option>
+                        <option value="size-asc"> ` + tr.T("dashboard.sort_size_asc") + `</option>
                     </select>
                     <select id="perPageSelect" onchange="changePerPage()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
                         <option value="5">` + tr.T("dashboard.per_page", "count", "5") + `</option>
@@ -1270,12 +1270,12 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
 			authBadge := ""
 			if f.RequireAuth {
-				authBadge = `<span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔒 ` + tr.T("dashboard.auth_required_badge") + `</span>`
+				authBadge = `<span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;"> ` + tr.T("dashboard.auth_required_badge") + `</span>`
 			}
 
 			passwordBadge := ""
 			if f.FilePasswordPlain != "" {
-				passwordBadge = `<span style="background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">🔐 ` + tr.T("dashboard.password_protected_badge") + `</span>`
+				passwordBadge = `<span style="background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;"> ` + tr.T("dashboard.password_protected_badge") + `</span>`
 			}
 
 			// Team badges
@@ -1285,7 +1285,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 				isTeamFile = true
 				if len(teams) == 1 {
 					// Single team - show name directly
-					teamBadges = fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">👥 %s</span>`, template.HTMLEscapeString(teams[0]))
+					teamBadges = fmt.Sprintf(`<span class="wv-tag" style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;"> %s</span>`, template.HTMLEscapeString(teams[0]))
 				} else {
 					// Multiple teams - show count with tooltip
 					teamsListHTML := ""
@@ -1295,7 +1295,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 						}
 						teamsListHTML += template.HTMLEscapeString(teamName)
 					}
-					teamBadges = fmt.Sprintf(`<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; cursor: help;" title="%s">👥 %s</span>`,
+					teamBadges = fmt.Sprintf(`<span class="wv-tag" style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; cursor: help;" title="%s"> %s</span>`,
 						tr.T("dashboard.shared_with_tooltip", "teams", teamsListHTML),
 						tr.T("dashboard.teams_count", "count", fmt.Sprintf("%d", len(teams))))
 				}
@@ -1311,13 +1311,13 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
 			passwordDisplay := ""
 			if f.FilePasswordPlain != "" {
-				passwordDisplay = fmt.Sprintf(`<p style="margin-top: 8px;"><strong>🔐 %s:</strong> <span id="password-%s" style="cursor: pointer; color: #9c27b0; text-decoration: underline;" onclick="togglePasswordVisibility('%s', '%s')">%s</span></p>`,
+				passwordDisplay = fmt.Sprintf(`<p style="margin-top: 8px;"><strong> %s:</strong> <span id="password-%s" style="cursor: pointer; color: #9c27b0; text-decoration: underline;" onclick="togglePasswordVisibility('%s', '%s')">%s</span></p>`,
 					tr.T("common.password"), f.Id, f.Id, template.JSEscapeString(f.FilePasswordPlain), showPasswordLabel)
 			}
 
 			commentDisplay := ""
 			if f.Comment != "" {
-				commentDisplay = fmt.Sprintf(`<p style="margin-top: 8px; padding: 12px; background: #fff3cd; border-left: 4px solid %s; border-radius: 4px; color: #333; font-weight: 500;"><strong style="font-weight: 700;">📝 %s</strong> %s</p>`,
+				commentDisplay = fmt.Sprintf(`<p class="file-note" style="margin-top: 8px; padding: 12px; background: #fff3cd; border-left: 4px solid %s; border-radius: 4px; color: #333; font-weight: 500;"><strong style="font-weight: 700;"> %s</strong> %s</p>`,
 					s.getPrimaryColor(), tr.T("dashboard.note_label"), template.HTMLEscapeString(f.Comment))
 			}
 
@@ -1347,36 +1347,36 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                 <li class="file-item" data-file-type="%s" data-teams="%s" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-comment="%s">
                     <div class="file-info">
                         <h3 title="%s">
-                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s%s
                         </h3>
                         %s
                         <p>%s • %s • %s</p>
                         <p style="color: %s;">%s: %s</p>
                         %s
                         <div class="link-display">
-                            <h4>🌐 %s</h4>
+                            <h4> %s</h4>
                             <div class="link-box">
                                 <a href="%s" target="_blank">%s</a>
-                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 %s</button>
+                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;"> %s</button>
                             </div>
-                            <h4>⬇️ %s</h4>
+                            <h4> %s</h4>
                             <div class="link-box">
                                 <a href="%s" target="_blank">%s</a>
-                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;">📋 %s</button>
+                                <button class="btn btn-primary" onclick="copyToClipboard('%s', this)" style="font-size: 11px; padding: 4px 8px;"> %s</button>
                             </div>
                         </div>
                         <div class="file-actions" style="margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
                             <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')" title="%s" style="flex: 0 0 auto;">
-                                📊 %s
+                                 %s
                             </button>
                             <button class="btn btn-primary" onclick="showEmailModal('%s', '%s', '%s')" title="%s" style="background: #007bff; flex: 0 0 auto;">
-                                📧 %s
+                                 %s
                             </button>
                             <button class="btn btn-secondary" onclick="showEditModal('%s', '%s', %d, %d, %t, %t, '%s', %t, '%s')" title="%s" style="flex: 0 0 auto;">
-                                ✏️ %s
+                                 %s
                             </button>
-                            <button class="btn btn-danger" onclick="deleteFile('%s', '%s')" style="flex: 0 0 auto; background: #dc3545 !important; color: white;">
-                                🗑️ %s
+                            <button class="btn btn-danger" onclick="deleteFile('%s', '%s')" style="flex: 0 0 auto;  color: white;">
+                                 %s
                             </button>
                         </div>
                     </div>
@@ -1457,7 +1457,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             </div>
 
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 500;">💬 ` + tr.T("dashboard.description_label_colon") + `</label>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;"> ` + tr.T("dashboard.description_label_colon") + `</label>
                 <textarea id="editFileComment" rows="3" maxlength="1000" placeholder="` + template.HTMLEscapeString(tr.T("dashboard.description_placeholder_short")) + `" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
                 <p style="font-size: 12px; color: #999; margin-top: 4px;">` + tr.T("dashboard.description_help_short") + `</p>
             </div>
@@ -1465,7 +1465,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="editRequireAuth">
-                    🔒 ` + tr.T("dashboard.require_auth_download_label") + `
+                     ` + tr.T("dashboard.require_auth_download_label") + `
                 </label>
                 <p style="font-size: 12px; color: #999; margin-top: 4px; margin-left: 24px;">` + tr.T("dashboard.require_auth_help") + `</p>
             </div>
@@ -1473,7 +1473,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">
                     <input type="checkbox" id="editEnablePassword" onchange="toggleEditPasswordField()">
-                    🔐 ` + tr.T("dashboard.password_protect_label") + `
+                     ` + tr.T("dashboard.password_protect_label") + `
                 </label>
                 <div id="editPasswordFieldContainer" style="display: none; margin-top: 12px; margin-left: 24px;">
                     <label style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">` + tr.T("common.password") + `:</label>
@@ -1483,7 +1483,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
             </div>
 
             <div style="margin-bottom: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
-                <label style="display: block; margin-bottom: 12px; font-weight: 500;">👥 ` + tr.T("dashboard.team_sharing_label") + `</label>
+                <label style="display: block; margin-bottom: 12px; font-weight: 500;"> ` + tr.T("dashboard.team_sharing_label") + `</label>
 
                 <!-- Current teams -->
                 <div id="editCurrentTeams" style="margin-bottom: 16px;">
@@ -1497,7 +1497,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         <option value="">` + tr.T("dashboard.select_team_option") + `</option>
                     </select>
                     <button onclick="addTeamToFile()" style="margin-top: 8px; padding: 8px 16px; background: ` + s.getPrimaryColor() + `; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; width: 100%;">
-                        ➕ ` + tr.T("dashboard.add_team_button") + `
+                         ` + tr.T("dashboard.add_team_button") + `
                     </button>
                 </div>
             </div>
@@ -1577,7 +1577,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
     <!-- Download History Modal -->
     <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h2 style="margin-bottom: 24px; color: #333;">📊 ` + tr.T("dashboard.download_history_heading") + `</h2>
+            <h2 style="margin-bottom: 24px; color: #333;"> ` + tr.T("dashboard.download_history_heading") + `</h2>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">` + tr.T("dashboard.file_label_colon") + `</label>
@@ -1658,7 +1658,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                     // Show download logs
                     if (downloadLogs.length > 0) {
-                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📥 ' + I18N.downloads + ' (' + downloadLogs.length + ')</h3>';
+                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;"> ' + I18N.downloads + ' (' + downloadLogs.length + ')</h3>';
                         html += '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">' + I18N.dateTime + '</th>';
@@ -1671,7 +1671,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                             const dateStr = date.toLocaleString('sv-SE');
                             const downloader = log.email || I18N.anonymous;
                             const ip = log.ipAddress || I18N.na;
-                            const authBadge = log.isAuthenticated ? ' <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🔒 ' + I18N.authShort + '</span>' : '';
+                            const authBadge = log.isAuthenticated ? ' <span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;"> ' + I18N.authShort + '</span>' : '';
 
                             html += '<tr style="border-bottom: 1px solid #eee;">';
                             html += '<td style="padding: 12px;">' + dateStr + '</td>';
@@ -1685,7 +1685,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
 
                     // Show email logs
                     if (emailLogs.length > 0) {
-                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;">📧 ' + I18N.emailsSent + ' (' + emailLogs.length + ')</h3>';
+                        html += '<h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px;"> ' + I18N.emailsSent + ' (' + emailLogs.length + ')</h3>';
                         html += '<div class="wv-table-wrap"><table style="width: 100%; border-collapse: collapse;">';
                         html += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">';
                         html += '<th style="padding: 12px; text-align: left;">' + I18N.dateTime + '</th>';
@@ -1888,7 +1888,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         const teamDiv = document.createElement('div');
                         teamDiv.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 6px;';
                         teamDiv.innerHTML = '<span style="display: flex; align-items: center; gap: 6px;">' +
-                            '<span>👥</span>' +
+                            '<span></span>' +
                             '<span style="font-weight: 500;">' + escapeHtml(team.name) + '</span>' +
                             '</span>' +
                             '<button onclick="removeTeamFromFile(\'' + fileId + '\', ' + team.id + ', \'' + escapeHtml(team.name).replace(/'/g, "\\'") + '\')" ' +

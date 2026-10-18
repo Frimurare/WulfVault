@@ -95,3 +95,44 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
   .wv-app #publicUrl { flex: 1 1 100% !important; width: 100%; }
   .wv-app label > input[type="checkbox"] { flex: 0 0 20px; width: 20px !important; }
 }
+
+/* Shared action hierarchy: outlined actions, one teal primary, quiet danger. */
+.wv-app :is(.btn-action, .btn-download, .btn-delete, .btn-restore, .btn-action.btn-danger),
+.wv-app .file-actions .btn,
+.wv-app .team-actions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 10px 16px !important; font-size: 14px !important;
+  font-weight: 600; line-height: 1.35; text-decoration: none;
+  background: #fff !important; color: #34566b !important;
+  border: 1px solid #c5d4df !important; border-radius: 7px !important;
+  box-shadow: none !important; transform: none !important; opacity: 1 !important;
+}
+.wv-app :is(.btn-action, .btn-download, .btn-delete, .btn-restore):hover,
+.wv-app .file-actions .btn:hover,
+.wv-app .team-actions button:hover { background: #edf5f8 !important; border-color: #91b5c3 !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-primary { background: #087f95 !important; color: #fff !important; border-color: #087f95 !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-primary:hover { background: #076c80 !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-danger,
+.wv-app .btn-delete { background: #fff !important; color: #b42332 !important; border-color: #ecc7ce !important; }
+.wv-app :is(.file-actions, .team-actions) .btn-danger:hover,
+.wv-app .btn-delete:hover { background: #fff1f3 !important; border-color: #d7919d !important; }
+.wv-app :is(.file-actions, .team-actions) { gap: 10px; margin-top: 16px; }
+.wv-app .team-list { background: transparent !important; border: 0 !important; display: grid; gap: 16px; }
+.wv-app .team-item { background: #fff; border: 1px solid #dce5ed !important; border-radius: 10px; padding: 24px !important; }
+.wv-app .team-item:last-child { border-bottom: 1px solid #dce5ed !important; }
+.wv-app .team-name { font-size: 19px; color: #162d44; letter-spacing: -.3px; }
+.wv-app .team-description, .wv-app .team-stats { color: #52677b; }
+.wv-app .team-stats { font-size: 13px; gap: 8px 20px; }
+.wv-app .file-item { padding: 24px !important; }
+.wv-app .link-display { background: #f7fafc !important; border: 1px solid #dce5ed !important; border-radius: 8px !important; padding: 16px !important; }
+.wv-app .link-display h4 { color: #52677b !important; font-size: 12px !important; font-weight: 600; margin-bottom: 8px; }
+.wv-app .link-box { background: #fff !important; border: 1px solid #e0e8ef !important; border-radius: 6px; padding: 8px 10px !important; }
+.wv-app .link-box a { color: #286178 !important; font-size: 12px; }
+.wv-app .link-box button { padding: 8px 14px !important; font-size: 13px !important; }
+.wv-app .file-note { background: #f4f7fa !important; border: 1px solid #dce5ed !important; border-radius: 7px !important; color: #52677b !important; font-size: 13px; padding: 12px 14px !important; }
+.wv-app .wv-tag { display: inline-block; background: #edf3f7 !important; color: #405c70 !important; border: 1px solid #d6e1e9; border-radius: 20px !important; padding: 3px 9px !important; font-size: 11px !important; font-weight: 600; vertical-align: middle; }
+@media (max-width: 540px) {
+  .wv-app .team-item, .wv-app .file-item { padding: 18px !important; }
+  .wv-app .team-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wv-app .team-actions button { width: 100%; padding: 10px 12px !important; }
+}

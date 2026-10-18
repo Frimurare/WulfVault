@@ -2260,7 +2260,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 		}
 		return ""
 	}() + `>
-            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;">👁️</button>
+            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;"></button>
         </div>` + func() string {
 		if !isEdit {
 			return `
@@ -2268,7 +2268,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         <label>Confirm Password:</label>
         <div style="position: relative;">
             <input type="password" id="password_confirm" required>
-            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;">👁️</button>
+            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;"></button>
         </div>
         <div id="password-error" style="color: #c33; font-size: 14px; margin-top: 4px; display: none;">Passwords do not match</div>`
 		}
@@ -2312,7 +2312,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         <br>
         <label style="display: flex; align-items: center; cursor: pointer; background: #e3f2fd; padding: 12px; border-radius: 6px; border-left: 4px solid #2196f3;">
             <input type="checkbox" name="send_welcome_email" value="1" checked style="width: auto; margin-right: 8px;">
-            <span style="font-weight: 500;">📧 Send welcome email with password setup link</span>
+            <span style="font-weight: 500;"> Send welcome email with password setup link</span>
         </label>
         <div style="font-size: 13px; color: #666; margin-top: 8px; margin-left: 28px;">
             User will receive an email to set their own password. The password entered above will be ignored if checked.
@@ -2801,18 +2801,18 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 
         <!-- Search and Sort Controls -->
         <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-            <input type="text" id="fileSearch" placeholder="🔍 Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
+            <input type="text" id="fileSearch" placeholder=" Search files..." onkeyup="searchAndSortFiles()" style="flex: 1; min-width: 250px; padding: 10px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;">
             <select id="fileSort" onchange="searchAndSortFiles()" style="padding: 10px 15px; border: 2px solid ` + s.getPrimaryColor() + `; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; font-weight: 500;">
-                <option value="name-asc">📝 Name (A-Z)</option>
-                <option value="name-desc">📝 Name (Z-A)</option>
-                <option value="date-desc" selected>📅 Newest First</option>
-                <option value="date-asc">📅 Oldest First</option>
-                <option value="downloads-desc">📊 Most Downloads</option>
-                <option value="downloads-asc">📊 Least Downloads</option>
-                <option value="size-desc">📦 Largest First</option>
-                <option value="size-asc">📦 Smallest First</option>
-                <option value="user-asc">👤 User (A-Z)</option>
-                <option value="user-desc">👤 User (Z-A)</option>
+                <option value="name-asc"> Name (A-Z)</option>
+                <option value="name-desc"> Name (Z-A)</option>
+                <option value="date-desc" selected> Newest First</option>
+                <option value="date-asc"> Oldest First</option>
+                <option value="downloads-desc"> Most Downloads</option>
+                <option value="downloads-asc"> Least Downloads</option>
+                <option value="size-desc"> Largest First</option>
+                <option value="size-asc"> Smallest First</option>
+                <option value="user-asc"> User (A-Z)</option>
+                <option value="user-desc"> User (Z-A)</option>
             </select>
         </div>
 
@@ -2845,7 +2845,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Auth badge
 		authBadge := ""
 		if f.RequireAuth {
-			authBadge = ` <span class="badge badge-auth">🔒 Auth</span>`
+			authBadge = ` <span class="badge badge-auth"> Auth</span>`
 		}
 
 		// Expiration info
@@ -2862,7 +2862,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
-			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong>📝 Note:</strong> %s</p>`,
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> Note:</strong> %s</p>`,
 				template.HTMLEscapeString(f.Comment))
 		}
 
@@ -2876,15 +2876,15 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                 <li class="file-item" data-filename="%s" data-extension="%s" data-size="%d" data-timestamp="%d" data-downloads="%d" data-username="%s" data-comment="%s">
                     <div class="file-info">
                         <h3 title="%s">
-                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s
                         </h3>
                         <p>%s • %s • %d downloads • Expires: %s</p>
                         %s
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')">📊 History</button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)">📋 Copy</button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> History</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> Copy</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')"> Delete</button>
                     </div>
                 </li>`,
 			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, userName, template.HTMLEscapeString(f.Comment),
@@ -2981,7 +2981,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                             const dateStr = date.toLocaleString('sv-SE');
                             const downloader = log.email || 'Anonymous';
                             const ip = log.ipAddress || 'N/A';
-                            const authBadge = log.isAuthenticated ? ' <span style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🔒 Auth</span>' : '';
+                            const authBadge = log.isAuthenticated ? ' <span class="wv-tag" style="background: #2196f3; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;"> Auth</span>' : '';
 
                             html += '<tr style="border-bottom: 1px solid #eee;">';
                             html += '<td style="padding: 12px;">' + dateStr + '</td>';
@@ -3107,7 +3107,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
     <!-- Download History Modal -->
     <div id="downloadHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 40px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h2 style="margin-bottom: 24px; color: #333;">📊 Download History</h2>
+            <h2 style="margin-bottom: 24px; color: #333;"> Download History</h2>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500;">File:</label>
@@ -3351,7 +3351,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 <body class="wv-app">
     ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
-        <h2 style="margin-bottom: 20px;">🔍 Duplicate Files</h2>
+        <h2 style="margin-bottom: 20px;"> Duplicate Files</h2>
 
         <div class="stats-bar">
             <div class="stat-item">
@@ -3385,7 +3385,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 		html += `
                 <li class="file-item">
                     <div style="text-align: center; width: 100%; padding: 40px 20px; color: #666;">
-                        ✨ No duplicate files found! All files have unique name and size combinations.
+                         No duplicate files found! All files have unique name and size combinations.
                     </div>
                 </li>`
 	}
@@ -3407,12 +3407,12 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 		}
 
 		// Duplicate badge
-		dupBadge := ` <span class="badge badge-duplicate">📋 DUPLICATE</span>`
+		dupBadge := ` <span class="badge badge-duplicate"> DUPLICATE</span>`
 
 		// Auth badge
 		authBadge := ""
 		if f.RequireAuth {
-			authBadge = ` <span class="badge badge-auth">🔒 Auth</span>`
+			authBadge = ` <span class="badge badge-auth"> Auth</span>`
 		}
 
 		// Expiration info
@@ -3433,7 +3433,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
-			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong>📝 Note:</strong> %s</p>`,
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> Note:</strong> %s</p>`,
 				template.HTMLEscapeString(f.Comment))
 		}
 
@@ -3441,15 +3441,15 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
                 <li class="file-item">
                     <div class="file-info">
                         <h3 title="%s">
-                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;">📄 %s</span>%s%s%s
+                            <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s%s
                         </h3>
-                        <p>👤 %s • 📦 %s • 📊 %d downloads • ⏰ Expires: %s • 📤 Uploaded: %s • 🆔 %s</p>
+                        <p> %s •  %s •  %d downloads •  Expires: %s •  Uploaded: %s •  %s</p>
                         %s
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')">📊 History</button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)">📋 Copy</button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')">🗑️ Delete</button>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> History</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> Copy</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')"> Delete</button>
                     </div>
                 </li>`,
 			template.HTMLEscapeString(f.Name),
@@ -3494,7 +3494,7 @@ func (s *Server) renderAdminDuplicates(w http.ResponseWriter, tr *i18n.Translato
         function copyToClipboard(url, btn) {
             navigator.clipboard.writeText(url).then(() => {
                 const originalText = btn.innerHTML;
-                btn.innerHTML = '✅ Copied!';
+                btn.innerHTML = ' Copied!';
                 btn.style.background = '#28a745';
                 setTimeout(() => {
                     btn.innerHTML = originalText;
@@ -3876,14 +3876,14 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
 
 	html += `
             <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;">📋 Current Public URL</h3>
+                <h3 style="color: #856404; margin-bottom: 10px; font-size: 16px;"> Current Public URL</h3>
                 <p style="color: #856404; font-size: 13px; margin-bottom: 12px;">Share this URL with your users to access the system:</p>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="text" id="publicUrl" value="` + fullPublicURL + `" readonly
                            style="flex: 1; padding: 12px; background: white; border: 2px solid #ffc107; font-family: monospace; font-size: 14px; font-weight: 600; color: #d32f2f;">
                     <button type="button" onclick="copyPublicURL()" class="btn"
                             style="background: #ffc107; color: #856404; font-weight: 700; white-space: nowrap;">
-                        📋 COPY URL
+                         COPY URL
                     </button>
                 </div>
                 <p id="copyStatus" style="color: #28a745; font-size: 12px; margin-top: 8px; display: none;">✓ Copied to clipboard!</p>
@@ -3907,7 +3907,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
                     <label for="port">Server Port</label>
                     <input type="number" id="port" name="port" value="` + port + `" min="1" max="65535" required>
                     <p class="help-text">Port number for the server to listen on. Ports below 1024 require administrator privileges.</p>
-                    <p class="help-text" style="color: #ff6b00; font-weight: 600;">⚠️ Changes require server restart to take effect</p>
+                    <p class="help-text" style="color: #ff6b00; font-weight: 600;"> Changes require server restart to take effect</p>
                 </div>
 
                 <div class="form-group">
@@ -3964,12 +3964,12 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
              See README.md section "Server Restart Feature" for details
 
         <div class="card" style="margin-top: 30px; border: 2px solid #f44336;">
-            <h2 style="color: #f44336;">⚙️ Server Management</h2>
+            <h2 style="color: #f44336;"> Server Management</h2>
             <p style="color: #666; margin-bottom: 20px;">
                 Restart the server to apply configuration changes or recover from issues.
             </p>
             <button onclick="confirmReboot()" class="btn" style="background: #f44336; color: white;">
-                🔄 Restart Server
+                 Restart Server
             </button>
             <p style="color: #999; font-size: 12px; margin-top: 10px;">
                 Note: Requires systemd service to be installed. See DEPLOYMENT.md for setup.
@@ -4043,7 +4043,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
         */
     </script>
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-        Powered by WulfVault © Ulf Holmström – AGPL-3.0
+        Powered by WulfVault  Ulf Holmström – AGPL-3.0
     </div>
 </body>
 </html>`
@@ -4204,7 +4204,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
     ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; margin-top: 30px;">
-            <h2 style="margin: 0;">🗑️ Trash (Deleted Files)</h2>`
+            <h2 style="margin: 0;"> Trash (Deleted Files)</h2>`
 
 	if len(files) > 0 {
 		html += `
@@ -4221,7 +4221,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
                 transition: all 0.3s ease;
             " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(239, 68, 68, 0.4)'"
                onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">
-                🗑️ Empty All Trash
+                 Empty All Trash
             </button>`
 	}
 
@@ -4229,7 +4229,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         </div>
 
         <div class="info-box">
-            ⚠️ Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
+             Files in trash will be automatically deleted after ` + fmt.Sprintf("%d", s.config.TrashRetentionDays) + ` days. You can restore or permanently delete them here.
         </div>
 
         <div class="file-list">`
@@ -4237,7 +4237,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 	if len(files) == 0 {
 		html += `
             <div class="empty-state">
-                <div class="empty-state-icon">🎉</div>
+                <div class="empty-state-icon"></div>
                 <p>Trash is empty</p>
             </div>`
 	}
@@ -4274,22 +4274,22 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Warning badge for files close to permanent deletion
 		warningBadge := ""
 		if daysLeft <= 2 {
-			warningBadge = `<span class="warning-badge">⚠️ ` + fmt.Sprintf("%d days left", daysLeft) + `</span>`
+			warningBadge = `<span class="warning-badge"> ` + fmt.Sprintf("%d days left", daysLeft) + `</span>`
 		}
 
 		html += fmt.Sprintf(`
             <div class="file-item">
                 <div class="file-info">
-                    <h3>📄 %s%s</h3>
+                    <h3> %s%s</h3>
                     <p>Owner: %s • Size: %s • Deleted: %s</p>
                     <p>Deleted by: %s • Auto-delete in: %d days</p>
                 </div>
                 <div class="file-actions">
                     <button class="btn btn-restore" onclick="restoreFile('%s')">
-                        ♻️ Restore
+                         Restore
                     </button>
                     <button class="btn btn-delete" onclick="permanentDelete('%s')">
-                        🗑️ Delete Forever
+                         Delete Forever
                     </button>
                 </div>
             </div>`,
@@ -4331,7 +4331,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
 
         async function permanentDelete(fileId) {
-            if (!confirm('⚠️ WARNING: This will PERMANENTLY delete the file. This action cannot be undone. Are you sure?')) return;
+            if (!confirm(' WARNING: This will PERMANENTLY delete the file. This action cannot be undone. Are you sure?')) return;
 
             try {
                 const response = await fetch('/admin/trash/delete', {
@@ -4352,11 +4352,11 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
         }
 
         async function emptyAllTrash() {
-            if (!confirm('⚠️ Are you sure you want to PERMANENTLY DELETE ALL files in trash?\n\nThis action CANNOT be undone!')) {
+            if (!confirm(' Are you sure you want to PERMANENTLY DELETE ALL files in trash?\n\nThis action CANNOT be undone!')) {
                 return;
             }
 
-            if (!confirm('⚠️ FINAL WARNING: This will permanently delete ALL trash files. Are you absolutely sure?')) {
+            if (!confirm(' FINAL WARNING: This will permanently delete ALL trash files. Are you absolutely sure?')) {
                 return;
             }
 
@@ -4367,7 +4367,7 @@ func (s *Server) renderAdminTrash(w http.ResponseWriter, tr *i18n.Translator, fi
                 });
 
                 if (response.ok) {
-                    alert('✅ All trash files have been permanently deleted');
+                    alert(' All trash files have been permanently deleted');
                     window.location.reload();
                 } else {
                     const result = await response.json();

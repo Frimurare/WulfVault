@@ -67,6 +67,12 @@ func TestApplicationPageFixtures(t *testing.T) {
 		t.Fatal(err)
 	}
 	account := &models.DownloadAccount{Id: 1, Name: "Demo Recipient", Email: "recipient@example.com", IsActive: true}
+	teamRows := []struct {
+		*models.Team
+		MemberCount int
+	}{
+		{Team: &models.Team{Id: 1, Name: "Design team", Description: "Shared documents", IsActive: true, StorageQuotaMB: 10000}, MemberCount: 3},
+	}
 	outputDir := os.Getenv("WV_UI_PREVIEW_DIR")
 	for _, lang := range []i18n.Lang{i18n.LangEN, i18n.LangSV} {
 		tr := i18n.For(lang)
@@ -92,7 +98,7 @@ func TestApplicationPageFixtures(t *testing.T) {
 			{"audit", false, func(w http.ResponseWriter) { s.renderAdminAuditLogsPage(w, tr) }},
 			{"logs", false, func(w http.ResponseWriter) { s.renderAdminServerLogsPage(w, tr) }},
 			{"monitor", false, func(w http.ResponseWriter) { s.renderAdminSysMonitorLogsPage(w, tr) }},
-			{"admin-teams", false, func(w http.ResponseWriter) { s.renderAdminTeams(w, tr, nil) }},
+			{"admin-teams", false, func(w http.ResponseWriter) { s.renderAdminTeams(w, tr, teamRows) }},
 			{"teams", false, func(w http.ResponseWriter) { s.renderUserTeams(w, tr, member, nil) }},
 			{"team-files", false, func(w http.ResponseWriter) { s.renderTeamFiles(w, tr, member, &models.Team{Id: 1, Name: "Demo Team"}) }},
 			{"my-files", false, func(w http.ResponseWriter) { s.renderUserDashboard(w, tr, user) }},

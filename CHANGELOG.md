@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Finish the Wolf Overhaul action styles for populated team and file views:
+  replace legacy emoji labels and cyan actions with consistent outlined buttons,
+  teal primary actions, restrained destructive actions and neutral file metadata.
+
 - Extend Wolf Overhaul across the application: use one role-aware sidebar and
   language switcher on admin, file, team, settings and download-account pages.
   Unify cards, forms, tables and mobile navigation; match standalone sign-in,

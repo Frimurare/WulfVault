@@ -70,6 +70,11 @@ const pages = [
                 assert.equal(await page.locator('.wv-navigation').getAttribute('open'), null);
               }
             }
+            if (name === 'admin-teams') {
+              const action = page.locator('.team-actions .btn-action').first();
+              assert.equal(await action.evaluate((el) => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)', 'team actions must use the shared neutral style');
+              assert.ok(!/\p{Extended_Pictographic}/u.test(await page.locator('.team-actions').innerText()), 'team actions must not contain legacy emoji');
+            }
             const overflow = await page.evaluate(() => ({
               page: document.documentElement.scrollWidth,
               width: innerWidth,
@@ -80,7 +85,7 @@ const pages = [
             await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
             if (lang === 'sv' && [1440, 390].includes(width)) {
               await page.screenshot({ path: 'ui-screenshots/' + name + '-' + width + '.png', fullPage: true });
-              if (['users', 'my-files', 'server-settings'].includes(name)) {
+              if (['admin-teams', 'my-files', 'files'].includes(name)) {
                 const png = await fs.readFile('ui-screenshots/' + name + '-' + width + '.png');
                 const encoded = png.toString('base64');
                 for (let i = 0; i < encoded.length; i += 4000) console.log('WV_APP_PREVIEW_' + name + '_' + width + ':' + encoded.slice(i, i + 4000));

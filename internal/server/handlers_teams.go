@@ -983,7 +983,7 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
     ` + s.getAdminHeaderHTML("", tr) + `
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="actions">
-            <h2>📁 Manage Teams</h2>
+            <h2> Manage Teams</h2>
             <button class="btn" onclick="showCreateModal()">+ Create Team</button>
         </div>`
 
@@ -1011,20 +1011,20 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
 			html += fmt.Sprintf(`
             <div class="team-item">
                 <div class="team-header">
-                    <div class="team-name">👥 %s</div>
+                    <div class="team-name"> %s</div>
                     <span class="badge %s">%s</span>
                 </div>
                 <div class="team-description">%s</div>
                 <div class="team-stats">
-                    <span>👤 %d members</span>
-                    <span>💾 %s / %s (%d%%)</span>
-                    <span>📅 Created: %s</span>
+                    <span> %d members</span>
+                    <span> %s / %s (%d%%)</span>
+                    <span> Created: %s</span>
                 </div>
                 <div class="team-actions">
-                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'">📁 Files</button>
-                    <button class="btn-action" onclick="viewMembers(%d, '%s')">👥 Members</button>
-                    <button class="btn-action" onclick="editTeam(%d)">✏️ Edit</button>
-                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')">🗑️ Delete</button>
+                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'"> Files</button>
+                    <button class="btn-action" onclick="viewMembers(%d, '%s')"> Members</button>
+                    <button class="btn-action" onclick="editTeam(%d)"> Edit</button>
+                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')"> Delete</button>
                 </div>
             </div>`,
 				team.Name,
@@ -1458,7 +1458,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, tr *i18n.Translator, use
 
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
-            <h2>👥 My Teams</h2>
+            <h2> My Teams</h2>
             <p>Teams you're a member of</p>
         </div>`
 
@@ -1488,13 +1488,13 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, tr *i18n.Translator, use
 			html += fmt.Sprintf(`
             <div class="team-item" onclick="viewTeamFiles(%d, '%s')">
                 <div class="team-header">
-                    <div class="team-name">👥 %s</div>
+                    <div class="team-name"> %s</div>
                     <span class="badge %s">%s</span>
                 </div>
                 <div class="team-description">%s</div>
                 <div class="team-stats">
-                    <span>👤 %d members</span>
-                    <span>💾 %s / %s used</span>
+                    <span> %d members</span>
+                    <span> %s / %s used</span>
                 </div>
             </div>`,
 				team.Id, team.Name, team.Name, badgeClass, roleText,
@@ -1693,7 +1693,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
             <div>
-                <h2>📁 ` + team.Name + ` - Shared Files</h2>
+                <h2> ` + team.Name + ` - Shared Files</h2>
                 <p class="subtitle">Files shared with this team</p>
             </div>
             <a href="/teams" class="back-btn">← Back to Teams</a>
@@ -1710,11 +1710,11 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
 		html += `
         <div style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
             <div style="flex: 1; min-width: 250px;">
-                <label style="font-weight: 600; margin-right: 10px; color: #333;">🔍 Search:</label>
+                <label style="font-weight: 600; margin-right: 10px; color: #333;"> Search:</label>
                 <input type="text" id="searchInput" placeholder="Search files, owner, description..." oninput="filterAndPaginate()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; max-width: 400px;">
             </div>
             <div>
-                <label style="font-weight: 600; margin-right: 10px; color: #333;">🔄 Sort by:</label>
+                <label style="font-weight: 600; margin-right: 10px; color: #333;"> Sort by:</label>
                 <select id="sortSelect" onchange="sortFiles()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
                     <option value="date_desc">Date (Newest First)</option>
                     <option value="date_asc">Date (Oldest First)</option>
@@ -1727,7 +1727,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
                 </select>
             </div>
             <div>
-                <label style="font-weight: 600; margin-right: 10px; color: #333;">📄 Per page:</label>
+                <label style="font-weight: 600; margin-right: 10px; color: #333;"> Per page:</label>
                 <select id="perPageSelect" onchange="changePerPage()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; cursor: pointer;">
                     <option value="5">5</option>
                     <option value="25" selected>25</option>
@@ -1792,7 +1792,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
 			// Add delete button if user is admin
 			deleteButton := ""
 			if user.IsAdmin() {
-				deleteButton = fmt.Sprintf(`<button onclick="deleteTeamFile('%s', '%s', event)" class="btn-delete" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-left: 10px;">🗑️ Delete</button>`, file.Id, file.Name)
+				deleteButton = fmt.Sprintf(`<button onclick="deleteTeamFile('%s', '%s', event)" class="btn-delete" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-left: 10px;"> Delete</button>`, file.Id, file.Name)
 			}
 
 			// Add file description/comment if it exists
@@ -1800,25 +1800,25 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
 			if file.Comment != "" {
 				descriptionHTML = fmt.Sprintf(`
                 <div class="file-description" style="margin-top: 8px; padding: 8px 12px; background: #f0f9ff; border-left: 3px solid %s; border-radius: 4px; font-size: 14px; color: #1e40af;">
-                    💬 %s
+                     %s
                 </div>`, s.getPrimaryColor(), file.Comment)
 			}
 
 			html += fmt.Sprintf(`
             <div class="file-item" data-filename="%s" data-owner="%s" data-size="%d" data-date="%d" data-comment="%s">
                 <div class="file-header">
-                    <span class="file-name" title="%s"><span class="file-icon">📄</span>%s</span>
+                    <span class="file-name" title="%s"><span class="file-icon"></span>%s</span>
                     <div>
-                        <a href="/d/%s" class="btn-download">⬇️ Download</a>
+                        <a href="/d/%s" class="btn-download"> Download</a>
                         %s
                     </div>
                 </div>
                 <div class="file-meta">
-                    <span>👤 Owner: <strong>%s</strong></span>
-                    <span>📤 Shared by: <strong>%s</strong></span>
-                    <span>📅 Shared: %s</span>
-                    <span>📦 Size: %s</span>
-                    <span>⬇️ Downloads: %d</span>
+                    <span> Owner: <strong>%s</strong></span>
+                    <span> Shared by: <strong>%s</strong></span>
+                    <span> Shared: %s</span>
+                    <span> Size: %s</span>
+                    <span> Downloads: %d</span>
                 </div>
                 %s
             </div>`, file.Name, ownerName, file.SizeBytes, tf.SharedAt, template.HTMLEscapeString(file.Comment), file.Name, file.Name, file.Id, deleteButton, ownerName, sharedByName, sharedDate, sizeStr, file.DownloadCount, descriptionHTML)
