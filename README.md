@@ -1,8 +1,10 @@
 # WulfVault — Enterprise File Sharing Platform
 
-**Version 7.5.0 Overhaul** · Self-Hosted · Open Source · AGPL-3.0
+**Version 7.5.1 Hardened Overhaul** · Self-Hosted · Open Source · AGPL-3.0
 
 WulfVault is a self-hosted file sharing platform for organizations that need security, accountability, and full control over their data. Written in Go, it is a complete alternative to commercial file-transfer services — no subscriptions, no per-transfer fees, no practical file-size limit — with multi-user management, per-user quotas, enterprise audit logging, full download tracking, branded download pages, 2FA, SSO (Microsoft Entra ID + generic OpenID Connect), self-service password management, file-request portals, and GDPR-compliant account deletion.
+
+> 🔒 **7.5.1 "Hardened Overhaul"** is a security rebuild of 7.5.0 (Go 1.27.3, all dependencies updated, pinned base images — `govulncheck`: 0 known vulnerabilities). Same interface as 7.5.0.
 
 > ⚠️ **7.5 "Overhaul" is a complete redesign of the user interface.** Every page — sign-in, dashboard, files, uploads, file requests, teams, settings, the admin area and the public download pages — has been rebuilt on a new, modern app shell ("Wolf Overhaul"): one role-aware sidebar, a language switcher, unified cards, forms, tables and action buttons, full mobile layouts, and Swedish/English on the admin overview, dashboard, file and team views and the public download pages (the remaining admin pages are English for now). **No features, data formats, APIs or database schemas changed**, and upgrading is as safe as any other release. But if you and your users are happy with the classic 7.2 look, **do not upgrade** — there is no setting to bring the old interface back. Have a look at the [screenshots](#screenshots) first.
 

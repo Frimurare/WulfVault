@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.5.1] - Hardened Overhaul - 2026-10-27
+
+A security-only rebuild of 7.5.0 "Overhaul". The interface, features, APIs and
+database are unchanged — the same redesign warning as 7.5.0 applies if you are
+coming from 7.2.
+
+### Security
+- Build with **Go 1.27.3** (was 1.23). Docker Scout reported 11 critical and 37
+  high CVEs in the 7.5.0 image, all in the Go standard library and `golang.org/x`
+  modules compiled into the binary; `govulncheck` went from **57 reachable
+  vulnerabilities to 0**.
+- Update every Go dependency to its latest release, including `golang.org/x/net`,
+  `x/crypto`, `x/oauth2`, `go-jose/v4`, `coreos/go-oidc/v3` and `modernc.org/sqlite`.
+- Pin the Docker base images (`golang:1.27.3-alpine3.24` builder,
+  `alpine:3.24` runtime) instead of floating `latest`, and apply Alpine package
+  upgrades at build time.
+
 ## [7.5.0] - Overhaul - 2026-10-27
 
 > ⚠️ **This release is a pure redesign of the user interface — a complete overhaul to give WulfVault a modern feel.** No features were added or removed, no API, data format or database schema changed, and existing installations upgrade in place as usual. If you prefer the classic 7.2 "Grease Monkey" interface, do not upgrade: the old look cannot be switched back on. Screenshots of the new interface are in the README and on the GitHub release page.

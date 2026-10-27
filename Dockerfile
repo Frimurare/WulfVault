@@ -2,7 +2,7 @@
 # Multi-stage build for efficient final image
 
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.27.3-alpine3.24 AS builder
 
 WORKDIR /app
 
@@ -22,10 +22,10 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o wulfvault ./cmd/server
 
 # Runtime stage
-FROM alpine:latest
+FROM alpine:3.24
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates sqlite-libs
+RUN apk upgrade --no-cache && apk --no-cache add ca-certificates sqlite-libs
 
 WORKDIR /app
 
