@@ -1353,7 +1353,7 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
                         <p>%s • %s • %s</p>
                         <p style="color: %s;">%s: %s</p>
                         %s
-                        <details class="wv-share-details"><summary>` + tr.T("overhaul.dashboard.share_links") + `</summary><div class="link-display">
+                        <details class="wv-share-details"><summary>`+tr.T("overhaul.dashboard.share_links")+`</summary><div class="link-display">
                             <h4> %s</h4>
                             <div class="link-box">
                                 <a href="%s" target="_blank">%s</a>
@@ -2359,9 +2359,6 @@ func (s *Server) renderUserDashboard(w http.ResponseWriter, tr *i18n.Translator,
         // Note: loadFileRequests, deleteFileRequest, escapeHtml, and copyToClipboard
         // are defined in dashboard.js and loaded automatically on page load
     </script>
-    <div style="text-align: center; padding: 40px 20px 20px; color: #999; font-size: 12px;">
-        ` + tr.T("dashboard.powered_by", "version", s.config.Version) + `
-    </div>
 </body>
 </html>`
 

@@ -1,12 +1,29 @@
 # WulfVault — Enterprise File Sharing Platform
 
-**Version 7.2.0 Grease Monkey** · Self-Hosted · Open Source · AGPL-3.0
+**Version 7.5.0 Overhaul** · Self-Hosted · Open Source · AGPL-3.0
 
 WulfVault is a self-hosted file sharing platform for organizations that need security, accountability, and full control over their data. Written in Go, it is a complete alternative to commercial file-transfer services — no subscriptions, no per-transfer fees, no practical file-size limit — with multi-user management, per-user quotas, enterprise audit logging, full download tracking, branded download pages, 2FA, SSO (Microsoft Entra ID + generic OpenID Connect), self-service password management, file-request portals, and GDPR-compliant account deletion.
+
+> ⚠️ **7.5 "Overhaul" is a complete redesign of the user interface.** Every page — sign-in, dashboard, files, uploads, file requests, teams, settings, the admin area and the public download pages — has been rebuilt on a new, modern app shell ("Wolf Overhaul"): one role-aware sidebar, a language switcher, unified cards, forms, tables and action buttons, full mobile layouts, and Swedish/English on the admin overview, dashboard, file and team views and the public download pages (the remaining admin pages are English for now). **No features, data formats, APIs or database schemas changed**, and upgrading is as safe as any other release. But if you and your users are happy with the classic 7.2 look, **do not upgrade** — there is no setting to bring the old interface back. Have a look at the [screenshots](#screenshots) first.
 
 **Built for:** law enforcement, healthcare, legal, government, education, creative agencies — anyone sharing sensitive or very large files that need download tracking and compliance evidence.
 
 > **New in 7.1 Aurora:** generic **OpenID Connect** alongside Microsoft Entra ID — Google Workspace, Okta, Keycloak, Authelia, Auth0 or any OIDC issuer. SSO is additive; local password accounts (including break-glass and service accounts) always remain. See [Single Sign-On](#single-sign-on).
+
+---
+
+## Screenshots
+
+*7.5 Overhaul — the new interface on desktop and phone.*
+
+| Desktop | Phone |
+|---|---|
+| ![My Files — upload, storage and file list](docs/screenshots/desktop-dashboard.png) | ![My Files on a phone](docs/screenshots/mobile-dashboard.png) |
+| ![Admin overview — users, transfers, storage](docs/screenshots/desktop-admin.png) | ![Admin overview on a phone](docs/screenshots/mobile-admin.png) |
+| ![Admin files — every upload with sharing links and downloads](docs/screenshots/desktop-admin-files.png) | ![Public download page](docs/screenshots/mobile-splash.png) |
+
+Also: [sign-in](docs/screenshots/desktop-login.png) · [teams](docs/screenshots/desktop-teams.png) · [account settings](docs/screenshots/desktop-settings.png) · [admin users](docs/screenshots/desktop-admin-users.png) · [the admin overview in Swedish](docs/screenshots/desktop-admin-sv.png) · [public download page, desktop](docs/screenshots/desktop-splash.png).
+
 
 ---
 

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.5.0] - Overhaul - 2026-10-27
+
+> ⚠️ **This release is a pure redesign of the user interface — a complete overhaul to give WulfVault a modern feel.** No features were added or removed, no API, data format or database schema changed, and existing installations upgrade in place as usual. If you prefer the classic 7.2 "Grease Monkey" interface, do not upgrade: the old look cannot be switched back on. Screenshots of the new interface are in the README and on the GitHub release page.
+
+### Known limitations
+- Several admin pages (users, branding, server settings, e-mail, identity
+  providers, logs, trash, duplicates) and the GDPR self-service pages keep their
+  previous English (or Swedish) wording inside the new shell; full translation
+  follows in 7.5.x. There is no dark theme yet.
+
+### Fixed
+- Escape file names and user names in the admin "All Files" list, including the
+  inline download-history handler, so a crafted upload name can no longer run
+  script in an administrator's browser (present since earlier releases).
+- The "show password" buttons in the admin user form had lost their icon and
+  accessible label in the redesign; they are visible and labelled again.
+- Restore the © in the page footer, accept BMP and ICO logos in the sidebar
+  again, and pass translated strings as arguments instead of format strings.
+
 ### Changed
 - Refine file records, collapsible sharing links, grouped server settings, dialogs and the public download page; translate admin team/file/settings content and dynamic request labels into Swedish/English.
 

@@ -11,8 +11,8 @@ body:
     id: version
     attributes:
       label: WulfVault version
-      description: Shown in the admin footer and in the server start-up log.
-      placeholder: "7.2.0"
+      description: Shown at the bottom of the sidebar and in the server start-up log.
+      placeholder: "7.5.0"
     validations:
       required: true
   - type: dropdown

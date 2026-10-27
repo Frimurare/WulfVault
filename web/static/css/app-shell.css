@@ -26,10 +26,11 @@ body.wv-overview > .wv-topbar { margin-left: 236px; }
 .wv-app .joke-text { font-size: 14px !important; }
 .wv-app :is(.btn, button, input[type="submit"], .filter-btn, .clear-btn, .back-btn, .btn-action, .load-more-btn) { font: inherit; border-radius: 6px !important; min-height: 44px; box-shadow: none !important; transition: background-color .15s, border-color .15s; }
 .wv-app .btn { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
-.wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download, .load-more-btn, #uploadButton) { background: #087f95 !important; border: 1px solid #087f95 !important; color: #fff !important; }
+.wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download, .load-more-btn) { background: #087f95 !important; border: 1px solid #087f95 !important; color: #fff !important; }
 .wv-app :is(.btn-primary, button[type="submit"], .filter-btn, .btn-download):hover { background: #076c80 !important; }
 .wv-app :is(.btn-secondary, .back-btn, .clear-btn) { background: #fff !important; color: #165268 !important; border: 1px solid #89a9b7 !important; }
 .wv-app :is(.btn-danger, .btn-delete) { background: #b42332 !important; color: #fff !important; border-color: #b42332 !important; }
+.wv-app #uploadButton { background: #087f95 !important; border: 1px solid #087f95 !important; color: #fff !important; }
 .wv-app :is(.btn-restore, .btn-success) { background: #187749 !important; color: #fff !important; }
 .wv-app :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="hidden"]):not([type="submit"]), select, textarea) { max-width: 100%; min-width: 0; min-height: 44px; border: 1px solid #b9c8d5 !important; border-radius: 6px !important; background: #fff; color: #162d44; font: inherit; padding: 10px 12px; }
 .wv-app :is(input, select, textarea):focus-visible { outline: 3px solid #a1dce7; outline-offset: 1px; border-color: #087f95 !important; }

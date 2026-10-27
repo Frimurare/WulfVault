@@ -2260,7 +2260,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 		}
 		return ""
 	}() + `>
-            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;"></button>
+            <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;" aria-label="Show password" title="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>` + func() string {
 		if !isEdit {
 			return `
@@ -2268,7 +2268,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
         <label>Confirm Password:</label>
         <div style="position: relative;">
             <input type="password" id="password_confirm" required>
-            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;"></button>
+            <button type="button" onclick="togglePassword('password_confirm')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 20px; padding: 0; width: 30px; height: 30px;" aria-label="Show password" title="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div id="password-error" style="color: #c33; font-size: 14px; margin-top: 4px; display: none;">Passwords do not match</div>`
 		}
@@ -2854,7 +2854,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 			expiryInfo = f.ExpireAtString
 		}
 		if !f.UnlimitedDownloads {
-			expiryInfo += fmt.Sprintf(" (%d "+tr.T("overhaul.files.left")+")", f.DownloadsRemaining)
+			expiryInfo += fmt.Sprintf(" (%d %s)", f.DownloadsRemaining, tr.T("overhaul.files.left"))
 		}
 
 		downloadURL := s.getPublicURL() + "/d/" + f.Id
@@ -2862,7 +2862,7 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
 		// Note display
 		noteDisplay := ""
 		if f.Comment != "" {
-			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> ` + template.HTMLEscapeString(tr.T("overhaul.files.note")) + `</strong> %s</p>`,
+			noteDisplay = fmt.Sprintf(`<p class="file-note"><strong> `+template.HTMLEscapeString(tr.T("overhaul.files.note"))+`</strong> %s</p>`,
 				template.HTMLEscapeString(f.Comment))
 		}
 
@@ -2878,21 +2878,21 @@ func (s *Server) renderAdminFiles(w http.ResponseWriter, tr *i18n.Translator, fi
                         <h3 title="%s">
                             <span style="display: inline-block; max-width: 600px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;"> %s</span>%s%s
                         </h3>
-                        <p>%s • %s • %d ` + tr.T("overhaul.files.download_unit") + ` • ` + tr.T("overhaul.files.expires") + ` %s</p>
+                        <p>%s • %s • %d `+tr.T("overhaul.files.download_unit")+` • `+tr.T("overhaul.files.expires")+` %s</p>
                         %s
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> ` + template.HTMLEscapeString(tr.T("overhaul.files.history")) + `</button>
-                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> ` + template.HTMLEscapeString(tr.T("overhaul.files.copy")) + `</button>
-                        <button class="btn btn-danger" onclick="deleteFile('%s')"> ` + template.HTMLEscapeString(tr.T("common.delete")) + `</button>
+                        <button class="btn btn-secondary" onclick="showDownloadHistory('%s', '%s')"> `+template.HTMLEscapeString(tr.T("overhaul.files.history"))+`</button>
+                        <button class="btn btn-primary" onclick="copyToClipboard('%s', this)"> `+template.HTMLEscapeString(tr.T("overhaul.files.copy"))+`</button>
+                        <button class="btn btn-danger" onclick="deleteFile('%s')"> `+template.HTMLEscapeString(tr.T("common.delete"))+`</button>
                     </div>
                 </li>`,
-			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, userName, template.HTMLEscapeString(f.Comment),
+			template.HTMLEscapeString(f.Name), fileExt, f.SizeBytes, f.UploadDate, f.DownloadCount, template.HTMLEscapeString(userName), template.HTMLEscapeString(f.Comment),
 			template.HTMLEscapeString(f.Name),
-			f.Name, authBadge, status,
-			userName, f.Size, f.DownloadCount, expiryInfo,
+			template.HTMLEscapeString(f.Name), authBadge, status,
+			template.HTMLEscapeString(userName), f.Size, f.DownloadCount, expiryInfo,
 			noteDisplay,
-			f.Id, f.Name,
+			f.Id, template.HTMLEscapeString(template.JSEscapeString(f.Name)),
 			downloadURL,
 			f.Id)
 	}
@@ -3977,7 +3977,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
             <p style="color: #666; margin-bottom: 20px;">
                 Restart the server to apply configuration changes or recover from issues.
             </p>
-            <button onclick="confirmReboot()" class="btn" style="background: #f44336; color: white;">
+            <button onclick="confirmReboot()" class="btn btn-danger">
                  Restart Server
             </button>
             <p style="color: #999; font-size: 12px; margin-top: 10px;">
@@ -4052,7 +4052,7 @@ func (s *Server) renderAdminSettings(w http.ResponseWriter, tr *i18n.Translator,
         */
     </script>
     <div style="text-align:center; font-size: 0.8em; margin-top: 2em; padding: 1em; color:#777;">
-        Powered by WulfVault  Ulf Holmström – AGPL-3.0
+        WulfVault © 2025 Ulf Holmström – AGPL-3.0
     </div>
 </body>
 </html>`

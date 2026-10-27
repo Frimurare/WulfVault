@@ -80,7 +80,7 @@ func dashboardStoragePercent(used, available int64) (string, bool) {
 // Uploaded logos are stored as base64 image data URLs. html/template blocks
 // data URLs by default, so allow only this explicit set of image MIME types.
 func dashboardLogoURL(value string) template.URL {
-	for _, mime := range []string{"image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"} {
+	for _, mime := range []string{"image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml", "image/bmp", "image/x-icon", "image/vnd.microsoft.icon"} {
 		prefix := "data:" + mime + ";base64,"
 		if strings.HasPrefix(value, prefix) {
 			if decoded, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(value, prefix)); err == nil && len(decoded) > 0 {

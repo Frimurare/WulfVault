@@ -1016,24 +1016,24 @@ func (s *Server) renderAdminTeams(w http.ResponseWriter, tr *i18n.Translator, te
                 </div>
                 <div class="team-description">%s</div>
                 <div class="team-stats">
-                    <span> %d ` + tr.T("overhaul.teams.member_unit") + `</span>
+                    <span> %d `+tr.T("overhaul.teams.member_unit")+`</span>
                     <span> %s / %s (%d%%)</span>
-                    <span> ` + tr.T("common.created") + ` %s</span>
+                    <span> `+tr.T("common.created")+` %s</span>
                 </div>
                 <div class="team-actions">
-                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'"> ` + template.HTMLEscapeString(tr.T("nav.files")) + `</button>
-                    <button class="btn-action" onclick="viewMembers(%d, '%s')"> ` + template.HTMLEscapeString(tr.T("overhaul.teams.members")) + `</button>
-                    <button class="btn-action" onclick="editTeam(%d)"> ` + template.HTMLEscapeString(tr.T("common.edit")) + `</button>
-                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')"> ` + template.HTMLEscapeString(tr.T("common.delete")) + `</button>
+                    <button class="btn-action" onclick="window.location.href='/teams?id=%d'"> `+template.HTMLEscapeString(tr.T("nav.files"))+`</button>
+                    <button class="btn-action" onclick="viewMembers(%d, '%s')"> `+template.HTMLEscapeString(tr.T("overhaul.teams.members"))+`</button>
+                    <button class="btn-action" onclick="editTeam(%d)"> `+template.HTMLEscapeString(tr.T("common.edit"))+`</button>
+                    <button class="btn-action btn-danger" onclick="deleteTeam(%d, '%s')"> `+template.HTMLEscapeString(tr.T("common.delete"))+`</button>
                 </div>
             </div>`,
-				team.Name,
+				template.HTMLEscapeString(team.Name),
 				badgeClass, statusBadge,
-				team.Description,
+				template.HTMLEscapeString(team.Description),
 				team.MemberCount,
 				storageUsed, storageTotal, storagePercent,
 				team.GetReadableCreatedAt(),
-				team.Id, team.Id, team.Name, team.Id, team.Id, team.Name)
+				team.Id, team.Id, template.HTMLEscapeString(template.JSEscapeString(team.Name)), team.Id, team.Id, template.HTMLEscapeString(template.JSEscapeString(team.Name)))
 		}
 		html += `
         </div>`
@@ -1497,7 +1497,7 @@ func (s *Server) renderUserTeams(w http.ResponseWriter, tr *i18n.Translator, use
                     <span> %s / %s used</span>
                 </div>
             </div>`,
-				team.Id, team.Name, team.Name, badgeClass, roleText,
+				team.Id, template.HTMLEscapeString(template.JSEscapeString(team.Name)), template.HTMLEscapeString(team.Name), badgeClass, roleText,
 				team.Description, team.MemberCount, storageUsed, storageTotal)
 		}
 		html += `
@@ -1693,7 +1693,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
     <div class="container" id="main" role="main" tabindex="-1">
         <div class="page-header">
             <div>
-                <h2> ` + team.Name + ` - Shared Files</h2>
+                <h2> ` + template.HTMLEscapeString(team.Name) + ` - Shared Files</h2>
                 <p class="subtitle">Files shared with this team</p>
             </div>
             <a href="/teams" class="back-btn">← Back to Teams</a>
@@ -1792,7 +1792,7 @@ func (s *Server) renderTeamFiles(w http.ResponseWriter, tr *i18n.Translator, use
 			// Add delete button if user is admin
 			deleteButton := ""
 			if user.IsAdmin() {
-				deleteButton = fmt.Sprintf(`<button onclick="deleteTeamFile('%s', '%s', event)" class="btn-delete" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-left: 10px;"> Delete</button>`, file.Id, file.Name)
+				deleteButton = fmt.Sprintf(`<button onclick="deleteTeamFile('%s', '%s', event)" class="btn-delete" style="background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-left: 10px;"> Delete</button>`, file.Id, template.HTMLEscapeString(template.JSEscapeString(file.Name)))
 			}
 
 			// Add file description/comment if it exists

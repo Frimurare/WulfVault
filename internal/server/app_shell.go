@@ -91,7 +91,6 @@ func (s *Server) newAppShellData(tr *i18n.Translator, user *models.User, role st
 		data.Navigation = []dashboardLink{
 			link("nav.dashboard", "/dashboard", "home"),
 			link("nav.teams", "/teams", "team"),
-			link("nav.settings", "/settings", "account"),
 		}
 	}
 	return data

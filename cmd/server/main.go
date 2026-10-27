@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	Version = "7.2.0 Grease Monkey"
+	Version = "7.5.0 Overhaul"
 )
 
 var (
