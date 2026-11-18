@@ -1,50 +1,46 @@
 # WulfVault Dockerfile
-# Multi-stage build for efficient final image
+# Two stages: build a static Go binary, then ship it on an empty (scratch)
+# base. The runtime image contains no OS packages, no shell and no package
+# manager, only the binary, the web assets and the CA bundle.
 
-# Build stage
+# ---- build ----
 FROM golang:1.27.4-alpine3.24 AS builder
 
-WORKDIR /app
+RUN apk upgrade --no-cache && apk add --no-cache ca-certificates
 
-# Install build dependencies
-RUN apk add --no-cache git gcc musl-dev sqlite-dev
-
-# Copy go mod files
+WORKDIR /src
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o wulfvault ./cmd/server
+# modernc.org/sqlite is pure Go, so no cgo is needed. timetzdata embeds the
+# time zone database because the runtime image has no /usr/share/zoneinfo.
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -tags timetzdata \
+        -ldflags="-s -w" -o /rootfs/app/wulfvault ./cmd/server
 
-# Runtime stage
-FROM alpine:3.24
+# Lay out the runtime file system and fail the build if the web assets are
+# missing (they are served from disk, not embedded).
+RUN mkdir -p /rootfs/app/web /rootfs/data /rootfs/uploads /rootfs/tmp /rootfs/etc/ssl/certs \
+ && cp -r web/static /rootfs/app/web/static \
+ && cp /etc/ssl/certs/ca-certificates.crt /rootfs/etc/ssl/certs/ \
+ && chmod 1777 /rootfs/tmp \
+ && test -s /rootfs/app/web/static/css/app-shell.css \
+ && test -s /rootfs/app/web/static/css/style.css \
+ && test -s /rootfs/app/web/static/js/dashboard.js \
+ && test "$(find /rootfs/app/web/static -type f | wc -l)" -ge 8
 
-# Install runtime dependencies
-RUN apk upgrade --no-cache && apk --no-cache add ca-certificates sqlite-libs
+# ---- runtime ----
+FROM scratch
+
+COPY --from=builder /rootfs/ /
 
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/wulfvault .
-
-# Copy static web files (frontend)
-COPY --from=builder /app/web/static ./web/static
-
-# Create directories
-RUN mkdir -p /data /uploads
-
-# Expose port
 EXPOSE 8080
 
-# Set environment variables
-ENV DATA_DIR=/data
-ENV UPLOADS_DIR=/uploads
-ENV PORT=8080
+ENV DATA_DIR=/data \
+    UPLOADS_DIR=/uploads \
+    PORT=8080
 
-# Run the application
-CMD ["./wulfvault"]
+CMD ["/app/wulfvault"]

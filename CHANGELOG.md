@@ -7,7 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.5.3] - Inner Overhaul - 2026-11-18
+
+> **Recommended update for Docker users.** The 7.5.3 Docker image has **no
+> known vulnerabilities** (Trivy and Grype: 0). The images of earlier releases
+> carry **1 critical and 8 high** vulnerabilities (7.5.1),
+> **3 critical and 53 high** (7.5.0) and
+> **5 critical and 67 high** (7.2.0), counted as unique
+> CVEs by Trivy and Grype on 2026-11-18 (Docker Scout counts per package
+> and shows higher totals). In 7.5.1 all critical and high findings are in
+> Alpine libraries shipped in the image
+> (zlib, OpenSSL, SQLite, BusyBox) that WulfVault itself does not call: it uses
+> Go's own TLS and a pure-Go SQLite. In 7.5.0 and older, the WulfVault binary
+> itself also contains vulnerable versions of the Go standard library and
+> `golang.org/x` modules. The application, its features and the database
+> are the same as in 7.5.2.
+
+### Changed
+- The Docker image is now built on an empty `scratch` base instead of
+  Alpine. It contains only the statically linked WulfVault binary, the web
+  assets (`/app/web/static`) and the CA certificate bundle: no OS packages,
+  no shell and no package manager. The compressed image is about 7 MB
+  (7.5.1: about 17 MB).
+- The binary is built without cgo (`modernc.org/sqlite` is pure Go), so the
+  image no longer needs `sqlite-libs`, and the time zone database is
+  embedded (`timetzdata`), so `TZ` keeps working.
+- The build now fails if the web assets are missing from the image, and a
+  `.dockerignore` keeps local data, databases and build output out of the
+  build context.
+- Documentation: version references updated; the Docker tag list and the
+  environment inspection example in the user guide now match the image.
+
+### Upgrade notes
+- Volumes, environment variables, port, paths (`/data`, `/uploads`) and the
+  user the server runs as are unchanged. A 7.5.1 data volume was tested
+  with the 7.5.3 image (existing users, files and downloads work).
+- Because the image has no shell, `docker exec wulfvault sh` and other
+  commands inside the container no longer work. Use `docker logs`,
+  `docker inspect` and `docker cp`, or the files in your mounted volumes.
+- The native Linux binary has no functional changes compared with 7.5.2.
+- No Docker image was published for 7.5.2; use 7.5.3.
+
+<details>
+<summary>Vulnerabilities in earlier Docker images (Trivy + Grype, 2026-11-18)</summary>
+
+**7.5.1** — all findings:
+
+| Severity | Where | Package | Version | Fixed in | ID |
+|---|---|---|---|---|---|
+| Critical | Alpine package | zlib | 1.3.2-r1 | 1.4-r0 | CVE-2026-4738 |
+| High | Alpine package | libcrypto3 | 3.5.9-r0 | none yet | CVE-2026-107496 |
+| High | Alpine package | libssl3 | 3.5.9-r0 | none yet | CVE-2026-107496 |
+| High | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119373 |
+| High | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119374 |
+| High | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119379 |
+| High | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119586 |
+| High | Alpine package | libcrypto3 | 3.5.9-r0 | none yet | CVE-2026-88823 |
+| High | Alpine package | libssl3 | 3.5.9-r0 | none yet | CVE-2026-88823 |
+| High | Alpine package | libcrypto3 | 3.5.9-r0 | none yet | CVE-2026-95691 |
+| High | Alpine package | libssl3 | 3.5.9-r0 | none yet | CVE-2026-95691 |
+| High | Alpine package | libcrypto3 | 3.5.9-r0 | none yet | CVE-2026-95692 |
+| High | Alpine package | libssl3 | 3.5.9-r0 | none yet | CVE-2026-95692 |
+| Medium | Alpine package | busybox | 1.37.0-r31 | none yet | CVE-2025-60876 |
+| Medium | Alpine package | busybox-binsh | 1.37.0-r31 | none yet | CVE-2025-60876 |
+| Medium | Alpine package | ssl_client | 1.37.0-r31 | none yet | CVE-2025-60876 |
+| Medium | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119371 |
+| Medium | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119372 |
+| Medium | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119375 |
+| Medium | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119376 |
+| Medium | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119378 |
+| Medium | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119591 |
+| Medium | Alpine package | libcrypto3 | 3.5.9-r0 | none yet | CVE-2026-88822 |
+| Medium | Alpine package | libssl3 | 3.5.9-r0 | none yet | CVE-2026-88822 |
+| Medium | Go binary | stdlib | go1.27.3 | 1.26.11, 1.27.4 | CVE-2026-97054 |
+| Low | Alpine package | sqlite-libs | 3.53.4-r0 | none yet | CVE-2026-119377 |
+| Unknown | Go binary | golang.org/x/crypto | v0.58.0 | 0.58.1-0.20261009181718-2f1f834330b2 | GO-2026-5932 |
+
+**7.5.0** — critical (3): CVE-2025-68121, CVE-2026-4738, CVE-2026-78663
+
+high (53): CVE-2025-47913, CVE-2025-58187, CVE-2025-58188, CVE-2025-61723, CVE-2025-61725, CVE-2025-61726, CVE-2025-61729, CVE-2026-107496, CVE-2026-116587, CVE-2026-119373, CVE-2026-119374, CVE-2026-119379, CVE-2026-119586, CVE-2026-25679, CVE-2026-27145, CVE-2026-32280, CVE-2026-32281, CVE-2026-32283, CVE-2026-33811, CVE-2026-33814, CVE-2026-33818, CVE-2026-34986, CVE-2026-39820, CVE-2026-39821, CVE-2026-39822, CVE-2026-39828, CVE-2026-39829, CVE-2026-39830, CVE-2026-39831, CVE-2026-39832, CVE-2026-39835, CVE-2026-39836, CVE-2026-42499, CVE-2026-42504, CVE-2026-42508, CVE-2026-46595, CVE-2026-46597, CVE-2026-56853, CVE-2026-56854, CVE-2026-56859, CVE-2026-56862, CVE-2026-56866, CVE-2026-78659, CVE-2026-78660, CVE-2026-78667, CVE-2026-78669, CVE-2026-88823, CVE-2026-94439, CVE-2026-94440, CVE-2026-95691, CVE-2026-95692, CVE-2026-97031, CVE-2026-97032
+
+**7.2.0** — critical (5): CVE-2025-68121, CVE-2026-4738, CVE-2026-63073, CVE-2026-75803, CVE-2026-78663
+
+high (67): CVE-2025-47913, CVE-2025-58187, CVE-2025-58188, CVE-2025-61723, CVE-2025-61725, CVE-2025-61726, CVE-2025-61729, CVE-2026-107496, CVE-2026-107891, CVE-2026-116587, CVE-2026-119373, CVE-2026-119374, CVE-2026-119379, CVE-2026-119586, CVE-2026-14456, CVE-2026-14457, CVE-2026-18798, CVE-2026-25679, CVE-2026-27145, CVE-2026-32280, CVE-2026-32281, CVE-2026-32283, CVE-2026-33811, CVE-2026-33814, CVE-2026-33818, CVE-2026-34986, CVE-2026-39820, CVE-2026-39821, CVE-2026-39822, CVE-2026-39828, CVE-2026-39829, CVE-2026-39830, CVE-2026-39831, CVE-2026-39832, CVE-2026-39835, CVE-2026-39836, CVE-2026-42499, CVE-2026-42504, CVE-2026-42508, CVE-2026-46595, CVE-2026-46597, CVE-2026-54873, CVE-2026-54874, CVE-2026-56853, CVE-2026-56854, CVE-2026-56858, CVE-2026-56859, CVE-2026-56862, CVE-2026-56866, CVE-2026-63072, CVE-2026-63075, CVE-2026-63076, CVE-2026-72897, CVE-2026-78659, CVE-2026-78660, CVE-2026-78667, CVE-2026-78669, CVE-2026-84782, CVE-2026-84784, CVE-2026-85091, CVE-2026-88823, CVE-2026-94439, CVE-2026-94440, CVE-2026-95691, CVE-2026-95692, CVE-2026-97031, CVE-2026-97032
+
+</details>
+
 ## [7.5.2] - Inner Overhaul - 2026-11-18
+
+> Released as source and native binary only. Docker users: use 7.5.3.
 
 A maintenance release. Nothing changes for users or administrators: the
 interface, features, REST API, configuration and database are the same as in

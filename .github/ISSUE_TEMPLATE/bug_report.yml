@@ -30,7 +30,7 @@ body:
     attributes:
       label: WulfVault version
       description: Shown at the bottom of the sidebar and in the server start-up log.
-      placeholder: "7.5.2"
+      placeholder: "7.5.3"
     validations:
       required: true
   - type: dropdown

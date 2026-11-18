@@ -1,6 +1,6 @@
 # WulfVault Deployment Guide
 
-Production deployment for **WulfVault** v7.1.0 "Aurora".
+Production deployment for **WulfVault** v7.5.3 "Inner Overhaul".
 
 ---
 
@@ -22,7 +22,7 @@ Run it with dedicated data and uploads directories:
 
 The equivalent environment variables are `PORT`, `DATA_DIR`, `UPLOADS_DIR`, and
 `SERVER_URL`. Print the version banner by running the binary (it logs
-`WulfVault File Sharing System v7.1.0 Aurora` on startup).
+`WulfVault File Sharing System v7.5.3 Inner Overhaul` on startup).
 
 ---
 

@@ -1,7 +1,7 @@
 # WulfVault - Installation Guide
 
 Complete guide to installing and deploying the WulfVault file sharing system
-(v7.1.0 "Aurora").
+(v7.5.3 "Inner Overhaul").
 
 ## Quick Start (Docker - Recommended)
 

@@ -1,4 +1,4 @@
-# WulfVault User Guide v7.1.0 Aurora 🌅
+# WulfVault User Guide v7.5.3 Inner Overhaul 🌅
 
 **Complete Guide for Administrators and Users**
 
@@ -433,14 +433,14 @@ environment:
 docker logs wulfvault
 
 # Output shows:
-# WulfVault File Sharing System v7.1.0 Aurora
+# WulfVault File Sharing System v7.5.3 Inner Overhaul
 # Server starting on :8080
 # Server URL: https://files.yourdomain.com
 ```
 
 **Via environment inspection:**
 ```bash
-docker exec wulfvault env | grep -E "SERVER_URL|PORT|MAX_FILE"
+docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' wulfvault | grep -E "SERVER_URL|PORT|MAX_FILE"
 ```
 
 ### Troubleshooting Configuration
@@ -2171,7 +2171,7 @@ Server logs display HTTP status codes to indicate the outcome of requests. Under
 
 ---
 
-**WulfVault v7.1.0 Aurora**
+**WulfVault v7.5.3 Inner Overhaul**
 **Copyright © 2025 Ulf Holmström (Frimurare)**
 **Licensed under AGPL-3.0**
 

@@ -1,10 +1,10 @@
 # WulfVault — Enterprise File Sharing Platform
 
-**Version 7.5.2 Inner Overhaul** · Self-Hosted · Open Source · AGPL-3.0
+**Version 7.5.3 Inner Overhaul** · Self-Hosted · Open Source · AGPL-3.0
 
 WulfVault is a self-hosted file sharing platform for organizations that need security, accountability, and full control over their data. Written in Go, it is a complete alternative to commercial file-transfer services — no subscriptions, no per-transfer fees, no practical file-size limit — with multi-user management, per-user quotas, enterprise audit logging, full download tracking, branded download pages, 2FA, SSO (Microsoft Entra ID + generic OpenID Connect), self-service password management, file-request portals, and GDPR-compliant account deletion.
 
-> 🔧 **7.5.2 "Inner Overhaul"** is a maintenance release: internal data models rewritten, Go 1.27.4 and updated dependencies (`govulncheck`: 0 known vulnerabilities). Nothing changes for users — same interface, API, configuration and database as 7.5.0/7.5.1.
+> 🔒 **Recommended update for Docker users: 7.5.3 "Inner Overhaul"** — the Docker image now has **no known vulnerabilities** (Trivy and Grype: 0). Earlier images carry 1 critical and 8 high (7.5.1), 3 critical and 53 high (7.5.0) and 5 critical and 67 high (7.2.0) vulnerabilities. The image is now built on an empty base with only the WulfVault binary and its web assets (about 7 MB). Internal data models are rewritten; nothing changes for users. Details and the full CVE list are in the [changelog](CHANGELOG.md#753---inner-overhaul---2026-11-18).
 
 > ⚠️ **7.5 "Overhaul" is a complete redesign of the user interface.** Every page — sign-in, dashboard, files, uploads, file requests, teams, settings, the admin area and the public download pages — has been rebuilt on a new, modern app shell ("Wolf Overhaul"): one role-aware sidebar, a language switcher, unified cards, forms, tables and action buttons, full mobile layouts, and Swedish/English on the admin overview, dashboard, file and team views and the public download pages (the remaining admin pages are English for now). **No features, data formats, APIs or database schemas changed**, and upgrading is as safe as any other release. But if you and your users are happy with the classic 7.2 look, **do not upgrade** — there is no setting to bring the old interface back. Have a look at the [screenshots](#screenshots) first.
 
@@ -111,24 +111,24 @@ git clone https://github.com/Frimurare/WulfVault.git
 cd WulfVault
 ```
 
-**Docker**
+**Docker** (prebuilt image from [Docker Hub](https://hub.docker.com/r/frimurare/wulfvault), currently `7.5.3`)
 ```bash
-docker build -t wulfvault/wulfvault:latest .
 docker run -d --name wulfvault -p 8080:8080 \
   -v ./data:/data -v ./uploads:/uploads \
   -e SERVER_URL=https://files.yourdomain.com \
-  wulfvault/wulfvault:latest
+  frimurare/wulfvault:latest
 ```
+To build the image yourself instead: `docker build -t wulfvault:local .`
 
 **Docker Compose** (uses the bundled `docker-compose.yml`)
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
 
-**Build from source** (Go 1.21+)
+**Build from source** (Go 1.27+)
 ```bash
 go mod download
-go build -o wulfvault cmd/server/main.go
+go build -o wulfvault ./cmd/server
 ./wulfvault
 ```
 

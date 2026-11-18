@@ -1,6 +1,6 @@
 # WulfVault REST API Documentation
 
-**Version:** 7.1.0 Aurora
+**Version:** 7.5.3 Inner Overhaul
 
 WulfVault provides a comprehensive REST API for managing users, files, teams, and system settings. This documentation covers all available endpoints, authentication methods, and usage examples.
 
@@ -140,7 +140,7 @@ accounts are not reported here.
   "role": "user",
   "storage_used_mb": 42,
   "storage_quota_mb": 1000,
-  "server_version": "7.1.0 Aurora",
+  "server_version": "7.5.3 Inner Overhaul",
   "two_factor_enabled": false
 }
 ```
@@ -173,7 +173,7 @@ GET /health
 ```json
 {
   "status": "healthy",
-  "version": "7.1.0 Aurora"
+  "version": "7.5.3 Inner Overhaul"
 }
 ```
 

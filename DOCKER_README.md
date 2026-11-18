@@ -202,8 +202,8 @@ labels:
 
 ### Tags
 
-- `latest` - Latest stable release (currently `v7.1.0 Aurora`)
-- `vX.Y.Z` — pin to a specific semver release
+- `latest` — latest stable release (currently `7.5.3` "Inner Overhaul")
+- `X.Y.Z` (for example `7.5.3`) — pin to a specific release
 
 ### Architecture
 
@@ -232,4 +232,4 @@ Ulf Holmström (Frimurare)
 
 ---
 
-**Latest Version:** v7.1.0 Aurora
+**Latest Version:** 7.5.3 Inner Overhaul

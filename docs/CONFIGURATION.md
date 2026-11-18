@@ -1,6 +1,6 @@
 # WulfVault Configuration Reference
 
-Configuration for **WulfVault** v7.1.0 "Aurora".
+Configuration for **WulfVault** v7.5.3 "Inner Overhaul".
 
 WulfVault has two layers of configuration:
 

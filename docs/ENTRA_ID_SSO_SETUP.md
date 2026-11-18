@@ -1,6 +1,6 @@
 # Entra ID (Azure AD) SSO Setup
 
-Configure Microsoft Entra ID single sign-on for **WulfVault** v7.1.0 "Aurora".
+Configure Microsoft Entra ID single sign-on for **WulfVault** v7.5.3 "Inner Overhaul".
 
 WulfVault's identity provider is configured entirely from the **Settings →
 Identity Providers** page in the admin UI — there are no environment variables

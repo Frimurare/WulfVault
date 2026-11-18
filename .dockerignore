@@ -1,0 +1,12 @@
+# Keep local data, databases and build output out of the image build context.
+.git
+data/
+uploads/
+backup/
+*.db
+*.db-wal
+*.db-shm
+*.log
+wulfvault
+wulfvault.new
+wulfvault-linux-*
