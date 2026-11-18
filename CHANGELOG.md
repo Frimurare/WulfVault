@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.5.2] - Inner Overhaul - 2026-11-18
+
+A maintenance release. Nothing changes for users or administrators: the
+interface, features, REST API, configuration and database are the same as in
+7.5.1, and existing installations upgrade in place without a migration.
+
+### Changed
+- Rewrote WulfVault's internal data models and configuration types from
+  scratch. The user model now holds only what WulfVault actually uses (role,
+  the "edit other users' files" permission, sign-in source, storage quota,
+  2FA and lifecycle fields). Model types for functions WulfVault does not
+  have, such as API key objects, cloud storage settings, client-side
+  encryption metadata and an unused configuration structure, were removed
+  together with the `jinzhu/copier` dependency.
+- Human-readable file sizes ("1.5 MB") now come from one shared function
+  instead of three copies. The output is unchanged.
+- Restructured the GitHub issue forms.
+
+### Security
+- Built with **Go 1.27.4** (was 1.27.3). It fixes CVE-2026-97054 in
+  `net/http`, which affects servers that use `MaxBytesReader`. WulfVault does
+  not use it, so 7.5.1 was not exposed, but image scanners will stop
+  reporting it.
+- Updated Go dependencies: `golang.org/x/crypto` 0.59.0, `x/oauth2` 0.38.0,
+  `go-jose/v4` 4.1.9, `modernc.org/sqlite` 1.62.0. `govulncheck`: no
+  vulnerabilities.
+
+### Upgrade notes
+- Stored values are unchanged: user roles (`Users.Userlevel` 0/1/2) and
+  permissions (`Users.Permissions`, 255 for administrators) mean the same as
+  before, and the database schema is untouched. JSON field names in the REST
+  API (`userLevel`, `permissions`, …) are unchanged.
+- Only relevant if you maintain a fork that imports WulfVault's internal Go
+  packages: `models.UserRank` is now `models.Role`, the `User.UserLevel` field
+  is `User.Role`, `UserLevel*` constants are `Role*`, `UserPermission*` is
+  `PermissionSet`/`PermNone`/`PermAll`, `HasPermissionEditOtherUploads()` is
+  `CanEditOthersFiles()` and `GetReadableUserLevel()` is `RoleLabel()`.
+
 ## [7.5.1] - Hardened Overhaul - 2026-10-27
 
 A security-only rebuild of 7.5.0 "Overhaul". The interface, features, APIs and

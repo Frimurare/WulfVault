@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	Version = "7.5.1 Hardened Overhaul"
+	Version = "7.5.2 Inner Overhaul"
 )
 
 var (
