@@ -2,7 +2,7 @@
 # Multi-stage build for efficient final image
 
 # Build stage
-FROM golang:1.27.3-alpine3.24 AS builder
+FROM golang:1.27.4-alpine3.24 AS builder
 
 WORKDIR /app
 
