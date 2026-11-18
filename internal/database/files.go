@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -438,20 +439,23 @@ func CalculateFileSHA1(filePath string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// FormatFileSize formats bytes to human-readable size
-func FormatFileSize(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
+// sizeUnits are the binary multiples used by FormatFileSize, from 2^10 upwards.
+var sizeUnits = [...]string{"KB", "MB", "GB", "TB", "PB", "EB"}
 
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
+// FormatFileSize renders a byte count for people: "512 B", "1.5 KB", "3.2 GB".
+// Values from 1024 bytes up are shown with one decimal in the largest unit
+// that keeps the number below 1024.
+func FormatFileSize(n int64) string {
+	if n < 1024 {
+		return strconv.FormatInt(n, 10) + " B"
 	}
-
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	value := float64(n) / 1024
+	unit := 0
+	for value >= 1024 && unit < len(sizeUnits)-1 {
+		value /= 1024
+		unit++
+	}
+	return strconv.FormatFloat(value, 'f', 1, 64) + " " + sizeUnits[unit]
 }
 
 // scanFiles is a helper to scan file rows

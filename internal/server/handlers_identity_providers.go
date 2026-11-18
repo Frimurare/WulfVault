@@ -38,8 +38,8 @@ func (s *Server) handleAdminIdentityProviders(w http.ResponseWriter, r *http.Req
 	}
 
 	defaultRole, err := strconv.Atoi(r.FormValue("default_role"))
-	if err != nil || defaultRole < int(models.UserLevelSuperAdmin) || defaultRole > int(models.UserLevelUser) {
-		defaultRole = int(models.UserLevelUser)
+	if err != nil || defaultRole < int(models.RoleSuperAdmin) || defaultRole > int(models.RoleUser) {
+		defaultRole = int(models.RoleUser)
 	}
 
 	var allowedDomains []string
@@ -66,7 +66,7 @@ func (s *Server) handleAdminIdentityProviders(w http.ResponseWriter, r *http.Req
 		IssuerURL:           strings.TrimSpace(r.FormValue("issuer_url")),
 		Scopes:              strings.TrimSpace(r.FormValue("scopes")),
 		AutoProvision:       r.FormValue("auto_provision") == "on",
-		DefaultRole:         models.UserRank(defaultRole),
+		DefaultRole:         models.Role(defaultRole),
 		AllowedDomains:      allowedDomains,
 	}
 
@@ -120,7 +120,7 @@ func (s *Server) renderIdentityProviders(w http.ResponseWriter, tr *i18n.Transla
 		errMsg = "Failed to load current settings: " + loadErr.Error()
 		cfg = &auth.IdentityProviderConfig{
 			AutoProvision: true,
-			DefaultRole:   models.UserLevelUser,
+			DefaultRole:   models.RoleUser,
 		}
 	}
 
@@ -316,8 +316,8 @@ func (s *Server) renderIdentityProviders(w http.ResponseWriter, tr *i18n.Transla
                     <div class="form-group">
                         <label for="default_role">Default role for new users</label>
                         <select id="default_role" name="default_role">
-                            <option value="2" ` + selectedAttr(cfg.DefaultRole == models.UserLevelUser) + `>User</option>
-                            <option value="1" ` + selectedAttr(cfg.DefaultRole == models.UserLevelAdmin) + `>Admin</option>
+                            <option value="2" ` + selectedAttr(cfg.DefaultRole == models.RoleUser) + `>User</option>
+                            <option value="1" ` + selectedAttr(cfg.DefaultRole == models.RoleAdmin) + `>Admin</option>
                         </select>
                         <div class="help">Applies when auto-provisioning is enabled. SuperAdmin cannot be auto-assigned.</div>
                     </div>

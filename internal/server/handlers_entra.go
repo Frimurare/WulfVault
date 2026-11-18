@@ -228,7 +228,7 @@ func (s *Server) auditEntraFailure(r *http.Request, email, reason string) {
 		Success:    false,
 		ErrorMsg:   reason,
 	})
-	_ = models.UserLevelUser // keep models import alive for future use
+	_ = models.RoleUser // keep models import alive for future use
 }
 
 // renderEntraError shows a branded, friendly error page for any failure in the

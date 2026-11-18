@@ -311,8 +311,8 @@ func runSetup() error {
 		Name:           "admin",
 		Email:          adminEmail,
 		Password:       hashedPassword,
-		UserLevel:      models.UserLevelSuperAdmin,
-		Permissions:    models.UserPermissionAll,
+		Role:           models.RoleSuperAdmin,
+		Permissions:    models.PermAll,
 		StorageQuotaMB: 100000, // 100 GB for admin
 		StorageUsedMB:  0,
 		IsActive:       true,

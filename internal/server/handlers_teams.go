@@ -299,7 +299,7 @@ func (s *Server) handleAPITeamAddMember(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Don't add download users to teams
-	if targetUser.UserLevel > models.UserLevelUser {
+	if targetUser.Role > models.RoleUser {
 		http.Error(w, "Download users cannot be added to teams", http.StatusBadRequest)
 		return
 	}
@@ -463,7 +463,7 @@ func (s *Server) handleAPIShareFileToTeam(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if file.UserId != user.Id && !user.HasPermissionEditOtherUploads() {
+	if file.UserId != user.Id && !user.CanEditOthersFiles() {
 		http.Error(w, "You don't own this file", http.StatusForbidden)
 		return
 	}

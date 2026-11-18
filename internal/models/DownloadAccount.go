@@ -6,7 +6,6 @@
 package models
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -51,64 +50,24 @@ type EmailLog struct {
 	FileSize       int64  `json:"fileSize"`       // Size in bytes
 }
 
-// GetReadableDate returns the date as YYYY-MM-DD HH:MM
-func (d *DownloadAccount) GetReadableDate() string {
-	if d.CreatedAt == 0 {
-		return "Unknown"
-	}
-	return time.Unix(d.CreatedAt, 0).Format("2006-01-02 15:04")
-}
+// stampLayout is how account and log timestamps are shown in the admin pages.
+const stampLayout = "2006-01-02 15:04"
 
-// GetLastUsedDate returns the last used date as YYYY-MM-DD HH:MM
+// GetLastUsedDate describes when the download account was last used.
 func (d *DownloadAccount) GetLastUsedDate() string {
-	if d.LastUsed == 0 {
+	switch {
+	case d.LastUsed == 0:
 		return "Never"
-	}
-	if time.Now().Unix()-d.LastUsed < 120 {
+	case time.Since(time.Unix(d.LastUsed, 0)) < 2*time.Minute:
 		return "Just now"
 	}
-	return time.Unix(d.LastUsed, 0).Format("2006-01-02 15:04")
+	return time.Unix(d.LastUsed, 0).Format(stampLayout)
 }
 
-// ToJson returns the download account as a JSON object
-func (d *DownloadAccount) ToJson() string {
-	result, err := json.Marshal(d)
-	if err != nil {
-		return "{}"
-	}
-	return string(result)
-}
-
-// GetReadableDownloadDate returns the download timestamp as YYYY-MM-DD HH:MM
+// GetReadableDownloadDate formats the moment the download happened.
 func (d *DownloadLog) GetReadableDownloadDate() string {
-	if d.DownloadedAt == 0 {
+	if d.DownloadedAt <= 0 {
 		return "Unknown"
 	}
-	return time.Unix(d.DownloadedAt, 0).Format("2006-01-02 15:04")
-}
-
-// ToJson returns the download log as a JSON object
-func (d *DownloadLog) ToJson() string {
-	result, err := json.Marshal(d)
-	if err != nil {
-		return "{}"
-	}
-	return string(result)
-}
-
-// GetReadableSentDate returns the sent timestamp as YYYY-MM-DD HH:MM
-func (e *EmailLog) GetReadableSentDate() string {
-	if e.SentAt == 0 {
-		return "Unknown"
-	}
-	return time.Unix(e.SentAt, 0).Format("2006-01-02 15:04")
-}
-
-// ToJson returns the email log as a JSON object
-func (e *EmailLog) ToJson() string {
-	result, err := json.Marshal(e)
-	if err != nil {
-		return "{}"
-	}
-	return string(result)
+	return time.Unix(d.DownloadedAt, 0).Format(stampLayout)
 }

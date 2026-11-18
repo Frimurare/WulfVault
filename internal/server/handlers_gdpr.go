@@ -559,7 +559,7 @@ func (s *Server) handleUserDataExport(w http.ResponseWriter, r *http.Request) {
 		"id":               user.Id,
 		"name":             user.Name,
 		"email":            user.Email,
-		"user_level":       user.GetReadableUserLevel(),
+		"user_level":       user.RoleLabel(),
 		"created_at":       user.CreatedAt,
 		"is_active":        user.IsActive,
 		"storage_quota_mb": user.StorageQuotaMB,
@@ -881,7 +881,7 @@ func (s *Server) renderUserAccountSettings(w http.ResponseWriter, tr *i18n.Trans
                 <div class="account-info">
                     <p><strong>Name:</strong> <span>` + user.Name + `</span></p>
                     <p><strong>Email:</strong> <span>` + user.Email + `</span></p>
-                    <p><strong>Role:</strong> <span>` + user.GetReadableUserLevel() + `</span></p>
+                    <p><strong>Role:</strong> <span>` + user.RoleLabel() + `</span></p>
                     <p><strong>Account Created:</strong> <span>` + formatTimestamp(user.CreatedAt) + `</span></p>
                     <p><strong>Storage Used:</strong> <span>` + formatBytes(user.StorageUsedMB*1024*1024) + ` / ` + formatBytes(user.StorageQuotaMB*1024*1024) + `</span></p>
                 </div>
@@ -936,18 +936,8 @@ func (s *Server) renderUserAccountSettings(w http.ResponseWriter, tr *i18n.Trans
 	w.Write([]byte(html))
 }
 
-// Helper functions for formatting
 func formatBytes(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return strconv.FormatInt(bytes, 10) + " B"
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return strconv.FormatFloat(float64(bytes)/float64(div), 'f', 1, 64) + " " + "KMGTPE"[exp:exp+1] + "B"
+	return database.FormatFileSize(bytes)
 }
 
 func formatTimestamp(timestamp int64) string {

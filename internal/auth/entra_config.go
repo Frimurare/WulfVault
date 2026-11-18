@@ -30,20 +30,20 @@ const (
 // continuity — DBs already have these rows, renaming would require a
 // migration with no behavioural benefit.
 const (
-	cfgEntraEnabled            = "entra_enabled"
-	cfgEntraForceLocalOnly     = "entra_force_local_only"
-	cfgEntraTenantID           = "entra_tenant_id"
-	cfgEntraClientID           = "entra_client_id"
-	cfgEntraClientSecretEnc    = "entra_client_secret_enc"
-	cfgEntraRedirectURI        = "entra_redirect_uri"
-	cfgEntraAutoProvision      = "entra_auto_provision"
-	cfgEntraDefaultRole        = "entra_default_role"
-	cfgEntraAllowedDomains     = "entra_allowed_domains"
+	cfgEntraEnabled         = "entra_enabled"
+	cfgEntraForceLocalOnly  = "entra_force_local_only"
+	cfgEntraTenantID        = "entra_tenant_id"
+	cfgEntraClientID        = "entra_client_id"
+	cfgEntraClientSecretEnc = "entra_client_secret_enc"
+	cfgEntraRedirectURI     = "entra_redirect_uri"
+	cfgEntraAutoProvision   = "entra_auto_provision"
+	cfgEntraDefaultRole     = "entra_default_role"
+	cfgEntraAllowedDomains  = "entra_allowed_domains"
 	// Added in v7.1.0 for multi-provider support
-	cfgProviderType            = "entra_provider_type"          // "entra" | "generic_oidc"
-	cfgProviderDisplayName     = "entra_provider_display_name"  // "Microsoft", "Google", custom
-	cfgGenericIssuerURL        = "entra_generic_issuer_url"     // for Generic OIDC
-	cfgGenericScopes           = "entra_generic_scopes"         // space-sep, default "openid email profile"
+	cfgProviderType        = "entra_provider_type"         // "entra" | "generic_oidc"
+	cfgProviderDisplayName = "entra_provider_display_name" // "Microsoft", "Google", custom
+	cfgGenericIssuerURL    = "entra_generic_issuer_url"    // for Generic OIDC
+	cfgGenericScopes       = "entra_generic_scopes"        // space-sep, default "openid email profile"
 )
 
 // IdentityProviderConfig holds the configured single sign-on provider.
@@ -84,7 +84,7 @@ type IdentityProviderConfig struct {
 
 	// Provisioning rules (shared across providers)
 	AutoProvision  bool
-	DefaultRole    models.UserRank
+	DefaultRole    models.Role
 	AllowedDomains []string // lower-cased email domains; empty = any
 }
 
@@ -146,7 +146,7 @@ func (c *IdentityProviderConfig) EffectiveScopes() []string {
 func LoadIdentityProviderConfig(db *database.Database) (*IdentityProviderConfig, error) {
 	cfg := &IdentityProviderConfig{
 		AutoProvision: true,
-		DefaultRole:   models.UserLevelUser,
+		DefaultRole:   models.RoleUser,
 	}
 
 	getBool := func(key string, dst *bool) error {
@@ -203,7 +203,7 @@ func LoadIdentityProviderConfig(db *database.Database) (*IdentityProviderConfig,
 
 	if v, err := db.GetConfigValue(cfgEntraDefaultRole); err == nil && v != "" {
 		if n, perr := strconv.Atoi(v); perr == nil {
-			cfg.DefaultRole = models.UserRank(n)
+			cfg.DefaultRole = models.Role(n)
 		}
 	}
 

@@ -24,7 +24,7 @@ func TestApplicationShellKeepsRoleNavigationSeparate(t *testing.T) {
 	for _, lang := range []i18n.Lang{i18n.LangEN, i18n.LangSV} {
 		tr := i18n.For(lang)
 		admin := s.getAdminHeaderHTML("", tr)
-		member := s.getHeaderHTML(&models.User{UserLevel: models.UserLevelUser, Name: "<script>test</script>"}, false, tr)
+		member := s.getHeaderHTML(&models.User{Role: models.RoleUser, Name: "<script>test</script>"}, false, tr)
 		download := s.getDownloadUserHeaderHTML(tr)
 		if !strings.Contains(admin, "/admin/users") || !strings.Contains(admin, "/admin/identity-providers") {
 			t.Fatal("admin destinations are missing")
@@ -54,11 +54,11 @@ func TestApplicationPageFixtures(t *testing.T) {
 	s.config.Version = "test"
 	s.config.DataDir = t.TempDir()
 	s.config.UploadsDir = t.TempDir()
-	user := &models.User{Name: "Demo Admin", Email: "admin@example.com", Password: "hash", IsActive: true, UserLevel: models.UserLevelAdmin, StorageQuotaMB: 5000}
+	user := &models.User{Name: "Demo Admin", Email: "admin@example.com", Password: "hash", IsActive: true, Role: models.RoleAdmin, StorageQuotaMB: 5000}
 	if err := database.DB.CreateUser(user); err != nil {
 		t.Fatal(err)
 	}
-	member := &models.User{Name: "Demo Member", Email: "member@example.com", Password: "hash", IsActive: true, UserLevel: models.UserLevelUser, StorageQuotaMB: 5000}
+	member := &models.User{Name: "Demo Member", Email: "member@example.com", Password: "hash", IsActive: true, Role: models.RoleUser, StorageQuotaMB: 5000}
 	if err := database.DB.CreateUser(member); err != nil {
 		t.Fatal(err)
 	}

@@ -396,16 +396,16 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 		Name:           name,
 		Email:          email,
 		Password:       password,
-		UserLevel:      models.UserRank(userLevel),
-		Permissions:    models.UserPermissionNone,
+		Role:           models.Role(userLevel),
+		Permissions:    models.PermNone,
 		StorageQuotaMB: quotaMB,
 		StorageUsedMB:  0,
 		IsActive:       true,
 	}
 
 	// Set permissions based on user level
-	if newUser.UserLevel == models.UserLevelAdmin {
-		newUser.Permissions = models.UserPermissionAll
+	if newUser.Role == models.RoleAdmin {
+		newUser.Permissions = models.PermAll
 	}
 
 	if err := database.DB.CreateUser(newUser); err != nil {
@@ -421,7 +421,7 @@ func (s *Server) handleAdminUserCreate(w http.ResponseWriter, r *http.Request) {
 		Action:     "USER_CREATED",
 		EntityType: "User",
 		EntityID:   fmt.Sprintf("%d", newUser.Id),
-		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"quota_mb\":%d}", newUser.Email, newUser.Name, newUser.UserLevel, newUser.StorageQuotaMB),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"quota_mb\":%d}", newUser.Email, newUser.Name, newUser.Role, newUser.StorageQuotaMB),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
@@ -483,16 +483,16 @@ func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, 
 		Name:             name,
 		Email:            email,
 		Password:         "",
-		UserLevel:        models.UserRank(userLevel),
-		Permissions:      models.UserPermissionNone,
+		Role:             models.Role(userLevel),
+		Permissions:      models.PermNone,
 		StorageQuotaMB:   quotaMB,
 		StorageUsedMB:    0,
 		IsActive:         true,
 		IdentityProvider: models.IdentityProviderEntra,
 		ExternalID:       "",
 	}
-	if newUser.UserLevel == models.UserLevelAdmin {
-		newUser.Permissions = models.UserPermissionAll
+	if newUser.Role == models.RoleAdmin {
+		newUser.Permissions = models.PermAll
 	}
 
 	if err := database.DB.CreateUser(newUser); err != nil {
@@ -507,7 +507,7 @@ func (s *Server) createEntraInvitedUser(w http.ResponseWriter, r *http.Request, 
 		Action:     "USER_CREATED_ENTRA_INVITE",
 		EntityType: "User",
 		EntityID:   fmt.Sprintf("%d", newUser.Id),
-		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"quota_mb\":%d,\"identity_provider\":\"entra\"}", newUser.Email, newUser.Name, newUser.UserLevel, newUser.StorageQuotaMB),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"quota_mb\":%d,\"identity_provider\":\"entra\"}", newUser.Email, newUser.Name, newUser.Role, newUser.StorageQuotaMB),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
@@ -622,7 +622,7 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 	existingUser.Name = r.FormValue("name")
 	existingUser.Email = r.FormValue("email")
 	existingUser.StorageQuotaMB, _ = strconv.ParseInt(r.FormValue("quota_mb"), 10, 64)
-	existingUser.UserLevel = models.UserRank(mustParseInt(r.FormValue("user_level")))
+	existingUser.Role = models.Role(mustParseInt(r.FormValue("user_level")))
 	existingUser.IsActive = r.FormValue("is_active") == "1"
 
 	// Update password if provided
@@ -649,7 +649,7 @@ func (s *Server) handleAdminUserEdit(w http.ResponseWriter, r *http.Request) {
 		Action:     "USER_UPDATED",
 		EntityType: "User",
 		EntityID:   fmt.Sprintf("%d", existingUser.Id),
-		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"is_active\":%t}", existingUser.Email, existingUser.Name, existingUser.UserLevel, existingUser.IsActive),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d,\"is_active\":%t}", existingUser.Email, existingUser.Name, existingUser.Role, existingUser.IsActive),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
@@ -708,7 +708,7 @@ func (s *Server) handleAdminUserDelete(w http.ResponseWriter, r *http.Request) {
 		Action:     "USER_DELETED",
 		EntityType: "User",
 		EntityID:   fmt.Sprintf("%d", userID),
-		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", userToDelete.Email, userToDelete.Name, userToDelete.UserLevel),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", userToDelete.Email, userToDelete.Name, userToDelete.Role),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
@@ -1843,7 +1843,7 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, tr *i18n.Translator, us
 	// Regular users
 	for _, u := range users {
 		levelBadge := `<span class="badge badge-user">User</span>`
-		if u.UserLevel == models.UserLevelAdmin || u.UserLevel == models.UserLevelSuperAdmin {
+		if u.Role == models.RoleAdmin || u.Role == models.RoleSuperAdmin {
 			levelBadge = `<span class="badge badge-admin">Admin</span>`
 		}
 
@@ -2194,7 +2194,7 @@ func (s *Server) renderAdminUserForm(w http.ResponseWriter, tr *i18n.Translator,
 		nameVal = user.Name
 		emailVal = user.Email
 		quotaVal = fmt.Sprintf("%d", user.StorageQuotaMB)
-		userLevelVal = fmt.Sprintf("%d", user.UserLevel)
+		userLevelVal = fmt.Sprintf("%d", user.Role)
 	}
 
 	// Resolve the configured SSO provider so the invite option is labelled for

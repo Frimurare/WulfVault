@@ -16,13 +16,13 @@ import (
 
 // UserFilter for querying users with pagination and filtering
 type UserFilter struct {
-	SearchTerm  string // Search in name and email
-	UserLevel   int    // Filter by user level (0 = all, 1 = regular, 2 = admin)
-	IsActive    *bool  // Filter by active status (nil = all)
-	SortBy      string // Sort field: "name", "email", "level", "lastonline", "created", "quota", "used"
-	SortOrder   string // Sort order: "asc", "desc"
-	Limit       int
-	Offset      int
+	SearchTerm string // Search in name and email
+	UserLevel  int    // Filter by user level (0 = all, 1 = regular, 2 = admin)
+	IsActive   *bool  // Filter by active status (nil = all)
+	SortBy     string // Sort field: "name", "email", "level", "lastonline", "created", "quota", "used"
+	SortOrder  string // Sort order: "asc", "desc"
+	Limit      int
+	Offset     int
 }
 
 // CreateUser inserts a new user into the database
@@ -52,7 +52,7 @@ func (d *Database) CreateUser(user *models.User) error {
 		                   StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive,
 		                   IdentityProvider, ExternalID)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		user.Name, user.Email, user.Password, user.Permissions, user.UserLevel, user.LastOnline,
+		user.Name, user.Email, user.Password, user.Permissions, user.Role, user.LastOnline,
 		resetPw, user.StorageQuotaMB, user.StorageUsedMB, user.CreatedAt, isActive,
 		identityProvider, user.ExternalID,
 	)
@@ -78,7 +78,7 @@ func (d *Database) GetUserByID(id int) (*models.User, error) {
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
 		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users WHERE Id = ?`, id).Scan(
-		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
+		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.Role,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 		&user.IdentityProvider, &user.ExternalID, &user.Language,
@@ -107,7 +107,7 @@ func (d *Database) GetUserByEmail(email string) (*models.User, error) {
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
 		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users WHERE Email = ?`, email).Scan(
-		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
+		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.Role,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 		&user.IdentityProvider, &user.ExternalID, &user.Language,
@@ -136,7 +136,7 @@ func (d *Database) GetUserByName(name string) (*models.User, error) {
 		       StorageQuotaMB, StorageUsedMB, CreatedAt, IsActive, TOTPSecret, TOTPEnabled, BackupCodes,
 		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users WHERE Name = ?`, name).Scan(
-		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
+		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.Role,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 		&user.IdentityProvider, &user.ExternalID, &user.Language,
@@ -172,7 +172,7 @@ func (d *Database) GetAllUsers() ([]*models.User, error) {
 		var resetPw, isActive int
 
 		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions,
-			&user.UserLevel, &user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
+			&user.Role, &user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 			&user.CreatedAt, &isActive)
 		if err != nil {
 			return nil, err
@@ -263,7 +263,7 @@ func (d *Database) GetUsers(filter *UserFilter) ([]*models.User, error) {
 		var resetPw, isActive int
 
 		err := rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions,
-			&user.UserLevel, &user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
+			&user.Role, &user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 			&user.CreatedAt, &isActive)
 		if err != nil {
 			return nil, err
@@ -323,7 +323,7 @@ func (d *Database) UpdateUser(user *models.User) error {
 		                 LastOnline = ?, ResetPassword = ?, StorageQuotaMB = ?, StorageUsedMB = ?,
 		                 IsActive = ?
 		WHERE Id = ?`,
-		user.Name, user.Email, user.Password, user.Permissions, user.UserLevel, user.LastOnline,
+		user.Name, user.Email, user.Password, user.Permissions, user.Role, user.LastOnline,
 		resetPw, user.StorageQuotaMB, user.StorageUsedMB, isActive, user.Id,
 	)
 	return err
@@ -520,7 +520,7 @@ func (d *Database) GetUserByExternalID(provider, externalID string) (*models.Use
 		       COALESCE(IdentityProvider,'local'), COALESCE(ExternalID,''), COALESCE(Language,'')
 		FROM Users
 		WHERE IdentityProvider = ? AND ExternalID = ?`, provider, externalID).Scan(
-		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.UserLevel,
+		&user.Id, &user.Name, &user.Email, &user.Password, &user.Permissions, &user.Role,
 		&user.LastOnline, &resetPw, &user.StorageQuotaMB, &user.StorageUsedMB,
 		&user.CreatedAt, &isActive, &user.TOTPSecret, &totpEnabled, &user.BackupCodes,
 		&user.IdentityProvider, &user.ExternalID, &user.Language,

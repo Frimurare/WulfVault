@@ -355,15 +355,15 @@ func (s *Server) handleAPICreateUser(w http.ResponseWriter, r *http.Request) {
 		req.StorageQuotaMB = 10240 // 10GB default
 	}
 	if req.UserLevel == 0 {
-		req.UserLevel = int(models.UserLevelUser)
+		req.UserLevel = int(models.RoleUser)
 	}
 
 	user := &models.User{
 		Name:           req.Name,
 		Email:          req.Email,
 		Password:       string(hashedPassword),
-		UserLevel:      models.UserRank(req.UserLevel),
-		Permissions:    models.UserPermission(req.Permissions),
+		Role:           models.Role(req.UserLevel),
+		Permissions:    models.PermissionSet(req.Permissions),
 		StorageQuotaMB: req.StorageQuotaMB,
 		IsActive:       req.IsActive,
 		CreatedAt:      time.Now().Unix(),
@@ -383,7 +383,7 @@ func (s *Server) handleAPICreateUser(w http.ResponseWriter, r *http.Request) {
 		Action:     "USER_CREATED",
 		EntityType: "User",
 		EntityID:   fmt.Sprintf("%d", user.Id),
-		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", user.Email, user.Name, user.UserLevel),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", user.Email, user.Name, user.Role),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
@@ -442,8 +442,8 @@ func (s *Server) handleAPIUpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Update fields
 	user.Name = req.Name
 	user.Email = req.Email
-	user.UserLevel = models.UserRank(req.UserLevel)
-	user.Permissions = models.UserPermission(req.Permissions)
+	user.Role = models.Role(req.UserLevel)
+	user.Permissions = models.PermissionSet(req.Permissions)
 	user.StorageQuotaMB = req.StorageQuotaMB
 	user.IsActive = req.IsActive
 
@@ -471,7 +471,7 @@ func (s *Server) handleAPIUpdateUser(w http.ResponseWriter, r *http.Request) {
 		Action:     "USER_UPDATED",
 		EntityType: "User",
 		EntityID:   fmt.Sprintf("%d", user.Id),
-		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", user.Email, user.Name, user.UserLevel),
+		Details:    fmt.Sprintf("{\"email\":\"%s\",\"name\":\"%s\",\"user_level\":%d}", user.Email, user.Name, user.Role),
 		IPAddress:  getClientIP(r),
 		UserAgent:  r.UserAgent(),
 		Success:    true,
@@ -699,7 +699,7 @@ func (s *Server) handleAPIUpdateFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check permissions
-	if file.UserId != user.Id && !user.HasPermissionEditOtherUploads() {
+	if file.UserId != user.Id && !user.CanEditOthersFiles() {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -769,7 +769,7 @@ func (s *Server) handleAPIDeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check permissions
-	if file.UserId != user.Id && !user.HasPermissionEditOtherUploads() {
+	if file.UserId != user.Id && !user.CanEditOthersFiles() {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -923,7 +923,7 @@ func (s *Server) handleAPISetFilePassword(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check permissions
-	if file.UserId != user.Id && !user.HasPermissionEditOtherUploads() {
+	if file.UserId != user.Id && !user.CanEditOthersFiles() {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}

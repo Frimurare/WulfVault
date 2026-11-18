@@ -5,223 +5,121 @@
 
 package models
 
-import (
-	"encoding/json"
-	"time"
+// Role is the account tier of a WulfVault user. A smaller number means more
+// authority. The numbers are written to the Users.Userlevel column, so the
+// existing values must never be renumbered.
+type Role uint8
+
+const (
+	RoleSuperAdmin Role = 0
+	RoleAdmin      Role = 1
+	RoleUser       Role = 2
 )
 
-// UserPermission contains zero or more permissions as uint16
-type UserPermission uint16
+// roleLabels maps each known role to the text shown in exports and the UI.
+var roleLabels = map[Role]string{
+	RoleSuperAdmin: "Super Admin",
+	RoleAdmin:      "Admin",
+	RoleUser:       "User",
+}
 
-// User contains information about the WulfVault user
+// PermissionSet is the bit field kept in the Users.Permissions column.
+// Administrators are saved with every bit set (PermAll) and ordinary users
+// with none, so the stored numbers stay readable by older releases.
+type PermissionSet uint16
+
+const (
+	// PermNone grants nothing beyond what the role allows.
+	PermNone PermissionSet = 0
+	// permOthersFiles lets the holder change files that another user uploaded.
+	// Bit 2 is the position earlier releases used, kept for stored rows.
+	permOthersFiles PermissionSet = 4
+	// PermAll is written for administrators.
+	PermAll PermissionSet = 0xFF
+)
+
+// Identity provider names stored in Users.IdentityProvider.
+const (
+	IdentityProviderLocal = "local"
+	IdentityProviderEntra = "entra"
+)
+
+// User is one row of the Users table: a person who can sign in and upload.
+// The JSON names are part of the REST API and must stay as they are.
 type User struct {
-	Id             int            `json:"id" redis:"id"`
-	Name           string         `json:"name" redis:"Name"`
-	Email          string         `json:"email" redis:"Email"`
-	Permissions    UserPermission `json:"permissions" redis:"Permissions"`
-	UserLevel      UserRank       `json:"userLevel" redis:"UserLevel"`
-	LastOnline     int64          `json:"lastOnline" redis:"LastOnline"`
-	Password       string         `json:"-" redis:"Password"`
-	ResetPassword  bool           `json:"resetPassword" redis:"ResetPassword"`
-	StorageQuotaMB int64          `json:"storageQuotaMB" redis:"StorageQuotaMB"` // Storage quota in MB
-	StorageUsedMB  int64          `json:"storageUsedMB" redis:"StorageUsedMB"`   // Current storage used in MB
-	CreatedAt      int64          `json:"createdAt" redis:"CreatedAt"`           // Unix timestamp
-	IsActive       bool           `json:"isActive" redis:"IsActive"`             // Account active status
-	DeletedAt      int64          `json:"deletedAt" redis:"DeletedAt"`           // Unix timestamp, 0 = not deleted
-	DeletedBy      string         `json:"deletedBy" redis:"DeletedBy"`           // "user", "admin", or "system"
-	OriginalEmail  string         `json:"originalEmail" redis:"OriginalEmail"`   // SHA-256 fingerprint of the address the row had before deletion
-	TOTPSecret     string         `json:"-" redis:"TOTPSecret"`                  // TOTP secret (never expose in JSON)
-	TOTPEnabled    bool           `json:"totpEnabled" redis:"TOTPEnabled"`       // Whether 2FA is enabled
-	BackupCodes    string         `json:"-" redis:"BackupCodes"`                 // Hashed backup codes (JSON array)
-	IdentityProvider string       `json:"identityProvider" redis:"IdentityProvider"` // "local" (default) or "entra"
-	ExternalID     string         `json:"-" redis:"ExternalID"`                  // External IdP subject (e.g. Entra OID); unique when non-empty
-	Language       string         `json:"language" redis:"Language"`             // UI language ("en", "sv"); empty = follow server default
+	// Identity
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+
+	// Access
+	Role          Role          `json:"userLevel"`
+	Permissions   PermissionSet `json:"permissions"`
+	Password      string        `json:"-"` // bcrypt hash
+	ResetPassword bool          `json:"resetPassword"`
+	TOTPEnabled   bool          `json:"totpEnabled"`
+	TOTPSecret    string        `json:"-"`
+	BackupCodes   string        `json:"-"` // JSON array of hashed one-time codes
+
+	// Sign-in source: "local" (or empty) for password accounts, "entra" for
+	// Microsoft Entra ID. ExternalID is the provider's subject identifier.
+	IdentityProvider string `json:"identityProvider"`
+	ExternalID       string `json:"-"`
+
+	// Storage, in megabytes
+	StorageQuotaMB int64 `json:"storageQuotaMB"`
+	StorageUsedMB  int64 `json:"storageUsedMB"`
+
+	// Lifecycle, as Unix seconds (0 = never / not set)
+	CreatedAt     int64  `json:"createdAt"`
+	LastOnline    int64  `json:"lastOnline"`
+	IsActive      bool   `json:"isActive"`
+	DeletedAt     int64  `json:"deletedAt"`
+	DeletedBy     string `json:"deletedBy"`     // "user", "admin" or "system"
+	OriginalEmail string `json:"originalEmail"` // SHA-256 fingerprint kept after deletion
+
+	// Preferences
+	Language string `json:"language"` // "en", "sv"; empty follows the server default
 }
 
-// IdentityProviderLocal is the default — user authenticates with password + optional TOTP
-const IdentityProviderLocal = "local"
+// IsAdmin reports whether the account has administrator rights.
+func (u *User) IsAdmin() bool {
+	return u.Role <= RoleAdmin
+}
 
-// IdentityProviderEntra means the user signs in via Microsoft Entra ID (OIDC)
-const IdentityProviderEntra = "entra"
+// RoleLabel returns a readable name for the user's role.
+func (u *User) RoleLabel() string {
+	if label, ok := roleLabels[u.Role]; ok {
+		return label
+	}
+	return "Invalid"
+}
 
-// IsLocalAccount returns true if the user authenticates with a local password
+// CanEditOthersFiles reports whether the user may change files owned by
+// someone else.
+func (u *User) CanEditOthersFiles() bool {
+	return u.Permissions&permOthersFiles != 0
+}
+
+// IsLocalAccount reports whether the user signs in with a WulfVault password.
 func (u *User) IsLocalAccount() bool {
-	return u.IdentityProvider == "" || u.IdentityProvider == IdentityProviderLocal
+	switch u.IdentityProvider {
+	case "", IdentityProviderLocal:
+		return true
+	}
+	return false
 }
 
-// IsEntraAccount returns true if the user authenticates via Entra ID
+// IsEntraAccount reports whether the user signs in through Microsoft Entra ID.
 func (u *User) IsEntraAccount() bool {
 	return u.IdentityProvider == IdentityProviderEntra
 }
 
-// GetReadableDate returns the date as YYYY-MM-DD HH:MM
-func (u *User) GetReadableDate() string {
-	if u.LastOnline == 0 {
-		return "Never"
-	}
-	if time.Now().Unix()-u.LastOnline < 120 {
-		return "Online"
-	}
-	return time.Unix(u.LastOnline, 0).Format("2006-01-02 15:04")
-}
-
-// GetReadableUserLevel returns the userlevel as a group name
-func (u *User) GetReadableUserLevel() string {
-	switch u.UserLevel {
-	case UserLevelSuperAdmin:
-		return "Super Admin"
-	case UserLevelAdmin:
-		return "Admin"
-	case UserLevelUser:
-		return "User"
-	default:
-		return "Invalid"
-	}
-}
-
-// ToJson returns the user as a JSON object
-func (u *User) ToJson() string {
-	result, err := json.Marshal(u)
-	if err != nil {
-		return "{}"
-	}
-	return string(result)
-}
-
-// UserLevelSuperAdmin indicates that this is the single user with the most permissions
-const UserLevelSuperAdmin UserRank = 0
-
-// UserLevelAdmin indicates that this user has by default all permissions (unless they affect the super-admin)
-const UserLevelAdmin UserRank = 1
-
-// UserLevelUser indicates that this user has only basic permissions by default
-const UserLevelUser UserRank = 2
-
-// UserRank indicates the rank that is assigned to the user
-type UserRank uint8
-
-// IsSuperAdmin returns true if the user has the Rank UserLevelSuperAdmin
-func (u *User) IsSuperAdmin() bool {
-	return u.UserLevel == UserLevelSuperAdmin
-}
-
-// IsSameUser returns true, if the user has the same ID
-func (u *User) IsSameUser(userId int) bool {
-	return u.Id == userId
-}
-
-const (
-	// UserPermReplaceUploads allows to replace uploads
-	UserPermReplaceUploads UserPermission = 1 << iota
-	// UserPermListOtherUploads allows to also list uploads by other users
-	UserPermListOtherUploads
-	// UserPermEditOtherUploads allows editing of uploads by other users
-	UserPermEditOtherUploads
-	// UserPermReplaceOtherUploads allows replacing of uploads by other users
-	UserPermReplaceOtherUploads
-	// UserPermDeleteOtherUploads allows deleting uploads by other users
-	UserPermDeleteOtherUploads
-	// UserPermManageLogs allows viewing and deleting logs
-	UserPermManageLogs
-	// UserPermManageApiKeys allows editing and deleting of API keys by other users
-	UserPermManageApiKeys
-	// UserPermManageUsers allows creating and editing of users, including granting and revoking permissions
-	UserPermManageUsers
-)
-
-// UserPermissionNone means that the user has no permissions
-const UserPermissionNone UserPermission = 0
-
-// UserPermissionAll means that the user has all permissions
-const UserPermissionAll UserPermission = 255
-
-// GrantPermission grants one or more permissions
-func (u *User) GrantPermission(permission UserPermission) {
-	u.Permissions |= permission
-}
-
-// RemovePermission revokes one or more permissions
-func (u *User) RemovePermission(permission UserPermission) {
-	u.Permissions &^= permission
-}
-
-// HasPermission returns true if the key has the permission(s)
-func (u *User) HasPermission(permission UserPermission) bool {
-	if permission == UserPermissionNone {
-		return true
-	}
-	return (u.Permissions & permission) == permission
-}
-
-// HasPermissionReplace returns true if the user has the permission UserPermReplaceUploads
-func (u *User) HasPermissionReplace() bool {
-	return u.HasPermission(UserPermReplaceUploads)
-}
-
-// HasPermissionListOtherUploads returns true if the user has the permission UserPermListOtherUploads
-func (u *User) HasPermissionListOtherUploads() bool {
-	return u.HasPermission(UserPermListOtherUploads)
-}
-
-// HasPermissionEditOtherUploads returns true if the user has the permission UserPermEditOtherUploads
-func (u *User) HasPermissionEditOtherUploads() bool {
-	return u.HasPermission(UserPermEditOtherUploads)
-}
-
-// HasPermissionReplaceOtherUploads returns true if the user has the permission UserPermReplaceOtherUploads
-func (u *User) HasPermissionReplaceOtherUploads() bool {
-	return u.HasPermission(UserPermReplaceOtherUploads)
-}
-
-// HasPermissionDeleteOtherUploads returns true if the user has the permission UserPermDeleteOtherUploads
-func (u *User) HasPermissionDeleteOtherUploads() bool {
-	return u.HasPermission(UserPermDeleteOtherUploads)
-}
-
-// HasPermissionManageLogs returns true if the user has the permission UserPermManageLogs
-func (u *User) HasPermissionManageLogs() bool {
-	return u.HasPermission(UserPermManageLogs)
-}
-
-// HasPermissionManageApi returns true if the user has the permission UserPermManageApiKeys
-func (u *User) HasPermissionManageApi() bool {
-	return u.HasPermission(UserPermManageApiKeys)
-}
-
-// HasPermissionManageUsers returns true if the user has the permission UserPermManageUsers
-func (u *User) HasPermissionManageUsers() bool {
-	return u.HasPermission(UserPermManageUsers)
-}
-
-// GetStoragePercentage returns the storage usage as a percentage (0-100)
-func (u *User) GetStoragePercentage() int {
-	if u.StorageQuotaMB == 0 {
-		return 0
-	}
-	return int((u.StorageUsedMB * 100) / u.StorageQuotaMB)
-}
-
-// GetStorageRemaining returns the remaining storage in MB
-func (u *User) GetStorageRemaining() int64 {
-	if u.StorageQuotaMB == 0 {
-		return 0
-	}
-	remaining := u.StorageQuotaMB - u.StorageUsedMB
-	if remaining < 0 {
-		return 0
-	}
-	return remaining
-}
-
-// HasStorageSpace returns true if the user has enough storage space for the given file size in MB
-func (u *User) HasStorageSpace(fileSizeMB int64) bool {
-	if u.StorageQuotaMB == 0 {
+// HasStorageSpace reports whether a further sizeMB megabytes fit inside the
+// user's quota. A quota of zero allows no uploads.
+func (u *User) HasStorageSpace(sizeMB int64) bool {
+	if u.StorageQuotaMB <= 0 {
 		return false
 	}
-	return (u.StorageUsedMB + fileSizeMB) <= u.StorageQuotaMB
-}
-
-// IsAdmin returns true if the user is an Admin or SuperAdmin
-func (u *User) IsAdmin() bool {
-	return u.UserLevel == UserLevelAdmin || u.UserLevel == UserLevelSuperAdmin
+	return u.StorageUsedMB+sizeMB <= u.StorageQuotaMB
 }

@@ -12,7 +12,6 @@ wulfvault_*
 # Data directories
 /data/
 /uploads/
-/gokapi-source/
 
 # IDE
 .vscode/

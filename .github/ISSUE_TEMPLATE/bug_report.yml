@@ -7,30 +7,6 @@ body:
     attributes:
       value: |
         Thanks for the report. **Security problems go to [private reporting](https://github.com/Frimurare/WulfVault/security/advisories/new), not here.**
-  - type: input
-    id: version
-    attributes:
-      label: WulfVault version
-      description: Shown at the bottom of the sidebar and in the server start-up log.
-      placeholder: "7.5.1"
-    validations:
-      required: true
-  - type: dropdown
-    id: deployment
-    attributes:
-      label: Deployment
-      options:
-        - Single binary (systemd or manual)
-        - Docker / Docker Compose
-        - Elestio or other hosted
-        - Other (describe below)
-    validations:
-      required: true
-  - type: input
-    id: environment
-    attributes:
-      label: OS, browser and reverse proxy
-      placeholder: "Ubuntu 24.04, Firefox 130, nginx 1.26"
   - type: textarea
     id: what-happened
     attributes:
@@ -41,7 +17,7 @@ body:
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
+      label: How can we see it ourselves?
       placeholder: |
         1. Log in as admin
         2. Upload a 3 GB file with "authenticated download"
@@ -49,16 +25,40 @@ body:
         4. See error …
     validations:
       required: true
+  - type: input
+    id: wulfvault-version
+    attributes:
+      label: WulfVault version
+      description: Shown at the bottom of the sidebar and in the server start-up log.
+      placeholder: "7.5.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: How is WulfVault installed?
+      options:
+        - Single binary (systemd or manual)
+        - Docker / Docker Compose
+        - Elestio or other hosted
+        - Other (describe above)
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS, browser and reverse proxy
+      placeholder: "Ubuntu 24.04, Firefox 130, nginx 1.26"
   - type: textarea
-    id: logs
+    id: server-log
     attributes:
-      label: Relevant log output
-      description: Server log (`journalctl -u wulfvault` or `docker compose logs wulfvault`) and browser console if relevant. **Remove tokens, passwords, e-mail addresses and file names you do not want public.**
-      render: shell
+      label: Server log or browser console
+      description: "`journalctl -u wulfvault` or `docker compose logs wulfvault`. **Remove tokens, passwords, e-mail addresses and file names you do not want public.**"
+      render: text
   - type: checkboxes
-    id: checks
+    id: confirm
     attributes:
-      label: Before submitting
+      label: Checklist
       options:
         - label: I searched existing issues and the troubleshooting section of the README.
           required: true

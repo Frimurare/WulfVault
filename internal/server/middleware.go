@@ -14,13 +14,15 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/Frimurare/WulfVault/internal/database"
 )
 
 var (
-	serverLogFile   *os.File
-	serverLogMutex  sync.Mutex
-	serverLogPath   string
-	serverLogMaxMB  int64 = 50 // Default 50MB
+	serverLogFile  *os.File
+	serverLogMutex sync.Mutex
+	serverLogPath  string
+	serverLogMaxMB int64 = 50 // Default 50MB
 )
 
 // InitServerLog initializes the server log file with rotation support
@@ -191,18 +193,8 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// formatBytesHTTP converts bytes to human-readable format
 func formatBytesHTTP(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	return database.FormatFileSize(bytes)
 }
 
 // getClientIPFromRequest extracts the real client IP from the request

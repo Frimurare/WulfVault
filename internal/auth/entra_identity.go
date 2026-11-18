@@ -123,8 +123,8 @@ func ResolveOrProvisionUser(db *database.Database, cfg *EntraConfig, claims *Ent
 		Name:             username,
 		Email:            email,
 		Password:         "", // Entra users have no local password
-		Permissions:      models.UserPermissionNone,
-		UserLevel:        cfg.DefaultRole,
+		Permissions:      models.PermNone,
+		Role:             cfg.DefaultRole,
 		LastOnline:       time.Now().Unix(),
 		ResetPassword:    false,
 		StorageQuotaMB:   0, // 0 = inherit default-quota at upload time
