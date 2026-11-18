@@ -43,6 +43,8 @@ WulfVault answers all four: your data stays on your own server, there are no per
 
 [![Deploy on Elestio](https://elest.io/images/logos/deploy-to-elestio-btn.png)](https://elest.io/open-source/wulfvault)
 
+Also available as managed hosting from [BetterMade Hosting](https://www.bettermadehosting.com/apps/wulfvault/).
+
 **Self-host it yourself** — Docker, Docker Compose, or a single Go binary; see [Installation](#installation).
 
 ---
