@@ -2,6 +2,8 @@
 
 **Version 7.5.3 Inner Overhaul** · Self-Hosted · Open Source · AGPL-3.0
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-WulfVault-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Frimurare)
+
 WulfVault is a self-hosted file sharing platform for organizations that need security, accountability, and full control over their data. Written in Go, it is a complete alternative to commercial file-transfer services — no subscriptions, no per-transfer fees, no practical file-size limit — with multi-user management, per-user quotas, enterprise audit logging, full download tracking, branded download pages, 2FA, SSO (Microsoft Entra ID + generic OpenID Connect), self-service password management, file-request portals, and GDPR-compliant account deletion.
 
 > 🔒 **Recommended update for Docker users: 7.5.3 "Inner Overhaul"** — the Docker image now has **no known vulnerabilities** (Trivy and Grype: 0). Earlier images carry 1 critical and 8 high (7.5.1), 3 critical and 53 high (7.5.0) and 5 critical and 67 high (7.2.0) vulnerabilities. The image is now built on an empty base with only the WulfVault binary and its web assets (about 7 MB). Internal data models are rewritten; nothing changes for users. Details and the full CVE list are in the [changelog](CHANGELOG.md#753---inner-overhaul---2026-11-18).
@@ -229,6 +231,7 @@ Contributions welcome — fork, branch, add tests, open a PR.
 - Discussions: https://github.com/Frimurare/WulfVault/discussions
 - Docs/Wiki: https://github.com/Frimurare/WulfVault/wiki
 - Contact: ulf@manvarg.se
+- Sponsor: if WulfVault saves you time or money, consider [sponsoring the project on GitHub](https://github.com/sponsors/Frimurare). It keeps development and security updates going.
 
 ---
 
